@@ -130,3 +130,5 @@ dist
 .pnp.*
 
 build/
+cdk/*/*.js
+cdk.out/

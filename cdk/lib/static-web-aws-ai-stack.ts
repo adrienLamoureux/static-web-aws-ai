@@ -1,11 +1,11 @@
 import * as cdk from "aws-cdk-lib";
+import { Construct } from "constructs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as s3Deployment from "aws-cdk-lib/aws-s3-deployment";
 import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
-import { Construct } from "constructs";
 import * as path from "path";
 
 export class StaticWebAWSAIStack extends cdk.Stack {
@@ -29,9 +29,19 @@ export class StaticWebAWSAIStack extends cdk.Stack {
     // S3 Bucket for static site
     const websiteBucket = new s3.Bucket(this, "WebsiteBucket", {
       websiteIndexDocument: "index.html",
-      publicReadAccess: true,
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // Change this in production
+      publicReadAccess: false, // Keep this false and use a bucket policy instead
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS, // Block ACLs but allow bucket policy
+      removalPolicy: cdk.RemovalPolicy.DESTROY, // Change in production
     });
+    
+    // Add a bucket policy to allow public read access
+    websiteBucket.addToResourcePolicy(
+      new cdk.aws_iam.PolicyStatement({
+        actions: ["s3:GetObject"],
+        resources: [`${websiteBucket.bucketArn}/*`],
+        principals: [new cdk.aws_iam.AnyPrincipal()],
+      })
+    );
 
     // CloudFront Distribution
     const distribution = new cloudfront.Distribution(this, "CloudFrontDistribution", {
