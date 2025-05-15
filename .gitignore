@@ -132,3 +132,8 @@ dist
 build/
 cdk/*/*.js
 cdk.out/
+
+# AI environment
+ai/env/
+ai/__pycache__/
+ai/*.ipynb_checkpoints/

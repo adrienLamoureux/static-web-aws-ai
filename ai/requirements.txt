@@ -1,0 +1,12 @@
+# Core data analysis
+pandas
+numpy
+matplotlib
+seaborn
+
+# Jupyter support
+jupyterlab
+ipykernel
+
+# Optional: machine learning
+scikit-learn
