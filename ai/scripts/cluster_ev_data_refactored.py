@@ -1,4 +1,3 @@
-
 import pandas as pd
 import os
 import matplotlib.pyplot as plt
@@ -6,6 +5,27 @@ import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import DBSCAN, AgglomerativeClustering, KMeans
 from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
+import networkx as nx
+import numpy as np
+
+def plot_correlation_network(df, features, threshold=0.5):
+    corr = df[features].corr()
+    G = nx.Graph()
+
+    for i in range(len(corr.columns)):
+        for j in range(i + 1, len(corr.columns)):
+            value = corr.iloc[i, j]
+            if abs(value) >= threshold:
+                G.add_edge(corr.columns[i], corr.columns[j], weight=abs(value), label=f"{value:.2f}")
+
+    pos = nx.spring_layout(G, seed=42)
+    plt.figure(figsize=(8, 6))
+    nx.draw(G, pos, with_labels=True, node_size=1500, node_color='lightblue', font_size=10, width=2)
+    edge_labels = nx.get_edge_attributes(G, 'label')
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
+    plt.title(f"Correlation Network (threshold ≥ {threshold})")
+    plt.tight_layout()
+    plt.show()
 
 def load_and_prepare_data():
     csv_path = os.path.join(os.path.dirname(__file__), '../data/ev_data.csv')
@@ -34,7 +54,7 @@ def feature_engineering(df):
     return df
 
 def run_dbscan(df, features, eps=1.5, min_samples=5, max_samples=50000):
-    ev_cluster_df = df[features].dropna()
+    ev_cluster_df = df[features].replace([np.inf, -np.inf], np.nan).dropna()
     if len(ev_cluster_df) > max_samples:
         ev_cluster_df = ev_cluster_df.sample(n=max_samples, random_state=42)
 
@@ -46,7 +66,7 @@ def run_dbscan(df, features, eps=1.5, min_samples=5, max_samples=50000):
     return df, ev_cluster_df
 
 def run_kmeans(df, features, n_clusters=5, max_samples=50000):
-    ev_cluster_df = df[features].dropna()
+    ev_cluster_df = df[features].replace([np.inf, -np.inf], np.nan).dropna()
     if len(ev_cluster_df) > max_samples:
         ev_cluster_df = ev_cluster_df.sample(n=max_samples, random_state=42)
 
@@ -58,7 +78,7 @@ def run_kmeans(df, features, n_clusters=5, max_samples=50000):
     return df, ev_cluster_df
 
 def run_hierarchical(df, features, n_clusters=5, max_samples=50000):
-    ev_cluster_df = df[features].dropna()
+    ev_cluster_df = df[features].replace([np.inf, -np.inf], np.nan).dropna()
     if len(ev_cluster_df) > max_samples:
         ev_cluster_df = ev_cluster_df.sample(n=max_samples, random_state=42)
 
@@ -70,7 +90,7 @@ def run_hierarchical(df, features, n_clusters=5, max_samples=50000):
     return df, ev_cluster_df
 
 def compute_hierarchical_clusters(df, features, distance_threshold=25, max_samples=500):
-    df_sample = df[features].dropna()
+    df_sample = df[features].replace([np.inf, -np.inf], np.nan).dropna()
     if len(df_sample) > max_samples:
         df_sample = df_sample.sample(n=max_samples, random_state=42)
 
@@ -190,6 +210,8 @@ def main():
         cluster_kwargs = {'eps': 1.5, 'min_samples': 5}
     elif clustering_method == 'hierarchical_fcluster':
         cluster_kwargs = {'distance_threshold': 25}
+
+    plot_correlation_network(df, features, threshold=0.2)
 
     # Run the selected clustering method
     if clustering_method == 'hierarchical_fcluster':
