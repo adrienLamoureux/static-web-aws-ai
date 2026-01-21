@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "main": "lambda.js",
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.624.0",
+    "@aws-sdk/client-s3": "^3.624.0",
+    "@aws-sdk/s3-request-presigner": "^3.624.0",
     "express": "^4.17.3",
     "serverless-http": "^3.0.0"
   }

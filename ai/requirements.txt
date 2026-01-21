@@ -11,3 +11,6 @@ ipykernel
 
 # Optional: machine learning
 scikit-learn
+
+# AWS
+boto3

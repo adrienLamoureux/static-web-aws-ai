@@ -6,6 +6,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as s3Deployment from "aws-cdk-lib/aws-s3-deployment";
 import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as path from "path";
 
 export class StaticWebAWSAIStack extends cdk.Stack {
@@ -19,6 +20,54 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(__dirname, "../../backend")),
       memorySize: 512,
     });
+
+    const mediaBucket = new s3.Bucket(this, "MediaBucket", {
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      publicReadAccess: false,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      cors: [
+        {
+          allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.GET],
+          allowedOrigins: ["*"],
+          allowedHeaders: ["*"],
+        },
+      ],
+    });
+
+    apiLambda.addEnvironment("MEDIA_BUCKET", mediaBucket.bucketName);
+    apiLambda.addEnvironment(
+      "BEDROCK_REGION",
+      process.env.BEDROCK_REGION || cdk.Stack.of(this).region
+    );
+    apiLambda.addEnvironment(
+      "BEDROCK_MODEL_ID",
+      process.env.BEDROCK_MODEL_ID || "amazon.nova-reel-v1:1"
+    );
+
+    apiLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["bedrock:InvokeModel", "bedrock:StartAsyncInvoke"],
+        resources: ["*"],
+      })
+    );
+
+    mediaBucket.grantPut(apiLambda);
+    mediaBucket.grantRead(apiLambda);
+
+    mediaBucket.addToResourcePolicy(
+      new iam.PolicyStatement({
+        actions: ["s3:GetObject"],
+        resources: [`${mediaBucket.bucketArn}/images/*`],
+        principals: [new iam.ServicePrincipal("bedrock.amazonaws.com")],
+      })
+    );
+    mediaBucket.addToResourcePolicy(
+      new iam.PolicyStatement({
+        actions: ["s3:PutObject"],
+        resources: [`${mediaBucket.bucketArn}/videos/*`],
+        principals: [new iam.ServicePrincipal("bedrock.amazonaws.com")],
+      })
+    );
 
     // API Gateway
     const api = new apigateway.LambdaRestApi(this, "ApiGateway", {
@@ -36,10 +85,10 @@ export class StaticWebAWSAIStack extends cdk.Stack {
     
     // Add a bucket policy to allow public read access
     websiteBucket.addToResourcePolicy(
-      new cdk.aws_iam.PolicyStatement({
+      new iam.PolicyStatement({
         actions: ["s3:GetObject"],
         resources: [`${websiteBucket.bucketArn}/*`],
-        principals: [new cdk.aws_iam.AnyPrincipal()],
+        principals: [new iam.AnyPrincipal()],
       })
     );
 
@@ -61,6 +110,10 @@ export class StaticWebAWSAIStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, "APIEndpoint", {
       value: api.url!,
+    });
+
+    new cdk.CfnOutput(this, "MediaBucketName", {
+      value: mediaBucket.bucketName,
     });
   }
 }
