@@ -2,6 +2,7 @@ const express = require("express");
 const {
   BedrockRuntimeClient,
   StartAsyncInvokeCommand,
+  GetAsyncInvokeCommand,
 } = require("@aws-sdk/client-bedrock-runtime");
 const {
   S3Client,
@@ -127,6 +128,88 @@ app.get("/s3/images", async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Failed to list images",
+      error: error?.message || String(error),
+    });
+  }
+});
+
+app.get("/s3/video-url", async (req, res) => {
+  const bucket = process.env.MEDIA_BUCKET;
+  const prefix = req.query?.prefix;
+  const urlExpirationSeconds = 900;
+
+  if (!bucket) {
+    return res.status(500).json({ message: "MEDIA_BUCKET is not set" });
+  }
+  if (!prefix) {
+    return res.status(400).json({ message: "prefix is required" });
+  }
+  if (!prefix.startsWith("videos/")) {
+    return res
+      .status(400)
+      .json({ message: "prefix must start with videos/" });
+  }
+
+  try {
+    const response = await s3Client.send(
+      new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: prefix,
+        MaxKeys: 1000,
+      })
+    );
+
+    const objects = (response.Contents || [])
+      .filter((item) => item.Key && item.Key !== prefix)
+      .sort((a, b) => {
+        const aTime = a.LastModified ? new Date(a.LastModified).getTime() : 0;
+        const bTime = b.LastModified ? new Date(b.LastModified).getTime() : 0;
+        return aTime - bTime;
+      });
+
+    if (objects.length === 0) {
+      return res.status(404).json({ message: "No videos found" });
+    }
+
+    const outputMp4 =
+      objects.find((item) => item.Key?.endsWith("/output.mp4")) ||
+      objects.find((item) => item.Key?.endsWith(".mp4"));
+    const latest = outputMp4 || objects[objects.length - 1];
+    const command = new GetObjectCommand({
+      Bucket: bucket,
+      Key: latest.Key,
+    });
+    const url = await getSignedUrl(s3Client, command, {
+      expiresIn: urlExpirationSeconds,
+    });
+
+    res.json({
+      bucket,
+      key: latest.Key,
+      s3Uri: `s3://${bucket}/${latest.Key}`,
+      url,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to get video URL",
+      error: error?.message || String(error),
+    });
+  }
+});
+
+app.get("/bedrock/nova-reel/job-status", async (req, res) => {
+  const invocationArn = req.query?.invocationArn;
+  if (!invocationArn) {
+    return res.status(400).json({ message: "invocationArn is required" });
+  }
+
+  try {
+    const command = new GetAsyncInvokeCommand({ invocationArn });
+    const response = await bedrockClient.send(command);
+    res.json(response);
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to get job status",
       error: error?.message || String(error),
     });
   }

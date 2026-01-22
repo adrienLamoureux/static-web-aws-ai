@@ -46,7 +46,11 @@ export class StaticWebAWSAIStack extends cdk.Stack {
 
     apiLambda.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ["bedrock:InvokeModel", "bedrock:StartAsyncInvoke"],
+        actions: [
+          "bedrock:InvokeModel",
+          "bedrock:StartAsyncInvoke",
+          "bedrock:GetAsyncInvoke",
+        ],
         resources: ["*"],
       })
     );

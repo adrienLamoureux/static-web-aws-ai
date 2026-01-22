@@ -42,6 +42,10 @@ function Home({ apiBaseUrl = "" }) {
   const [generationStatus, setGenerationStatus] = useState("idle");
   const [error, setError] = useState("");
   const [generationResponse, setGenerationResponse] = useState(null);
+  const [invocationArn, setInvocationArn] = useState("");
+  const [outputPrefix, setOutputPrefix] = useState("");
+  const [jobStatus, setJobStatus] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
 
   const resolvedApiBaseUrl =
     apiBaseUrl || process.env.REACT_APP_API_URL || "";
@@ -66,6 +70,24 @@ function Home({ apiBaseUrl = "" }) {
         throw new Error(data?.message || "Failed to load images.");
       }
       setAvailableImages(data.images || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchVideoUrl = async () => {
+    if (!resolvedApiBaseUrl || !outputPrefix) return;
+    try {
+      const response = await fetch(
+        `${resolvedApiBaseUrl}/s3/video-url?prefix=${encodeURIComponent(
+          outputPrefix
+        )}`
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.message || "Failed to load video.");
+      }
+      setVideoUrl(data.url || "");
     } catch (err) {
       console.error(err);
     }
@@ -130,6 +152,9 @@ function Home({ apiBaseUrl = "" }) {
     setUploadStatus("uploading");
     setGenerationStatus("idle");
     setGenerationResponse(null);
+    setInvocationArn("");
+    setJobStatus("");
+    setVideoUrl("");
 
     const safeName = buildSafeFileName(imageName.trim()) || "upload";
     const key = `images/${safeName}.jpg`;
@@ -185,8 +210,12 @@ function Home({ apiBaseUrl = "" }) {
     setError("");
     setGenerationStatus("loading");
     setGenerationResponse(null);
+    setInvocationArn("");
+    setJobStatus("");
+    setVideoUrl("");
 
     try {
+      const newOutputPrefix = `videos/${Date.now()}/`;
       const response = await fetch(
         `${resolvedApiBaseUrl}/bedrock/nova-reel/image-to-video-s3`,
         {
@@ -195,7 +224,7 @@ function Home({ apiBaseUrl = "" }) {
           body: JSON.stringify({
             prompt: prompt?.trim() || undefined,
             inputKey: selectedImageKey,
-            outputPrefix: `videos/${Date.now()}/`,
+            outputPrefix: newOutputPrefix,
           }),
         }
       );
@@ -205,11 +234,55 @@ function Home({ apiBaseUrl = "" }) {
       }
       setGenerationResponse(data);
       setGenerationStatus("success");
+      setInvocationArn(data?.response?.invocationArn || "");
+      setOutputPrefix(newOutputPrefix);
     } catch (err) {
       setGenerationStatus("error");
       setError(err?.message || "Video generation failed.");
     }
   };
+
+  useEffect(() => {
+    if (!invocationArn || !resolvedApiBaseUrl) return undefined;
+    let timeoutId;
+    let isCancelled = false;
+
+    const pollStatus = async () => {
+      if (isCancelled) return;
+      try {
+        const response = await fetch(
+          `${resolvedApiBaseUrl}/bedrock/nova-reel/job-status?invocationArn=${encodeURIComponent(
+            invocationArn
+          )}`
+        );
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data?.message || "Failed to fetch job status.");
+        }
+        const status = data?.status || "";
+        setJobStatus(status);
+        if (status === "Completed") {
+          await fetchVideoUrl();
+          return;
+        }
+        if (status === "Failed") {
+          return;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+      timeoutId = setTimeout(pollStatus, 5000);
+    };
+
+    pollStatus();
+
+    return () => {
+      isCancelled = true;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [invocationArn, outputPrefix, resolvedApiBaseUrl]);
 
   return (
     <Box sx={{ py: { xs: 4, md: 6 } }}>
@@ -419,6 +492,25 @@ function Home({ apiBaseUrl = "" }) {
                   <Typography variant="body2" color="text.secondary">
                     Model: {generationResponse.modelId}
                   </Typography>
+                  {jobStatus && (
+                    <Typography variant="body2" color="text.secondary">
+                      Status: {jobStatus}
+                    </Typography>
+                  )}
+                </Paper>
+              )}
+
+              {videoUrl && (
+                <Paper variant="outlined" sx={{ p: 2 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    Generated video
+                  </Typography>
+                  <Box
+                    component="video"
+                    src={videoUrl}
+                    controls
+                    sx={{ width: "100%", borderRadius: 2 }}
+                  />
                 </Paper>
               )}
             </Stack>
