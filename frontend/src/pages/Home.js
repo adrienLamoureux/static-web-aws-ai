@@ -3,6 +3,7 @@ import {
   Alert,
   Box,
   Button,
+  ButtonBase,
   Chip,
   Container,
   LinearProgress,
@@ -318,23 +319,70 @@ function Home({ apiBaseUrl = "" }) {
                 2. Trigger video generation
               </Typography>
 
-              <TextField
-                label="Select image"
-                select
-                value={selectedImageKey}
-                onChange={(event) => setSelectedImageKey(event.target.value)}
-                SelectProps={{ native: true }}
-                helperText="Choose an uploaded image to animate"
-              >
-                <option value="" disabled>
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" color="text.secondary">
                   Select an image
-                </option>
-                {availableImages.map((key) => (
-                  <option key={key} value={key}>
-                    {key}
-                  </option>
-                ))}
-              </TextField>
+                </Typography>
+                {availableImages.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary">
+                    No images found in S3 yet.
+                  </Typography>
+                ) : (
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: {
+                        xs: "1fr",
+                        sm: "repeat(2, 1fr)",
+                      },
+                      gap: 2,
+                    }}
+                  >
+                    {availableImages.map((image) => {
+                      const isSelected = selectedImageKey === image.key;
+                      return (
+                        <Paper
+                          key={image.key}
+                          variant="outlined"
+                          sx={{
+                            borderColor: isSelected
+                              ? "primary.main"
+                              : "rgba(0, 0, 0, 0.12)",
+                            bgcolor: isSelected
+                              ? "rgba(25, 118, 210, 0.08)"
+                              : "transparent",
+                          }}
+                        >
+                          <ButtonBase
+                            onClick={() => setSelectedImageKey(image.key)}
+                            sx={{
+                              width: "100%",
+                              textAlign: "left",
+                              p: 2,
+                            }}
+                          >
+                            <Stack spacing={1} sx={{ width: "100%" }}>
+                              <Box
+                                component="img"
+                                src={image.url}
+                                alt={image.key}
+                                sx={{
+                                  width: "100%",
+                                  height: 160,
+                                  objectFit: "cover",
+                                  borderRadius: 1,
+                                  border: "1px solid rgba(0, 0, 0, 0.08)",
+                                }}
+                              />
+                              <Typography variant="body2">{image.key}</Typography>
+                            </Stack>
+                          </ButtonBase>
+                        </Paper>
+                      );
+                    })}
+                  </Box>
+                )}
+              </Stack>
 
               <TextField
                 label="Prompt"

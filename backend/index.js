@@ -90,6 +90,7 @@ app.post("/s3/image-upload-url", async (req, res) => {
 app.get("/s3/images", async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
   const maxKeys = Number(req.query?.maxKeys) || 100;
+  const urlExpirationSeconds = 900;
 
   if (!bucket) {
     return res.status(500).json({ message: "MEDIA_BUCKET is not set" });
@@ -104,10 +105,23 @@ app.get("/s3/images", async (req, res) => {
       })
     );
 
-    const images = (response.Contents || [])
+    const keys = (response.Contents || [])
       .map((item) => item.Key)
       .filter((key) => key && key !== "images/")
       .sort((a, b) => a.localeCompare(b));
+
+    const images = await Promise.all(
+      keys.map(async (key) => {
+        const command = new GetObjectCommand({
+          Bucket: bucket,
+          Key: key,
+        });
+        const url = await getSignedUrl(s3Client, command, {
+          expiresIn: urlExpirationSeconds,
+        });
+        return { key, url };
+      })
+    );
 
     res.json({ bucket, images });
   } catch (error) {
