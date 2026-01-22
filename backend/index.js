@@ -3,7 +3,12 @@ const {
   BedrockRuntimeClient,
   StartAsyncInvokeCommand,
 } = require("@aws-sdk/client-bedrock-runtime");
-const { S3Client, PutObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
+const {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  ListObjectsV2Command,
+} = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 const app = express();
@@ -77,6 +82,37 @@ app.post("/s3/image-upload-url", async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Failed to generate upload URL",
+      error: error?.message || String(error),
+    });
+  }
+});
+
+app.get("/s3/images", async (req, res) => {
+  const bucket = process.env.MEDIA_BUCKET;
+  const maxKeys = Number(req.query?.maxKeys) || 100;
+
+  if (!bucket) {
+    return res.status(500).json({ message: "MEDIA_BUCKET is not set" });
+  }
+
+  try {
+    const response = await s3Client.send(
+      new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: "images/",
+        MaxKeys: Math.min(maxKeys, 1000),
+      })
+    );
+
+    const images = (response.Contents || [])
+      .map((item) => item.Key)
+      .filter((key) => key && key !== "images/")
+      .sort((a, b) => a.localeCompare(b));
+
+    res.json({ bucket, images });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to list images",
       error: error?.message || String(error),
     });
   }

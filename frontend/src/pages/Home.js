@@ -35,6 +35,8 @@ function Home({ apiBaseUrl = "" }) {
   const [prompt, setPrompt] = useState("A cinematic push-in on the scene.");
   const [imageName, setImageName] = useState("");
   const [uploadKey, setUploadKey] = useState("");
+  const [selectedImageKey, setSelectedImageKey] = useState("");
+  const [availableImages, setAvailableImages] = useState([]);
   const [uploadStatus, setUploadStatus] = useState("idle");
   const [generationStatus, setGenerationStatus] = useState("idle");
   const [error, setError] = useState("");
@@ -52,6 +54,24 @@ function Home({ apiBaseUrl = "" }) {
       .then((res) => res.json())
       .then((data) => setMessage(data.message))
       .catch((err) => console.error(err));
+  }, [resolvedApiBaseUrl]);
+
+  const refreshImageList = async () => {
+    if (!resolvedApiBaseUrl) return;
+    try {
+      const response = await fetch(`${resolvedApiBaseUrl}/s3/images`);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.message || "Failed to load images.");
+      }
+      setAvailableImages(data.images || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    refreshImageList();
   }, [resolvedApiBaseUrl]);
 
   useEffect(() => {
@@ -89,6 +109,7 @@ function Home({ apiBaseUrl = "" }) {
     setError("");
     setSelectedFile(file);
     setUploadKey("");
+    setSelectedImageKey("");
     setUploadStatus("idle");
     setGenerationStatus("idle");
     setGenerationResponse(null);
@@ -142,16 +163,18 @@ function Home({ apiBaseUrl = "" }) {
       }
 
       setUploadKey(presignData.key);
+      setSelectedImageKey(presignData.key);
       setUploadStatus("uploaded");
     } catch (err) {
       setUploadStatus("error");
       setError(err?.message || "Upload failed.");
     }
+    await refreshImageList();
   };
 
   const handleGenerate = async () => {
-    if (!uploadKey) {
-      setError("Upload an image before generating a video.");
+    if (!selectedImageKey) {
+      setError("Select an image before generating a video.");
       return;
     }
     if (!resolvedApiBaseUrl) {
@@ -170,7 +193,7 @@ function Home({ apiBaseUrl = "" }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             prompt: prompt?.trim() || undefined,
-            inputKey: uploadKey,
+            inputKey: selectedImageKey,
             outputPrefix: `videos/${Date.now()}/`,
           }),
         }
@@ -296,6 +319,24 @@ function Home({ apiBaseUrl = "" }) {
               </Typography>
 
               <TextField
+                label="Select image"
+                select
+                value={selectedImageKey}
+                onChange={(event) => setSelectedImageKey(event.target.value)}
+                SelectProps={{ native: true }}
+                helperText="Choose an uploaded image to animate"
+              >
+                <option value="" disabled>
+                  Select an image
+                </option>
+                {availableImages.map((key) => (
+                  <option key={key} value={key}>
+                    {key}
+                  </option>
+                ))}
+              </TextField>
+
+              <TextField
                 label="Prompt"
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value)}
@@ -307,7 +348,7 @@ function Home({ apiBaseUrl = "" }) {
                 <Button
                   variant="contained"
                   onClick={handleGenerate}
-                  disabled={!uploadKey || isGenerating}
+                  disabled={!selectedImageKey || isGenerating}
                 >
                   Start video job
                 </Button>
