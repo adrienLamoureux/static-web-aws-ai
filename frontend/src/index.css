@@ -1,25 +1,14 @@
-/* Basic global styles */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600&display=swap");
+
 body {
-  font-family: Arial, sans-serif;
+  font-family: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
   margin: 0;
   padding: 0;
-  background-color: #f4f4f4;
-  color: #333;
+  color: #1d1d1d;
+  background: radial-gradient(circle at 20% 20%, #f6f4ff, #f2f6fb 45%, #eef2f7);
+  min-height: 100vh;
 }
 
-nav {
-  background-color: #007bff;
-  padding: 10px;
-  text-align: center;
-}
-
-nav a {
-  color: white;
-  text-decoration: none;
-  margin: 0 15px;
-}
-
-h1 {
-  text-align: center;
-  margin-top: 50px;
+#root {
+  min-height: 100vh;
 }

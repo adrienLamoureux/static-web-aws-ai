@@ -97,10 +97,22 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       defaultBehavior: { origin: new origins.S3Origin(websiteBucket) },
     });
 
+    const frontendApiUrl = process.env.REACT_APP_API_URL || "";
+
     // Deploy frontend to S3
     new s3Deployment.BucketDeployment(this, "DeployWebsite", {
-      sources: [s3Deployment.Source.asset(path.join(__dirname, "../../frontend/build"))],
+      sources: [
+        s3Deployment.Source.asset(
+          path.join(__dirname, "../../frontend/build")
+        ),
+        s3Deployment.Source.data(
+          "config.json",
+          JSON.stringify({ apiBaseUrl: frontendApiUrl })
+        ),
+      ],
       destinationBucket: websiteBucket,
+      distribution,
+      distributionPaths: ["/*"],
     });
 
     // Outputs
