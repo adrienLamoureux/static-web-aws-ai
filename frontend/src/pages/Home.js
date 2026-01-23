@@ -1,17 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Alert,
-  Box,
-  Button,
-  ButtonBase,
-  Chip,
-  Container,
-  LinearProgress,
-  Paper,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
 
 const buildSafeFileName = (name = "") =>
   name.replace(/\s+/g, "-").replace(/[^a-zA-Z0-9._-]/g, "");
@@ -285,241 +272,240 @@ function Home({ apiBaseUrl = "" }) {
   }, [invocationArn, outputPrefix, resolvedApiBaseUrl]);
 
   return (
-    <Box sx={{ py: { xs: 4, md: 6 } }}>
-      <Container maxWidth="md">
-        <Stack spacing={4}>
-          <Paper elevation={0} sx={{ p: { xs: 3, md: 4 } }}>
-            <Stack spacing={2}>
-              <Typography variant="overline" color="text.secondary">
-                API Status
-              </Typography>
-              <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                Image to video in two steps
-              </Typography>
-              <Typography color="text.secondary">
-                {resolvedApiBaseUrl
-                  ? message || "Connecting to the API..."
-                  : "Set API URL in config.json or .env"}
-              </Typography>
-            </Stack>
-          </Paper>
+    <section className="mx-auto w-full max-w-6xl px-6 pb-16 pt-4 md:px-10">
+      <div className="animate-fade-up glass-panel relative overflow-hidden rounded-[32px] p-8 shadow-soft md:p-12">
+        <div className="absolute -right-16 top-6 h-40 w-40 animate-glow-pulse rounded-full bg-glow blur-2xl" />
+        <p className="text-xs font-semibold uppercase tracking-[0.32em] text-slate-500">
+          API Status
+        </p>
+        <h1 className="mt-5 text-3xl font-semibold text-ink md:text-5xl">
+          Image to video. Calm, precise, ready for production.
+        </h1>
+        <p className="mt-4 max-w-2xl text-base text-slate-600 md:text-lg">
+          {resolvedApiBaseUrl
+            ? message || "Connecting to the API..."
+            : "Set API URL in config.json or .env"}
+        </p>
+      </div>
 
-          <Paper elevation={0} sx={{ p: { xs: 3, md: 4 } }}>
-            <Stack spacing={3}>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                1. Upload your image
-              </Typography>
+      <div className="mt-10 grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="glass-panel animate-fade-up rounded-[28px] p-7 shadow-card md:p-9">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
+                Step 01
+              </p>
+              <h2 className="mt-3 text-xl font-semibold text-ink">
+                Upload your image
+              </h2>
+            </div>
+            {isUploading && (
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
+                Uploading…
+              </div>
+            )}
+          </div>
 
-              <TextField
-                label="Image name"
+          <div className="mt-6 space-y-4">
+            <div>
+              <label className="text-sm font-medium text-slate-600">
+                Image name
+              </label>
+              <input
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
                 value={imageName}
                 onChange={(event) => setImageName(event.target.value)}
                 placeholder="frieren"
-                helperText="Stored as images/NAME.jpg"
               />
+              <p className="mt-2 text-xs text-slate-500">
+                Stored as <span className="font-mono">images/NAME.jpg</span>
+              </p>
+            </div>
 
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <Button variant="outlined" component="label">
-                  Choose image
-                  <input
-                    hidden
-                    type="file"
-                    accept="image/jpeg"
-                    onChange={handleFileChange}
+            <div className="flex flex-wrap items-center gap-3">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-accent hover:text-ink">
+                Choose image
+                <input
+                  hidden
+                  type="file"
+                  accept="image/jpeg"
+                  onChange={handleFileChange}
+                />
+              </label>
+              <button
+                className="rounded-full bg-ink px-5 py-2 text-sm font-semibold text-white transition hover:bg-black/90 disabled:cursor-not-allowed disabled:bg-slate-300"
+                onClick={handleUpload}
+                disabled={!selectedFile || isUploading || !imageName.trim()}
+              >
+                Upload to S3
+              </button>
+            </div>
+
+            {isUploading && (
+              <div className="flex items-center gap-3 text-xs text-slate-500">
+                <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+                Uploading image to S3...
+              </div>
+            )}
+
+            {selectedFile && (
+              <div className="grid gap-4 rounded-2xl border border-slate-200 bg-white/60 p-4 md:grid-cols-[1.2fr_1fr]">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.26em] text-slate-500">
+                    Selected image
+                  </p>
+                  <p className="mt-2 text-base font-semibold text-ink">
+                    {selectedFile.name}
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    {Math.round(selectedFile.size / 1024)} KB
+                  </p>
+                </div>
+                {previewUrl && (
+                  <img
+                    src={previewUrl}
+                    alt="Preview"
+                    className="h-40 w-full rounded-2xl border border-slate-200 object-cover"
                   />
-                </Button>
-                <Button
-                  variant="contained"
-                  onClick={handleUpload}
-                  disabled={!selectedFile || isUploading || !imageName.trim()}
-                >
-                  Upload to S3
-                </Button>
-                <Chip label={uploadStatusLabel} variant="outlined" />
-              </Stack>
-
-              {isUploading && <LinearProgress />}
-
-              {selectedFile && (
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: { xs: "1fr", md: "1.2fr 1fr" },
-                    gap: 2,
-                    alignItems: "center",
-                  }}
-                >
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Selected image
-                    </Typography>
-                    <Typography sx={{ fontWeight: 600 }}>
-                      {selectedFile.name}
-                    </Typography>
-                    <Typography color="text.secondary" variant="body2">
-                      {Math.round(selectedFile.size / 1024)} KB
-                    </Typography>
-                  </Box>
-                  {previewUrl && (
-                    <Box
-                      component="img"
-                      src={previewUrl}
-                      alt="Preview"
-                      sx={{
-                        width: "100%",
-                        borderRadius: 2,
-                        border: "1px solid rgba(0, 0, 0, 0.08)",
-                      }}
-                    />
-                  )}
-                </Box>
-              )}
-
-              {uploadKey && (
-                <Typography variant="body2" color="text.secondary">
-                  Uploaded as{" "}
-                  <Box component="span" sx={{ fontFamily: "IBM Plex Mono" }}>
-                    {uploadKey}
-                  </Box>
-                </Typography>
-              )}
-            </Stack>
-          </Paper>
-
-          <Paper elevation={0} sx={{ p: { xs: 3, md: 4 } }}>
-            <Stack spacing={3}>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                2. Trigger video generation
-              </Typography>
-
-              <Stack spacing={1}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Select an image
-                </Typography>
-                {availableImages.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">
-                    No images found in S3 yet.
-                  </Typography>
-                ) : (
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: {
-                        xs: "1fr",
-                        sm: "repeat(2, 1fr)",
-                      },
-                      gap: 2,
-                    }}
-                  >
-                    {availableImages.map((image) => {
-                      const isSelected = selectedImageKey === image.key;
-                      return (
-                        <Paper
-                          key={image.key}
-                          variant="outlined"
-                          sx={{
-                            borderColor: isSelected
-                              ? "primary.main"
-                              : "rgba(0, 0, 0, 0.12)",
-                            bgcolor: isSelected
-                              ? "rgba(25, 118, 210, 0.08)"
-                              : "transparent",
-                          }}
-                        >
-                          <ButtonBase
-                            onClick={() => setSelectedImageKey(image.key)}
-                            sx={{
-                              width: "100%",
-                              textAlign: "left",
-                              p: 2,
-                            }}
-                          >
-                            <Stack spacing={1} sx={{ width: "100%" }}>
-                              <Box
-                                component="img"
-                                src={image.url}
-                                alt={image.key}
-                                sx={{
-                                  width: "100%",
-                                  height: 160,
-                                  objectFit: "cover",
-                                  borderRadius: 1,
-                                  border: "1px solid rgba(0, 0, 0, 0.08)",
-                                }}
-                              />
-                              <Typography variant="body2">{image.key}</Typography>
-                            </Stack>
-                          </ButtonBase>
-                        </Paper>
-                      );
-                    })}
-                  </Box>
                 )}
-              </Stack>
+              </div>
+            )}
 
-              <TextField
-                label="Prompt"
+            {uploadKey && (
+              <p className="text-sm text-slate-500">
+                Uploaded as{" "}
+                <span className="font-mono text-ink">{uploadKey}</span>
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="glass-panel animate-fade-up rounded-[28px] p-7 shadow-card md:p-9">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
+                Step 02
+              </p>
+              <h2 className="mt-3 text-xl font-semibold text-ink">
+                Generate the video
+              </h2>
+            </div>
+            {isGenerating && (
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
+                Submitting…
+              </div>
+            )}
+          </div>
+
+          <div className="mt-6 space-y-4">
+            <div>
+              <p className="text-sm font-medium text-slate-600">
+                Select an image
+              </p>
+              {availableImages.length === 0 ? (
+                <p className="mt-2 text-sm text-slate-500">
+                  No images found in S3 yet.
+                </p>
+              ) : (
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                  {availableImages.map((image) => {
+                    const isSelected = selectedImageKey === image.key;
+                    return (
+                      <button
+                        key={image.key}
+                        type="button"
+                        onClick={() => setSelectedImageKey(image.key)}
+                        className={`overflow-hidden rounded-2xl border p-3 text-left transition ${
+                          isSelected
+                            ? "border-accent bg-glow shadow-soft"
+                            : "border-slate-200 bg-white/70 hover:border-slate-300"
+                        }`}
+                      >
+                        <img
+                          src={image.url}
+                          alt={image.key}
+                          className="h-32 w-full rounded-xl object-cover"
+                        />
+                        <p className="mt-2 text-xs font-medium text-slate-600">
+                          {image.key}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-600">
+                Prompt
+              </label>
+              <textarea
+                className="mt-2 min-h-[96px] w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value)}
-                multiline
-                minRows={2}
               />
+            </div>
 
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <Button
-                  variant="contained"
-                  onClick={handleGenerate}
-                  disabled={!selectedImageKey || isGenerating}
-                >
-                  Start video job
-                </Button>
-                <Chip label={generationStatusLabel} variant="outlined" />
-              </Stack>
-
-              {isGenerating && <LinearProgress />}
-
-              {generationResponse && (
-                <Paper
-                  variant="outlined"
-                  sx={{ p: 2, bgcolor: "rgba(0, 0, 0, 0.02)" }}
-                >
-                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                    Job submitted
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Output: {generationResponse.outputS3Uri}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Model: {generationResponse.modelId}
-                  </Typography>
-                  {jobStatus && (
-                    <Typography variant="body2" color="text.secondary">
-                      Status: {jobStatus}
-                    </Typography>
-                  )}
-                </Paper>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                className="rounded-full bg-accent px-6 py-2 text-sm font-semibold text-white shadow-soft transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                onClick={handleGenerate}
+                disabled={!selectedImageKey || isGenerating}
+              >
+                Start video job
+              </button>
+              {jobStatus && (
+                <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500">
+                  Status: {jobStatus}
+                </span>
               )}
+            </div>
 
-              {videoUrl && (
-                <Paper variant="outlined" sx={{ p: 2 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                    Generated video
-                  </Typography>
-                  <Box
-                    component="video"
-                    src={videoUrl}
-                    controls
-                    sx={{ width: "100%", borderRadius: 2 }}
-                  />
-                </Paper>
-              )}
-            </Stack>
-          </Paper>
+            {isGenerating && (
+              <div className="flex items-center gap-3 text-xs text-slate-500">
+                <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+                Submitting and waiting for completion...
+              </div>
+            )}
 
-          {error && <Alert severity="error">{error}</Alert>}
-        </Stack>
-      </Container>
-    </Box>
+            {generationResponse && (
+              <div className="rounded-2xl border border-slate-200 bg-white/60 p-4 text-sm text-slate-600">
+                <p className="font-semibold text-ink">Job submitted</p>
+                <p className="mt-2">
+                  Output:{" "}
+                  <span className="font-mono">
+                    {generationResponse.outputS3Uri}
+                  </span>
+                </p>
+                <p className="mt-1">Model: {generationResponse.modelId}</p>
+              </div>
+            )}
+
+            {videoUrl && (
+              <div className="rounded-2xl border border-slate-200 bg-white/60 p-4">
+                <p className="text-sm font-semibold text-ink">
+                  Generated video
+                </p>
+                <video
+                  className="mt-3 w-full rounded-2xl"
+                  src={videoUrl}
+                  controls
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {error && (
+        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+    </section>
   );
 }
 

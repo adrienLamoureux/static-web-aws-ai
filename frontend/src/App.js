@@ -1,13 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
-import {
-  AppBar,
-  Box,
-  Button,
-  CssBaseline,
-  Toolbar,
-  Typography,
-} from "@mui/material";
 import Home from "./pages/Home";
 import About from "./pages/About";
 
@@ -39,31 +31,38 @@ function App() {
 
   return (
     <Router>
-      <CssBaseline />
-      <AppBar
-        position="static"
-        color="transparent"
-        elevation={0}
-        sx={{ borderBottom: "1px solid rgba(0, 0, 0, 0.08)" }}
-      >
-        <Toolbar sx={{ display: "flex", gap: 2 }}>
-          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 600 }}>
+      <div className="relative min-h-screen overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 noise-layer opacity-60" />
+        <div className="absolute inset-x-0 top-0 h-80 bg-[radial-gradient(circle_at_center,_rgba(26,70,217,0.12),_transparent_65%)] blur-3xl" />
+        <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6 md:px-10">
+          <Link
+            to="/"
+            className="text-lg font-semibold tracking-tight text-ink"
+          >
             Nova Reel Studio
-          </Typography>
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Button component={Link} to="/" color="inherit">
+          </Link>
+          <nav className="flex items-center gap-5 text-sm font-medium text-slate-600">
+            <Link
+              to="/"
+              className="transition hover:text-ink"
+            >
               Home
-            </Button>
-            <Button component={Link} to="/about" color="inherit">
+            </Link>
+            <Link
+              to="/about"
+              className="transition hover:text-ink"
+            >
               About
-            </Button>
-          </Box>
-        </Toolbar>
-      </AppBar>
-      <Routes>
-        <Route path="/" element={<Home apiBaseUrl={apiBaseUrl} />} />
-        <Route path="/about" element={<About />} />
-      </Routes>
+            </Link>
+          </nav>
+        </header>
+        <main className="relative z-10">
+          <Routes>
+            <Route path="/" element={<Home apiBaseUrl={apiBaseUrl} />} />
+            <Route path="/about" element={<About />} />
+          </Routes>
+        </main>
+      </div>
     </Router>
   );
 }
