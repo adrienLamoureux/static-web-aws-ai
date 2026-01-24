@@ -7,6 +7,7 @@ function Home({ apiBaseUrl = "" }) {
   const [message, setMessage] = useState("");
   const [imageSource, setImageSource] = useState("replicate");
   const [imageModel, setImageModel] = useState("animagine");
+  const [imageGenerationName, setImageGenerationName] = useState("");
   const [imagePrompt, setImagePrompt] = useState(
     "Anime key visual, cinematic lighting, clean line art, soft gradients"
   );
@@ -260,7 +261,6 @@ function Home({ apiBaseUrl = "" }) {
     setGenerationResponse(null);
     setInvocationArn("");
     setJobStatus("");
-    setAvailableVideos([]);
 
     try {
       const newOutputPrefix = `videos/${Date.now()}/`;
@@ -316,6 +316,7 @@ function Home({ apiBaseUrl = "" }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             model: imageModel,
+            imageName: imageGenerationName.trim() || undefined,
             prompt: imagePrompt.trim(),
             negativePrompt: imageNegativePrompt.trim() || undefined,
             width,
@@ -395,9 +396,6 @@ function Home({ apiBaseUrl = "" }) {
         <p className="text-xs font-semibold uppercase tracking-[0.32em] text-slate-500">
           API Status
         </p>
-        <h1 className="mt-5 text-3xl font-semibold text-ink md:text-5xl">
-          Image to video. Calm, precise, ready for production.
-        </h1>
         <p className="mt-4 max-w-2xl text-base text-slate-600 md:text-lg">
           {resolvedApiBaseUrl
             ? message || "Connecting to the API..."
@@ -483,15 +481,30 @@ function Home({ apiBaseUrl = "" }) {
                               {option.description}
                             </p>
                           </button>
-                        );
-                      })}
-                    </div>
+                      );
+                    })}
                   </div>
+                </div>
 
-                  <div>
-                    <label className="text-sm font-medium text-slate-600">
-                      Prompt
-                    </label>
+                <div>
+                  <label className="text-sm font-medium text-slate-600">
+                    Image name
+                  </label>
+                  <input
+                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                    value={imageGenerationName}
+                    onChange={(event) => setImageGenerationName(event.target.value)}
+                    placeholder="frieren"
+                  />
+                  <p className="mt-2 text-xs text-slate-500">
+                    Used for generated image and video filenames.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-slate-600">
+                    Prompt
+                  </label>
                     <textarea
                       className="mt-2 min-h-[96px] w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
                       value={imagePrompt}
@@ -572,6 +585,16 @@ function Home({ apiBaseUrl = "" }) {
                               <p className="mt-2 text-[11px] font-medium text-slate-600">
                                 {image.key}
                               </p>
+                              {image.url && (
+                                <a
+                                  className="mt-2 inline-flex rounded-full border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-accent hover:text-ink"
+                                  href={image.url}
+                                  download
+                                  onClick={(event) => event.stopPropagation()}
+                                >
+                                  Download
+                                </a>
+                              )}
                             </button>
                           );
                         })}
@@ -723,6 +746,16 @@ function Home({ apiBaseUrl = "" }) {
                         <p className="mt-2 text-xs font-medium text-slate-600">
                           {image.key}
                         </p>
+                        {image.url && (
+                          <a
+                            className="mt-2 inline-flex rounded-full border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-accent hover:text-ink"
+                            href={image.url}
+                            download
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            Download
+                          </a>
+                        )}
                       </button>
                     );
                   })}
@@ -752,11 +785,6 @@ function Home({ apiBaseUrl = "" }) {
               >
                 {isVideoInProgress ? "Generating…" : "Start video job"}
               </button>
-              {jobStatus && (
-                <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500">
-                  Status: {jobStatus}
-                </span>
-              )}
             </div>
 
             {isVideoInProgress && (

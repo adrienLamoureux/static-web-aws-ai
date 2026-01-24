@@ -15,7 +15,6 @@ const {
 } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const Replicate = require("replicate");
-const crypto = require("crypto");
 const Jimp = require("jimp");
 
 const app = express();
@@ -115,16 +114,21 @@ const replicateModelConfig = {
   },
 };
 
-const buildImageKey = ({ provider = "bedrock", index = 0 }) => {
+const buildSafeBaseName = (value = "") => {
+  const safeValue = value.replace(/[^a-zA-Z0-9._-]/g, "").trim();
+  return safeValue || "image";
+};
+
+const buildImageKey = ({ provider = "bedrock", index = 0, baseName = "" }) => {
   const safeProvider = provider.replace(/[^a-zA-Z0-9-_]/g, "");
-  return `images/${safeProvider}/${Date.now()}-${safeProvider}-${index}.png`;
+  const safeBase = buildSafeBaseName(baseName);
+  return `images/${safeProvider}/${safeBase}-${Date.now()}-${index}.png`;
 };
 
 const buildVideoReadyKey = (sourceKey = "") => {
   const baseName = sourceKey.split("/").pop()?.replace(/\.[^.]+$/, "") || "image";
-  const safeBase = baseName.replace(/[^a-zA-Z0-9._-]/g, "") || "image";
-  const hash = crypto.createHash("sha1").update(sourceKey).digest("hex").slice(0, 8);
-  return `images/video-ready/${safeBase}-${hash}.jpg`;
+  const safeBase = buildSafeBaseName(baseName);
+  return `images/video-ready/${safeBase}.jpg`;
 };
 
 const toVideoReadyBuffer = async (buffer) => {
@@ -155,7 +159,7 @@ const fetchImageBuffer = async (url) => {
 
 const buildVideoOutputKey = (inputKey = "", outputPrefix = "videos/") => {
   const baseName = inputKey.split("/").pop()?.replace(/\.[^.]+$/, "") || "video";
-  const safeBase = baseName.replace(/[^a-zA-Z0-9._-]/g, "") || "video";
+  const safeBase = buildSafeBaseName(baseName);
   return `${outputPrefix}${safeBase}.mp4`;
 };
 
@@ -438,6 +442,7 @@ app.get("/bedrock/nova-reel/job-status", async (req, res) => {
 app.post("/bedrock/image/generate", async (req, res) => {
   const mediaBucket = process.env.MEDIA_BUCKET;
   const modelKey = req.body?.model || "titan";
+  const imageName = req.body?.imageName?.trim();
   const prompt = req.body?.prompt?.trim();
   const negativePrompt = req.body?.negativePrompt?.trim();
   const maxPromptLength = 512;
@@ -449,6 +454,7 @@ app.post("/bedrock/image/generate", async (req, res) => {
 
   console.log("Bedrock image generate request:", {
     modelKey,
+    imageName,
     promptLength: prompt?.length || 0,
     hasNegativePrompt: Boolean(negativePrompt),
     width,
@@ -564,6 +570,7 @@ app.post("/bedrock/image/generate", async (req, res) => {
       const key = buildImageKey({
         provider: modelConfig.provider,
         index,
+        baseName: imageName,
       });
       await s3Client.send(
         new PutObjectCommand({
@@ -617,6 +624,7 @@ app.post("/replicate/image/generate", async (req, res) => {
   const mediaBucket = process.env.MEDIA_BUCKET;
   const apiToken = process.env.REPLICATE_API_TOKEN;
   const modelKey = req.body?.model || "animagine";
+  const imageName = req.body?.imageName?.trim();
   const prompt = req.body?.prompt?.trim();
   const negativePrompt = req.body?.negativePrompt?.trim();
   const width = Number(req.body?.width) || 1024;
@@ -626,6 +634,7 @@ app.post("/replicate/image/generate", async (req, res) => {
 
   console.log("Replicate image generate request:", {
     modelKey,
+    imageName,
     promptLength: prompt?.length || 0,
     hasNegativePrompt: Boolean(negativePrompt),
     width,
@@ -699,6 +708,7 @@ app.post("/replicate/image/generate", async (req, res) => {
       const key = buildImageKey({
         provider: "replicate",
         index,
+        baseName: imageName,
       });
       await s3Client.send(
         new PutObjectCommand({
