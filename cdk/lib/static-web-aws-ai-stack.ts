@@ -67,6 +67,7 @@ export class StaticWebAWSAIStack extends cdk.Stack {
 
     mediaBucket.grantPut(apiLambda);
     mediaBucket.grantRead(apiLambda);
+    mediaBucket.grantDelete(apiLambda);
 
     mediaBucket.addToResourcePolicy(
       new iam.PolicyStatement({

@@ -10,6 +10,8 @@ const {
   PutObjectCommand,
   GetObjectCommand,
   ListObjectsV2Command,
+  CopyObjectCommand,
+  DeleteObjectCommand,
 } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const Replicate = require("replicate");
@@ -151,6 +153,12 @@ const fetchImageBuffer = async (url) => {
   return { buffer: Buffer.from(arrayBuffer), contentType };
 };
 
+const buildVideoOutputKey = (inputKey = "", outputPrefix = "videos/") => {
+  const baseName = inputKey.split("/").pop()?.replace(/\.[^.]+$/, "") || "video";
+  const safeBase = baseName.replace(/[^a-zA-Z0-9._-]/g, "") || "video";
+  return `${outputPrefix}${safeBase}.mp4`;
+};
+
 app.get("/", (req, res) => {
   res.json({ message: "Hello from Express API on AWS Lambda!" });
 });
@@ -244,6 +252,8 @@ app.get("/s3/images", async (req, res) => {
 app.get("/s3/videos", async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
   const maxKeys = Number(req.query?.maxKeys) || 100;
+  const includeUrls = req.query?.includeUrls === "true";
+  const urlExpirationSeconds = 900;
 
   if (!bucket) {
     return res.status(500).json({ message: "MEDIA_BUCKET is not set" });
@@ -261,16 +271,32 @@ app.get("/s3/videos", async (req, res) => {
     const videos = (response.Contents || [])
       .filter((item) => item.Key && item.Key !== "videos/")
       .filter((item) => item.Key?.endsWith(".mp4"))
-      .map((item) => ({
-        key: item.Key,
-        lastModified: item.LastModified,
-        size: item.Size,
-      }))
+      .map((item) => {
+        const key = item.Key || "";
+        return {
+          key,
+          fileName: key.split("/").pop() || key,
+          lastModified: item.LastModified,
+          size: item.Size,
+        };
+      })
       .sort((a, b) => {
         const aTime = a.lastModified ? new Date(a.lastModified).getTime() : 0;
         const bTime = b.lastModified ? new Date(b.lastModified).getTime() : 0;
         return bTime - aTime;
       });
+
+    if (includeUrls) {
+      for (const video of videos) {
+        const command = new GetObjectCommand({
+          Bucket: bucket,
+          Key: video.key,
+        });
+        video.url = await getSignedUrl(s3Client, command, {
+          expiresIn: urlExpirationSeconds,
+        });
+      }
+    }
 
     res.json({ bucket, videos });
   } catch (error) {
@@ -347,6 +373,8 @@ app.get("/s3/video-url", async (req, res) => {
 
 app.get("/bedrock/nova-reel/job-status", async (req, res) => {
   const invocationArn = req.query?.invocationArn;
+  const inputKey = req.query?.inputKey;
+  const outputPrefix = req.query?.outputPrefix;
   if (!invocationArn) {
     return res.status(400).json({ message: "invocationArn is required" });
   }
@@ -354,6 +382,50 @@ app.get("/bedrock/nova-reel/job-status", async (req, res) => {
   try {
     const command = new GetAsyncInvokeCommand({ invocationArn });
     const response = await bedrockClient.send(command);
+    if (
+      response?.status === "Completed" &&
+      inputKey &&
+      outputPrefix &&
+      outputPrefix.startsWith("videos/")
+    ) {
+      const outputKey = buildVideoOutputKey(inputKey, outputPrefix);
+      const listResponse = await s3Client.send(
+        new ListObjectsV2Command({
+          Bucket: process.env.MEDIA_BUCKET,
+          Prefix: outputPrefix,
+          MaxKeys: 1000,
+        })
+      );
+      const mp4Object = (listResponse.Contents || []).find(
+        (item) => item.Key && item.Key.endsWith(".mp4")
+      );
+      if (mp4Object?.Key && mp4Object.Key !== outputKey) {
+        const existing = await s3Client.send(
+          new ListObjectsV2Command({
+            Bucket: process.env.MEDIA_BUCKET,
+            Prefix: outputKey,
+            MaxKeys: 1,
+          })
+        );
+        if (!existing.Contents?.length) {
+          await s3Client.send(
+            new CopyObjectCommand({
+              Bucket: process.env.MEDIA_BUCKET,
+              CopySource: `${process.env.MEDIA_BUCKET}/${mp4Object.Key}`,
+              Key: outputKey,
+              ContentType: "video/mp4",
+              MetadataDirective: "REPLACE",
+            })
+          );
+          await s3Client.send(
+            new DeleteObjectCommand({
+              Bucket: process.env.MEDIA_BUCKET,
+              Key: mp4Object.Key,
+            })
+          );
+        }
+      }
+    }
     res.json(response);
   } catch (error) {
     res.status(500).json({

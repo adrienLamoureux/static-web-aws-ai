@@ -37,6 +37,7 @@ function Home({ apiBaseUrl = "" }) {
 
   const isUploading = uploadStatus === "uploading";
   const isGenerating = generationStatus === "loading";
+  const isVideoInProgress = isGenerating || jobStatus === "InProgress";
   const isGeneratingImage = imageGenerationStatus === "loading";
 
   useEffect(() => {
@@ -67,7 +68,9 @@ function Home({ apiBaseUrl = "" }) {
   const refreshVideoList = async () => {
     if (!resolvedApiBaseUrl) return;
     try {
-      const response = await fetch(`${resolvedApiBaseUrl}/s3/videos`);
+      const response = await fetch(
+        `${resolvedApiBaseUrl}/s3/videos?includeUrls=true`
+      );
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.message || "Failed to load videos.");
@@ -352,7 +355,9 @@ function Home({ apiBaseUrl = "" }) {
         const response = await fetch(
           `${resolvedApiBaseUrl}/bedrock/nova-reel/job-status?invocationArn=${encodeURIComponent(
             invocationArn
-          )}`
+          )}&inputKey=${encodeURIComponent(
+            selectedImageKey
+          )}&outputPrefix=${encodeURIComponent(outputPrefix)}`
         );
         const data = await response.json();
         if (!response.ok) {
@@ -743,9 +748,9 @@ function Home({ apiBaseUrl = "" }) {
               <button
                 className="rounded-full bg-accent px-6 py-2 text-sm font-semibold text-white shadow-soft transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                 onClick={handleGenerate}
-                disabled={!selectedImageKey || isGenerating}
+                disabled={!selectedImageKey || isVideoInProgress}
               >
-                Start video job
+                {isVideoInProgress ? "Generating…" : "Start video job"}
               </button>
               {jobStatus && (
                 <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500">
@@ -754,10 +759,12 @@ function Home({ apiBaseUrl = "" }) {
               )}
             </div>
 
-            {isGenerating && (
+            {isVideoInProgress && (
               <div className="flex items-center gap-3 text-xs text-slate-500">
                 <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-                Submitting and waiting for completion...
+                {isGenerating
+                  ? "Submitting video job..."
+                  : "Rendering video in Bedrock..."}
               </div>
             )}
 
@@ -787,11 +794,22 @@ function Home({ apiBaseUrl = "" }) {
                   {availableVideos.map((video) => (
                     <div
                       key={video.key}
-                      className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white/70 px-3 py-2"
+                      className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white/70 px-3 py-2"
                     >
-                      <span className="font-mono text-xs text-ink">
-                        {video.key}
-                      </span>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-mono text-xs text-ink">
+                          {video.fileName || video.key}
+                        </span>
+                        {video.url && (
+                          <a
+                            className="rounded-full border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-accent hover:text-ink"
+                            href={video.url}
+                            download
+                          >
+                            Download
+                          </a>
+                        )}
+                      </div>
                       <span className="text-xs text-slate-500">
                         {video.lastModified
                           ? new Date(video.lastModified).toLocaleString()
