@@ -19,6 +19,7 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       handler: "lambda.handler",
       code: lambda.Code.fromAsset(path.join(__dirname, "../../backend")),
       memorySize: 512,
+      timeout: cdk.Duration.seconds(60),
     });
 
     const mediaBucket = new s3.Bucket(this, "MediaBucket", {
@@ -42,6 +43,15 @@ export class StaticWebAWSAIStack extends cdk.Stack {
     apiLambda.addEnvironment(
       "BEDROCK_MODEL_ID",
       process.env.BEDROCK_MODEL_ID || "amazon.nova-reel-v1:1"
+    );
+    apiLambda.addEnvironment(
+      "BEDROCK_TITAN_IMAGE_MODEL_ID",
+      process.env.BEDROCK_TITAN_IMAGE_MODEL_ID ||
+        "amazon.titan-image-generator-v2:0"
+    );
+    apiLambda.addEnvironment(
+      "REPLICATE_API_TOKEN",
+      process.env.REPLICATE_API_TOKEN || ""
     );
 
     apiLambda.addToRolePolicy(
@@ -77,6 +87,30 @@ export class StaticWebAWSAIStack extends cdk.Stack {
     const api = new apigateway.LambdaRestApi(this, "ApiGateway", {
       handler: apiLambda,
       proxy: true, // Direct all API Gateway traffic to Lambda
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowMethods: apigateway.Cors.ALL_METHODS,
+      },
+    });
+
+    new apigateway.GatewayResponse(this, "ApiGatewayDefault4xx", {
+      restApi: api,
+      type: apigateway.ResponseType.DEFAULT_4XX,
+      responseHeaders: {
+        "Access-Control-Allow-Origin": "'*'",
+        "Access-Control-Allow-Headers": "'*'",
+        "Access-Control-Allow-Methods": "'GET,POST,OPTIONS'",
+      },
+    });
+
+    new apigateway.GatewayResponse(this, "ApiGatewayDefault5xx", {
+      restApi: api,
+      type: apigateway.ResponseType.DEFAULT_5XX,
+      responseHeaders: {
+        "Access-Control-Allow-Origin": "'*'",
+        "Access-Control-Allow-Headers": "'*'",
+        "Access-Control-Allow-Methods": "'GET,POST,OPTIONS'",
+      },
     });
 
     // S3 Bucket for static site

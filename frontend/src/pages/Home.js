@@ -3,21 +3,19 @@ import React, { useEffect, useMemo, useState } from "react";
 const buildSafeFileName = (name = "") =>
   name.replace(/\s+/g, "-").replace(/[^a-zA-Z0-9._-]/g, "");
 
-const getImageDimensions = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error("Failed to read image."));
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => resolve({ width: img.width, height: img.height });
-      img.onerror = () => reject(new Error("Failed to load image."));
-      img.src = event.target?.result;
-    };
-    reader.readAsDataURL(file);
-  });
-
 function Home({ apiBaseUrl = "" }) {
   const [message, setMessage] = useState("");
+  const [imageSource, setImageSource] = useState("replicate");
+  const [imageModel, setImageModel] = useState("animagine");
+  const [imagePrompt, setImagePrompt] = useState(
+    "Anime key visual, cinematic lighting, clean line art, soft gradients"
+  );
+  const [imageNegativePrompt, setImageNegativePrompt] = useState(
+    "photorealistic, 3d render, text, watermark"
+  );
+  const [imageSize, setImageSize] = useState("1280x720");
+  const [generatedImages, setGeneratedImages] = useState([]);
+  const [imageGenerationStatus, setImageGenerationStatus] = useState("idle");
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [prompt, setPrompt] = useState("A cinematic push-in on the scene.");
@@ -32,13 +30,14 @@ function Home({ apiBaseUrl = "" }) {
   const [invocationArn, setInvocationArn] = useState("");
   const [outputPrefix, setOutputPrefix] = useState("");
   const [jobStatus, setJobStatus] = useState("");
-  const [videoUrl, setVideoUrl] = useState("");
+  const [availableVideos, setAvailableVideos] = useState([]);
 
   const resolvedApiBaseUrl =
     apiBaseUrl || process.env.REACT_APP_API_URL || "";
 
   const isUploading = uploadStatus === "uploading";
   const isGenerating = generationStatus === "loading";
+  const isGeneratingImage = imageGenerationStatus === "loading";
 
   useEffect(() => {
     if (!resolvedApiBaseUrl) return;
@@ -56,25 +55,24 @@ function Home({ apiBaseUrl = "" }) {
       if (!response.ok) {
         throw new Error(data?.message || "Failed to load images.");
       }
-      setAvailableImages(data.images || []);
+      const filteredImages = (data.images || []).filter((image) =>
+        image.key?.startsWith("images/video-ready/")
+      );
+      setAvailableImages(filteredImages);
     } catch (err) {
       console.error(err);
     }
   };
 
-  const fetchVideoUrl = async () => {
-    if (!resolvedApiBaseUrl || !outputPrefix) return;
+  const refreshVideoList = async () => {
+    if (!resolvedApiBaseUrl) return;
     try {
-      const response = await fetch(
-        `${resolvedApiBaseUrl}/s3/video-url?prefix=${encodeURIComponent(
-          outputPrefix
-        )}`
-      );
+      const response = await fetch(`${resolvedApiBaseUrl}/s3/videos`);
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data?.message || "Failed to load video.");
+        throw new Error(data?.message || "Failed to load videos.");
       }
-      setVideoUrl(data.url || "");
+      setAvailableVideos(data.videos || []);
     } catch (err) {
       console.error(err);
     }
@@ -82,6 +80,7 @@ function Home({ apiBaseUrl = "" }) {
 
   useEffect(() => {
     refreshImageList();
+    refreshVideoList();
   }, [resolvedApiBaseUrl]);
 
   useEffect(() => {
@@ -107,6 +106,69 @@ function Home({ apiBaseUrl = "" }) {
     if (generationStatus === "error") return "Submission failed";
     return "Idle";
   }, [generationStatus]);
+
+  const imageModelOptions = useMemo(() => {
+    if (imageSource === "bedrock") {
+      return [
+        {
+          key: "titan",
+          name: "Titan Image Generator",
+          description: "Clean, consistent outputs",
+        },
+      ];
+    }
+    return [
+      {
+        key: "animagine",
+        name: "Animagine XL v4 Opt",
+        description: "High-fidelity anime characters",
+      },
+      {
+        key: "proteus",
+        name: "Proteus v0.3",
+        description: "Stylized anime portraits",
+      },
+    ];
+  }, [imageSource]);
+
+  const imageSizeOptions = useMemo(() => {
+    if (imageSource === "bedrock") {
+      return [{ value: "1024x1024", label: "1024x1024 (Square)" }];
+    }
+    return [{ value: "1024x1024", label: "1024x1024 (Square)" }];
+  }, [imageSource, imageModel]);
+
+  useEffect(() => {
+    const allowedValues = imageSizeOptions.map((option) => option.value);
+    if (!allowedValues.includes(imageSize)) {
+      setImageSize(imageSizeOptions[0]?.value || "1024x1024");
+    }
+  }, [imageModel, imageSizeOptions, imageSize]);
+
+  useEffect(() => {
+    const allowedModels = imageModelOptions.map((option) => option.key);
+    if (!allowedModels.includes(imageModel)) {
+      setImageModel(imageModelOptions[0]?.key || "titan");
+    }
+  }, [imageModel, imageModelOptions]);
+
+  const imageSourceOptions = [
+    {
+      key: "bedrock",
+      name: "Generate with Bedrock",
+      description: "Amazon Titan Image Generator",
+    },
+    {
+      key: "replicate",
+      name: "Generate with Replicate",
+      description: "Anime-focused models",
+    },
+    {
+      key: "upload",
+      name: "Upload a JPEG",
+      description: "Send your own image to S3",
+    },
+  ];
 
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
@@ -141,17 +203,13 @@ function Home({ apiBaseUrl = "" }) {
     setGenerationResponse(null);
     setInvocationArn("");
     setJobStatus("");
-    setVideoUrl("");
+    setAvailableVideos([]);
 
     const safeName = buildSafeFileName(imageName.trim()) || "upload";
     const key = `images/${safeName}.jpg`;
     const contentType = selectedFile.type || "application/octet-stream";
 
     try {
-      const dimensions = await getImageDimensions(selectedFile);
-      if (dimensions.width !== 1280 || dimensions.height !== 720) {
-        throw new Error("Image must be 1280x720 pixels.");
-      }
       const presignResponse = await fetch(
         `${resolvedApiBaseUrl}/s3/image-upload-url`,
         {
@@ -176,7 +234,7 @@ function Home({ apiBaseUrl = "" }) {
       }
 
       setUploadKey(presignData.key);
-      setSelectedImageKey(presignData.key);
+      setSelectedImageKey("");
       setUploadStatus("uploaded");
     } catch (err) {
       setUploadStatus("error");
@@ -199,7 +257,7 @@ function Home({ apiBaseUrl = "" }) {
     setGenerationResponse(null);
     setInvocationArn("");
     setJobStatus("");
-    setVideoUrl("");
+    setAvailableVideos([]);
 
     try {
       const newOutputPrefix = `videos/${Date.now()}/`;
@@ -229,6 +287,60 @@ function Home({ apiBaseUrl = "" }) {
     }
   };
 
+  const handleGenerateImage = async () => {
+    if (!resolvedApiBaseUrl) {
+      setError("API base URL is missing. Set it in config.json or .env.");
+      return;
+    }
+    if (!imagePrompt.trim()) {
+      setError("Prompt is required.");
+      return;
+    }
+    setError("");
+    setImageGenerationStatus("loading");
+    setGeneratedImages([]);
+
+    try {
+      const [width, height] = imageSize.split("x").map(Number);
+      const endpoint =
+        imageSource === "bedrock"
+          ? "/bedrock/image/generate"
+          : "/replicate/image/generate";
+      const response = await fetch(
+        `${resolvedApiBaseUrl}${endpoint}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: imageModel,
+            prompt: imagePrompt.trim(),
+            negativePrompt: imageNegativePrompt.trim() || undefined,
+            width,
+            height,
+          }),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.message || "Failed to generate image.");
+      }
+      const images = data?.images || [];
+      setGeneratedImages(images);
+      if (images[0]?.key) {
+        setSelectedImageKey(images[0]?.videoReadyKey || images[0].key);
+      }
+      setImageGenerationStatus("success");
+      await refreshImageList();
+    } catch (err) {
+      setImageGenerationStatus("error");
+      setError(err?.message || "Image generation failed.");
+    }
+  };
+
+  const handleSelectForVideo = (image) => {
+    setSelectedImageKey(image.key);
+  };
+
   useEffect(() => {
     if (!invocationArn || !resolvedApiBaseUrl) return undefined;
     let timeoutId;
@@ -249,7 +361,7 @@ function Home({ apiBaseUrl = "" }) {
         const status = data?.status || "";
         setJobStatus(status);
         if (status === "Completed") {
-          await fetchVideoUrl();
+          await refreshVideoList();
           return;
         }
         if (status === "Failed") {
@@ -288,104 +400,279 @@ function Home({ apiBaseUrl = "" }) {
         </p>
       </div>
 
-      <div className="mt-10 grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+      <div className="mt-10">
+        <div className="glass-panel animate-fade-up rounded-[28px] p-7 shadow-card md:p-9">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
+                Step 00
+              </p>
+              <h2 className="mt-3 text-xl font-semibold text-ink">
+                Create an image
+              </h2>
+            </div>
+            {(isGeneratingImage || isUploading) && (
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
+                {isUploading ? "Uploading…" : "Rendering…"}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-6 space-y-6">
+            <div>
+              <p className="text-sm font-medium text-slate-600">
+                Choose a source
+              </p>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                {imageSourceOptions.map((option) => {
+                  const isSelected = imageSource === option.key;
+                  return (
+                    <button
+                      key={option.key}
+                      type="button"
+                      onClick={() => setImageSource(option.key)}
+                      className={`rounded-2xl border p-4 text-left transition ${
+                        isSelected
+                          ? "border-accent bg-glow shadow-soft"
+                          : "border-slate-200 bg-white/70 hover:border-slate-300"
+                      }`}
+                    >
+                      <p className="text-sm font-semibold text-ink">
+                        {option.name}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {option.description}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {imageSource !== "upload" ? (
+              <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium text-slate-600">
+                      Choose a model
+                    </p>
+                    <div className="mt-3 grid gap-3 md:grid-cols-2">
+                      {imageModelOptions.map((option) => {
+                        const isSelected = imageModel === option.key;
+                        return (
+                          <button
+                            key={option.key}
+                            type="button"
+                            onClick={() => setImageModel(option.key)}
+                            className={`rounded-2xl border p-4 text-left transition ${
+                              isSelected
+                                ? "border-accent bg-glow shadow-soft"
+                                : "border-slate-200 bg-white/70 hover:border-slate-300"
+                            }`}
+                          >
+                            <p className="text-sm font-semibold text-ink">
+                              {option.name}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              {option.description}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-slate-600">
+                      Prompt
+                    </label>
+                    <textarea
+                      className="mt-2 min-h-[96px] w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                      value={imagePrompt}
+                      onChange={(event) => setImagePrompt(event.target.value)}
+                      maxLength={512}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-slate-600">
+                      Negative prompt
+                    </label>
+                    <textarea
+                      className="mt-2 min-h-[72px] w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                      value={imageNegativePrompt}
+                      onChange={(event) =>
+                        setImageNegativePrompt(event.target.value)
+                      }
+                      maxLength={512}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-slate-600">
+                      Size preset
+                    </label>
+                    <select
+                      className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                      value={imageSize}
+                      onChange={(event) => setImageSize(event.target.value)}
+                    >
+                      {imageSizeOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <button
+                    className="w-full rounded-full bg-ink px-6 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-black/90 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    onClick={handleGenerateImage}
+                    disabled={isGeneratingImage || !imagePrompt.trim()}
+                  >
+                    Generate image
+                  </button>
+
+                  {generatedImages.length > 0 && (
+                    <div className="rounded-2xl border border-slate-200 bg-white/70 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                        Latest generations
+                      </p>
+                      <div className="mt-3 grid gap-3 md:grid-cols-2">
+                        {generatedImages.map((image) => {
+                          const isSelected = selectedImageKey === image.key;
+                          return (
+                            <button
+                              key={image.key}
+                              type="button"
+                              onClick={() =>
+                                setSelectedImageKey(
+                                  image.videoReadyKey || image.key
+                                )
+                              }
+                              className={`overflow-hidden rounded-2xl border p-2 text-left transition ${
+                                isSelected
+                                  ? "border-accent bg-glow shadow-soft"
+                                  : "border-slate-200 bg-white/70 hover:border-slate-300"
+                              }`}
+                            >
+                              <img
+                                src={image.url}
+                                alt={image.key}
+                                className="h-32 w-full rounded-xl object-cover"
+                              />
+                              <p className="mt-2 text-[11px] font-medium text-slate-600">
+                                {image.key}
+                              </p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {isGeneratingImage && (
+                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                      <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+                      Rendering and uploading to S3...
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-slate-600">
+                      Image name
+                    </label>
+                    <input
+                      className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                      value={imageName}
+                      onChange={(event) => setImageName(event.target.value)}
+                      placeholder="frieren"
+                    />
+                    <p className="mt-2 text-xs text-slate-500">
+                      Stored as <span className="font-mono">images/NAME.jpg</span>
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-accent hover:text-ink">
+                      Choose image
+                      <input
+                        hidden
+                        type="file"
+                        accept="image/jpeg"
+                        onChange={handleFileChange}
+                      />
+                    </label>
+                    <button
+                      className="rounded-full bg-ink px-5 py-2 text-sm font-semibold text-white transition hover:bg-black/90 disabled:cursor-not-allowed disabled:bg-slate-300"
+                      onClick={handleUpload}
+                      disabled={!selectedFile || isUploading || !imageName.trim()}
+                    >
+                      Upload to S3
+                    </button>
+                  </div>
+
+                  {isUploading && (
+                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                      <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+                      Uploading image to S3...
+                    </div>
+                  )}
+
+                  {uploadKey && (
+                    <p className="text-sm text-slate-500">
+                      Uploaded as{" "}
+                      <span className="font-mono text-ink">{uploadKey}</span>
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  {selectedFile && (
+                    <div className="grid gap-4 rounded-2xl border border-slate-200 bg-white/60 p-4 md:grid-cols-[1.2fr_1fr]">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.26em] text-slate-500">
+                          Selected image
+                        </p>
+                        <p className="mt-2 text-base font-semibold text-ink">
+                          {selectedFile.name}
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          {Math.round(selectedFile.size / 1024)} KB
+                        </p>
+                      </div>
+                      {previewUrl && (
+                        <img
+                          src={previewUrl}
+                          alt="Preview"
+                          className="h-40 w-full rounded-2xl border border-slate-200 object-cover"
+                        />
+                      )}
+                    </div>
+                  )}
+                  <p className="text-xs text-slate-500">
+                    JPEG only, 1280x720 recommended.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6">
         <div className="glass-panel animate-fade-up rounded-[28px] p-7 shadow-card md:p-9">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
                 Step 01
-              </p>
-              <h2 className="mt-3 text-xl font-semibold text-ink">
-                Upload your image
-              </h2>
-            </div>
-            {isUploading && (
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-                <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
-                Uploading…
-              </div>
-            )}
-          </div>
-
-          <div className="mt-6 space-y-4">
-            <div>
-              <label className="text-sm font-medium text-slate-600">
-                Image name
-              </label>
-              <input
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
-                value={imageName}
-                onChange={(event) => setImageName(event.target.value)}
-                placeholder="frieren"
-              />
-              <p className="mt-2 text-xs text-slate-500">
-                Stored as <span className="font-mono">images/NAME.jpg</span>
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-accent hover:text-ink">
-                Choose image
-                <input
-                  hidden
-                  type="file"
-                  accept="image/jpeg"
-                  onChange={handleFileChange}
-                />
-              </label>
-              <button
-                className="rounded-full bg-ink px-5 py-2 text-sm font-semibold text-white transition hover:bg-black/90 disabled:cursor-not-allowed disabled:bg-slate-300"
-                onClick={handleUpload}
-                disabled={!selectedFile || isUploading || !imageName.trim()}
-              >
-                Upload to S3
-              </button>
-            </div>
-
-            {isUploading && (
-              <div className="flex items-center gap-3 text-xs text-slate-500">
-                <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-                Uploading image to S3...
-              </div>
-            )}
-
-            {selectedFile && (
-              <div className="grid gap-4 rounded-2xl border border-slate-200 bg-white/60 p-4 md:grid-cols-[1.2fr_1fr]">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.26em] text-slate-500">
-                    Selected image
-                  </p>
-                  <p className="mt-2 text-base font-semibold text-ink">
-                    {selectedFile.name}
-                  </p>
-                  <p className="text-sm text-slate-500">
-                    {Math.round(selectedFile.size / 1024)} KB
-                  </p>
-                </div>
-                {previewUrl && (
-                  <img
-                    src={previewUrl}
-                    alt="Preview"
-                    className="h-40 w-full rounded-2xl border border-slate-200 object-cover"
-                  />
-                )}
-              </div>
-            )}
-
-            {uploadKey && (
-              <p className="text-sm text-slate-500">
-                Uploaded as{" "}
-                <span className="font-mono text-ink">{uploadKey}</span>
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="glass-panel animate-fade-up rounded-[28px] p-7 shadow-card md:p-9">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
-                Step 02
               </p>
               <h2 className="mt-3 text-xl font-semibold text-ink">
                 Generate the video
@@ -416,7 +703,7 @@ function Home({ apiBaseUrl = "" }) {
                       <button
                         key={image.key}
                         type="button"
-                        onClick={() => setSelectedImageKey(image.key)}
+                        onClick={() => handleSelectForVideo(image)}
                         className={`overflow-hidden rounded-2xl border p-3 text-left transition ${
                           isSelected
                             ? "border-accent bg-glow shadow-soft"
@@ -436,6 +723,9 @@ function Home({ apiBaseUrl = "" }) {
                   })}
                 </div>
               )}
+              <p className="mt-3 text-xs text-slate-500">
+                Showing video-ready images only.
+              </p>
             </div>
 
             <div>
@@ -484,18 +774,37 @@ function Home({ apiBaseUrl = "" }) {
               </div>
             )}
 
-            {videoUrl && (
-              <div className="rounded-2xl border border-slate-200 bg-white/60 p-4">
-                <p className="text-sm font-semibold text-ink">
-                  Generated video
+            <div className="rounded-2xl border border-slate-200 bg-white/60 p-4">
+              <p className="text-sm font-semibold text-ink">
+                Available videos in S3
+              </p>
+              {availableVideos.length === 0 ? (
+                <p className="mt-2 text-sm text-slate-500">
+                  No videos found yet.
                 </p>
-                <video
-                  className="mt-3 w-full rounded-2xl"
-                  src={videoUrl}
-                  controls
-                />
-              </div>
-            )}
+              ) : (
+                <div className="mt-3 space-y-2 text-sm text-slate-600">
+                  {availableVideos.map((video) => (
+                    <div
+                      key={video.key}
+                      className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white/70 px-3 py-2"
+                    >
+                      <span className="font-mono text-xs text-ink">
+                        {video.key}
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        {video.lastModified
+                          ? new Date(video.lastModified).toLocaleString()
+                          : "Unknown time"}
+                        {typeof video.size === "number"
+                          ? ` · ${Math.round(video.size / 1024)} KB`
+                          : ""}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
