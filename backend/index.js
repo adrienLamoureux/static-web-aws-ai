@@ -163,6 +163,59 @@ const buildVideoOutputKey = (inputKey = "", outputPrefix = "videos/") => {
   return `${outputPrefix}${safeBase}.mp4`;
 };
 
+const getReplicateOutputUrl = (output) => {
+  if (!output) return null;
+  if (typeof output === "string") return output;
+  if (typeof output.url === "function") return output.url();
+  if (typeof output.url === "string") return output.url;
+  return null;
+};
+
+const replicateVideoConfig = {
+  "wan-2.2-i2v-fast": {
+    modelId: "wan-video/wan-2.2-i2v-fast",
+    requiresImage: true,
+    buildInput: ({ imageUrl, prompt }) => ({
+      image: imageUrl,
+      prompt,
+      go_fast: true,
+      num_frames: 81,
+      resolution: "480p",
+      sample_shift: 12,
+      frames_per_second: 16,
+      interpolate_output: false,
+      lora_scale_transformer: 1,
+      lora_scale_transformer_2: 1,
+      disable_safety_checker: true,
+    }),
+  },
+  "veo-3.1-fast": {
+    modelId: "google/veo-3.1-fast",
+    requiresImage: true,
+    buildInput: ({ imageUrl, prompt }) => ({
+      image: imageUrl,
+      prompt,
+      duration: 8,
+      resolution: "720p",
+      aspect_ratio: "16:9",
+      generate_audio: true,
+      last_frame: imageUrl,
+    }),
+  },
+  "kling-v2.6": {
+    modelId: "kling/kling-v2.6",
+    requiresImage: true,
+    buildInput: ({ prompt, imageUrl }) => ({
+      prompt,
+      start_image: imageUrl,
+      duration: 5,
+      aspect_ratio: "16:9",
+      generate_audio: true,
+      negative_prompt: "",
+    }),
+  },
+};
+
 app.get("/", (req, res) => {
   res.json({ message: "Hello from Express API on AWS Lambda!" });
 });
@@ -684,15 +737,7 @@ app.post("/replicate/image/generate", async (req, res) => {
     });
     const output = await replicateClient.run(modelConfig.modelId, { input });
     const outputItems = Array.isArray(output) ? output : [output];
-    const urls = outputItems
-      .map((item) => {
-        if (!item) return null;
-        if (typeof item === "string") return item;
-        if (typeof item.url === "function") return item.url();
-        if (typeof item.url === "string") return item.url;
-        return null;
-      })
-      .filter(Boolean);
+    const urls = outputItems.map(getReplicateOutputUrl).filter(Boolean);
 
     if (!urls.length) {
       return res.status(500).json({
@@ -758,12 +803,98 @@ app.post("/replicate/image/generate", async (req, res) => {
   }
 });
 
+app.post("/replicate/video/generate", async (req, res) => {
+  const mediaBucket = process.env.MEDIA_BUCKET;
+  const apiToken = process.env.REPLICATE_API_TOKEN;
+  const modelKey = req.body?.model || "wan-2.2-i2v-fast";
+  const inputKey = req.body?.inputKey;
+  const imageUrl = req.body?.imageUrl;
+  const prompt = req.body?.prompt?.trim();
+
+  if (!mediaBucket) {
+    return res.status(500).json({ message: "MEDIA_BUCKET must be set" });
+  }
+  if (!apiToken) {
+    return res
+      .status(500)
+      .json({ message: "REPLICATE_API_TOKEN must be set" });
+  }
+  if (!inputKey) {
+    return res.status(400).json({ message: "inputKey is required" });
+  }
+  if (!imageUrl) {
+    return res.status(400).json({ message: "imageUrl is required" });
+  }
+  if (!prompt) {
+    return res.status(400).json({ message: "prompt is required" });
+  }
+
+  const modelConfig = replicateVideoConfig[modelKey];
+  if (!modelConfig) {
+    return res.status(400).json({
+      message: `Unsupported model selection: ${modelKey}`,
+      allowed: Object.keys(replicateVideoConfig),
+    });
+  }
+  if (modelConfig.requiresImage && !imageUrl) {
+    return res.status(400).json({ message: "imageUrl is required" });
+  }
+  const input = modelConfig.buildInput({
+    imageUrl,
+    prompt,
+  });
+
+  try {
+    console.log("Replicate video generate invoke:", {
+      modelId: modelConfig.modelId,
+      inputKey,
+    });
+    const output = await replicateClient.run(modelConfig.modelId, { input });
+    const outputUrl = getReplicateOutputUrl(output);
+    if (!outputUrl) {
+      return res.status(500).json({
+        message: "No video returned from Replicate",
+        response: output,
+      });
+    }
+    const { buffer, contentType } = await fetchImageBuffer(outputUrl);
+    const outputKey = buildVideoOutputKey(inputKey, "videos/");
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: mediaBucket,
+        Key: outputKey,
+        Body: buffer,
+        ContentType: contentType || "video/mp4",
+      })
+    );
+
+    res.json({
+      modelId: modelConfig.modelId,
+      provider: "replicate",
+      outputKey,
+      outputUrl,
+    });
+  } catch (error) {
+    console.error("Replicate video generation error details:", {
+      name: error?.name,
+      message: error?.message,
+      metadata: error?.$metadata,
+      cause: error?.cause,
+    });
+    res.status(500).json({
+      message: "Replicate video generation failed",
+      error: error?.message || String(error),
+    });
+  }
+});
+
 app.post("/bedrock/nova-reel/image-to-video-s3", async (req, res) => {
   const prompt = req.body?.prompt || "A cinematic push-in on the scene.";
   const mediaBucket = process.env.MEDIA_BUCKET;
   const inputKey = req.body?.inputKey;
   const outputPrefix =
     req.body?.outputPrefix || req.body?.outputKey || "videos/";
+  const requestedModel = req.body?.model;
 
   if (!mediaBucket) {
     return res.status(500).json({
@@ -789,7 +920,9 @@ app.post("/bedrock/nova-reel/image-to-video-s3", async (req, res) => {
   const outputS3Uri = `s3://${mediaBucket}/${outputPrefix}`;
   // const outputS3Uri = "s3://staticwebawsaistack-mediabucketbcbb02ba-crjbe2oeh2eo/videos/"
   const modelId =
-    process.env.BEDROCK_MODEL_ID || "amazon.nova-reel-v1:1";
+    requestedModel === "nova-reel"
+      ? "amazon.nova-reel-v1:1"
+      : process.env.BEDROCK_MODEL_ID || "amazon.nova-reel-v1:1";
   const inputExtension = inputKey.split(".").pop()?.toLowerCase();
   const imageFormat = inputExtension === "jpg" ? "jpeg" : inputExtension;
   if (imageFormat !== "jpeg" && imageFormat !== "png") {

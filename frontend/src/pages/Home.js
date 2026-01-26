@@ -23,6 +23,8 @@ function Home({ apiBaseUrl = "" }) {
   const [imageName, setImageName] = useState("");
   const [uploadKey, setUploadKey] = useState("");
   const [selectedImageKey, setSelectedImageKey] = useState("");
+  const [videoProvider, setVideoProvider] = useState("bedrock");
+  const [videoModel, setVideoModel] = useState("nova-reel");
   const [availableImages, setAvailableImages] = useState([]);
   const [uploadStatus, setUploadStatus] = useState("idle");
   const [generationStatus, setGenerationStatus] = useState("idle");
@@ -174,6 +176,55 @@ function Home({ apiBaseUrl = "" }) {
     },
   ];
 
+  const videoProviderOptions = [
+    {
+      key: "bedrock",
+      name: "Bedrock",
+      description: "Nova Reel",
+    },
+    {
+      key: "replicate",
+      name: "Replicate",
+      description: "WAN i2v fast",
+    },
+  ];
+
+  const videoModelOptions = useMemo(() => {
+    if (videoProvider === "replicate") {
+      return [
+        {
+          key: "wan-2.2-i2v-fast",
+          name: "wan-2.2-i2v-fast",
+          description: "Image-to-video fast",
+        },
+        {
+          key: "veo-3.1-fast",
+          name: "veo-3.1-fast",
+          description: "Image-to-video with audio",
+        },
+        {
+          key: "kling-v2.6",
+          name: "kling-v2.6",
+          description: "Text-to-video",
+        },
+      ];
+    }
+    return [
+      {
+        key: "nova-reel",
+        name: "amazon.nova-reel-v1:1",
+        description: "Bedrock Nova Reel",
+      },
+    ];
+  }, [videoProvider]);
+
+  useEffect(() => {
+    const allowedModels = videoModelOptions.map((option) => option.key);
+    if (!allowedModels.includes(videoModel)) {
+      setVideoModel(videoModelOptions[0]?.key || "nova-reel");
+    }
+  }, [videoModel, videoModelOptions]);
+
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -263,27 +314,57 @@ function Home({ apiBaseUrl = "" }) {
     setJobStatus("");
 
     try {
-      const newOutputPrefix = `videos/${Date.now()}/`;
-      const response = await fetch(
-        `${resolvedApiBaseUrl}/bedrock/nova-reel/image-to-video-s3`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt: prompt?.trim() || undefined,
-            inputKey: selectedImageKey,
-            outputPrefix: newOutputPrefix,
-          }),
+      if (videoProvider === "replicate") {
+        const selectedImage = availableImages.find(
+          (image) => image.key === selectedImageKey
+        );
+        if (!selectedImage?.url) {
+          throw new Error("Selected image URL is missing.");
         }
-      );
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data?.message || "Failed to start video generation.");
+        const response = await fetch(
+          `${resolvedApiBaseUrl}/replicate/video/generate`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: videoModel,
+              prompt: prompt?.trim() || undefined,
+              inputKey: selectedImageKey,
+              imageUrl: selectedImage.url,
+            }),
+          }
+        );
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data?.message || "Failed to start video generation.");
+        }
+        setGenerationResponse(data);
+        setGenerationStatus("success");
+        await refreshVideoList();
+      } else {
+        const newOutputPrefix = `videos/${Date.now()}/`;
+        const response = await fetch(
+          `${resolvedApiBaseUrl}/bedrock/nova-reel/image-to-video-s3`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              prompt: prompt?.trim() || undefined,
+              inputKey: selectedImageKey,
+              outputPrefix: newOutputPrefix,
+              model: videoModel,
+            }),
+          }
+        );
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data?.message || "Failed to start video generation.");
+        }
+        setGenerationResponse(data);
+        setGenerationStatus("success");
+        setInvocationArn(data?.response?.invocationArn || "");
+        setOutputPrefix(newOutputPrefix);
       }
-      setGenerationResponse(data);
-      setGenerationStatus("success");
-      setInvocationArn(data?.response?.invocationArn || "");
-      setOutputPrefix(newOutputPrefix);
     } catch (err) {
       setGenerationStatus("error");
       setError(err?.message || "Video generation failed.");
@@ -715,6 +796,62 @@ function Home({ apiBaseUrl = "" }) {
           </div>
 
           <div className="mt-6 space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <p className="text-sm font-medium text-slate-600">
+                  Video provider
+                </p>
+                <div className="mt-3 grid gap-2">
+                  {videoProviderOptions.map((option) => {
+                    const isSelected = videoProvider === option.key;
+                    return (
+                      <button
+                        key={option.key}
+                        type="button"
+                        onClick={() => setVideoProvider(option.key)}
+                        className={`rounded-2xl border px-4 py-3 text-left text-sm transition ${
+                          isSelected
+                            ? "border-accent bg-glow shadow-soft"
+                            : "border-slate-200 bg-white/70 hover:border-slate-300"
+                        }`}
+                      >
+                        <p className="font-semibold text-ink">{option.name}</p>
+                        <p className="text-xs text-slate-500">
+                          {option.description}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm font-medium text-slate-600">Model</p>
+                <div className="mt-3 grid gap-2">
+                  {videoModelOptions.map((option) => {
+                    const isSelected = videoModel === option.key;
+                    return (
+                      <button
+                        key={option.key}
+                        type="button"
+                        onClick={() => setVideoModel(option.key)}
+                        className={`rounded-2xl border px-4 py-3 text-left text-sm transition ${
+                          isSelected
+                            ? "border-accent bg-glow shadow-soft"
+                            : "border-slate-200 bg-white/70 hover:border-slate-300"
+                        }`}
+                      >
+                        <p className="font-semibold text-ink">{option.name}</p>
+                        <p className="text-xs text-slate-500">
+                          {option.description}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
             <div>
               <p className="text-sm font-medium text-slate-600">
                 Select an image
