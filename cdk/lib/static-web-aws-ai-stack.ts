@@ -19,7 +19,7 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       handler: "lambda.handler",
       code: lambda.Code.fromAsset(path.join(__dirname, "../../backend")),
       memorySize: 512,
-      timeout: cdk.Duration.seconds(60),
+      timeout: cdk.Duration.seconds(120),
     });
 
     const mediaBucket = new s3.Bucket(this, "MediaBucket", {

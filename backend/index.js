@@ -42,6 +42,12 @@ const s3Client = new S3Client({
 const replicateClient = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN || "",
 });
+const promptHelperModelId =
+  process.env.BEDROCK_PROMPT_HELPER_INFERENCE_PROFILE_ARN ||
+  process.env.BEDROCK_PROMPT_HELPER_MODEL_ID ||
+  process.env.BEDROCK_CLAUDE_MODEL_ID ||
+  "us.anthropic.claude-haiku-4-5-20251001-v1:0";
+
 
 const imageModelConfig = {
   titan: {
@@ -60,7 +66,12 @@ const replicateModelConfig = {
   animagine: {
     modelId:
       "aisha-ai-official/animagine-xl-v4-opt:cfd0f86fbcd03df45fca7ce83af9bb9c07850a3317303fe8dcf677038541db8a",
-    sizes: [{ width: 1024, height: 1024 }],
+    sizes: [
+      { width: 1280, height: 720 },
+      { width: 1024, height: 1024 },
+      { width: 768, height: 1024 },
+    ],
+    schedulers: ["Euler a", "DPM++ 2M Karras"],
     buildInput: ({
       prompt,
       negativePrompt,
@@ -68,6 +79,7 @@ const replicateModelConfig = {
       height,
       numOutputs,
       seed,
+      scheduler,
     }) => ({
       vae: "default",
       model: "Animagine-XL-v4-Opt",
@@ -79,7 +91,7 @@ const replicateModelConfig = {
       cfg_scale: 5,
       clip_skip: 1,
       pag_scale: 1,
-      scheduler: "Euler a",
+      scheduler: scheduler || "Euler a",
       batch_size: numOutputs,
       negative_prompt: negativePrompt || "bad quality, bad anatomy, worst quality, low quality, low resolutions, extra fingers, blur, blurry, ugly, wrongs proportions, watermark, image artifacts, lowres, ugly, jpeg artifacts, deformed, noisy image",
       guidance_rescale: 1,
@@ -119,10 +131,29 @@ const buildSafeBaseName = (value = "") => {
   return safeValue || "image";
 };
 
-const buildImageKey = ({ provider = "bedrock", index = 0, baseName = "" }) => {
+const buildImageKey = ({
+  provider = "bedrock",
+  index = 0,
+  baseName = "",
+  batchId = "",
+}) => {
   const safeProvider = provider.replace(/[^a-zA-Z0-9-_]/g, "");
   const safeBase = buildSafeBaseName(baseName);
+  const safeBatch = batchId.replace(/[^a-zA-Z0-9-_]/g, "");
+  if (safeBatch) {
+    return `images/${safeProvider}/${safeBatch}/${safeBase}-${index}.png`;
+  }
   return `images/${safeProvider}/${safeBase}-${Date.now()}-${index}.png`;
+};
+
+const buildImageBatchId = () =>
+  `batch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+const buildSeedList = (count, seed) => {
+  const baseSeed = Number.isFinite(Number(seed))
+    ? Number(seed)
+    : Math.floor(Math.random() * 2147483647);
+  return Array.from({ length: count }, (_, index) => baseSeed + index);
 };
 
 const buildVideoReadyKey = (sourceKey = "") => {
@@ -144,6 +175,35 @@ const streamToBuffer = async (stream) => {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   }
   return Buffer.concat(chunks);
+};
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const extractRetryAfterSeconds = (errorMessage = "") => {
+  const match = errorMessage.match(/retry_after\":\s*(\d+)/i);
+  if (match?.[1]) {
+    const value = Number(match[1]);
+    return Number.isFinite(value) ? value : null;
+  }
+  return null;
+};
+
+const runReplicateWithRetry = async (modelId, input, maxAttempts = 3) => {
+  let attempt = 0;
+  while (attempt < maxAttempts) {
+    try {
+      return await replicateClient.run(modelId, { input });
+    } catch (error) {
+      attempt += 1;
+      const message = error?.message || String(error);
+      const retryAfterSeconds = extractRetryAfterSeconds(message);
+      if (attempt >= maxAttempts || retryAfterSeconds == null) {
+        throw error;
+      }
+      await delay(Math.max(retryAfterSeconds * 1000, 1000));
+    }
+  }
+  return null;
 };
 
 const fetchImageBuffer = async (url) => {
@@ -228,6 +288,151 @@ app.get("/hello/:name", (req, res) => {
   res.json({ message: `Hello, ${req.params.name}!` });
 });
 
+app.post("/bedrock/prompt-helper", async (req, res) => {
+  const background = req.body?.background?.trim();
+  const character = req.body?.character?.trim();
+  const pose = req.body?.pose?.trim();
+  const archetype = req.body?.archetype?.trim();
+  const signatureTraits = req.body?.signatureTraits?.trim();
+  const faceDetails = req.body?.faceDetails?.trim();
+  const eyeDetails = req.body?.eyeDetails?.trim();
+  const hairDetails = req.body?.hairDetails?.trim();
+  const expression = req.body?.expression?.trim();
+  const outfitMaterials = req.body?.outfitMaterials?.trim();
+  const colorPalette = req.body?.colorPalette?.trim();
+  const styleReference = req.body?.styleReference?.trim();
+
+  const hasSelection = Boolean(
+    background ||
+      character ||
+      pose ||
+      archetype ||
+      signatureTraits ||
+      faceDetails ||
+      eyeDetails ||
+      hairDetails ||
+      expression ||
+      outfitMaterials ||
+      colorPalette ||
+      styleReference
+  );
+  if (!hasSelection) {
+    return res.status(400).json({
+      message: "At least one selection is required.",
+    });
+  }
+
+  const selectionLines = [
+    background ? `Background: ${background}` : null,
+    character ? `Character: ${character}` : null,
+    pose ? `Pose: ${pose}` : null,
+    archetype ? `Archetype: ${archetype}` : null,
+    signatureTraits ? `Signature traits: ${signatureTraits}` : null,
+    faceDetails ? `Face details: ${faceDetails}` : null,
+    eyeDetails ? `Eye details: ${eyeDetails}` : null,
+    hairDetails ? `Hair details: ${hairDetails}` : null,
+    expression ? `Expression: ${expression}` : null,
+    outfitMaterials ? `Outfit/materials: ${outfitMaterials}` : null,
+    colorPalette ? `Color palette: ${colorPalette}` : null,
+    styleReference ? `Style reference: ${styleReference}` : null,
+  ].filter(Boolean);
+
+  const userPrompt = [
+    "Create two outputs for AI image generation.",
+    "1) A compact positive prompt under 650 characters.",
+    "2) A concise negative prompt under 200 characters.",
+    "Avoid bullet lists or quotes. Use comma-separated keywords/phrases.",
+    "Depict a single character only; do not introduce additional characters or companions.",
+    "Treat all provided traits as belonging to the same single character.",
+    "Use short, punchy phrases; avoid full sentences.",
+    "Do not use bracketed placeholders or section headers.",
+    "Start with the character name and core identity.",
+    "Include these phrases verbatim early in the prompt: anime cinematic illustration; faithful anime character design; accurate facial features; consistent identity.",
+    "Follow this order of information after the character identity:",
+    "camera & framing, character placement, pose & body dynamics, outfit/material/color fidelity, hair/fabric motion, action/interaction, effects (controlled), background type, environment details, depth/lighting, art quality & style, image clarity & coherence.",
+    "For named characters, explicitly call out facial details first (eye color/shape, face structure, expression) and hair color/style.",
+    "Use the following selections when present:",
+    selectionLines.join("\n"),
+    "Keep it as a single comma-separated line with those sections implied by order.",
+    "Return in this exact format:",
+    "POSITIVE: <text>",
+    "NEGATIVE: <text>",
+    
+  ].join("\n");
+
+  try {
+    const command = new InvokeModelCommand({
+      modelId: promptHelperModelId,
+      contentType: "application/json",
+      accept: "application/json",
+      body: JSON.stringify({
+        anthropic_version: "bedrock-2023-05-31",
+        max_tokens: 300,
+        temperature: 0.2,
+        system:
+          "You write concise, expressive positive prompts for AI image generation.",
+        messages: [
+          {
+            role: "user",
+            content: [{ type: "text", text: userPrompt }],
+          },
+        ],
+      }),
+    });
+    const response = await bedrockClient.send(command);
+    const responseBody = JSON.parse(
+      new TextDecoder().decode(response.body)
+    );
+    const responseText = (responseBody?.content || [])
+      .map((item) => item?.text)
+      .filter(Boolean)
+      .join("")
+      .trim();
+
+    if (!responseText) {
+      return res.status(500).json({
+        message: "Prompt helper returned an empty response.",
+        response: responseBody,
+      });
+    }
+
+    const positiveMatch = responseText.match(/POSITIVE:\s*(.*)/i);
+    const negativeMatch = responseText.match(/NEGATIVE:\s*(.*)/i);
+    const positivePrompt = positiveMatch?.[1]?.trim() || "";
+    const negativePrompt = negativeMatch?.[1]?.trim() || "";
+    const singleCharacterNegative =
+      "multiple characters, crowd, group, duo, twins, background characters, extra people, two people";
+
+    if (!positivePrompt) {
+      return res.status(500).json({
+        message: "Prompt helper did not return a positive prompt.",
+        response: responseBody,
+      });
+    }
+    res.json({
+      prompt: positivePrompt,
+      negativePrompt: [
+        negativePrompt,
+        singleCharacterNegative,
+      ]
+        .filter(Boolean)
+        .join(", "),
+      modelId: promptHelperModelId,
+    });
+  } catch (error) {
+    console.error("Prompt helper error details:", {
+      name: error?.name,
+      message: error?.message,
+      metadata: error?.$metadata,
+      cause: error?.cause,
+    });
+    res.status(500).json({
+      message: "Prompt helper request failed",
+      error: error?.message || String(error),
+    });
+  }
+});
+
 app.post("/s3/image-upload-url", async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
   const key = req.body?.key;
@@ -301,6 +506,36 @@ app.get("/s3/images", async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Failed to list images",
+      error: error?.message || String(error),
+    });
+  }
+});
+
+app.post("/s3/images/delete", async (req, res) => {
+  const bucket = process.env.MEDIA_BUCKET;
+  const key = req.body?.key;
+
+  if (!bucket) {
+    return res.status(500).json({ message: "MEDIA_BUCKET is not set" });
+  }
+  if (!key || typeof key !== "string") {
+    return res.status(400).json({ message: "key is required" });
+  }
+  if (!key.startsWith("images/")) {
+    return res.status(400).json({ message: "key must start with images/" });
+  }
+
+  try {
+    await s3Client.send(
+      new DeleteObjectCommand({
+        Bucket: bucket,
+        Key: key,
+      })
+    );
+    res.json({ key, deleted: true });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to delete image",
       error: error?.message || String(error),
     });
   }
@@ -498,12 +733,14 @@ app.post("/bedrock/image/generate", async (req, res) => {
   const imageName = req.body?.imageName?.trim();
   const prompt = req.body?.prompt?.trim();
   const negativePrompt = req.body?.negativePrompt?.trim();
-  const maxPromptLength = 512;
+  const maxPromptLength = 900;
   const width = Number(req.body?.width) || 1280;
   const height = Number(req.body?.height) || 720;
-  const numImages = Math.min(Math.max(Number(req.body?.numImages) || 1, 1), 4);
-  const seed =
-    req.body?.seed ?? Math.floor(Math.random() * 2147483647);
+  const requestedImages = Number(req.body?.numImages) || 2;
+  const numImages = Math.min(Math.max(requestedImages, 1), 3);
+  const seed = req.body?.seed;
+  const seeds = buildSeedList(numImages, seed);
+  const batchId = buildImageBatchId();
 
   console.log("Bedrock image generate request:", {
     modelKey,
@@ -513,11 +750,14 @@ app.post("/bedrock/image/generate", async (req, res) => {
     width,
     height,
     numImages,
-    seed,
+    batchId,
   });
 
   if (!mediaBucket) {
     return res.status(500).json({ message: "MEDIA_BUCKET must be set" });
+  }
+  if (!imageName) {
+    return res.status(400).json({ message: "imageName is required" });
   }
   if (!prompt) {
     return res.status(400).json({ message: "prompt is required" });
@@ -552,111 +792,110 @@ app.post("/bedrock/image/generate", async (req, res) => {
     });
   }
 
-  let requestBody;
-  if (modelConfig.provider === "titan") {
-    requestBody = {
-      taskType: "TEXT_IMAGE",
-      textToImageParams: {
-        text: prompt,
-        ...(negativePrompt ? { negativeText: negativePrompt } : {}),
-      },
-      imageGenerationConfig: {
-        numberOfImages: numImages,
-        quality: "premium",
-        width,
-        height,
-        cfgScale: 8,
-        seed,
-      },
-    };
-  } else {
-    requestBody = {
-      text_prompts: [
-        { text: prompt },
-        ...(negativePrompt ? [{ text: negativePrompt, weight: -1 }] : []),
-      ],
-      cfg_scale: 7,
-      steps: 30,
-      width,
-      height,
-      seed,
-      samples: numImages,
-    };
-  }
-
   try {
-    console.log("Bedrock image generate invoke:", {
-      modelId: modelConfig.modelId,
-      provider: modelConfig.provider,
-    });
-    const command = new InvokeModelCommand({
-      modelId: modelConfig.modelId,
-      contentType: "application/json",
-      accept: "application/json",
-      body: JSON.stringify(requestBody),
-    });
-    const response = await bedrockClient.send(command);
-    console.log("Bedrock image generate response metadata:", response?.$metadata);
-    const responseBody = JSON.parse(
-      new TextDecoder().decode(response.body)
+    const images = await Promise.all(
+      seeds.map((currentSeed, index) =>
+        (async () => {
+          if (index > 0) {
+            await delay(1000);
+          }
+          const requestBody =
+            modelConfig.provider === "titan"
+              ? {
+                  taskType: "TEXT_IMAGE",
+                  textToImageParams: {
+                    text: prompt,
+                    ...(negativePrompt ? { negativeText: negativePrompt } : {}),
+                  },
+                  imageGenerationConfig: {
+                    numberOfImages: 1,
+                    quality: "premium",
+                    width,
+                    height,
+                    cfgScale: 8,
+                    seed: currentSeed,
+                  },
+                }
+              : {
+                  text_prompts: [
+                    { text: prompt },
+                    ...(negativePrompt
+                      ? [{ text: negativePrompt, weight: -1 }]
+                      : []),
+                  ],
+                  cfg_scale: 7,
+                  steps: 30,
+                  width,
+                  height,
+                  seed: currentSeed,
+                  samples: 1,
+                };
+          console.log("Bedrock image generate invoke:", {
+            modelId: modelConfig.modelId,
+            provider: modelConfig.provider,
+            seed: currentSeed,
+          });
+          const command = new InvokeModelCommand({
+            modelId: modelConfig.modelId,
+            contentType: "application/json",
+            accept: "application/json",
+            body: JSON.stringify(requestBody),
+          });
+          const response = await bedrockClient.send(command);
+          console.log(
+            "Bedrock image generate response metadata:",
+            response?.$metadata
+          );
+          const responseBody = JSON.parse(
+            new TextDecoder().decode(response.body)
+          );
+
+      const imagesBase64 =
+        modelConfig.provider === "titan"
+          ? responseBody?.images || []
+          : (responseBody?.artifacts || [])
+              .map((artifact) => artifact?.base64)
+              .filter(Boolean);
+
+          if (!imagesBase64.length) {
+            console.log("Bedrock image generate empty response:", responseBody);
+            throw new Error("No images returned from Bedrock");
+          }
+
+          const base64 = imagesBase64[0];
+          const buffer = Buffer.from(base64, "base64");
+          const key = buildImageKey({
+            provider: modelConfig.provider,
+            index,
+            baseName: imageName,
+            batchId,
+          });
+          await s3Client.send(
+            new PutObjectCommand({
+              Bucket: mediaBucket,
+              Key: key,
+              Body: buffer,
+              ContentType: "image/png",
+            })
+          );
+          const url = await getSignedUrl(
+            s3Client,
+            new GetObjectCommand({
+              Bucket: mediaBucket,
+              Key: key,
+            }),
+            { expiresIn: 900 }
+          );
+          return { key, url };
+        })()
+      )
     );
-
-    const imagesBase64 =
-      modelConfig.provider === "titan"
-        ? responseBody?.images || []
-        : (responseBody?.artifacts || [])
-            .map((artifact) => artifact?.base64)
-            .filter(Boolean);
-
-    if (!imagesBase64.length) {
-      console.log("Bedrock image generate empty response:", responseBody);
-      return res.status(500).json({
-        message: "No images returned from Bedrock",
-        response: responseBody,
-      });
-    }
-
-    const images = [];
-    for (let index = 0; index < imagesBase64.length; index += 1) {
-      const base64 = imagesBase64[index];
-      const buffer = Buffer.from(base64, "base64");
-      const key = buildImageKey({
-        provider: modelConfig.provider,
-        index,
-        baseName: imageName,
-      });
-      await s3Client.send(
-        new PutObjectCommand({
-          Bucket: mediaBucket,
-          Key: key,
-          Body: buffer,
-          ContentType: "image/png",
-        })
-      );
-      const url = await getSignedUrl(
-        s3Client,
-        new GetObjectCommand({
-          Bucket: mediaBucket,
-          Key: key,
-        }),
-        { expiresIn: 900 }
-      );
-      const videoReadyKey = buildVideoReadyKey(key);
-      const videoReadyBuffer = await toVideoReadyBuffer(buffer);
-      await s3Client.send(
-        new PutObjectCommand({
-          Bucket: mediaBucket,
-          Key: videoReadyKey,
-          Body: videoReadyBuffer,
-          ContentType: "image/jpeg",
-        })
-      );
-      images.push({ key, url, videoReadyKey });
-    }
 
     res.json({
       modelId: modelConfig.modelId,
       provider: modelConfig.provider,
+      batchId,
+      notice: `Generating ${numImages} images with a staggered start. This can take a bit.`,
       images,
     });
   } catch (error) {
@@ -680,10 +919,25 @@ app.post("/replicate/image/generate", async (req, res) => {
   const imageName = req.body?.imageName?.trim();
   const prompt = req.body?.prompt?.trim();
   const negativePrompt = req.body?.negativePrompt?.trim();
+  const maxPromptLength = 900;
   const width = Number(req.body?.width) || 1024;
   const height = Number(req.body?.height) || 1024;
-  const numImages = Math.min(Math.max(Number(req.body?.numImages) || 1, 1), 4);
+  const scheduler = req.body?.scheduler;
+  const requestedImages = Number(req.body?.numImages) || 2;
+  const isDiffScheduler = scheduler === "diff";
+  const numImages = Math.min(
+    Math.max(isDiffScheduler ? 2 : requestedImages, 1),
+    3
+  );
   const seed = req.body?.seed;
+  const seeds = isDiffScheduler
+    ? Array.from({ length: numImages }, () =>
+        Number.isFinite(Number(seed))
+          ? Number(seed)
+          : Math.floor(Math.random() * 2147483647)
+      )
+    : buildSeedList(numImages, seed);
+  const batchId = buildImageBatchId();
 
   console.log("Replicate image generate request:", {
     modelKey,
@@ -693,6 +947,7 @@ app.post("/replicate/image/generate", async (req, res) => {
     width,
     height,
     numImages,
+    batchId,
   });
 
   if (!mediaBucket) {
@@ -703,8 +958,21 @@ app.post("/replicate/image/generate", async (req, res) => {
       .status(500)
       .json({ message: "REPLICATE_API_TOKEN must be set" });
   }
+  if (!imageName) {
+    return res.status(400).json({ message: "imageName is required" });
+  }
   if (!prompt) {
     return res.status(400).json({ message: "prompt is required" });
+  }
+  if (prompt.length > maxPromptLength) {
+    return res.status(400).json({
+      message: `prompt must be ${maxPromptLength} characters or less`,
+    });
+  }
+  if (negativePrompt && negativePrompt.length > maxPromptLength) {
+    return res.status(400).json({
+      message: `negativePrompt must be ${maxPromptLength} characters or less`,
+    });
   }
   const modelConfig = replicateModelConfig[modelKey];
   if (!modelConfig) {
@@ -722,71 +990,83 @@ app.post("/replicate/image/generate", async (req, res) => {
       allowedSizes: modelConfig.sizes,
     });
   }
+  if (scheduler && scheduler !== "diff" && modelConfig.schedulers) {
+    const schedulerAllowed = modelConfig.schedulers.includes(scheduler);
+    if (!schedulerAllowed) {
+      return res.status(400).json({
+        message: `Unsupported scheduler for ${modelKey}`,
+        allowedSchedulers: modelConfig.schedulers,
+      });
+    }
+  }
 
   try {
-    const input = modelConfig.buildInput({
-      prompt,
-      negativePrompt,
-      width,
-      height,
-      numOutputs: numImages,
-      seed,
-    });
-    console.log("Replicate image generate invoke:", {
-      modelId: modelConfig.modelId,
-    });
-    const output = await replicateClient.run(modelConfig.modelId, { input });
-    const outputItems = Array.isArray(output) ? output : [output];
-    const urls = outputItems.map(getReplicateOutputUrl).filter(Boolean);
-
-    if (!urls.length) {
-      return res.status(500).json({
-        message: "No images returned from Replicate",
-        response: output,
-      });
-    }
-
-    const images = [];
-    for (let index = 0; index < urls.length; index += 1) {
-      const url = urls[index];
-      const { buffer, contentType } = await fetchImageBuffer(url);
-      const key = buildImageKey({
-        provider: "replicate",
-        index,
-        baseName: imageName,
-      });
-      await s3Client.send(
-        new PutObjectCommand({
-          Bucket: mediaBucket,
-          Key: key,
-          Body: buffer,
-          ContentType: contentType,
-        })
-      );
-      const signedUrl = await getSignedUrl(
-        s3Client,
-        new GetObjectCommand({
-          Bucket: mediaBucket,
-          Key: key,
-        }),
-        { expiresIn: 900 }
-      );
-      const videoReadyKey = buildVideoReadyKey(key);
-      const videoReadyBuffer = await toVideoReadyBuffer(buffer);
-      await s3Client.send(
-        new PutObjectCommand({
-          Bucket: mediaBucket,
-          Key: videoReadyKey,
-          Body: videoReadyBuffer,
-          ContentType: "image/jpeg",
-        })
-      );
-      images.push({ key, url: signedUrl, videoReadyKey });
-    }
+    const images = await Promise.all(
+      seeds.map((currentSeed, index) =>
+        (async () => {
+          if (index > 0) {
+            await delay(index * 1000);
+          }
+          const resolvedScheduler = isDiffScheduler
+            ? modelConfig.schedulers?.[index % modelConfig.schedulers.length]
+            : scheduler;
+          const input = modelConfig.buildInput({
+            prompt,
+            negativePrompt,
+            width,
+            height,
+            numOutputs: 1,
+            seed: currentSeed,
+            scheduler: resolvedScheduler,
+          });
+          console.log("Replicate image generate invoke:", {
+            modelId: modelConfig.modelId,
+            seed: currentSeed,
+            scheduler: resolvedScheduler,
+          });
+          const output = await runReplicateWithRetry(
+            modelConfig.modelId,
+            input,
+            3
+          );
+          const outputItems = Array.isArray(output) ? output : [output];
+          const url = outputItems.map(getReplicateOutputUrl).find(Boolean);
+          if (!url) {
+            throw new Error("No images returned from Replicate");
+          }
+          const { buffer, contentType } = await fetchImageBuffer(url);
+          const key = buildImageKey({
+            provider: "replicate",
+            index,
+            baseName: imageName,
+            batchId,
+          });
+          await s3Client.send(
+            new PutObjectCommand({
+              Bucket: mediaBucket,
+              Key: key,
+              Body: buffer,
+              ContentType: contentType,
+            })
+          );
+          const signedUrl = await getSignedUrl(
+            s3Client,
+            new GetObjectCommand({
+              Bucket: mediaBucket,
+              Key: key,
+            }),
+            { expiresIn: 900 }
+          );
+          return { key, url: signedUrl };
+        })()
+      )
+    );
 
     res.json({
       modelId: modelConfig.modelId,
       provider: "replicate",
+      batchId,
+      notice: `Generating ${numImages} images with a staggered start. This can take a bit.`,
       images,
     });
   } catch (error) {
@@ -798,6 +1078,86 @@ app.post("/replicate/image/generate", async (req, res) => {
     });
     res.status(500).json({
       message: "Replicate image generation failed",
+      error: error?.message || String(error),
+    });
+  }
+});
+
+app.post("/images/select", async (req, res) => {
+  const mediaBucket = process.env.MEDIA_BUCKET;
+  const selectedKey = req.body?.key;
+
+  if (!mediaBucket) {
+    return res.status(500).json({ message: "MEDIA_BUCKET must be set" });
+  }
+  if (!selectedKey || typeof selectedKey !== "string") {
+    return res.status(400).json({ message: "key is required" });
+  }
+  if (!selectedKey.startsWith("images/")) {
+    return res.status(400).json({ message: "key must start with images/" });
+  }
+
+  const keyParts = selectedKey.split("/");
+  if (keyParts.length < 4) {
+    return res.status(400).json({
+      message: "key must include a batch folder",
+    });
+  }
+  const batchPrefix = `${keyParts.slice(0, 3).join("/")}/`;
+
+  try {
+    const getResponse = await s3Client.send(
+      new GetObjectCommand({
+        Bucket: mediaBucket,
+        Key: selectedKey,
+      })
+    );
+    const buffer = await streamToBuffer(getResponse.Body);
+    const videoReadyKey = buildVideoReadyKey(selectedKey);
+    const videoReadyBuffer = await toVideoReadyBuffer(buffer);
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: mediaBucket,
+        Key: videoReadyKey,
+        Body: videoReadyBuffer,
+        ContentType: "image/jpeg",
+      })
+    );
+
+    const listResponse = await s3Client.send(
+      new ListObjectsV2Command({
+        Bucket: mediaBucket,
+        Prefix: batchPrefix,
+        MaxKeys: 1000,
+      })
+    );
+    const deleteKeys = (listResponse.Contents || [])
+      .map((item) => item.Key)
+      .filter((key) => key && key !== selectedKey);
+
+    for (const key of deleteKeys) {
+      await s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: mediaBucket,
+          Key: key,
+        })
+      );
+    }
+
+    res.json({
+      selectedKey,
+      videoReadyKey,
+      deletedKeys: deleteKeys,
+    });
+  } catch (error) {
+    console.error("Image selection error details:", {
+      name: error?.name,
+      message: error?.message,
+      metadata: error?.$metadata,
+      cause: error?.cause,
+    });
+    res.status(500).json({
+      message: "Image selection failed",
       error: error?.message || String(error),
     });
   }
