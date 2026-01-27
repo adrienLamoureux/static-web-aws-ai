@@ -69,13 +69,20 @@ function Home({ apiBaseUrl = "" }) {
   const [outputPrefix, setOutputPrefix] = useState("");
   const [jobStatus, setJobStatus] = useState("");
   const [availableVideos, setAvailableVideos] = useState([]);
+  const [replicatePredictionId, setReplicatePredictionId] = useState("");
+  const [replicateJobStatus, setReplicateJobStatus] = useState("");
 
   const resolvedApiBaseUrl =
     apiBaseUrl || process.env.REACT_APP_API_URL || "";
 
   const isUploading = uploadStatus === "uploading";
   const isGenerating = generationStatus === "loading";
-  const isVideoInProgress = isGenerating || jobStatus === "InProgress";
+  const isVideoInProgress =
+    isGenerating ||
+    jobStatus === "InProgress" ||
+    (videoProvider === "replicate" &&
+      (replicateJobStatus === "starting" ||
+        replicateJobStatus === "processing"));
   const isGeneratingImage = imageGenerationStatus === "loading";
   const isPromptHelperLoading = promptHelperStatus === "loading";
   const isSelectingImage = imageSelectionStatus === "loading";
@@ -436,6 +443,8 @@ function Home({ apiBaseUrl = "" }) {
     setGenerationResponse(null);
     setInvocationArn("");
     setJobStatus("");
+    setReplicatePredictionId("");
+    setReplicateJobStatus("");
 
     try {
       if (videoProvider === "replicate") {
@@ -463,8 +472,13 @@ function Home({ apiBaseUrl = "" }) {
           throw new Error(data?.message || "Failed to start video generation.");
         }
         setGenerationResponse(data);
-        setGenerationStatus("success");
-        await refreshVideoList();
+        if (data?.predictionId && data?.status !== "succeeded") {
+          setReplicatePredictionId(data.predictionId);
+          setReplicateJobStatus(data.status || "starting");
+        } else {
+          setGenerationStatus("success");
+          await refreshVideoList();
+        }
       } else {
         const newOutputPrefix = `videos/${Date.now()}/`;
         const response = await fetch(
@@ -691,6 +705,52 @@ function Home({ apiBaseUrl = "" }) {
       }
     };
   }, [invocationArn, outputPrefix, resolvedApiBaseUrl]);
+
+  useEffect(() => {
+    if (!replicatePredictionId || !resolvedApiBaseUrl) return undefined;
+    let timeoutId;
+    let isCancelled = false;
+
+    const pollReplicateStatus = async () => {
+      if (isCancelled) return;
+      try {
+        const response = await fetch(
+          `${resolvedApiBaseUrl}/replicate/video/status?predictionId=${encodeURIComponent(
+            replicatePredictionId
+          )}&inputKey=${encodeURIComponent(selectedImageKey)}`
+        );
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(
+            data?.message || "Failed to fetch prediction status."
+          );
+        }
+        const status = data?.status || "";
+        setReplicateJobStatus(status);
+        if (status === "succeeded") {
+          setGenerationStatus("success");
+          await refreshVideoList();
+          return;
+        }
+        if (status === "failed" || status === "canceled") {
+          setGenerationStatus("error");
+          return;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+      timeoutId = setTimeout(pollReplicateStatus, 5000);
+    };
+
+    pollReplicateStatus();
+
+    return () => {
+      isCancelled = true;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [replicatePredictionId, resolvedApiBaseUrl, selectedImageKey]);
 
   return (
     <section className="mx-auto w-full max-w-6xl px-6 pb-16 pt-4 md:px-10">

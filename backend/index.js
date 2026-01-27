@@ -225,6 +225,13 @@ const buildVideoOutputKey = (inputKey = "", outputPrefix = "videos/") => {
 
 const getReplicateOutputUrl = (output) => {
   if (!output) return null;
+  if (Array.isArray(output)) {
+    for (const item of output) {
+      const url = getReplicateOutputUrl(item);
+      if (url) return url;
+    }
+    return null;
+  }
   if (typeof output === "string") return output;
   if (typeof output.url === "function") return output.url();
   if (typeof output.url === "string") return output.url;
@@ -1199,8 +1206,21 @@ app.post("/replicate/video/generate", async (req, res) => {
   if (modelConfig.requiresImage && !imageUrl) {
     return res.status(400).json({ message: "imageUrl is required" });
   }
+  let resolvedImageUrl = imageUrl;
+  if (modelConfig.requiresImage && imageUrl) {
+    try {
+      const { buffer, contentType } = await fetchImageBuffer(imageUrl);
+      resolvedImageUrl = `data:${contentType};base64,${buffer.toString(
+        "base64"
+      )}`;
+    } catch (error) {
+      console.warn("Failed to inline image for Replicate:", {
+        message: error?.message || String(error),
+      });
+    }
+  }
   const input = modelConfig.buildInput({
-    imageUrl,
+    imageUrl: resolvedImageUrl,
     prompt,
   });
 
@@ -1209,12 +1229,112 @@ app.post("/replicate/video/generate", async (req, res) => {
       modelId: modelConfig.modelId,
       inputKey,
     });
-    const output = await replicateClient.run(modelConfig.modelId, { input });
-    const outputUrl = getReplicateOutputUrl(output);
+    const prediction = await replicateClient.predictions.create(
+      {
+        model: modelConfig.modelId,
+        input,
+      },
+      {
+        headers: {
+          Prefer: "wait=60",
+          "Cancel-After": "15m",
+        },
+      }
+    );
+    if (!prediction) {
+      return res.status(500).json({
+        message: "No prediction returned from Replicate",
+      });
+    }
+
+    if (prediction.status === "succeeded") {
+      const outputUrl = getReplicateOutputUrl(prediction.output);
+      if (!outputUrl) {
+        return res.status(500).json({
+          message: "No video returned from Replicate",
+          response: prediction,
+        });
+      }
+      const { buffer, contentType } = await fetchImageBuffer(outputUrl);
+      const outputKey = buildVideoOutputKey(inputKey, "videos/");
+      await s3Client.send(
+        new PutObjectCommand({
+          Bucket: mediaBucket,
+          Key: outputKey,
+          Body: buffer,
+          ContentType: contentType || "video/mp4",
+        })
+      );
+
+      return res.json({
+        modelId: modelConfig.modelId,
+        provider: "replicate",
+        outputKey,
+        outputUrl,
+        predictionId: prediction.id,
+        status: prediction.status,
+      });
+    }
+
+    res.json({
+      modelId: modelConfig.modelId,
+      provider: "replicate",
+      predictionId: prediction.id,
+      status: prediction.status,
+    });
+  } catch (error) {
+    console.error("Replicate video generation error details:", {
+      name: error?.name,
+      message: error?.message,
+      metadata: error?.$metadata,
+      cause: error?.cause,
+    });
+    res.status(500).json({
+      message: "Replicate video generation failed",
+      error: error?.message || String(error),
+    });
+  }
+});
+
+app.get("/replicate/video/status", async (req, res) => {
+  const mediaBucket = process.env.MEDIA_BUCKET;
+  const apiToken = process.env.REPLICATE_API_TOKEN;
+  const predictionId = req.query?.predictionId;
+  const inputKey = req.query?.inputKey;
+
+  if (!mediaBucket) {
+    return res.status(500).json({ message: "MEDIA_BUCKET must be set" });
+  }
+  if (!apiToken) {
+    return res
+      .status(500)
+      .json({ message: "REPLICATE_API_TOKEN must be set" });
+  }
+  if (!predictionId) {
+    return res.status(400).json({ message: "predictionId is required" });
+  }
+  if (!inputKey) {
+    return res.status(400).json({ message: "inputKey is required" });
+  }
+
+  try {
+    const prediction = await replicateClient.predictions.get(predictionId);
+    if (!prediction) {
+      return res.status(500).json({
+        message: "Prediction not found",
+      });
+    }
+    if (prediction.status !== "succeeded") {
+      return res.json({
+        predictionId,
+        status: prediction.status,
+      });
+    }
+    const outputUrl = getReplicateOutputUrl(prediction.output);
     if (!outputUrl) {
       return res.status(500).json({
         message: "No video returned from Replicate",
-        response: output,
+        response: prediction,
       });
     }
     const { buffer, contentType } = await fetchImageBuffer(outputUrl);
@@ -1227,22 +1347,30 @@ app.post("/replicate/video/generate", async (req, res) => {
         ContentType: contentType || "video/mp4",
       })
     );
+    const signedUrl = await getSignedUrl(
+      s3Client,
+      new GetObjectCommand({
+        Bucket: mediaBucket,
+        Key: outputKey,
+      }),
+      { expiresIn: 900 }
+    );
 
     res.json({
-      modelId: modelConfig.modelId,
-      provider: "replicate",
+      predictionId,
+      status: prediction.status,
       outputKey,
-      outputUrl,
+      outputUrl: signedUrl,
     });
   } catch (error) {
-    console.error("Replicate video generation error details:", {
+    console.error("Replicate video status error details:", {
       name: error?.name,
       message: error?.message,
       metadata: error?.$metadata,
       cause: error?.cause,
     });
     res.status(500).json({
-      message: "Replicate video generation failed",
+      message: "Failed to get Replicate prediction status",
       error: error?.message || String(error),
     });
   }
