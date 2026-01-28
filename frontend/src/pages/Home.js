@@ -60,6 +60,7 @@ function Home({ apiBaseUrl = "" }) {
   const [selectedImageKey, setSelectedImageKey] = useState("");
   const [videoProvider, setVideoProvider] = useState("bedrock");
   const [videoModel, setVideoModel] = useState("nova-reel");
+  const [videoGenerateAudio, setVideoGenerateAudio] = useState(true);
   const [availableImages, setAvailableImages] = useState([]);
   const [uploadStatus, setUploadStatus] = useState("idle");
   const [generationStatus, setGenerationStatus] = useState("idle");
@@ -350,6 +351,10 @@ function Home({ apiBaseUrl = "" }) {
     ];
   }, [videoProvider]);
 
+  const isReplicateAudioOption =
+    videoProvider === "replicate" &&
+    (videoModel === "veo-3.1-fast" || videoModel === "kling-v2.6");
+
   useEffect(() => {
     const allowedModels = videoModelOptions.map((option) => option.key);
     if (!allowedModels.includes(videoModel)) {
@@ -448,6 +453,15 @@ function Home({ apiBaseUrl = "" }) {
 
     try {
       if (videoProvider === "replicate") {
+        if (videoModel === "veo-3.1-fast" || videoModel === "kling-v2.6") {
+          const confirmed = window.confirm(
+            "This Replicate model can be expensive to run. Do you want to continue?"
+          );
+          if (!confirmed) {
+            setGenerationStatus("idle");
+            return;
+          }
+        }
         const selectedImage = availableImages.find(
           (image) => image.key === selectedImageKey
         );
@@ -464,6 +478,9 @@ function Home({ apiBaseUrl = "" }) {
               prompt: prompt?.trim() || undefined,
               inputKey: selectedImageKey,
               imageUrl: selectedImage.url,
+              ...(isReplicateAudioOption
+                ? { generateAudio: videoGenerateAudio }
+                : {}),
             }),
           }
         );
@@ -1665,6 +1682,18 @@ function Home({ apiBaseUrl = "" }) {
                 onChange={(event) => setPrompt(event.target.value)}
               />
             </div>
+
+            {isReplicateAudioOption && (
+              <label className="flex items-center gap-3 text-sm text-slate-600">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-slate-300 text-accent focus:ring-accent"
+                  checked={videoGenerateAudio}
+                  onChange={(event) => setVideoGenerateAudio(event.target.checked)}
+                />
+                Generate audio
+              </label>
+            )}
 
             <div className="flex flex-wrap items-center gap-3">
               <button

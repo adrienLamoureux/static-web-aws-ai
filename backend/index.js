@@ -259,25 +259,25 @@ const replicateVideoConfig = {
   "veo-3.1-fast": {
     modelId: "google/veo-3.1-fast",
     requiresImage: true,
-    buildInput: ({ imageUrl, prompt }) => ({
+    buildInput: ({ imageUrl, prompt, generateAudio }) => ({
       image: imageUrl,
       prompt,
       duration: 8,
       resolution: "720p",
       aspect_ratio: "16:9",
-      generate_audio: true,
+      generate_audio: generateAudio ?? true,
       last_frame: imageUrl,
     }),
   },
   "kling-v2.6": {
-    modelId: "kling/kling-v2.6",
+    modelId: "kwaivgi/kling-v2.6",
     requiresImage: true,
-    buildInput: ({ prompt, imageUrl }) => ({
+    buildInput: ({ prompt, imageUrl, generateAudio }) => ({
       prompt,
       start_image: imageUrl,
       duration: 5,
       aspect_ratio: "16:9",
-      generate_audio: true,
+      generate_audio: generateAudio ?? true,
       negative_prompt: "",
     }),
   },
@@ -1177,6 +1177,7 @@ app.post("/replicate/video/generate", async (req, res) => {
   const inputKey = req.body?.inputKey;
   const imageUrl = req.body?.imageUrl;
   const prompt = req.body?.prompt?.trim();
+  const generateAudio = req.body?.generateAudio;
 
   if (!mediaBucket) {
     return res.status(500).json({ message: "MEDIA_BUCKET must be set" });
@@ -1222,6 +1223,7 @@ app.post("/replicate/video/generate", async (req, res) => {
   const input = modelConfig.buildInput({
     imageUrl: resolvedImageUrl,
     prompt,
+    generateAudio,
   });
 
   try {
