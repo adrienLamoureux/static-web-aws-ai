@@ -98,6 +98,29 @@ const replicateModelConfig = {
       prepend_preprompt: true,
     }),
   },
+  "seedream-4.5": {
+    modelId: "bytedance/seedream-4.5",
+    sizes: [
+      { width: 2048, height: 2048 },
+      { width: 2048, height: 1152 },
+    ],
+    buildInput: ({ prompt, width, height, numOutputs }) => {
+      const aspectRatio =
+        width === 2048 && height === 1152
+          ? "16:9"
+          : "1:1";
+      return {
+        size: "4K",
+        width,
+        height,
+        prompt,
+        max_images: numOutputs,
+        image_input: [],
+        aspect_ratio: aspectRatio,
+        sequential_image_generation: "disabled",
+      };
+    },
+  },
   proteus: {
     modelId:
       "datacte/proteus-v0.3:b28b79d725c8548b173b6a19ff9bffd16b9b80df5b18b8dc5cb9e1ee471bfa48",
@@ -281,6 +304,19 @@ const replicateVideoConfig = {
       negative_prompt: "",
     }),
   },
+  "seedance-1.5-pro": {
+    modelId: "bytedance/seedance-1.5-pro",
+    requiresImage: false,
+    buildInput: ({ prompt, generateAudio }) => ({
+      fps: 24,
+      prompt,
+      duration: 5,
+      resolution: "480p",
+      aspect_ratio: "16:9",
+      camera_fixed: false,
+      generate_audio: generateAudio ?? false,
+    }),
+  },
 };
 
 app.get("/", (req, res) => {
@@ -352,6 +388,7 @@ app.post("/bedrock/prompt-helper", async (req, res) => {
     "Depict a single character only; do not introduce additional characters or companions.",
     "Treat all provided traits as belonging to the same single character.",
     "Use short, punchy phrases; avoid full sentences.",
+    "Start the positive prompt with: masterpiece, best quality, amazing quality, very aesthetic, ultra-detailed.",
     "Do not use bracketed placeholders or section headers.",
     "Start with the character name and core identity.",
     "Include these phrases verbatim early in the prompt: anime cinematic illustration; faithful anime character design; accurate facial features; consistent identity.",
@@ -1414,7 +1451,7 @@ app.post("/bedrock/nova-reel/image-to-video-s3", async (req, res) => {
       ? "amazon.nova-reel-v1:1"
       : process.env.BEDROCK_MODEL_ID || "amazon.nova-reel-v1:1";
   const inputExtension = inputKey.split(".").pop()?.toLowerCase();
-  const imageFormat = inputExtension === "jpg" ? "jpeg" : inputExtension;
+  let imageFormat = inputExtension === "jpg" ? "jpeg" : inputExtension;
   if (imageFormat !== "jpeg" && imageFormat !== "png") {
     return res.status(400).json({
       message: "inputKey must be a .jpg or .png image",
@@ -1439,7 +1476,28 @@ app.post("/bedrock/nova-reel/image-to-video-s3", async (req, res) => {
       })
     );
     const imageBuffer = await streamToBuffer(imageResponse.Body);
-    imageBase64 = imageBuffer.toString("base64");
+    let finalBuffer = imageBuffer;
+    try {
+      const image = await Jimp.read(imageBuffer);
+      if (image.bitmap.width !== 1280 || image.bitmap.height !== 720) {
+        finalBuffer = await toVideoReadyBuffer(imageBuffer);
+        imageFormat = "jpeg";
+        const videoReadyKey = buildVideoReadyKey(inputKey);
+        await s3Client.send(
+          new PutObjectCommand({
+            Bucket: mediaBucket,
+            Key: videoReadyKey,
+            Body: finalBuffer,
+            ContentType: "image/jpeg",
+          })
+        );
+      }
+    } catch (error) {
+      console.warn("Failed to validate/convert input image:", {
+        message: error?.message || String(error),
+      });
+    }
+    imageBase64 = finalBuffer.toString("base64");
   } catch (error) {
     return res.status(500).json({
       message: "Failed to load input image from S3",

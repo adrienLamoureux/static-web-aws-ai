@@ -224,18 +224,23 @@ function Home({ apiBaseUrl = "" }) {
         },
       ];
     }
-    return [
-      {
-        key: "animagine",
-        name: "Animagine XL v4 Opt",
-        description: "High-fidelity anime characters",
-      },
-      {
-        key: "proteus",
-        name: "Proteus v0.3",
-        description: "Stylized anime portraits",
-      },
-    ];
+      return [
+        {
+          key: "animagine",
+          name: "Animagine XL v4 Opt",
+          description: "High-fidelity anime characters",
+        },
+        {
+          key: "seedream-4.5",
+          name: "Seedream 4.5",
+          description: "High-resolution cinematic scenes",
+        },
+        {
+          key: "proteus",
+          name: "Proteus v0.3",
+          description: "Stylized anime portraits",
+        },
+      ];
   }, [imageSource]);
 
   const imageSizeOptions = useMemo(() => {
@@ -244,6 +249,12 @@ function Home({ apiBaseUrl = "" }) {
         { value: "1280x720", label: "1280x720 (16:9)" },
         { value: "1024x1024", label: "1024x1024 (Square)" },
         { value: "768x1024", label: "768x1024 (Portrait)" },
+      ];
+    }
+    if (imageModel === "seedream-4.5") {
+      return [
+        { value: "2048x2048", label: "2048x2048 (4K Square)" },
+        { value: "2048x1152", label: "2048x1152 (4K 16:9)" },
       ];
     }
     if (imageSource === "bedrock") {
@@ -340,6 +351,11 @@ function Home({ apiBaseUrl = "" }) {
           name: "kling-v2.6",
           description: "Text-to-video",
         },
+        {
+          key: "seedance-1.5-pro",
+          name: "seedance-1.5-pro",
+          description: "Text-to-video with audio",
+        },
       ];
     }
     return [
@@ -353,7 +369,9 @@ function Home({ apiBaseUrl = "" }) {
 
   const isReplicateAudioOption =
     videoProvider === "replicate" &&
-    (videoModel === "veo-3.1-fast" || videoModel === "kling-v2.6");
+    (videoModel === "veo-3.1-fast" ||
+      videoModel === "kling-v2.6" ||
+      videoModel === "seedance-1.5-pro");
 
   useEffect(() => {
     const allowedModels = videoModelOptions.map((option) => option.key);
@@ -428,6 +446,36 @@ function Home({ apiBaseUrl = "" }) {
       setUploadKey(presignData.key);
       setSelectedImageKey("");
       setUploadStatus("uploaded");
+
+      const videoReadyResponse = await fetch(
+        `${resolvedApiBaseUrl}/images/video-ready`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key: presignData.key }),
+        }
+      );
+      const videoReadyData = await videoReadyResponse.json();
+      if (!videoReadyResponse.ok) {
+        throw new Error(
+          videoReadyData?.message || "Failed to create video-ready image."
+        );
+      }
+      if (videoReadyData?.videoReadyKey) {
+        setSelectedImageKey(videoReadyData.videoReadyKey);
+      }
+      if (videoReadyData?.videoReadyKey && videoReadyData?.url) {
+        setAvailableImages((prev) => {
+          const exists = prev.some(
+            (item) => item.key === videoReadyData.videoReadyKey
+          );
+          if (exists) return prev;
+          return [
+            { key: videoReadyData.videoReadyKey, url: videoReadyData.url },
+            ...prev,
+          ];
+        });
+      }
     } catch (err) {
       setUploadStatus("error");
       setError(err?.message || "Upload failed.");
@@ -453,7 +501,11 @@ function Home({ apiBaseUrl = "" }) {
 
     try {
       if (videoProvider === "replicate") {
-        if (videoModel === "veo-3.1-fast" || videoModel === "kling-v2.6") {
+        if (
+          videoModel === "veo-3.1-fast" ||
+          videoModel === "kling-v2.6" ||
+          videoModel === "seedance-1.5-pro"
+        ) {
           const confirmed = window.confirm(
             "This Replicate model can be expensive to run. Do you want to continue?"
           );
