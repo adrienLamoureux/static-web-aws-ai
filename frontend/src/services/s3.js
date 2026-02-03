@@ -3,11 +3,18 @@ import { buildApiUrl, fetchJson, postJson } from "./apiClient";
 export const listImages = (baseUrl) =>
   fetchJson(buildApiUrl(baseUrl, "/s3/images"), {}, "Failed to load images.");
 
-export const listVideos = (baseUrl) =>
+export const listVideos = (baseUrl, includeUrls = true) =>
   fetchJson(
-    buildApiUrl(baseUrl, "/s3/videos?includeUrls=true"),
+    buildApiUrl(baseUrl, `/s3/videos?includeUrls=${includeUrls}`),
     {},
     "Failed to load videos."
+  );
+
+export const deleteVideo = (baseUrl, key) =>
+  postJson(
+    buildApiUrl(baseUrl, "/s3/videos/delete"),
+    { key },
+    "Failed to delete video."
   );
 
 export const deleteImage = (baseUrl, key) =>

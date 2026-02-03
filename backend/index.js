@@ -585,6 +585,36 @@ app.post("/s3/images/delete", async (req, res) => {
   }
 });
 
+app.post("/s3/videos/delete", async (req, res) => {
+  const bucket = process.env.MEDIA_BUCKET;
+  const key = req.body?.key;
+
+  if (!bucket) {
+    return res.status(500).json({ message: "MEDIA_BUCKET is not set" });
+  }
+  if (!key || typeof key !== "string") {
+    return res.status(400).json({ message: "key is required" });
+  }
+  if (!key.startsWith("videos/")) {
+    return res.status(400).json({ message: "key must start with videos/" });
+  }
+
+  try {
+    await s3Client.send(
+      new DeleteObjectCommand({
+        Bucket: bucket,
+        Key: key,
+      })
+    );
+    res.json({ key, deleted: true });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to delete video",
+      error: error?.message || String(error),
+    });
+  }
+});
+
 app.get("/s3/videos", async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
   const maxKeys = Number(req.query?.maxKeys) || 100;
