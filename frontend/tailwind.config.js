@@ -4,19 +4,20 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        display: ["Space Grotesk", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["Cormorant Garamond", "ui-serif", "Georgia", "serif"],
+        body: ["Sora", "ui-sans-serif", "system-ui", "sans-serif"],
         mono: ["IBM Plex Mono", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       colors: {
-        ink: "#111111",
-        haze: "#f5f4f7",
-        mist: "#e9eef5",
-        accent: "#1a46d9",
-        glow: "#eff1ff",
+        ink: "#1b1a17",
+        haze: "#f6f1e8",
+        mist: "#efe7da",
+        accent: "#b08d57",
+        glow: "#fbf5ea",
       },
       boxShadow: {
-        soft: "0 24px 60px -40px rgba(15, 23, 42, 0.45)",
-        card: "0 20px 45px -35px rgba(17, 24, 39, 0.35)",
+        soft: "0 28px 70px -44px rgba(55, 39, 20, 0.42)",
+        card: "0 24px 60px -40px rgba(46, 34, 20, 0.36)",
       },
       keyframes: {
         "fade-up": {

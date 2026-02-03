@@ -22,13 +22,11 @@ function PromptHelperForm({
   promptStyles,
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white/70 p-4">
+    <div className="gallery-section">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-            AI prompt helper
-          </p>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="field-label">AI prompt helper</p>
+          <p className="mt-1 text-xs text-[#7a6a51]">
             Pick a scenario and spark a prompt draft.
           </p>
         </div>
@@ -36,7 +34,7 @@ function PromptHelperForm({
           type="button"
           onClick={onGenerate}
           disabled={isLoading || !hasSelection}
-          className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-soft transition hover:border-accent hover:text-ink disabled:cursor-not-allowed disabled:bg-slate-100"
+          className="btn-icon disabled:cursor-not-allowed disabled:opacity-60"
           aria-label="Generate prompt with AI"
           title="Generate prompt with AI"
         >
@@ -64,11 +62,11 @@ function PromptHelperForm({
 
       <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         <div>
-          <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+          <label className="field-label">
             Background
           </label>
           <input
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+            className="field-input mt-3"
             list="prompt-helper-backgrounds"
             value={selections.background}
             onChange={(event) =>
@@ -84,11 +82,11 @@ function PromptHelperForm({
         </div>
 
         <div>
-          <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+          <label className="field-label">
             Character
           </label>
           <input
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+            className="field-input mt-3"
             list="prompt-helper-characters"
             value={selections.character}
             onChange={(event) => onCharacterChange(event.target.value)}
@@ -102,11 +100,11 @@ function PromptHelperForm({
         </div>
 
         <div>
-          <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+          <label className="field-label">
             Pose
           </label>
           <input
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+            className="field-input mt-3"
             list="prompt-helper-poses"
             value={selections.pose}
             onChange={(event) =>
@@ -122,22 +120,23 @@ function PromptHelperForm({
         </div>
       </div>
 
-      <div className="mt-5 border-t border-slate-200/70 pt-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
+      <div className="gallery-divider" />
+      <div>
+        <p className="field-label">
           Character aesthetics
         </p>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-[#7a6a51]">
           Face, styling, and gacha-style cues.
         </p>
       </div>
 
       <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         <div>
-          <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+          <label className="field-label">
             Archetype
           </label>
           <input
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+            className="field-input mt-3"
             list="prompt-helper-archetypes"
             value={selections.archetype}
             onChange={(event) =>
@@ -153,11 +152,11 @@ function PromptHelperForm({
         </div>
 
         <div>
-          <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+          <label className="field-label">
             Signature traits
           </label>
           <input
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+            className="field-input mt-3"
             list="prompt-helper-traits"
             value={selections.signatureTraits}
             onChange={(event) =>
@@ -173,11 +172,11 @@ function PromptHelperForm({
         </div>
 
         <div>
-          <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+          <label className="field-label">
             Face details
           </label>
           <input
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+            className="field-input mt-3"
             list="prompt-helper-face-details"
             value={selections.faceDetails}
             onChange={(event) =>
@@ -193,11 +192,11 @@ function PromptHelperForm({
         </div>
 
         <div>
-          <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+          <label className="field-label">
             Eye details
           </label>
           <input
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+            className="field-input mt-3"
             list="prompt-helper-eye-details"
             value={selections.eyeDetails}
             onChange={(event) =>
@@ -213,11 +212,11 @@ function PromptHelperForm({
         </div>
 
         <div>
-          <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+          <label className="field-label">
             Hair details
           </label>
           <input
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+            className="field-input mt-3"
             list="prompt-helper-hair-details"
             value={selections.hairDetails}
             onChange={(event) =>
@@ -233,11 +232,11 @@ function PromptHelperForm({
         </div>
 
         <div>
-          <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+          <label className="field-label">
             Expression
           </label>
           <input
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+            className="field-input mt-3"
             list="prompt-helper-expressions"
             value={selections.expression}
             onChange={(event) =>
@@ -253,22 +252,23 @@ function PromptHelperForm({
         </div>
       </div>
 
-      <div className="mt-5 border-t border-slate-200/70 pt-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
+      <div className="gallery-divider" />
+      <div>
+        <p className="field-label">
           Styling & palette
         </p>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-[#7a6a51]">
           Keep these independent of character presets.
         </p>
       </div>
 
       <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         <div>
-          <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+          <label className="field-label">
             Outfit/materials
           </label>
           <input
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+            className="field-input mt-3"
             list="prompt-helper-outfits"
             value={selections.outfitMaterials}
             onChange={(event) =>
@@ -284,11 +284,11 @@ function PromptHelperForm({
         </div>
 
         <div>
-          <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+          <label className="field-label">
             Color palette
           </label>
           <input
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+            className="field-input mt-3"
             list="prompt-helper-palettes"
             value={selections.colorPalette}
             onChange={(event) =>
@@ -304,11 +304,11 @@ function PromptHelperForm({
         </div>
 
         <div>
-          <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+          <label className="field-label">
             Style reference
           </label>
           <input
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+            className="field-input mt-3"
             list="prompt-helper-styles"
             value={selections.styleReference}
             onChange={(event) =>
@@ -325,13 +325,13 @@ function PromptHelperForm({
       </div>
 
       {isLoading && (
-        <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
+        <div className="mt-3 flex items-center gap-2 text-xs text-[#7a6a51]">
           <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
           Drafting a prompt with Haiku...
         </div>
       )}
       {status === "success" && (
-        <p className="mt-3 text-xs text-slate-500">
+        <p className="mt-3 text-xs text-[#7a6a51]">
           Prompt applied to positive and negative fields.
         </p>
       )}
@@ -340,7 +340,7 @@ function PromptHelperForm({
         type="button"
         onClick={onGenerate}
         disabled={isLoading || !hasSelection}
-        className="mt-4 w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-soft transition hover:border-accent hover:text-ink disabled:cursor-not-allowed disabled:bg-slate-100"
+        className="btn-ghost mt-5 w-full px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
       >
         Generate prompt with AI
       </button>

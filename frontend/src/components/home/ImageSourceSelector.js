@@ -3,8 +3,8 @@ import React from "react";
 function ImageSourceSelector({ options, value, onChange }) {
   return (
     <div>
-      <p className="text-sm font-medium text-slate-600">Choose a source</p>
-      <div className="mt-3 grid gap-3 md:grid-cols-2">
+      <p className="field-label">Choose a source</p>
+      <div className="choice-row mt-3 md:grid-cols-3">
         {options.map((option) => {
           const isSelected = value === option.key;
           return (
@@ -12,14 +12,12 @@ function ImageSourceSelector({ options, value, onChange }) {
               key={option.key}
               type="button"
               onClick={() => onChange(option.key)}
-              className={`rounded-2xl border p-4 text-left transition ${
-                isSelected
-                  ? "border-accent bg-glow shadow-soft"
-                  : "border-slate-200 bg-white/70 hover:border-slate-300"
+              className={`choice-tile ${
+                isSelected ? "choice-tile--active" : ""
               }`}
             >
               <p className="text-sm font-semibold text-ink">{option.name}</p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-[#7a6a51]">
                 {option.description}
               </p>
             </button>

@@ -12,7 +12,6 @@ import promptEyeDetails from "../data/prompt-helper/eye-details.json";
 import promptHairDetails from "../data/prompt-helper/hair-details.json";
 import promptExpressions from "../data/prompt-helper/expressions.json";
 import characterPresets from "../data/prompt-helper/character-presets.json";
-import ApiStatusCard from "../components/home/ApiStatusCard";
 import ImageSourceSelector from "../components/home/ImageSourceSelector";
 import ImageGenerationPanel from "../components/home/ImageGenerationPanel";
 import ImageUploadPanel from "../components/home/ImageUploadPanel";
@@ -100,6 +99,7 @@ function Home({ apiBaseUrl = "" }) {
   const [availableVideos, setAvailableVideos] = useState([]);
   const [replicatePredictionId, setReplicatePredictionId] = useState("");
   const [replicateJobStatus, setReplicateJobStatus] = useState("");
+  const [featuredKey, setFeaturedKey] = useState("");
 
   const resolvedApiBaseUrl =
     apiBaseUrl || process.env.REACT_APP_API_URL || "";
@@ -769,36 +769,103 @@ function Home({ apiBaseUrl = "" }) {
     promptStyles,
   };
 
-  return (
-    <section className="mx-auto w-full max-w-6xl px-6 pb-16 pt-4 md:px-10">
-      <ApiStatusCard apiBaseUrl={resolvedApiBaseUrl} message={message} />
+  const galleryImages = useMemo(() => {
+    const fromGenerated = (generatedImages || []).map((img) => ({
+      key: img.key,
+      url: img.url,
+    }));
+    const fromAvailable = (availableImages || []).map((img) => ({
+      key: img.key,
+      url: img.url,
+    }));
+    const fromPreview = previewUrl
+      ? [{ key: "preview", url: previewUrl }]
+      : [];
+    const merged = [...fromGenerated, ...fromAvailable, ...fromPreview].filter(
+      (item) => item.url
+    );
+    const seen = new Set();
+    return merged.filter((item) => {
+      if (seen.has(item.url)) return false;
+      seen.add(item.url);
+      return true;
+    });
+  }, [availableImages, generatedImages, previewUrl]);
 
-      <div className="mt-10">
-        <div className="glass-panel animate-fade-up rounded-[28px] p-7 shadow-card md:p-9">
-          <div className="flex items-center justify-between">
+  const featuredImage =
+    galleryImages.find((item) => item.key === featuredKey) ||
+    galleryImages.find((item) => item.key === selectedGeneratedKey) ||
+    galleryImages.find((item) => item.key === selectedImageKey) ||
+    galleryImages[0];
+
+  return (
+    <section className="whisk-shell">
+      <header className="whisk-hero animate-fade-up">
+        <p className="gallery-kicker">Nova Reel Studio</p>
+        <h1 className="whisk-title">Create a gallery of motion studies</h1>
+        <p className="whisk-subtitle">
+          Upload or generate a still, then build a collection of cinematic
+          frames. The wall fills as you create.
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <span className="whisk-status">
+            <span className="whisk-status-dot" />
+            {resolvedApiBaseUrl
+              ? message || "Connecting to the API..."
+              : "Set API URL in config.json or .env"}
+          </span>
+          {(isGeneratingImage || isUploading) && (
+            <span className="pill-tag">
+              {isUploading ? "Uploading" : "Rendering"}
+            </span>
+          )}
+        </div>
+      </header>
+
+      <div className="whisk-wall">
+        {galleryImages.length > 0 ? (
+          galleryImages.slice(0, 12).map((image, index) => (
+            <button
+              key={`${image.key}-${index}`}
+              type="button"
+              className={`whisk-wall-tile ${
+                index === 0 ? "is-large" : ""
+              }`}
+              onClick={() => setFeaturedKey(image.key)}
+            >
+              <img src={image.url} alt={image.key || "Gallery image"} />
+              <span className="whisk-wall-overlay" />
+              <span className="whisk-wall-meta">
+                {image.key ? image.key.slice(-12) : "frame"}
+              </span>
+            </button>
+          ))
+        ) : (
+          <div className="whisk-panel text-center text-sm text-[#7a6a51]">
+            Generate or upload an image to start the wall.
+          </div>
+        )}
+      </div>
+
+      <div className="whisk-controls">
+        <div className="whisk-panel">
+          <div className="whisk-panel-header">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
-                Step 00
-              </p>
-              <h2 className="mt-3 text-xl font-semibold text-ink">
-                Create an image
-              </h2>
+              <p className="whisk-label">Studio</p>
+              <h2 className="whisk-heading">Create an image</h2>
             </div>
-            {(isGeneratingImage || isUploading) && (
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-                <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
-                {isUploading ? "Uploading…" : "Rendering…"}
+            {isGeneratingImage && (
+              <div className="text-xs text-[#7a6a51]">
+                Rendering in progress...
               </div>
             )}
           </div>
-
           <div className="mt-6 space-y-6">
             <ImageSourceSelector
               options={imageSourceOptions}
               value={imageSource}
               onChange={setImageSource}
             />
-
             {imageSource !== "upload" ? (
               <ImageGenerationPanel
                 imageModel={imageModel}
@@ -842,59 +909,51 @@ function Home({ apiBaseUrl = "" }) {
             )}
           </div>
         </div>
-      </div>
 
-      <div className="mt-6">
-        <div className="glass-panel animate-fade-up rounded-[28px] p-7 shadow-card md:p-9">
-          <div className="flex items-center justify-between">
+        <div className="whisk-panel">
+          <div className="whisk-panel-header">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
-                Step 01
-              </p>
-              <h2 className="mt-3 text-xl font-semibold text-ink">
-                Generate the video
-              </h2>
+              <p className="whisk-label">Gallery</p>
+              <h2 className="whisk-heading">Generate the video</h2>
             </div>
             {isGenerating && (
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-                <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
-                Submitting…
-              </div>
+              <div className="text-xs text-[#7a6a51]">Submitting...</div>
             )}
           </div>
-
-          <VideoGenerationPanel
-            videoProvider={videoProvider}
-            videoProviderOptions={videoProviderOptions}
-            onSelectVideoProvider={setVideoProvider}
-            videoModel={videoModel}
-            videoModelOptions={videoModelOptions}
-            onSelectVideoModel={setVideoModel}
-            imageListStatus={imageListStatus}
-            onRefreshImages={refreshImageList}
-            availableImages={availableImages}
-            selectedImageKey={selectedImageKey}
-            onSelectImage={(image) => setSelectedImageKey(image.key)}
-            onDeleteImage={handleDeleteImage}
-            prompt={prompt}
-            onPromptChange={setPrompt}
-            isReplicateAudioOption={isReplicateAudioOption}
-            videoGenerateAudio={videoGenerateAudio}
-            onToggleAudio={setVideoGenerateAudio}
-            onGenerateVideo={handleGenerate}
-            isVideoInProgress={isVideoInProgress}
-            isGenerating={isGenerating}
-            generationResponse={generationResponse}
-            availableVideos={availableVideos}
-          />
+          <div className="mt-6">
+            <VideoGenerationPanel
+              videoProvider={videoProvider}
+              videoProviderOptions={videoProviderOptions}
+              onSelectVideoProvider={setVideoProvider}
+              videoModel={videoModel}
+              videoModelOptions={videoModelOptions}
+              onSelectVideoModel={setVideoModel}
+              imageListStatus={imageListStatus}
+              onRefreshImages={refreshImageList}
+              availableImages={availableImages}
+              selectedImageKey={selectedImageKey}
+              onSelectImage={(image) => setSelectedImageKey(image.key)}
+              onDeleteImage={handleDeleteImage}
+              prompt={prompt}
+              onPromptChange={setPrompt}
+              isReplicateAudioOption={isReplicateAudioOption}
+              videoGenerateAudio={videoGenerateAudio}
+              onToggleAudio={setVideoGenerateAudio}
+              onGenerateVideo={handleGenerate}
+              isVideoInProgress={isVideoInProgress}
+              isGenerating={isGenerating}
+              generationResponse={generationResponse}
+              availableVideos={availableVideos}
+            />
+          </div>
         </div>
+
+        {error && (
+          <div className="whisk-panel border-[#e3c4b4] bg-[#f8ebe3] text-sm text-[#8c4b3a]">
+            {error}
+          </div>
+        )}
       </div>
-
-      {error && (
-        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
     </section>
   );
 }
