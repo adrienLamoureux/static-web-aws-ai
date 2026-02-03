@@ -829,9 +829,7 @@ function Whisk({ apiBaseUrl = "" }) {
               >
                 <img src={image.url} alt={image.key || "Generated image"} />
                 <div className="whisk-tile-overlay" />
-                <span className="whisk-tile-meta">
-                  {image.key?.split("/").pop() || "frame"}
-                </span>
+                <span className="whisk-tile-meta" />
                 <span className="whisk-tile-actions">
                   <button
                     type="button"
@@ -1004,9 +1002,7 @@ function Whisk({ apiBaseUrl = "" }) {
                 onClick={() => setFeaturedKey(image.key)}
               >
                 <img src={image.url} alt={image.key || "Carousel image"} />
-                <span className="whisk-carousel-meta">
-                  {image.key?.split("/").pop() || "frame"}
-                </span>
+                <span className="whisk-carousel-meta" />
               </button>
             ))}
           </div>

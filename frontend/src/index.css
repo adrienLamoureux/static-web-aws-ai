@@ -214,13 +214,7 @@ body {
   }
 
   .whisk-tile-meta {
-    position: absolute;
-    left: 14px;
-    bottom: 12px;
-    font-size: 0.7rem;
-    color: #f8f2e7;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    display: none;
   }
 
   .whisk-tile-actions {
@@ -329,10 +323,7 @@ body {
   }
 
   .whisk-carousel-meta {
-    display: block;
-    margin-top: 8px;
-    font-size: 0.7rem;
-    color: #6b5c45;
+    display: none;
   }
 
   .whisk-tools {
