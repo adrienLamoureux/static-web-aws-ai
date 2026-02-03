@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import ImageSourceSelector from "../components/home/ImageSourceSelector";
-import ImageGenerationPanel from "../components/home/ImageGenerationPanel";
-import ImageUploadPanel from "../components/home/ImageUploadPanel";
-import VideoGenerationPanel from "../components/home/VideoGenerationPanel";
+import WhiskHero from "../components/whisk/WhiskHero";
+import WhiskWall from "../components/whisk/WhiskWall";
+import WhiskModal from "../components/whisk/WhiskModal";
 import { deleteImage, listImages } from "../services/s3";
 import {
   generateBedrockImage,
@@ -44,7 +43,6 @@ function Whisk({ apiBaseUrl = "" }) {
   const [images, setImages] = useState([]);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
-  const [featuredKey, setFeaturedKey] = useState("");
   const [activeModal, setActiveModal] = useState("");
   const [videoSelectStatus, setVideoSelectStatus] = useState("idle");
   const [imageSource, setImageSource] = useState("replicate");
@@ -98,6 +96,9 @@ function Whisk({ apiBaseUrl = "" }) {
   const [jobStatus, setJobStatus] = useState("");
   const [replicatePredictionId, setReplicatePredictionId] = useState("");
   const [replicateJobStatus, setReplicateJobStatus] = useState("");
+  const [pageIndex, setPageIndex] = useState(0);
+  const [lightboxImage, setLightboxImage] = useState(null);
+  const pageSize = 10;
 
   const resolvedApiBaseUrl =
     apiBaseUrl || process.env.REACT_APP_API_URL || "";
@@ -146,6 +147,7 @@ function Whisk({ apiBaseUrl = "" }) {
         const data = await listImages(resolvedApiBaseUrl);
         if (!isMounted) return;
         setImages(data.images || []);
+        setPageIndex(0);
         setStatus("success");
       } catch (err) {
         if (!isMounted) return;
@@ -721,9 +723,15 @@ function Whisk({ apiBaseUrl = "" }) {
       ),
     [images]
   );
+  useEffect(() => {
+    setPageIndex(0);
+  }, [displayImages.length]);
   const heroImages = useMemo(() => displayImages.slice(0, 12), [displayImages]);
-  const showcaseImage =
-    displayImages.find((image) => image.key === featuredKey) || heroImages[0];
+  const pagedImages = useMemo(
+    () => displayImages.slice(0, (pageIndex + 1) * pageSize),
+    [displayImages, pageIndex]
+  );
+  const canLoadMore = displayImages.length > pagedImages.length;
   const promptHelperProps = {
     selections: promptHelperSelections,
     onSelectionChange: handlePromptSelectionChange,
@@ -781,9 +789,6 @@ function Whisk({ apiBaseUrl = "" }) {
     try {
       await deleteImage(resolvedApiBaseUrl, image.key);
       setImages((prev) => prev.filter((item) => item.key !== image.key));
-      if (featuredKey === image.key) {
-        setFeaturedKey("");
-      }
     } catch (err) {
       setError(err?.message || "Failed to delete image.");
     }
@@ -791,223 +796,27 @@ function Whisk({ apiBaseUrl = "" }) {
 
   return (
     <section className="whisk-page">
-      <header className="whisk-hero-block">
-        <p className="whisk-eyebrow">Whisk Studio</p>
-        <h1 className="whisk-title-main">Static web studio for image-led motion</h1>
-        <p className="whisk-subtitle-main">
-          A gallery-first static web app. Load your S3 library instantly and
-          start exploring.
-        </p>
-        <div className="whisk-status-row">
-          <span className="whisk-pill">
-            {resolvedApiBaseUrl
-              ? status === "loading"
-                ? "Loading library..."
-                : "Library connected"
-              : "Set API URL in config.json or .env"}
-          </span>
-          {error && <span className="whisk-error">{error}</span>}
-        </div>
-      </header>
+      <WhiskHero
+        apiBaseUrl={resolvedApiBaseUrl}
+        status={status}
+        error={error}
+        isGeneratingImage={isGeneratingImage}
+        isUploading={isUploading}
+      />
 
       <div className="whisk-gallery">
-        <div className="whisk-wall">
-          {heroImages.length > 0 ? (
-            heroImages.map((image, index) => (
-              <div
-                key={image.key || `${image.url}-${index}`}
-                role="button"
-                tabIndex={0}
-                className={`whisk-tile ${index === 0 ? "is-feature" : ""}`}
-                onClick={() => setFeaturedKey(image.key)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    setFeaturedKey(image.key);
-                  }
-                }}
-              >
-                <img src={image.url} alt={image.key || "Generated image"} />
-                <div className="whisk-tile-overlay" />
-                <span className="whisk-tile-meta" />
-                <span className="whisk-tile-actions">
-                  <button
-                    type="button"
-                    className="whisk-icon-button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      openVideoModalForImage(image);
-                    }}
-                    aria-label="Generate video from image"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path
-                        d="M5 4h10a2 2 0 0 1 2 2v2l4-2v12l-4-2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
-                  {image.url && (
-                    <a
-                      className="whisk-icon-button"
-                      href={image.url}
-                      download
-                      onClick={(event) => event.stopPropagation()}
-                      aria-label="Download image"
-                    >
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path
-                          d="M12 3v11m0 0l4-4m-4 4l-4-4M4 17v3h16v-3"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </a>
-                  )}
-                  <button
-                    type="button"
-                    className="whisk-icon-button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      handleDeleteImage(image);
-                    }}
-                    aria-label="Delete image"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path
-                        d="M4 7h16M9 7V5h6v2m-7 0l1 12h8l1-12"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
-                </span>
-              </div>
-            ))
-          ) : (
-            <div className="whisk-empty">
-              {status === "loading"
-                ? "Loading images from S3..."
-                : "No images found yet. Generate or upload to populate the wall."}
-            </div>
-          )}
-          <button
-            type="button"
-            className="whisk-tile whisk-tile-cta"
-            onClick={() => setActiveModal("image")}
-          >
-            <div className="whisk-tile-plus">+</div>
-            <span className="whisk-tile-cta-text">Create an image</span>
-          </button>
-        </div>
-
-        <div className="whisk-side">
-          <div className="whisk-spotlight">
-            <div className="whisk-spotlight-card">
-              <p className="whisk-eyebrow">Spotlight</p>
-              {showcaseImage ? (
-                <>
-                  <img
-                    src={showcaseImage.url}
-                    alt={showcaseImage.key || "Spotlight"}
-                  />
-                <div className="whisk-spotlight-meta">
-                  <span className="whisk-pill">Featured</span>
-                  <span className="whisk-meta-text">
-                    {showcaseImage.key || "untitled"}
-                  </span>
-                  <button
-                    type="button"
-                    className="whisk-icon-button"
-                    onClick={() => openVideoModalForImage(showcaseImage)}
-                    aria-label="Generate video from featured image"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path
-                        d="M5 4h10a2 2 0 0 1 2 2v2l4-2v12l-4-2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
-                  {showcaseImage.url && (
-                    <a
-                      className="whisk-icon-button"
-                      href={showcaseImage.url}
-                        download
-                        aria-label="Download featured image"
-                      >
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                          <path
-                            d="M12 3v11m0 0l4-4m-4 4l-4-4M4 17v3h16v-3"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </a>
-                    )}
-                    <button
-                      type="button"
-                      className="whisk-icon-button"
-                      onClick={() => handleDeleteImage(showcaseImage)}
-                      aria-label="Delete featured image"
-                    >
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path
-                          d="M4 7h16M9 7V5h6v2m-7 0l1 12h8l1-12"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="whisk-empty">
-                  Your spotlight will appear here once images are available.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <WhiskWall
+          images={pagedImages}
+          status={status}
+          onOpenVideo={openVideoModalForImage}
+          onDeleteImage={handleDeleteImage}
+          onOpenImageModal={() => setActiveModal("image")}
+          onOpenLightbox={setLightboxImage}
+          canLoadMore={canLoadMore}
+          onLoadMore={() => setPageIndex((prev) => prev + 1)}
+          totalCount={displayImages.length}
+        />
       </div>
-
-      {displayImages.length > 0 && (
-        <div className="whisk-carousel">
-          <div className="whisk-carousel-track">
-            {displayImages.map((image) => (
-              <button
-                key={image.key}
-                type="button"
-                className="whisk-carousel-card"
-                onClick={() => setFeaturedKey(image.key)}
-              >
-                <img src={image.url} alt={image.key || "Carousel image"} />
-                <span className="whisk-carousel-meta" />
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {error && (
         <div className="whisk-panel whisk-error-panel">
@@ -1015,138 +824,103 @@ function Whisk({ apiBaseUrl = "" }) {
         </div>
       )}
 
-      {activeModal && (
-        <div className="whisk-modal-backdrop" onClick={closeModal}>
-          <div
-            className="whisk-modal"
-            onClick={(event) => event.stopPropagation()}
+      {lightboxImage && (
+        <div
+          className="whisk-lightbox"
+          onClick={() => setLightboxImage(null)}
+        >
+          <button
+            type="button"
+            className="whisk-lightbox-close"
+            onClick={(event) => {
+              event.stopPropagation();
+              setLightboxImage(null);
+            }}
+            aria-label="Close full-size image"
           >
-            <div className="whisk-modal-header">
-              <div>
-                <p className="whisk-label">
-                  {activeModal === "image" ? "Studio" : "Motion"}
-                </p>
-                <h2 className="whisk-heading">
-                  {activeModal === "image"
-                    ? "Create an image"
-                    : "Generate the video"}
-                </h2>
-              </div>
-              <button
-                type="button"
-                className="whisk-modal-close"
-                onClick={closeModal}
-                aria-label="Close modal"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="whisk-modal-body">
-              {activeModal === "image" ? (
-                <>
-                  <ImageSourceSelector
-                    options={imageSourceOptions}
-                    value={imageSource}
-                    onChange={setImageSource}
-                  />
-                  {imageSource !== "upload" ? (
-                    <ImageGenerationPanel
-                      imageModel={imageModel}
-                      imageModelOptions={imageModelOptions}
-                      onSelectModel={setImageModel}
-                      imageGenerationName={imageGenerationName}
-                      onImageNameChange={setImageGenerationName}
-                      promptHelperProps={promptHelperProps}
-                      imagePrompt={imagePrompt}
-                      onImagePromptChange={setImagePrompt}
-                      imageNegativePrompt={imageNegativePrompt}
-                      onImageNegativePromptChange={setImageNegativePrompt}
-                      imageSize={imageSize}
-                      imageSizeOptions={imageSizeOptions}
-                      onImageSizeChange={setImageSize}
-                      imageScheduler={imageScheduler}
-                      imageSchedulerOptions={imageSchedulerOptions}
-                      onImageSchedulerChange={setImageScheduler}
-                      imageNumImages={imageNumImages}
-                      onImageNumImagesChange={setImageNumImages}
-                      onGenerateImage={handleGenerateImage}
-                      isGeneratingImage={isGeneratingImage}
-                      imageGenerationNotice={imageGenerationNotice}
-                      generatedImages={generatedImages}
-                      selectedGeneratedKey={selectedGeneratedKey}
-                      selectingImageKey={selectingImageKey}
-                      isSelectingImage={isSelectingImage}
-                      onSelectGeneratedImage={handleSelectGeneratedImage}
-                    />
-                  ) : (
-                    <ImageUploadPanel
-                      imageName={imageName}
-                      onImageNameChange={setImageName}
-                      selectedFile={selectedFile}
-                      previewUrl={previewUrl}
-                      onFileChange={handleFileChange}
-                      onUpload={handleUpload}
-                      uploadKey={uploadKey}
-                      isUploading={isUploading}
-                    />
-                  )}
-                </>
-              ) : (
-                <>
-                  {selectedImageUrl && (
-                    <div className="whisk-selected-preview">
-                      <img
-                        src={selectedImageUrl}
-                        alt="Selected for video"
-                      />
-                      <div>
-                        <p className="whisk-label">Selected image</p>
-                        <p className="whisk-meta-text">
-                          {selectedImageKey || "Preparing video-ready key"}
-                        </p>
-                        {videoSelectStatus === "loading" && (
-                          <p className="whisk-selecting">Preparing video-ready...</p>
-                        )}
-                        {videoSelectStatus === "error" && (
-                          <p className="whisk-selecting whisk-selecting--error">
-                            Failed to prepare video-ready key.
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  <VideoGenerationPanel
-                    videoProvider={videoProvider}
-                    videoProviderOptions={videoProviderOptions}
-                    onSelectVideoProvider={setVideoProvider}
-                    videoModel={videoModel}
-                    videoModelOptions={videoModelOptions}
-                    onSelectVideoModel={setVideoModel}
-                    imageListStatus="success"
-                    onRefreshImages={() => {}}
-                    availableImages={displayImages}
-                    selectedImageKey={selectedImageKey}
-                    onSelectImage={handleSelectImageForVideo}
-                    onDeleteImage={handleDeleteImage}
-                    hideImageSelector
-                    prompt={prompt}
-                    onPromptChange={setPrompt}
-                    isReplicateAudioOption={isReplicateAudioOption}
-                    videoGenerateAudio={videoGenerateAudio}
-                    onToggleAudio={setVideoGenerateAudio}
-                    onGenerateVideo={handleGenerate}
-                    isVideoInProgress={isVideoInProgress}
-                    isGenerating={isGenerating}
-                    generationResponse={generationResponse}
-                    availableVideos={[]}
-                  />
-                </>
-              )}
-            </div>
-          </div>
+            ✕
+          </button>
+          <img
+            src={lightboxImage.url}
+            alt={lightboxImage.key || "Full size"}
+            onClick={(event) => event.stopPropagation()}
+          />
         </div>
       )}
+
+      <WhiskModal
+        activeModal={activeModal}
+        onClose={closeModal}
+        imageSource={imageSource}
+        imageSourceOptions={imageSourceOptions}
+        onChangeImageSource={setImageSource}
+        imageGenerationProps={{
+          imageModel,
+          imageModelOptions,
+          onSelectModel: setImageModel,
+          imageGenerationName,
+          onImageNameChange: setImageGenerationName,
+          promptHelperProps,
+          imagePrompt,
+          onImagePromptChange: setImagePrompt,
+          imageNegativePrompt,
+          onImageNegativePromptChange: setImageNegativePrompt,
+          imageSize,
+          imageSizeOptions,
+          onImageSizeChange: setImageSize,
+          imageScheduler,
+          imageSchedulerOptions,
+          onImageSchedulerChange: setImageScheduler,
+          imageNumImages,
+          onImageNumImagesChange: setImageNumImages,
+          onGenerateImage: handleGenerateImage,
+          isGeneratingImage,
+          imageGenerationNotice,
+          generatedImages,
+          selectedGeneratedKey,
+          selectingImageKey,
+          isSelectingImage,
+          onSelectGeneratedImage: handleSelectGeneratedImage,
+        }}
+        imageUploadProps={{
+          imageName,
+          onImageNameChange: setImageName,
+          selectedFile,
+          previewUrl,
+          onFileChange: handleFileChange,
+          onUpload: handleUpload,
+          uploadKey,
+          isUploading,
+        }}
+        showVideoSelected
+        selectedImageUrl={selectedImageUrl}
+        selectedImageKey={selectedImageKey}
+        videoSelectStatus={videoSelectStatus}
+        videoPanelProps={{
+          videoProvider,
+          videoProviderOptions,
+          onSelectVideoProvider: setVideoProvider,
+          videoModel,
+          videoModelOptions,
+          onSelectVideoModel: setVideoModel,
+          imageListStatus: "success",
+          onRefreshImages: () => {},
+          availableImages: displayImages,
+          selectedImageKey,
+          onSelectImage: handleSelectImageForVideo,
+          onDeleteImage: handleDeleteImage,
+          prompt,
+          onPromptChange: setPrompt,
+          isReplicateAudioOption,
+          videoGenerateAudio,
+          onToggleAudio: setVideoGenerateAudio,
+          onGenerateVideo: handleGenerate,
+          isVideoInProgress,
+          isGenerating,
+          generationResponse,
+          availableVideos: [],
+        }}
+      />
     </section>
   );
 }

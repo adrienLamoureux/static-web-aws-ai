@@ -14,6 +14,7 @@ function VideoGenerationPanel({
   onSelectImage,
   onDeleteImage,
   hideImageSelector = false,
+  singleColumn = false,
   prompt,
   onPromptChange,
   isReplicateAudioOption,
@@ -26,7 +27,13 @@ function VideoGenerationPanel({
   availableVideos,
 }) {
   return (
-    <div className="gallery-grid-2 lg:grid-cols-[1.1fr_0.9fr]">
+    <div
+      className={
+        singleColumn
+          ? "gallery-grid-2"
+          : "gallery-grid-2 lg:grid-cols-[1.1fr_0.9fr]"
+      }
+    >
       <div className="space-y-6">
         <div className="gallery-section">
           <p className="field-label">Video provider</p>

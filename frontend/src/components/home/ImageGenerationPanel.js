@@ -29,9 +29,16 @@ function ImageGenerationPanel({
   selectingImageKey,
   isSelectingImage,
   onSelectGeneratedImage,
+  singleColumn = false,
 }) {
   return (
-    <div className="gallery-grid-2 lg:grid-cols-[1.2fr_0.8fr]">
+    <div
+      className={
+        singleColumn
+          ? "gallery-grid-2"
+          : "gallery-grid-2 lg:grid-cols-[1.2fr_0.8fr]"
+      }
+    >
       <div className="space-y-6">
         <div className="gallery-section">
           <p className="field-label">Choose a model</p>
