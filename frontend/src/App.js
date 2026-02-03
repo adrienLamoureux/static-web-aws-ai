@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
-import Home from "./pages/Home";
 import About from "./pages/About";
 import Whisk from "./pages/Whisk";
 
@@ -44,12 +43,6 @@ function App() {
           </Link>
           <nav className="flex items-center gap-5 text-sm font-medium">
             <Link
-              to="/"
-              className="nav-link"
-            >
-              Home
-            </Link>
-            <Link
               to="/whisk"
               className="nav-link"
             >
@@ -65,7 +58,7 @@ function App() {
         </header>
         <main className="relative z-10">
           <Routes>
-            <Route path="/" element={<Home apiBaseUrl={apiBaseUrl} />} />
+            <Route path="/" element={<Whisk apiBaseUrl={apiBaseUrl} />} />
             <Route path="/whisk" element={<Whisk apiBaseUrl={apiBaseUrl} />} />
             <Route path="/about" element={<About />} />
           </Routes>
