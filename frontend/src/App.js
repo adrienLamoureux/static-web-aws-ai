@@ -39,7 +39,7 @@ function App() {
             to="/"
             className="text-lg font-semibold tracking-tight text-ink font-display"
           >
-            Nova Reel Studio
+            Whisk Studio
           </Link>
           <nav className="flex items-center gap-5 text-sm font-medium">
             <Link

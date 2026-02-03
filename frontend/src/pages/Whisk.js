@@ -793,10 +793,10 @@ function Whisk({ apiBaseUrl = "" }) {
     <section className="whisk-page">
       <header className="whisk-hero-block">
         <p className="whisk-eyebrow">Whisk Studio</p>
-        <h1 className="whisk-title-main">Turn images into motion studies</h1>
+        <h1 className="whisk-title-main">Static web studio for image-led motion</h1>
         <p className="whisk-subtitle-main">
-          A gallery-first workspace inspired by creative image tools. Load your
-          S3 library instantly and start exploring.
+          A gallery-first static web app. Load your S3 library instantly and
+          start exploring.
         </p>
         <div className="whisk-status-row">
           <span className="whisk-pill">
