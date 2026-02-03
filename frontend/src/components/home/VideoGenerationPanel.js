@@ -13,6 +13,7 @@ function VideoGenerationPanel({
   selectedImageKey,
   onSelectImage,
   onDeleteImage,
+  hideImageSelector = false,
   prompt,
   onPromptChange,
   isReplicateAudioOption,
@@ -126,76 +127,78 @@ function VideoGenerationPanel({
       </div>
 
       <div className="space-y-6">
-        <div className="gallery-section">
-          <div className="flex items-center justify-between gap-3">
-            <p className="field-label">Select an image</p>
-            <button
-              type="button"
-              onClick={onRefreshImages}
-              className="btn-ghost px-3 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={imageListStatus === "loading"}
-            >
-              {imageListStatus === "loading" ? "Loading..." : "Load images"}
-            </button>
-          </div>
-          {availableImages.length === 0 ? (
-            <p className="mt-3 text-sm text-[#7a6a51]">
-              {imageListStatus === "error"
-                ? "Failed to load images."
-                : "Click “Load images” to fetch from S3."}
-            </p>
-          ) : (
-            <div className="gallery-grid-3 mt-4 md:grid-cols-2">
-              {availableImages.map((image) => {
-                const isSelected = selectedImageKey === image.key;
-                return (
-                  <button
-                    key={image.key}
-                    type="button"
-                    onClick={() => onSelectImage(image)}
-                    className={`gallery-thumb p-3 text-left ${
-                      isSelected ? "choice-tile--active" : ""
-                    }`}
-                  >
-                    <img
-                      src={image.url}
-                      alt={image.key}
-                      className="h-28 w-full rounded-xl object-cover"
-                    />
-                    <p className="mt-2 text-[11px] font-medium text-[#6b5c45]">
-                      {image.key}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {image.url && (
-                        <a
-                          className="btn-ghost inline-flex px-3 py-1 text-[11px]"
-                          href={image.url}
-                          download
-                          onClick={(event) => event.stopPropagation()}
-                        >
-                          Download
-                        </a>
-                      )}
-                      <button
-                        type="button"
-                        className="btn-ghost inline-flex px-3 py-1 text-[11px] hover:border-[#c97b6b] hover:text-[#a15546]"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onDeleteImage(image);
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </button>
-                );
-              })}
+        {!hideImageSelector && (
+          <div className="gallery-section">
+            <div className="flex items-center justify-between gap-3">
+              <p className="field-label">Select an image</p>
+              <button
+                type="button"
+                onClick={onRefreshImages}
+                className="btn-ghost px-3 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={imageListStatus === "loading"}
+              >
+                {imageListStatus === "loading" ? "Loading..." : "Load images"}
+              </button>
             </div>
-          )}
-          <p className="mt-3 text-xs text-[#7a6a51]">
-            Showing video-ready images only.
-          </p>
-        </div>
+            {availableImages.length === 0 ? (
+              <p className="mt-3 text-sm text-[#7a6a51]">
+                {imageListStatus === "error"
+                  ? "Failed to load images."
+                  : "Click “Load images” to fetch from S3."}
+              </p>
+            ) : (
+              <div className="gallery-grid-3 mt-4 md:grid-cols-2">
+                {availableImages.map((image) => {
+                  const isSelected = selectedImageKey === image.key;
+                  return (
+                    <button
+                      key={image.key}
+                      type="button"
+                      onClick={() => onSelectImage(image)}
+                      className={`gallery-thumb p-3 text-left ${
+                        isSelected ? "choice-tile--active" : ""
+                      }`}
+                    >
+                      <img
+                        src={image.url}
+                        alt={image.key}
+                        className="h-28 w-full rounded-xl object-cover"
+                      />
+                      <p className="mt-2 text-[11px] font-medium text-[#6b5c45]">
+                        {image.key}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {image.url && (
+                          <a
+                            className="btn-ghost inline-flex px-3 py-1 text-[11px]"
+                            href={image.url}
+                            download
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            Download
+                          </a>
+                        )}
+                        <button
+                          type="button"
+                          className="btn-ghost inline-flex px-3 py-1 text-[11px] hover:border-[#c97b6b] hover:text-[#a15546]"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onDeleteImage(image);
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <p className="mt-3 text-xs text-[#7a6a51]">
+              Showing video-ready images only.
+            </p>
+          </div>
+        )}
 
         <div className="gallery-section">
           <p className="field-label">Available videos in S3</p>

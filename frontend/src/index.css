@@ -106,6 +106,48 @@ body {
     gap: 22px;
   }
 
+  .whisk-side {
+    display: grid;
+    gap: 16px;
+    align-content: start;
+  }
+
+  .whisk-action-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .whisk-action-tile {
+    aspect-ratio: 1 / 1;
+    border-radius: 18px;
+    border: 1px dashed rgba(210, 198, 176, 0.7);
+    background: rgba(255, 255, 255, 0.7);
+    padding: 14px;
+    display: grid;
+    gap: 8px;
+    align-content: start;
+    text-align: left;
+    transition: border 0.2s ease, transform 0.2s ease;
+  }
+
+  .whisk-action-tile:hover {
+    transform: translateY(-2px);
+    border-color: rgba(176, 141, 87, 0.6);
+  }
+
+
+  .whisk-action-title {
+    font-weight: 600;
+    color: #1b1a17;
+    font-size: 0.9rem;
+  }
+
+  .whisk-action-subtitle {
+    color: #6b5c45;
+    font-size: 0.78rem;
+  }
+
   .whisk-wall {
     display: grid;
     gap: 14px;
@@ -120,6 +162,31 @@ body {
     background: rgba(255, 255, 255, 0.7);
     aspect-ratio: 4 / 3;
     cursor: pointer;
+  }
+
+  .whisk-tile-cta {
+    display: grid;
+    place-items: center;
+    gap: 10px;
+    border: none;
+    background: transparent;
+  }
+
+  .whisk-tile-plus {
+    width: 56px;
+    height: 56px;
+    border-radius: 999px;
+    border: 1px solid rgba(176, 141, 87, 0.35);
+    display: grid;
+    place-items: center;
+    font-size: 2rem;
+    color: rgba(138, 119, 91, 0.9);
+    background: rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(6px);
+  }
+
+  .whisk-tile-cta-text {
+    display: none;
   }
 
   .whisk-tile.is-feature {
@@ -253,6 +320,7 @@ body {
     text-align: left;
   }
 
+
   .whisk-carousel-card img {
     width: 100%;
     height: 120px;
@@ -265,6 +333,131 @@ body {
     margin-top: 8px;
     font-size: 0.7rem;
     color: #6b5c45;
+  }
+
+  .whisk-tools {
+    margin-top: 32px;
+    display: grid;
+    gap: 20px;
+  }
+
+  .whisk-panel--highlight {
+    background: rgba(255, 255, 255, 0.9);
+  }
+
+  .whisk-panel--muted {
+    background: rgba(255, 252, 247, 0.85);
+  }
+
+  .whisk-panel-header {
+    align-items: flex-start;
+  }
+
+  .whisk-panel-copy {
+    margin-top: 10px;
+    color: #6b5c45;
+    font-size: 0.9rem;
+  }
+
+  .whisk-panel-body {
+    margin-top: 20px;
+    display: grid;
+    gap: 18px;
+  }
+
+  .whisk-panel-surface {
+    border-radius: 20px;
+    border: 1px solid rgba(210, 198, 176, 0.5);
+    background: rgba(255, 255, 255, 0.85);
+    padding: 16px;
+  }
+
+  .whisk-error-panel {
+    margin-top: 20px;
+    border-color: rgba(209, 140, 122, 0.6);
+    background: rgba(248, 233, 226, 0.9);
+    color: #8c4b3a;
+    font-size: 0.9rem;
+  }
+
+  .whisk-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(17, 16, 14, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 50;
+  }
+
+  .whisk-modal {
+    width: min(960px, 94vw);
+    max-height: 90vh;
+    overflow: auto;
+    border-radius: 24px;
+    border: 1px solid rgba(210, 198, 176, 0.6);
+    background: rgba(255, 255, 255, 0.96);
+    padding: 22px;
+  }
+
+  .whisk-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .whisk-modal-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    border: 1px solid rgba(210, 198, 176, 0.6);
+    background: rgba(255, 255, 255, 0.8);
+    color: #6b5c45;
+    font-size: 1rem;
+  }
+
+  .whisk-modal-body {
+    display: grid;
+    gap: 18px;
+  }
+
+  .whisk-selected-preview {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 14px;
+    align-items: center;
+    padding: 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(210, 198, 176, 0.6);
+    background: rgba(255, 255, 255, 0.9);
+  }
+
+  .whisk-selected-preview img {
+    width: 120px;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 1px solid rgba(210, 198, 176, 0.6);
+  }
+
+  .whisk-selecting {
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: #7a6a51;
+  }
+
+  .whisk-selecting--error {
+    color: #9c4f3b;
+  }
+
+  @media (min-width: 960px) {
+    .whisk-tools {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
+    }
   }
 
   @media (min-width: 900px) {
@@ -293,6 +486,10 @@ body {
     .whisk-tile.is-feature {
       grid-column: span 2;
       grid-row: span 1;
+    }
+
+    .whisk-action-grid {
+      grid-template-columns: 1fr;
     }
   }
   .whisk-shell {
