@@ -4,7 +4,9 @@
   "main": "lambda.js",
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.624.0",
+    "@aws-sdk/client-dynamodb": "^3.624.0",
     "@aws-sdk/client-s3": "^3.624.0",
+    "@aws-sdk/lib-dynamodb": "^3.624.0",
     "@aws-sdk/s3-request-presigner": "^3.624.0",
     "express": "^4.17.3",
     "jimp": "^0.22.12",

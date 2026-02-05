@@ -7,11 +7,118 @@ import * as s3Deployment from "aws-cdk-lib/aws-s3-deployment";
 import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as cognito from "aws-cdk-lib/aws-cognito";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as cr from "aws-cdk-lib/custom-resources";
 import * as path from "path";
 
 export class StaticWebAWSAIStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    const adminEmail = "vergil1534@gmail.com";
+    const adminTempPassword = "WhiskStudio!2026";
+
+    const mediaTable = new dynamodb.Table(this, "MediaTable", {
+      partitionKey: { name: "pk", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "sk", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    const userPool = new cognito.UserPool(this, "UserPool", {
+      selfSignUpEnabled: false,
+      signInAliases: { email: true },
+      standardAttributes: {
+        email: {
+          required: true,
+          mutable: false,
+        },
+      },
+      passwordPolicy: {
+        minLength: 10,
+        requireLowercase: true,
+        requireUppercase: true,
+        requireDigits: true,
+        requireSymbols: true,
+      },
+    });
+
+    const uniqueSuffix = cdk.Names.uniqueId(this).slice(-8).toLowerCase();
+    const overrideDomainPrefix = (process.env.COGNITO_DOMAIN_PREFIX || "").toLowerCase();
+    let domainPrefix = overrideDomainPrefix ||
+      `whisk-studio-${cdk.Stack.of(this).account}-${cdk.Stack.of(this).region}-${uniqueSuffix}`;
+    domainPrefix = domainPrefix
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-+/, "")
+      .replace(/-+$/, "");
+    if (!/^[a-z]/.test(domainPrefix)) {
+      domainPrefix = `ws-${domainPrefix}`;
+    }
+    if (domainPrefix.length > 63) {
+      domainPrefix = domainPrefix.slice(0, 63).replace(/-+$/, "");
+    }
+    if (!domainPrefix) {
+      domainPrefix = `ws-${uniqueSuffix}`;
+    }
+    const userPoolDomain = userPool.addDomain("UserPoolDomain", {
+      cognitoDomain: { domainPrefix },
+    });
+    const cognitoDomainBaseUrl = `https://${domainPrefix}.auth.${cdk.Stack.of(this).region}.amazoncognito.com`;
+
+    new cr.AwsCustomResource(this, "DefaultAdminUser", {
+      onCreate: {
+        service: "CognitoIdentityServiceProvider",
+        action: "adminCreateUser",
+        parameters: {
+          UserPoolId: userPool.userPoolId,
+          Username: adminEmail,
+          TemporaryPassword: adminTempPassword,
+          MessageAction: "SUPPRESS",
+          UserAttributes: [
+            { Name: "email", Value: adminEmail },
+            { Name: "email_verified", Value: "true" },
+          ],
+        },
+        physicalResourceId: cr.PhysicalResourceId.of(
+          `default-admin-${adminEmail}`
+        ),
+      },
+      onUpdate: {
+        service: "CognitoIdentityServiceProvider",
+        action: "adminUpdateUserAttributes",
+        parameters: {
+          UserPoolId: userPool.userPoolId,
+          Username: adminEmail,
+          UserAttributes: [
+            { Name: "email", Value: adminEmail },
+            { Name: "email_verified", Value: "true" },
+          ],
+        },
+        physicalResourceId: cr.PhysicalResourceId.of(
+          `default-admin-${adminEmail}`
+        ),
+      },
+      onDelete: {
+        service: "CognitoIdentityServiceProvider",
+        action: "adminDeleteUser",
+        parameters: {
+          UserPoolId: userPool.userPoolId,
+          Username: adminEmail,
+        },
+      },
+      policy: cr.AwsCustomResourcePolicy.fromStatements([
+        new iam.PolicyStatement({
+          actions: [
+            "cognito-idp:AdminCreateUser",
+            "cognito-idp:AdminDeleteUser",
+          ],
+          resources: [userPool.userPoolArn],
+        }),
+      ]),
+    });
 
     // Lambda Function for API
     const apiLambda = new lambda.Function(this, "ApiLambda", {
@@ -36,6 +143,7 @@ export class StaticWebAWSAIStack extends cdk.Stack {
     });
 
     apiLambda.addEnvironment("MEDIA_BUCKET", mediaBucket.bucketName);
+    apiLambda.addEnvironment("MEDIA_TABLE", mediaTable.tableName);
     apiLambda.addEnvironment(
       "BEDROCK_REGION",
       process.env.BEDROCK_REGION || cdk.Stack.of(this).region
@@ -68,18 +176,19 @@ export class StaticWebAWSAIStack extends cdk.Stack {
     mediaBucket.grantPut(apiLambda);
     mediaBucket.grantRead(apiLambda);
     mediaBucket.grantDelete(apiLambda);
+    mediaTable.grantReadWriteData(apiLambda);
 
     mediaBucket.addToResourcePolicy(
       new iam.PolicyStatement({
         actions: ["s3:GetObject"],
-        resources: [`${mediaBucket.bucketArn}/images/*`],
+        resources: [`${mediaBucket.bucketArn}/users/*/images/*`],
         principals: [new iam.ServicePrincipal("bedrock.amazonaws.com")],
       })
     );
     mediaBucket.addToResourcePolicy(
       new iam.PolicyStatement({
         actions: ["s3:PutObject"],
-        resources: [`${mediaBucket.bucketArn}/videos/*`],
+        resources: [`${mediaBucket.bucketArn}/users/*/videos/*`],
         principals: [new iam.ServicePrincipal("bedrock.amazonaws.com")],
       })
     );
@@ -91,6 +200,15 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: apigateway.Cors.ALL_METHODS,
+        allowHeaders: ["*"],
+      },
+      defaultMethodOptions: {
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        authorizer: new apigateway.CognitoUserPoolsAuthorizer(
+          this,
+          "CognitoAuthorizer",
+          { cognitoUserPools: [userPool] }
+        ),
       },
     });
 
@@ -134,9 +252,48 @@ export class StaticWebAWSAIStack extends cdk.Stack {
     // CloudFront Distribution
     const distribution = new cloudfront.Distribution(this, "CloudFrontDistribution", {
       defaultBehavior: { origin: new origins.S3Origin(websiteBucket) },
+      defaultRootObject: "index.html",
+      errorResponses: [
+        {
+          httpStatus: 403,
+          responseHttpStatus: 200,
+          responsePagePath: "/index.html",
+          ttl: cdk.Duration.minutes(5),
+        },
+        {
+          httpStatus: 404,
+          responseHttpStatus: 200,
+          responsePagePath: "/index.html",
+          ttl: cdk.Duration.minutes(5),
+        },
+      ],
     });
 
-    const frontendApiUrl = process.env.REACT_APP_API_URL || "";
+    const frontendApiUrl = process.env.REACT_APP_API_URL || api.url || "";
+
+    const userPoolClient = userPool.addClient("UserPoolClient", {
+      authFlows: { userPassword: true },
+      oAuth: {
+        flows: { authorizationCodeGrant: true },
+        scopes: [
+          cognito.OAuthScope.OPENID,
+          cognito.OAuthScope.EMAIL,
+          cognito.OAuthScope.PROFILE,
+        ],
+        callbackUrls: [
+          "http://localhost:3000/auth/callback",
+          `https://${distribution.domainName}/auth/callback`,
+        ],
+        logoutUrls: [
+          "http://localhost:3000/login",
+          `https://${distribution.domainName}/login`,
+        ],
+      },
+      supportedIdentityProviders: [
+        cognito.UserPoolClientIdentityProvider.COGNITO,
+      ],
+      refreshTokenValidity: cdk.Duration.days(30),
+    });
 
     // Deploy frontend to S3
     new s3Deployment.BucketDeployment(this, "DeployWebsite", {
@@ -146,7 +303,15 @@ export class StaticWebAWSAIStack extends cdk.Stack {
         ),
         s3Deployment.Source.data(
           "config.json",
-          JSON.stringify({ apiBaseUrl: frontendApiUrl })
+          JSON.stringify({
+            apiBaseUrl: frontendApiUrl,
+            cognito: {
+              domain: cognitoDomainBaseUrl,
+              clientId: userPoolClient.userPoolClientId,
+              userPoolId: userPool.userPoolId,
+              region: cdk.Stack.of(this).region,
+            },
+          })
         ),
       ],
       destinationBucket: websiteBucket,
@@ -165,6 +330,26 @@ export class StaticWebAWSAIStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, "MediaBucketName", {
       value: mediaBucket.bucketName,
+    });
+
+    new cdk.CfnOutput(this, "UserPoolId", {
+      value: userPool.userPoolId,
+    });
+
+    new cdk.CfnOutput(this, "UserPoolClientId", {
+      value: userPoolClient.userPoolClientId,
+    });
+
+    new cdk.CfnOutput(this, "CognitoDomain", {
+      value: cognitoDomainBaseUrl,
+    });
+
+    new cdk.CfnOutput(this, "CognitoDomainPrefix", {
+      value: domainPrefix,
+    });
+
+    new cdk.CfnOutput(this, "AdminUserEmail", {
+      value: adminEmail,
     });
   }
 }

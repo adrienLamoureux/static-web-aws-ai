@@ -1,3 +1,9 @@
 {
-  "apiBaseUrl": "https://qy5pzvatme.execute-api.us-east-1.amazonaws.com/prod/"
+  "apiBaseUrl": "https://qy5pzvatme.execute-api.us-east-1.amazonaws.com/prod/",
+  "cognito": {
+    "domain": "",
+    "clientId": "",
+    "userPoolId": "",
+    "region": ""
+  }
 }

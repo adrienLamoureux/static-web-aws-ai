@@ -3,7 +3,6 @@ import React from "react";
 function WhiskWall({
   images,
   status,
-  onSelectFeatured,
   onOpenVideo,
   onDeleteImage,
   onOpenImageModal,
@@ -25,20 +24,12 @@ function WhiskWall({
             tabIndex={0}
             className={`whisk-tile ${index === 0 ? "is-feature" : ""}`}
             onClick={() => {
-              if (onOpenLightbox) {
-                onOpenLightbox(image);
-              } else {
-                onSelectFeatured?.(image.key);
-              }
+              onOpenLightbox?.(image);
             }}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
-                if (onOpenLightbox) {
-                  onOpenLightbox(image);
-                } else {
-                  onSelectFeatured?.(image.key);
-                }
+                onOpenLightbox?.(image);
               }
             }}
           >

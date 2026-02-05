@@ -85,8 +85,6 @@ function WhiskModal({
                 </div>
               )}
               <VideoGenerationPanel
-                hideImageSelector
-                singleColumn
                 {...videoPanelProps}
               />
             </>

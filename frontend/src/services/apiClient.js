@@ -1,3 +1,5 @@
+import { getAuthToken } from "../utils/authTokens";
+
 export const normalizeBaseUrl = (baseUrl = "") =>
   baseUrl.replace(/\/+$/, "");
 
@@ -19,8 +21,17 @@ export const buildUrlWithQuery = (baseUrl, path, params = {}) => {
   return query ? `${url}?${query}` : url;
 };
 
+const withAuthHeaders = (headers = {}) => {
+  const token = getAuthToken();
+  if (!token) return headers;
+  return { ...headers, Authorization: `Bearer ${token}` };
+};
+
 export const fetchJson = async (url, options = {}, errorMessage) => {
-  const response = await fetch(url, options);
+  const response = await fetch(url, {
+    ...options,
+    headers: withAuthHeaders(options.headers || {}),
+  });
   let data = null;
   try {
     data = await response.json();

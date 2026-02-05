@@ -13,6 +13,13 @@ const {
   CopyObjectCommand,
   DeleteObjectCommand,
 } = require("@aws-sdk/client-s3");
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const {
+  DynamoDBDocumentClient,
+  PutCommand,
+  QueryCommand,
+  DeleteCommand,
+} = require("@aws-sdk/lib-dynamodb");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const Replicate = require("replicate");
 const Jimp = require("jimp");
@@ -24,7 +31,7 @@ app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", allowedOrigin);
   res.header(
     "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept"
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
   );
   res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   if (req.method === "OPTIONS") {
@@ -42,6 +49,12 @@ const s3Client = new S3Client({
 const replicateClient = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN || "",
 });
+const dynamoClient = DynamoDBDocumentClient.from(
+  new DynamoDBClient({
+    region: process.env.AWS_REGION,
+  })
+);
+const mediaTable = process.env.MEDIA_TABLE;
 const promptHelperModelId =
   process.env.BEDROCK_PROMPT_HELPER_INFERENCE_PROFILE_ARN ||
   process.env.BEDROCK_PROMPT_HELPER_MODEL_ID ||
@@ -155,6 +168,7 @@ const buildSafeBaseName = (value = "") => {
 };
 
 const buildImageKey = ({
+  userId = "",
   provider = "bedrock",
   index = 0,
   baseName = "",
@@ -163,10 +177,11 @@ const buildImageKey = ({
   const safeProvider = provider.replace(/[^a-zA-Z0-9-_]/g, "");
   const safeBase = buildSafeBaseName(baseName);
   const safeBatch = batchId.replace(/[^a-zA-Z0-9-_]/g, "");
+  const prefix = userId ? buildUserPrefix(userId) : "";
   if (safeBatch) {
-    return `images/${safeProvider}/${safeBatch}/${safeBase}-${index}.png`;
+    return `${prefix}images/${safeProvider}/${safeBatch}/${safeBase}-${index}.png`;
   }
-  return `images/${safeProvider}/${safeBase}-${Date.now()}-${index}.png`;
+  return `${prefix}images/${safeProvider}/${safeBase}-${Date.now()}-${index}.png`;
 };
 
 const buildImageBatchId = () =>
@@ -182,7 +197,9 @@ const buildSeedList = (count, seed) => {
 const buildVideoReadyKey = (sourceKey = "") => {
   const baseName = sourceKey.split("/").pop()?.replace(/\.[^.]+$/, "") || "image";
   const safeBase = buildSafeBaseName(baseName);
-  return `images/video-ready/${safeBase}.jpg`;
+  const prefixMatch = sourceKey.match(/^(users\/[^/]+\/)/);
+  const prefix = prefixMatch ? prefixMatch[1] : "";
+  return `${prefix}images/video-ready/${safeBase}.jpg`;
 };
 
 const toVideoReadyBuffer = async (buffer) => {
@@ -209,6 +226,101 @@ const extractRetryAfterSeconds = (errorMessage = "") => {
     return Number.isFinite(value) ? value : null;
   }
   return null;
+};
+
+const decodeJwtPayload = (token = "") => {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+    const json = Buffer.from(payload, "base64").toString("utf-8");
+    return JSON.parse(json);
+  } catch (error) {
+    return null;
+  }
+};
+
+const getUserFromRequest = (req) => {
+  const claims =
+    req.apiGateway?.event?.requestContext?.authorizer?.claims ||
+    req.requestContext?.authorizer?.claims;
+  if (claims?.sub) {
+    return {
+      sub: claims.sub,
+      email: claims.email,
+    };
+  }
+  const authHeader =
+    req.headers?.authorization || req.headers?.Authorization || "";
+  if (authHeader.startsWith("Bearer ")) {
+    const token = authHeader.slice(7);
+    const payload = decodeJwtPayload(token);
+    if (payload?.sub) {
+      return {
+        sub: payload.sub,
+        email: payload.email,
+      };
+    }
+  }
+  return null;
+};
+
+const buildUserPrefix = (userId = "") => `users/${userId}/`;
+
+const ensureUserKey = (key = "", userId = "") => {
+  const prefix = buildUserPrefix(userId);
+  if (!key.startsWith(prefix)) {
+    throw new Error("key must belong to the current user");
+  }
+};
+
+const buildMediaPk = (userId = "") => `USER#${userId}`;
+const buildMediaSk = (type = "IMG", key = "") => `${type}#${key}`;
+
+const putMediaItem = async ({ userId, type, key, extra = {} }) => {
+  if (!mediaTable || !userId || !key) return;
+  const item = {
+    pk: buildMediaPk(userId),
+    sk: buildMediaSk(type, key),
+    type,
+    key,
+    createdAt: new Date().toISOString(),
+    ...extra,
+  };
+  await dynamoClient.send(
+    new PutCommand({
+      TableName: mediaTable,
+      Item: item,
+    })
+  );
+};
+
+const deleteMediaItem = async ({ userId, type, key }) => {
+  if (!mediaTable || !userId || !key) return;
+  await dynamoClient.send(
+    new DeleteCommand({
+      TableName: mediaTable,
+      Key: {
+        pk: buildMediaPk(userId),
+        sk: buildMediaSk(type, key),
+      },
+    })
+  );
+};
+
+const queryMediaItems = async ({ userId, type }) => {
+  if (!mediaTable || !userId) return [];
+  const response = await dynamoClient.send(
+    new QueryCommand({
+      TableName: mediaTable,
+      KeyConditionExpression: "pk = :pk AND begins_with(sk, :skPrefix)",
+      ExpressionAttributeValues: {
+        ":pk": buildMediaPk(userId),
+        ":skPrefix": `${type}#`,
+      },
+      ScanIndexForward: false,
+    })
+  );
+  return response.Items || [];
 };
 
 const runReplicateWithRetry = async (modelId, input, maxAttempts = 3) => {
@@ -255,7 +367,12 @@ const fetchS3ImageBuffer = async (bucket, key) => {
 const buildVideoOutputKey = (inputKey = "", outputPrefix = "videos/") => {
   const baseName = inputKey.split("/").pop()?.replace(/\.[^.]+$/, "") || "video";
   const safeBase = buildSafeBaseName(baseName);
-  return `${outputPrefix}${safeBase}.mp4`;
+  const inputPrefixMatch = inputKey.match(/^(users\/[^/]+\/)/);
+  const userPrefix = inputPrefixMatch ? inputPrefixMatch[1] : "";
+  const normalizedPrefix = outputPrefix.startsWith("users/")
+    ? outputPrefix
+    : `${userPrefix}${outputPrefix}`;
+  return `${normalizedPrefix}${safeBase}.mp4`;
 };
 
 const encodeS3Key = (key = "") =>
@@ -280,10 +397,12 @@ const buildVideoPosterKeyFromPrefix = (outputPrefix = "videos/") => {
 };
 
 const buildFolderPosterKeyFromVideoKey = (videoKey = "") => {
-  const prefix = "videos/";
-  if (!videoKey.startsWith(prefix)) return "";
+  if (!videoKey) return "";
+  const marker = "/videos/";
+  const markerIndex = videoKey.indexOf(marker);
+  if (markerIndex === -1) return "";
   const lastSlash = videoKey.lastIndexOf("/");
-  if (lastSlash <= prefix.length - 1) {
+  if (lastSlash <= markerIndex + marker.length - 1) {
     return "";
   }
   return `${videoKey.slice(0, lastSlash + 1)}poster.jpg`;
@@ -389,6 +508,17 @@ const replicateVideoConfig = {
     }),
   },
 };
+
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") return next();
+  if (req.path === "/" || req.path === "/health") return next();
+  const user = getUserFromRequest(req);
+  if (!user?.sub) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  req.user = user;
+  return next();
+});
 
 app.get("/", (req, res) => {
   res.json({ message: "Hello from Express API on AWS Lambda!" });
@@ -550,20 +680,20 @@ app.post("/bedrock/prompt-helper", async (req, res) => {
 
 app.post("/s3/image-upload-url", async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
-  const key = req.body?.key;
+  const userId = req.user?.sub;
+  const fileName = req.body?.fileName || "upload";
   const contentType = req.body?.contentType || "application/octet-stream";
 
   if (!bucket) {
     return res.status(500).json({ message: "MEDIA_BUCKET is not set" });
   }
-  if (!key) {
-    return res.status(400).json({ message: "key is required" });
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
   }
-  if (!key.startsWith("images/")) {
-    return res
-      .status(400)
-      .json({ message: "key must start with images/" });
-  }
+
+  const safeBase = buildSafeBaseName(fileName);
+  const extension = contentType.includes("png") ? "png" : "jpg";
+  const key = `${buildUserPrefix(userId)}images/uploads/${safeBase}-${Date.now()}.${extension}`;
 
   try {
     const command = new PutObjectCommand({
@@ -581,43 +711,152 @@ app.post("/s3/image-upload-url", async (req, res) => {
   }
 });
 
-app.get("/s3/images", async (req, res) => {
+app.post("/images/video-ready", async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
-  const maxKeys = Number(req.query?.maxKeys) || 100;
-  const urlExpirationSeconds = 900;
+  const userId = req.user?.sub;
+  const key = req.body?.key;
 
   if (!bucket) {
     return res.status(500).json({ message: "MEDIA_BUCKET is not set" });
   }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (!key || typeof key !== "string") {
+    return res.status(400).json({ message: "key is required" });
+  }
+  try {
+    ensureUserKey(key, userId);
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
 
   try {
-    const response = await s3Client.send(
-      new ListObjectsV2Command({
+    const getResponse = await s3Client.send(
+      new GetObjectCommand({
         Bucket: bucket,
-        Prefix: "images/",
-        MaxKeys: Math.min(maxKeys, 1000),
+        Key: key,
       })
     );
+    const buffer = await streamToBuffer(getResponse.Body);
+    const videoReadyKey = buildVideoReadyKey(key);
+    let shouldCopy = false;
+    let videoReadyBuffer = buffer;
+    try {
+      const image = await Jimp.read(buffer);
+      if (image.bitmap.width === 1280 && image.bitmap.height === 720) {
+        shouldCopy = true;
+      } else {
+        videoReadyBuffer = await toVideoReadyBuffer(buffer);
+      }
+    } catch (error) {
+      console.warn("Failed to validate/convert uploaded image:", {
+        message: error?.message || String(error),
+      });
+      shouldCopy = true;
+    }
 
-    const keys = (response.Contents || [])
-      .map((item) => item.Key)
-      .filter((key) => key && key !== "images/")
-      .sort((a, b) => a.localeCompare(b));
+    if (shouldCopy) {
+      await copyS3Object({
+        bucket,
+        sourceKey: key,
+        destinationKey: videoReadyKey,
+      });
+    } else {
+      await s3Client.send(
+        new PutObjectCommand({
+          Bucket: bucket,
+          Key: videoReadyKey,
+          Body: videoReadyBuffer,
+          ContentType: "image/jpeg",
+        })
+      );
+    }
 
-    const images = await Promise.all(
-      keys.map(async (key) => {
+    await putMediaItem({
+      userId,
+      type: "IMG",
+      key,
+    });
+
+    const url = await getSignedUrl(
+      s3Client,
+      new GetObjectCommand({
+        Bucket: bucket,
+        Key: videoReadyKey,
+      }),
+      { expiresIn: 900 }
+    );
+
+    res.json({ key, videoReadyKey, url });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to create video-ready image",
+      error: error?.message || String(error),
+    });
+  }
+});
+
+app.get("/s3/images", async (req, res) => {
+  const bucket = process.env.MEDIA_BUCKET;
+  const maxKeys = Number(req.query?.maxKeys) || 100;
+  const urlExpirationSeconds = 900;
+  const userId = req.user?.sub;
+
+  if (!bucket) {
+    return res.status(500).json({ message: "MEDIA_BUCKET is not set" });
+  }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const items = await queryMediaItems({ userId, type: "IMG" });
+    let images = items
+      .map((item) => ({
+        key: item.key,
+        createdAt: item.createdAt,
+      }))
+      .filter((item) => !item.key?.includes("/images/video-ready/"))
+      .slice(0, Math.min(maxKeys, 1000));
+
+    if (images.length === 0) {
+      const userPrefix = buildUserPrefix(userId);
+      const response = await s3Client.send(
+        new ListObjectsV2Command({
+          Bucket: bucket,
+          Prefix: `${userPrefix}images/`,
+          MaxKeys: Math.min(maxKeys, 1000),
+        })
+      );
+      images = (response.Contents || [])
+        .map((item) => item.Key)
+        .filter((key) => key && key !== `${userPrefix}images/`)
+        .filter((key) => !key.includes("/images/video-ready/"))
+        .sort((a, b) => a.localeCompare(b))
+        .map((key) => ({ key }));
+
+      await Promise.all(
+        images.map((item) =>
+          putMediaItem({ userId, type: "IMG", key: item.key })
+        )
+      );
+    }
+
+    const signed = await Promise.all(
+      images.map(async (image) => {
         const command = new GetObjectCommand({
           Bucket: bucket,
-          Key: key,
+          Key: image.key,
         });
         const url = await getSignedUrl(s3Client, command, {
           expiresIn: urlExpirationSeconds,
         });
-        return { key, url };
+        return { key: image.key, url };
       })
     );
 
-    res.json({ bucket, images });
+    res.json({ bucket, images: signed });
   } catch (error) {
     res.status(500).json({
       message: "Failed to list images",
@@ -629,24 +868,40 @@ app.get("/s3/images", async (req, res) => {
 app.post("/s3/images/delete", async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
   const key = req.body?.key;
+  const userId = req.user?.sub;
 
   if (!bucket) {
     return res.status(500).json({ message: "MEDIA_BUCKET is not set" });
   }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
   if (!key || typeof key !== "string") {
     return res.status(400).json({ message: "key is required" });
   }
-  if (!key.startsWith("images/")) {
-    return res.status(400).json({ message: "key must start with images/" });
+  try {
+    ensureUserKey(key, userId);
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
   }
 
   try {
+    const videoReadyKey = buildVideoReadyKey(key);
     await s3Client.send(
       new DeleteObjectCommand({
         Bucket: bucket,
         Key: key,
       })
     );
+    if (videoReadyKey) {
+      await s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: bucket,
+          Key: videoReadyKey,
+        })
+      );
+    }
+    await deleteMediaItem({ userId, type: "IMG", key });
     res.json({ key, deleted: true });
   } catch (error) {
     res.status(500).json({
@@ -659,15 +914,21 @@ app.post("/s3/images/delete", async (req, res) => {
 app.post("/s3/videos/delete", async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
   const key = req.body?.key;
+  const userId = req.user?.sub;
 
   if (!bucket) {
     return res.status(500).json({ message: "MEDIA_BUCKET is not set" });
   }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
   if (!key || typeof key !== "string") {
     return res.status(400).json({ message: "key is required" });
   }
-  if (!key.startsWith("videos/")) {
-    return res.status(400).json({ message: "key must start with videos/" });
+  try {
+    ensureUserKey(key, userId);
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
   }
 
   try {
@@ -690,6 +951,7 @@ app.post("/s3/videos/delete", async (req, res) => {
         )
       )
     );
+    await deleteMediaItem({ userId, type: "VID", key });
     res.json({
       key,
       deleted: true,
@@ -709,45 +971,58 @@ app.get("/s3/videos", async (req, res) => {
   const includeUrls = req.query?.includeUrls === "true";
   const includePosters = req.query?.includePosters === "true";
   const urlExpirationSeconds = 900;
+  const userId = req.user?.sub;
 
   if (!bucket) {
     return res.status(500).json({ message: "MEDIA_BUCKET is not set" });
   }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
   try {
-    const response = await s3Client.send(
-      new ListObjectsV2Command({
-        Bucket: bucket,
-        Prefix: "videos/",
-        MaxKeys: Math.min(maxKeys, 1000),
-      })
-    );
+    const items = await queryMediaItems({ userId, type: "VID" });
+    let videos = items
+      .map((item) => ({
+        key: item.key,
+        posterKey: item.posterKey,
+        createdAt: item.createdAt,
+      }))
+      .slice(0, Math.min(maxKeys, 1000));
 
-    const objects = response.Contents || [];
-    const objectKeys = new Set(
-      objects.map((item) => item.Key).filter(Boolean)
-    );
-
-    const videos = objects
-      .filter((item) => item.Key && item.Key !== "videos/")
-      .filter((item) => item.Key?.endsWith(".mp4"))
-      .filter((item) => !item.Key?.endsWith("/output.mp4"))
-      .map((item) => {
-        const key = item.Key || "";
-        const posterKey = resolveVideoPosterKey(key, objectKeys);
-        return {
-          key,
-          fileName: key.split("/").pop() || key,
-          lastModified: item.LastModified,
-          size: item.Size,
-          posterKey,
-        };
-      })
-      .sort((a, b) => {
-        const aTime = a.lastModified ? new Date(a.lastModified).getTime() : 0;
-        const bTime = b.lastModified ? new Date(b.lastModified).getTime() : 0;
-        return bTime - aTime;
-      });
+    if (videos.length === 0) {
+      const userPrefix = buildUserPrefix(userId);
+      const response = await s3Client.send(
+        new ListObjectsV2Command({
+          Bucket: bucket,
+          Prefix: `${userPrefix}videos/`,
+          MaxKeys: Math.min(maxKeys, 1000),
+        })
+      );
+      const objects = response.Contents || [];
+      const objectKeys = new Set(
+        objects.map((item) => item.Key).filter(Boolean)
+      );
+      videos = objects
+        .filter((item) => item.Key && item.Key !== `${userPrefix}videos/`)
+        .filter((item) => item.Key?.endsWith(".mp4"))
+        .filter((item) => !item.Key?.endsWith("/output.mp4"))
+        .map((item) => {
+          const key = item.Key || "";
+          const posterKey = resolveVideoPosterKey(key, objectKeys);
+          return { key, posterKey };
+        });
+      await Promise.all(
+        videos.map((item) =>
+          putMediaItem({
+            userId,
+            type: "VID",
+            key: item.key,
+            extra: { posterKey: item.posterKey || "" },
+          })
+        )
+      );
+    }
 
     if (includeUrls || includePosters) {
       for (const video of videos) {
@@ -785,17 +1060,22 @@ app.get("/s3/video-url", async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
   const prefix = req.query?.prefix;
   const urlExpirationSeconds = 900;
+  const userId = req.user?.sub;
 
   if (!bucket) {
     return res.status(500).json({ message: "MEDIA_BUCKET is not set" });
   }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
   if (!prefix) {
     return res.status(400).json({ message: "prefix is required" });
   }
-  if (!prefix.startsWith("videos/")) {
-    return res
-      .status(400)
-      .json({ message: "prefix must start with videos/" });
+  const userPrefix = buildUserPrefix(userId);
+  if (!prefix.startsWith(`${userPrefix}videos/`)) {
+    return res.status(400).json({
+      message: "prefix must start with the user's videos/",
+    });
   }
 
   try {
@@ -849,8 +1129,12 @@ app.get("/bedrock/nova-reel/job-status", async (req, res) => {
   const invocationArn = req.query?.invocationArn;
   const inputKey = req.query?.inputKey;
   const outputPrefix = req.query?.outputPrefix;
+  const userId = req.user?.sub;
   if (!invocationArn) {
     return res.status(400).json({ message: "invocationArn is required" });
+  }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
   }
 
   try {
@@ -860,8 +1144,13 @@ app.get("/bedrock/nova-reel/job-status", async (req, res) => {
       response?.status === "Completed" &&
       inputKey &&
       outputPrefix &&
-      outputPrefix.startsWith("videos/")
+      outputPrefix.startsWith(buildUserPrefix(userId))
     ) {
+      try {
+        ensureUserKey(inputKey, userId);
+      } catch (error) {
+        return res.status(400).json({ message: error.message });
+      }
       const outputKey = buildVideoOutputKey(inputKey, outputPrefix);
       const listResponse = await s3Client.send(
         new ListObjectsV2Command({
@@ -916,6 +1205,12 @@ app.get("/bedrock/nova-reel/job-status", async (req, res) => {
           });
         }
       }
+      await putMediaItem({
+        userId,
+        type: "VID",
+        key: outputKey,
+        extra: { posterKey: directPosterKey || posterKey || "" },
+      });
     }
     res.json(response);
   } catch (error) {
@@ -928,6 +1223,7 @@ app.get("/bedrock/nova-reel/job-status", async (req, res) => {
 
 app.post("/bedrock/image/generate", async (req, res) => {
   const mediaBucket = process.env.MEDIA_BUCKET;
+  const userId = req.user?.sub;
   const modelKey = req.body?.model || "titan";
   const imageName = req.body?.imageName?.trim();
   const prompt = req.body?.prompt?.trim();
@@ -954,6 +1250,9 @@ app.post("/bedrock/image/generate", async (req, res) => {
 
   if (!mediaBucket) {
     return res.status(500).json({ message: "MEDIA_BUCKET must be set" });
+  }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
   }
   if (!imageName) {
     return res.status(400).json({ message: "imageName is required" });
@@ -1064,6 +1363,7 @@ app.post("/bedrock/image/generate", async (req, res) => {
           const base64 = imagesBase64[0];
           const buffer = Buffer.from(base64, "base64");
           const key = buildImageKey({
+            userId,
             provider: modelConfig.provider,
             index,
             baseName: imageName,
@@ -1077,6 +1377,7 @@ app.post("/bedrock/image/generate", async (req, res) => {
               ContentType: "image/png",
             })
           );
+          await putMediaItem({ userId, type: "IMG", key });
           const url = await getSignedUrl(
             s3Client,
             new GetObjectCommand({
@@ -1113,6 +1414,7 @@ app.post("/bedrock/image/generate", async (req, res) => {
 
 app.post("/replicate/image/generate", async (req, res) => {
   const mediaBucket = process.env.MEDIA_BUCKET;
+  const userId = req.user?.sub;
   const apiToken = process.env.REPLICATE_API_TOKEN;
   const modelKey = req.body?.model || "animagine";
   const imageName = req.body?.imageName?.trim();
@@ -1151,6 +1453,9 @@ app.post("/replicate/image/generate", async (req, res) => {
 
   if (!mediaBucket) {
     return res.status(500).json({ message: "MEDIA_BUCKET must be set" });
+  }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
   }
   if (!apiToken) {
     return res
@@ -1235,6 +1540,7 @@ app.post("/replicate/image/generate", async (req, res) => {
           }
           const { buffer, contentType } = await fetchImageBuffer(url);
           const key = buildImageKey({
+            userId,
             provider: "replicate",
             index,
             baseName: imageName,
@@ -1248,6 +1554,7 @@ app.post("/replicate/image/generate", async (req, res) => {
               ContentType: contentType,
             })
           );
+          await putMediaItem({ userId, type: "IMG", key });
           const signedUrl = await getSignedUrl(
             s3Client,
             new GetObjectCommand({
@@ -1285,24 +1592,31 @@ app.post("/replicate/image/generate", async (req, res) => {
 app.post("/images/select", async (req, res) => {
   const mediaBucket = process.env.MEDIA_BUCKET;
   const selectedKey = req.body?.key;
+  const userId = req.user?.sub;
 
   if (!mediaBucket) {
     return res.status(500).json({ message: "MEDIA_BUCKET must be set" });
   }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
   if (!selectedKey || typeof selectedKey !== "string") {
     return res.status(400).json({ message: "key is required" });
   }
-  if (!selectedKey.startsWith("images/")) {
-    return res.status(400).json({ message: "key must start with images/" });
+  try {
+    ensureUserKey(selectedKey, userId);
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
   }
 
   const keyParts = selectedKey.split("/");
-  if (keyParts.length < 4) {
+  const imagesIndex = keyParts.indexOf("images");
+  if (imagesIndex === -1 || keyParts.length < imagesIndex + 3) {
     return res.status(400).json({
       message: "key must include a batch folder",
     });
   }
-  const batchPrefix = `${keyParts.slice(0, 3).join("/")}/`;
+  const batchPrefix = `${keyParts.slice(0, imagesIndex + 3).join("/")}/`;
 
   try {
     const getResponse = await s3Client.send(
@@ -1366,6 +1680,11 @@ app.post("/images/select", async (req, res) => {
       );
     }
 
+    await putMediaItem({ userId, type: "IMG", key: selectedKey });
+    for (const key of deleteKeys) {
+      await deleteMediaItem({ userId, type: "IMG", key });
+    }
+
     res.json({
       selectedKey,
       videoReadyKey,
@@ -1387,6 +1706,7 @@ app.post("/images/select", async (req, res) => {
 
 app.post("/replicate/video/generate", async (req, res) => {
   const mediaBucket = process.env.MEDIA_BUCKET;
+  const userId = req.user?.sub;
   const apiToken = process.env.REPLICATE_API_TOKEN;
   const modelKey = req.body?.model || "wan-2.2-i2v-fast";
   const inputKey = req.body?.inputKey;
@@ -1397,6 +1717,9 @@ app.post("/replicate/video/generate", async (req, res) => {
   if (!mediaBucket) {
     return res.status(500).json({ message: "MEDIA_BUCKET must be set" });
   }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
   if (!apiToken) {
     return res
       .status(500)
@@ -1404,6 +1727,11 @@ app.post("/replicate/video/generate", async (req, res) => {
   }
   if (!inputKey) {
     return res.status(400).json({ message: "inputKey is required" });
+  }
+  try {
+    ensureUserKey(inputKey, userId);
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
   }
   if (!prompt) {
     return res.status(400).json({ message: "prompt is required" });
@@ -1518,6 +1846,12 @@ app.post("/replicate/video/generate", async (req, res) => {
           });
         }
       }
+      await putMediaItem({
+        userId,
+        type: "VID",
+        key: outputKey,
+        extra: { posterKey: posterKey || "" },
+      });
 
       return res.json({
         modelId: modelConfig.modelId,
@@ -1551,12 +1885,16 @@ app.post("/replicate/video/generate", async (req, res) => {
 
 app.get("/replicate/video/status", async (req, res) => {
   const mediaBucket = process.env.MEDIA_BUCKET;
+  const userId = req.user?.sub;
   const apiToken = process.env.REPLICATE_API_TOKEN;
   const predictionId = req.query?.predictionId;
   const inputKey = req.query?.inputKey;
 
   if (!mediaBucket) {
     return res.status(500).json({ message: "MEDIA_BUCKET must be set" });
+  }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
   }
   if (!apiToken) {
     return res
@@ -1568,6 +1906,11 @@ app.get("/replicate/video/status", async (req, res) => {
   }
   if (!inputKey) {
     return res.status(400).json({ message: "inputKey is required" });
+  }
+  try {
+    ensureUserKey(inputKey, userId);
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
   }
 
   try {
@@ -1615,6 +1958,12 @@ app.get("/replicate/video/status", async (req, res) => {
         });
       }
     }
+    await putMediaItem({
+      userId,
+      type: "VID",
+      key: outputKey,
+      extra: { posterKey: posterKey || "" },
+    });
     const signedUrl = await getSignedUrl(
       s3Client,
       new GetObjectCommand({
@@ -1648,8 +1997,8 @@ app.post("/bedrock/nova-reel/image-to-video-s3", async (req, res) => {
   const prompt = req.body?.prompt || "A cinematic push-in on the scene.";
   const mediaBucket = process.env.MEDIA_BUCKET;
   const inputKey = req.body?.inputKey;
-  const outputPrefix =
-    req.body?.outputPrefix || req.body?.outputKey || "videos/";
+  const userId = req.user?.sub;
+  const outputPrefix = `${buildUserPrefix(userId || "")}videos/${Date.now()}/`;
   const requestedModel = req.body?.model;
 
   if (!mediaBucket) {
@@ -1657,18 +2006,21 @@ app.post("/bedrock/nova-reel/image-to-video-s3", async (req, res) => {
       message: "MEDIA_BUCKET must be set",
     });
   }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
   if (!inputKey) {
     return res.status(400).json({ message: "inputKey is required" });
   }
-  if (!inputKey.startsWith("images/")) {
-    return res
-      .status(400)
-      .json({ message: "inputKey must start with images/" });
+  try {
+    ensureUserKey(inputKey, userId);
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
   }
-  if (!outputPrefix.startsWith("videos/")) {
-    return res
-      .status(400)
-      .json({ message: "outputPrefix must start with videos/" });
+  if (!outputPrefix.startsWith(buildUserPrefix(userId))) {
+    return res.status(400).json({
+      message: "outputPrefix must start with the user's prefix",
+    });
   }
 
   const inputS3Uri = `s3://${mediaBucket}/${inputKey}`;
@@ -1787,6 +2139,7 @@ app.post("/bedrock/nova-reel/image-to-video-s3", async (req, res) => {
       modelId,
       inputS3Uri,
       outputS3Uri,
+      outputPrefix,
       response,
     });
   } catch (error) {

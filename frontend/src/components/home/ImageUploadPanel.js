@@ -22,7 +22,7 @@ function ImageUploadPanel({
             placeholder="frieren"
           />
           <p className="mt-2 text-xs text-[#7a6a51]">
-            Stored as <span className="font-mono">images/NAME.jpg</span>
+            Stored in your private S3 folder under your user profile.
           </p>
         </div>
 

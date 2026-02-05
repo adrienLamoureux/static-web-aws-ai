@@ -325,14 +325,6 @@ body {
     gap: 20px;
   }
 
-  .whisk-panel--highlight {
-    background: rgba(255, 255, 255, 0.9);
-  }
-
-  .whisk-panel--muted {
-    background: rgba(255, 252, 247, 0.85);
-  }
-
   .whisk-panel-header {
     align-items: flex-start;
   }
@@ -341,19 +333,6 @@ body {
     margin-top: 10px;
     color: #6b5c45;
     font-size: 0.9rem;
-  }
-
-  .whisk-panel-body {
-    margin-top: 20px;
-    display: grid;
-    gap: 18px;
-  }
-
-  .whisk-panel-surface {
-    border-radius: 20px;
-    border: 1px solid rgba(210, 198, 176, 0.5);
-    background: rgba(255, 255, 255, 0.85);
-    padding: 16px;
   }
 
   .whisk-error-panel {
@@ -374,20 +353,6 @@ body {
     text-align: center;
   }
 
-  .whisk-video-list {
-    display: grid;
-    gap: 14px;
-    margin-top: 16px;
-  }
-
-  .whisk-video-item {
-    border-radius: 18px;
-    border: 1px solid rgba(210, 198, 176, 0.55);
-    background: rgba(255, 255, 255, 0.85);
-    padding: 14px;
-    display: grid;
-    gap: 12px;
-  }
 
   .whisk-video-grid {
     display: grid;
@@ -719,16 +684,6 @@ body {
     gap: 20px;
   }
 
-  .whisk-panel {
-    border: 1px solid rgba(210, 198, 176, 0.55);
-    background: rgba(255, 255, 255, 0.78);
-    border-radius: 24px;
-    padding: 22px;
-    box-shadow:
-      0 24px 60px -50px rgba(28, 22, 14, 0.45),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  }
-
   .whisk-panel-header {
     display: flex;
     align-items: center;
@@ -1003,5 +958,75 @@ body {
   .nav-link:hover::after {
     opacity: 1;
     transform: scaleX(1);
+  }
+
+  .nav-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .nav-user-email {
+    font-size: 0.75rem;
+    color: #6b5c45;
+  }
+
+  .auth-shell {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 20px;
+  }
+
+  .auth-card {
+    width: min(480px, 100%);
+    border-radius: 24px;
+    padding: 32px;
+    display: grid;
+    gap: 16px;
+  }
+
+  .auth-eyebrow {
+    font-size: 0.72rem;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: #7a6a51;
+  }
+
+  .auth-title {
+    font-family: "Cormorant Garamond", "Times New Roman", serif;
+    font-size: 2.2rem;
+    color: #1b1a17;
+    letter-spacing: -0.01em;
+  }
+
+  .auth-copy {
+    color: #5f5343;
+    font-size: 0.98rem;
+    line-height: 1.5;
+  }
+
+  .auth-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .auth-meta {
+    font-size: 0.75rem;
+    color: #7a6a51;
+  }
+
+  .auth-error {
+    color: #9c4f3b;
+    font-size: 0.82rem;
+  }
+
+  .auth-loading {
+    color: #6b5c45;
+    font-size: 0.85rem;
   }
 }
