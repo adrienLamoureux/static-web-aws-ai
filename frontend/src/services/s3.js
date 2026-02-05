@@ -3,12 +3,26 @@ import { buildApiUrl, fetchJson, postJson } from "./apiClient";
 export const listImages = (baseUrl) =>
   fetchJson(buildApiUrl(baseUrl, "/s3/images"), {}, "Failed to load images.");
 
-export const listVideos = (baseUrl, includeUrls = true) =>
-  fetchJson(
-    buildApiUrl(baseUrl, `/s3/videos?includeUrls=${includeUrls}`),
+export const listVideos = (baseUrl, options = {}) => {
+  if (typeof options === "boolean") {
+    return fetchJson(
+      buildApiUrl(baseUrl, `/s3/videos?includeUrls=${options}`),
+      {},
+      "Failed to load videos."
+    );
+  }
+  const includeUrls = options?.includeUrls ?? true;
+  const includePosters = options?.includePosters ?? false;
+  const params = new URLSearchParams({
+    includeUrls: String(includeUrls),
+    includePosters: String(includePosters),
+  });
+  return fetchJson(
+    buildApiUrl(baseUrl, `/s3/videos?${params.toString()}`),
     {},
     "Failed to load videos."
   );
+};
 
 export const deleteVideo = (baseUrl, key) =>
   postJson(

@@ -240,10 +240,81 @@ const fetchImageBuffer = async (url) => {
   return { buffer: Buffer.from(arrayBuffer), contentType };
 };
 
+const fetchS3ImageBuffer = async (bucket, key) => {
+  const response = await s3Client.send(
+    new GetObjectCommand({
+      Bucket: bucket,
+      Key: key,
+    })
+  );
+  const buffer = await streamToBuffer(response.Body);
+  const contentType = response.ContentType || "image/jpeg";
+  return { buffer, contentType };
+};
+
 const buildVideoOutputKey = (inputKey = "", outputPrefix = "videos/") => {
   const baseName = inputKey.split("/").pop()?.replace(/\.[^.]+$/, "") || "video";
   const safeBase = buildSafeBaseName(baseName);
   return `${outputPrefix}${safeBase}.mp4`;
+};
+
+const encodeS3Key = (key = "") =>
+  encodeURIComponent(key).replace(/%2F/g, "/");
+
+const buildVideoPosterKeyFromVideoKey = (videoKey = "") => {
+  if (!videoKey) return "";
+  if (videoKey.endsWith("/output.mp4")) {
+    return videoKey.replace(/\/output\.mp4$/, "/poster.jpg");
+  }
+  if (videoKey.endsWith(".mp4")) {
+    return videoKey.replace(/\.mp4$/, ".jpg");
+  }
+  return "";
+};
+
+const buildVideoPosterKeyFromPrefix = (outputPrefix = "videos/") => {
+  const safePrefix = outputPrefix.endsWith("/")
+    ? outputPrefix
+    : `${outputPrefix}/`;
+  return `${safePrefix}poster.jpg`;
+};
+
+const buildFolderPosterKeyFromVideoKey = (videoKey = "") => {
+  const prefix = "videos/";
+  if (!videoKey.startsWith(prefix)) return "";
+  const lastSlash = videoKey.lastIndexOf("/");
+  if (lastSlash <= prefix.length - 1) {
+    return "";
+  }
+  return `${videoKey.slice(0, lastSlash + 1)}poster.jpg`;
+};
+
+const resolveVideoPosterKey = (videoKey = "", objectKeys = new Set()) => {
+  if (!videoKey) return "";
+  const directKey = buildVideoPosterKeyFromVideoKey(videoKey);
+  if (directKey && objectKeys.has(directKey)) {
+    return directKey;
+  }
+  const lastSlash = videoKey.lastIndexOf("/");
+  if (lastSlash >= 0) {
+    const fallbackKey = `${videoKey.slice(0, lastSlash + 1)}poster.jpg`;
+    if (objectKeys.has(fallbackKey)) {
+      return fallbackKey;
+    }
+  }
+  return "";
+};
+
+const copyS3Object = async ({ bucket, sourceKey, destinationKey }) => {
+  if (!bucket || !sourceKey || !destinationKey) return;
+  const copySource = `${bucket}/${encodeS3Key(sourceKey)}`;
+  await s3Client.send(
+    new CopyObjectCommand({
+      Bucket: bucket,
+      CopySource: copySource,
+      Key: destinationKey,
+    })
+  );
 };
 
 const getReplicateOutputUrl = (output) => {
@@ -600,13 +671,30 @@ app.post("/s3/videos/delete", async (req, res) => {
   }
 
   try {
-    await s3Client.send(
-      new DeleteObjectCommand({
-        Bucket: bucket,
-        Key: key,
-      })
+    const deleteTargets = new Set([key]);
+    const directPosterKey = buildVideoPosterKeyFromVideoKey(key);
+    if (directPosterKey) {
+      deleteTargets.add(directPosterKey);
+    }
+    const folderPosterKey = buildFolderPosterKeyFromVideoKey(key);
+    if (folderPosterKey) {
+      deleteTargets.add(folderPosterKey);
+    }
+    await Promise.all(
+      Array.from(deleteTargets).map((targetKey) =>
+        s3Client.send(
+          new DeleteObjectCommand({
+            Bucket: bucket,
+            Key: targetKey,
+          })
+        )
+      )
     );
-    res.json({ key, deleted: true });
+    res.json({
+      key,
+      deleted: true,
+      deletedKeys: Array.from(deleteTargets),
+    });
   } catch (error) {
     res.status(500).json({
       message: "Failed to delete video",
@@ -619,6 +707,7 @@ app.get("/s3/videos", async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
   const maxKeys = Number(req.query?.maxKeys) || 100;
   const includeUrls = req.query?.includeUrls === "true";
+  const includePosters = req.query?.includePosters === "true";
   const urlExpirationSeconds = 900;
 
   if (!bucket) {
@@ -634,16 +723,24 @@ app.get("/s3/videos", async (req, res) => {
       })
     );
 
-    const videos = (response.Contents || [])
+    const objects = response.Contents || [];
+    const objectKeys = new Set(
+      objects.map((item) => item.Key).filter(Boolean)
+    );
+
+    const videos = objects
       .filter((item) => item.Key && item.Key !== "videos/")
       .filter((item) => item.Key?.endsWith(".mp4"))
+      .filter((item) => !item.Key?.endsWith("/output.mp4"))
       .map((item) => {
         const key = item.Key || "";
+        const posterKey = resolveVideoPosterKey(key, objectKeys);
         return {
           key,
           fileName: key.split("/").pop() || key,
           lastModified: item.LastModified,
           size: item.Size,
+          posterKey,
         };
       })
       .sort((a, b) => {
@@ -652,15 +749,26 @@ app.get("/s3/videos", async (req, res) => {
         return bTime - aTime;
       });
 
-    if (includeUrls) {
+    if (includeUrls || includePosters) {
       for (const video of videos) {
-        const command = new GetObjectCommand({
-          Bucket: bucket,
-          Key: video.key,
-        });
-        video.url = await getSignedUrl(s3Client, command, {
-          expiresIn: urlExpirationSeconds,
-        });
+        if (includeUrls) {
+          const command = new GetObjectCommand({
+            Bucket: bucket,
+            Key: video.key,
+          });
+          video.url = await getSignedUrl(s3Client, command, {
+            expiresIn: urlExpirationSeconds,
+          });
+        }
+        if (includePosters && video.posterKey) {
+          const posterCommand = new GetObjectCommand({
+            Bucket: bucket,
+            Key: video.posterKey,
+          });
+          video.posterUrl = await getSignedUrl(s3Client, posterCommand, {
+            expiresIn: urlExpirationSeconds,
+          });
+        }
       }
     }
 
@@ -789,6 +897,23 @@ app.get("/bedrock/nova-reel/job-status", async (req, res) => {
               Key: mp4Object.Key,
             })
           );
+        }
+      }
+      const posterKey = buildVideoPosterKeyFromPrefix(outputPrefix);
+      const directPosterKey = buildVideoPosterKeyFromVideoKey(outputKey);
+      if (posterKey && directPosterKey && posterKey !== directPosterKey) {
+        try {
+          await copyS3Object({
+            bucket: process.env.MEDIA_BUCKET,
+            sourceKey: posterKey,
+            destinationKey: directPosterKey,
+          });
+        } catch (error) {
+          console.warn("Failed to align video poster key:", {
+            message: error?.message || String(error),
+            posterKey,
+            directPosterKey,
+          });
         }
       }
     }
@@ -1188,15 +1313,38 @@ app.post("/images/select", async (req, res) => {
     );
     const buffer = await streamToBuffer(getResponse.Body);
     const videoReadyKey = buildVideoReadyKey(selectedKey);
-    const videoReadyBuffer = await toVideoReadyBuffer(buffer);
-    await s3Client.send(
-      new PutObjectCommand({
-        Bucket: mediaBucket,
-        Key: videoReadyKey,
-        Body: videoReadyBuffer,
-        ContentType: "image/jpeg",
-      })
-    );
+    let shouldCopy = false;
+    let videoReadyBuffer = buffer;
+    try {
+      const image = await Jimp.read(buffer);
+      if (image.bitmap.width === 1280 && image.bitmap.height === 720) {
+        shouldCopy = true;
+      } else {
+        videoReadyBuffer = await toVideoReadyBuffer(buffer);
+      }
+    } catch (error) {
+      console.warn("Failed to validate/convert selected image:", {
+        message: error?.message || String(error),
+      });
+      shouldCopy = true;
+    }
+
+    if (shouldCopy) {
+      await copyS3Object({
+        bucket: mediaBucket,
+        sourceKey: selectedKey,
+        destinationKey: videoReadyKey,
+      });
+    } else {
+      await s3Client.send(
+        new PutObjectCommand({
+          Bucket: mediaBucket,
+          Key: videoReadyKey,
+          Body: videoReadyBuffer,
+          ContentType: "image/jpeg",
+        })
+      );
+    }
 
     const listResponse = await s3Client.send(
       new ListObjectsV2Command({
@@ -1257,9 +1405,6 @@ app.post("/replicate/video/generate", async (req, res) => {
   if (!inputKey) {
     return res.status(400).json({ message: "inputKey is required" });
   }
-  if (!imageUrl) {
-    return res.status(400).json({ message: "imageUrl is required" });
-  }
   if (!prompt) {
     return res.status(400).json({ message: "prompt is required" });
   }
@@ -1271,20 +1416,44 @@ app.post("/replicate/video/generate", async (req, res) => {
       allowed: Object.keys(replicateVideoConfig),
     });
   }
-  if (modelConfig.requiresImage && !imageUrl) {
-    return res.status(400).json({ message: "imageUrl is required" });
+  if (modelConfig.requiresImage && !imageUrl && !inputKey) {
+    return res.status(400).json({ message: "imageUrl or inputKey is required" });
   }
   let resolvedImageUrl = imageUrl;
-  if (modelConfig.requiresImage && imageUrl) {
-    try {
-      const { buffer, contentType } = await fetchImageBuffer(imageUrl);
-      resolvedImageUrl = `data:${contentType};base64,${buffer.toString(
-        "base64"
-      )}`;
-    } catch (error) {
-      console.warn("Failed to inline image for Replicate:", {
-        message: error?.message || String(error),
-      });
+  if (modelConfig.requiresImage) {
+    let hasInlineImage = false;
+    if (inputKey) {
+      try {
+        const { buffer, contentType } = await fetchS3ImageBuffer(
+          mediaBucket,
+          inputKey
+        );
+        resolvedImageUrl = `data:${contentType};base64,${buffer.toString(
+          "base64"
+        )}`;
+        hasInlineImage = true;
+      } catch (error) {
+        console.warn("Failed to inline S3 image for Replicate:", {
+          message: error?.message || String(error),
+          inputKey,
+        });
+      }
+    }
+    if (!hasInlineImage && imageUrl) {
+      try {
+        const { buffer, contentType } = await fetchImageBuffer(imageUrl);
+        resolvedImageUrl = `data:${contentType};base64,${buffer.toString(
+          "base64"
+        )}`;
+        hasInlineImage = true;
+      } catch (error) {
+        console.warn("Failed to inline image for Replicate:", {
+          message: error?.message || String(error),
+        });
+      }
+    }
+    if (!hasInlineImage) {
+      return res.status(400).json({ message: "imageUrl is required" });
     }
   }
   const input = modelConfig.buildInput({
@@ -1334,6 +1503,21 @@ app.post("/replicate/video/generate", async (req, res) => {
           ContentType: contentType || "video/mp4",
         })
       );
+      const posterKey = buildVideoPosterKeyFromVideoKey(outputKey);
+      if (posterKey) {
+        try {
+          await copyS3Object({
+            bucket: mediaBucket,
+            sourceKey: inputKey,
+            destinationKey: posterKey,
+          });
+        } catch (error) {
+          console.warn("Failed to create video poster:", {
+            message: error?.message || String(error),
+            posterKey,
+          });
+        }
+      }
 
       return res.json({
         modelId: modelConfig.modelId,
@@ -1416,6 +1600,21 @@ app.get("/replicate/video/status", async (req, res) => {
         ContentType: contentType || "video/mp4",
       })
     );
+    const posterKey = buildVideoPosterKeyFromVideoKey(outputKey);
+    if (posterKey) {
+      try {
+        await copyS3Object({
+          bucket: mediaBucket,
+          sourceKey: inputKey,
+          destinationKey: posterKey,
+        });
+      } catch (error) {
+        console.warn("Failed to create video poster:", {
+          message: error?.message || String(error),
+          posterKey,
+        });
+      }
+    }
     const signedUrl = await getSignedUrl(
       s3Client,
       new GetObjectCommand({
@@ -1528,6 +1727,22 @@ app.post("/bedrock/nova-reel/image-to-video-s3", async (req, res) => {
       });
     }
     imageBase64 = finalBuffer.toString("base64");
+    const posterKey = buildVideoPosterKeyFromPrefix(outputPrefix);
+    try {
+      await s3Client.send(
+        new PutObjectCommand({
+          Bucket: mediaBucket,
+          Key: posterKey,
+          Body: finalBuffer,
+          ContentType: imageFormat === "png" ? "image/png" : "image/jpeg",
+        })
+      );
+    } catch (error) {
+      console.warn("Failed to create video poster:", {
+        message: error?.message || String(error),
+        posterKey,
+      });
+    }
   } catch (error) {
     return res.status(500).json({
       message: "Failed to load input image from S3",

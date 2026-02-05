@@ -39,6 +39,38 @@ import characterPresets from "../data/prompt-helper/character-presets.json";
 const buildSafeFileName = (name = "") =>
   name.replace(/\s+/g, "-").replace(/[^a-zA-Z0-9._-]/g, "");
 
+const CACHE_MAX_AGE_MS = 5 * 60 * 1000;
+const IMAGE_CACHE_KEY = "whisk_images_cache";
+const VIDEO_CACHE_KEY = "whisk_videos_cache";
+
+const cacheStore = {
+  read(key, maxAgeMs) {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = window.sessionStorage.getItem(key);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return null;
+      const { ts, data } = parsed;
+      if (maxAgeMs && ts && Date.now() - ts > maxAgeMs) return null;
+      return data;
+    } catch (error) {
+      return null;
+    }
+  },
+  write(key, data) {
+    if (typeof window === "undefined") return;
+    try {
+      window.sessionStorage.setItem(
+        key,
+        JSON.stringify({ ts: Date.now(), data })
+      );
+    } catch (error) {
+      // ignore cache write failures
+    }
+  },
+};
+
 function Whisk({ apiBaseUrl = "" }) {
   const [images, setImages] = useState([]);
   const [status, setStatus] = useState("idle");
@@ -85,8 +117,8 @@ function Whisk({ apiBaseUrl = "" }) {
   const [uploadKey, setUploadKey] = useState("");
   const [selectedImageKey, setSelectedImageKey] = useState("");
   const [selectedImageUrl, setSelectedImageUrl] = useState("");
-  const [videoProvider, setVideoProvider] = useState("bedrock");
-  const [videoModel, setVideoModel] = useState("nova-reel");
+  const [videoProvider, setVideoProvider] = useState("replicate");
+  const [videoModel, setVideoModel] = useState("wan-2.2-i2v-fast");
   const [videoGenerateAudio, setVideoGenerateAudio] = useState(true);
   const [uploadStatus, setUploadStatus] = useState("idle");
   const [generationStatus, setGenerationStatus] = useState("idle");
@@ -99,6 +131,7 @@ function Whisk({ apiBaseUrl = "" }) {
   const [videos, setVideos] = useState([]);
   const [videoUrls, setVideoUrls] = useState({});
   const [loadingVideoKey, setLoadingVideoKey] = useState("");
+  const [videoModalSubmitted, setVideoModalSubmitted] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
   const [lightboxImage, setLightboxImage] = useState(null);
   const pageSize = 10;
@@ -140,13 +173,22 @@ function Whisk({ apiBaseUrl = "" }) {
     return new Map(entries);
   }, []);
 
-  const refreshImages = async () => {
+  const refreshImages = async (force = false) => {
     if (!resolvedApiBaseUrl) return;
+    if (!force) {
+      const cached = cacheStore.read(IMAGE_CACHE_KEY, CACHE_MAX_AGE_MS);
+      if (cached) {
+        setImages(cached);
+        setStatus("success");
+        return;
+      }
+    }
     setStatus("loading");
     setError("");
     try {
       const data = await listImages(resolvedApiBaseUrl);
       setImages(data.images || []);
+      cacheStore.write(IMAGE_CACHE_KEY, data.images || []);
       setStatus("success");
       setPageIndex(0);
     } catch (err) {
@@ -155,35 +197,22 @@ function Whisk({ apiBaseUrl = "" }) {
     }
   };
 
-  useEffect(() => {
+  const refreshVideos = async (force = false) => {
     if (!resolvedApiBaseUrl) return;
-    let isMounted = true;
-    const loadImages = async () => {
-      setStatus("loading");
-      setError("");
-      try {
-        const data = await listImages(resolvedApiBaseUrl);
-        if (!isMounted) return;
-        setImages(data.images || []);
-        setPageIndex(0);
-        setStatus("success");
-      } catch (err) {
-        if (!isMounted) return;
-        setStatus("error");
-        setError(err?.message || "Failed to load images.");
+    if (!force) {
+      const cached = cacheStore.read(VIDEO_CACHE_KEY, CACHE_MAX_AGE_MS);
+      if (cached) {
+        setVideos(cached);
+        return;
       }
-    };
-    loadImages();
-    return () => {
-      isMounted = false;
-    };
-  }, [resolvedApiBaseUrl]);
-
-  const refreshVideos = async () => {
-    if (!resolvedApiBaseUrl) return;
+    }
     try {
-      const data = await listVideos(resolvedApiBaseUrl, false);
+      const data = await listVideos(resolvedApiBaseUrl, {
+        includeUrls: false,
+        includePosters: true,
+      });
       setVideos(data.videos || []);
+      cacheStore.write(VIDEO_CACHE_KEY, data.videos || []);
     } catch (err) {
       setError(err?.message || "Failed to load videos.");
     }
@@ -191,21 +220,18 @@ function Whisk({ apiBaseUrl = "" }) {
 
   useEffect(() => {
     if (!resolvedApiBaseUrl) return;
-    let isMounted = true;
-    const loadVideos = async () => {
-      try {
-        const data = await listVideos(resolvedApiBaseUrl, false);
-        if (!isMounted) return;
-        setVideos(data.videos || []);
-      } catch (err) {
-        if (!isMounted) return;
-        setError(err?.message || "Failed to load videos.");
-      }
-    };
-    loadVideos();
-    return () => {
-      isMounted = false;
-    };
+    refreshVideos();
+  }, [resolvedApiBaseUrl]);
+
+  useEffect(() => {
+    if (!resolvedApiBaseUrl) return;
+    const cached = cacheStore.read(IMAGE_CACHE_KEY, CACHE_MAX_AGE_MS);
+    if (cached) {
+      setImages(cached);
+      setStatus("success");
+      return;
+    }
+    refreshImages();
   }, [resolvedApiBaseUrl]);
 
   useEffect(() => {
@@ -448,10 +474,12 @@ function Whisk({ apiBaseUrl = "" }) {
             (item) => item.key === videoReadyData.videoReadyKey
           );
           if (exists) return prev;
-          return [
+          const next = [
             { key: videoReadyData.videoReadyKey, url: videoReadyData.url },
             ...prev,
           ];
+          cacheStore.write(IMAGE_CACHE_KEY, next);
+          return next;
         });
       }
     } catch (err) {
@@ -667,7 +695,8 @@ function Whisk({ apiBaseUrl = "" }) {
           setGenerationStatus("success");
         }
         if (activeModal === "video") {
-          setActiveModal("");
+          setVideoModalSubmitted(true);
+          closeModal();
         }
       } else {
         const newOutputPrefix = `videos/${Date.now()}/`;
@@ -682,7 +711,8 @@ function Whisk({ apiBaseUrl = "" }) {
         setInvocationArn(data?.response?.invocationArn || "");
         setOutputPrefix(newOutputPrefix);
         if (activeModal === "video") {
-          setActiveModal("");
+          setVideoModalSubmitted(true);
+          closeModal();
         }
       }
     } catch (err) {
@@ -707,6 +737,7 @@ function Whisk({ apiBaseUrl = "" }) {
         const statusValue = data?.status || "";
         setJobStatus(statusValue);
         if (statusValue === "Completed") {
+          refreshVideos(true);
           return;
         }
         if (statusValue === "Failed") {
@@ -744,6 +775,7 @@ function Whisk({ apiBaseUrl = "" }) {
         setReplicateJobStatus(statusValue);
         if (statusValue === "succeeded") {
           setGenerationStatus("success");
+          refreshVideos(true);
           return;
         }
         if (statusValue === "failed" || statusValue === "canceled") {
@@ -805,9 +837,13 @@ function Whisk({ apiBaseUrl = "" }) {
   };
 
   const closeModal = () => {
+    const wasVideoModal = activeModal === "video";
     setActiveModal("");
-    refreshImages();
-    refreshVideos();
+    refreshImages(true);
+    if (!wasVideoModal || videoModalSubmitted) {
+      refreshVideos(true);
+    }
+    setVideoModalSubmitted(false);
   };
 
   const handleSelectImageForVideo = async (image) => {
@@ -834,6 +870,7 @@ function Whisk({ apiBaseUrl = "" }) {
   };
 
   const openVideoModalForImage = async (image) => {
+    setVideoModalSubmitted(false);
     await handleSelectImageForVideo(image);
     setActiveModal("video");
   };
@@ -842,7 +879,11 @@ function Whisk({ apiBaseUrl = "" }) {
     if (!image?.key || !resolvedApiBaseUrl) return;
     try {
       await deleteImage(resolvedApiBaseUrl, image.key);
-      setImages((prev) => prev.filter((item) => item.key !== image.key));
+      setImages((prev) => {
+        const next = prev.filter((item) => item.key !== image.key);
+        cacheStore.write(IMAGE_CACHE_KEY, next);
+        return next;
+      });
     } catch (err) {
       setError(err?.message || "Failed to delete image.");
     }
@@ -852,7 +893,11 @@ function Whisk({ apiBaseUrl = "" }) {
     if (!video?.key || !resolvedApiBaseUrl) return;
     try {
       await deleteVideo(resolvedApiBaseUrl, video.key);
-      setVideos((prev) => prev.filter((item) => item.key !== video.key));
+      setVideos((prev) => {
+        const next = prev.filter((item) => item.key !== video.key);
+        cacheStore.write(VIDEO_CACHE_KEY, next);
+        return next;
+      });
       setVideoUrls((prev) => {
         const next = { ...prev };
         delete next[video.key];
@@ -875,7 +920,10 @@ function Whisk({ apiBaseUrl = "" }) {
     }
     setLoadingVideoKey(video.key);
     try {
-      const data = await listVideos(resolvedApiBaseUrl, true);
+      const data = await listVideos(resolvedApiBaseUrl, {
+        includeUrls: true,
+        includePosters: false,
+      });
       const matched = (data.videos || []).find((item) => item.key === video.key);
       if (matched?.url) {
         setVideoUrls((prev) => ({ ...prev, [video.key]: matched.url }));
@@ -911,71 +959,65 @@ function Whisk({ apiBaseUrl = "" }) {
         />
       </div>
 
-      {error && (
-        <div className="whisk-panel whisk-error-panel">
-          {error}
-        </div>
-      )}
+      {error && <div className="whisk-error-panel">{error}</div>}
 
-      <div className="whisk-panel whisk-videos">
+      <div className="whisk-videos">
         <div className="whisk-panel-header">
-          <div>
-            <p className="whisk-label">Videos</p>
-            <h2 className="whisk-heading">Rendered outputs</h2>
-            <p className="whisk-panel-copy">
-              Click the play icon to load a preview when you need it.
-            </p>
-          </div>
+          <h2 className="whisk-title">Videos</h2>
         </div>
         {videos.length === 0 ? (
           <p className="whisk-panel-copy">No videos available yet.</p>
         ) : (
-          <div className="whisk-video-list">
+          <div className="whisk-video-grid">
             {videos.map((video) => {
               const url = videoUrls[video.key];
               const isLoading = loadingVideoKey === video.key;
+              const posterUrl = video.posterUrl;
               return (
-                <div key={video.key} className="whisk-video-item">
-                  <div>
-                    <p className="whisk-video-title">
-                      {(video.fileName || video.key)?.slice(0, 50)}
-                      {(video.fileName || video.key)?.length > 50 ? "…" : ""}
-                    </p>
-                    <p className="whisk-video-meta">
-                      {video.lastModified
-                        ? new Date(video.lastModified).toLocaleString()
-                        : "Unknown time"}
-                      {typeof video.size === "number"
-                        ? ` · ${Math.round(video.size / 1024)} KB`
-                        : ""}
-                    </p>
+                <div key={video.key} className="whisk-video-card">
+                  <div className="whisk-video-frame">
+                    {url ? (
+                      <video
+                        className="whisk-video-player"
+                        controls
+                        preload="metadata"
+                        src={url}
+                      />
+                    ) : posterUrl ? (
+                      <img
+                        className="whisk-video-poster"
+                        src={posterUrl}
+                        alt=""
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="whisk-video-placeholder">
+                        <span className="whisk-video-label">Preview</span>
+                      </div>
+                    )}
+                    <div className="whisk-video-overlay">
+                      <button
+                        type="button"
+                        className="whisk-icon-button"
+                        onClick={() => handleLoadVideo(video)}
+                        disabled={isLoading}
+                        aria-label={
+                          url ? "Hide video preview" : "Load video preview"
+                        }
+                      >
+                        {isLoading ? "…" : url ? "⏸" : "▶"}
+                      </button>
+                      <button
+                        type="button"
+                        className="whisk-icon-button whisk-icon-button--danger"
+                        onClick={() => handleDeleteVideo(video)}
+                        aria-label="Delete video"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
-                  <div className="whisk-video-actions">
-                    <button
-                      type="button"
-                      className="whisk-video-button"
-                      onClick={() => handleLoadVideo(video)}
-                      disabled={isLoading}
-                      aria-label={url ? "Hide video preview" : "Load video preview"}
-                    >
-                      {isLoading
-                        ? "Loading..."
-                        : url
-                        ? "Hide preview"
-                        : "Load preview"}
-                    </button>
-                    <button
-                      type="button"
-                      className="whisk-video-button whisk-video-button--danger"
-                      onClick={() => handleDeleteVideo(video)}
-                      aria-label="Delete video"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                  {url && (
-                    <video className="whisk-video-player" controls src={url} />
-                  )}
+                  <div className="whisk-video-meta-row" />
                 </div>
               );
             })}

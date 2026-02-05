@@ -120,16 +120,6 @@ function VideoGenerationPanel({
             </div>
           )}
 
-          {generationResponse && (
-            <div className="mt-4 text-sm text-[#6b5c45]">
-              <p className="font-semibold text-ink">Job submitted</p>
-              <p className="mt-2">
-                Output:{" "}
-                <span className="font-mono">{generationResponse.outputS3Uri}</span>
-              </p>
-              <p className="mt-1">Model: {generationResponse.modelId}</p>
-            </div>
-          )}
         </div>
       </div>
 
@@ -207,44 +197,6 @@ function VideoGenerationPanel({
           </div>
         )}
 
-        <div className="gallery-section">
-          <p className="field-label">Available videos in S3</p>
-          {availableVideos.length === 0 ? (
-            <p className="mt-3 text-sm text-[#7a6a51]">No videos found yet.</p>
-          ) : (
-            <div className="mt-4 space-y-2 text-sm text-[#6b5c45]">
-              {availableVideos.map((video) => (
-                <div
-                  key={video.key}
-                  className="flex flex-col gap-2 rounded-xl border border-[#e3d8c6] bg-white/70 px-3 py-2"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-mono text-xs text-ink">
-                      {video.fileName || video.key}
-                    </span>
-                    {video.url && (
-                      <a
-                        className="btn-ghost px-3 py-1 text-[11px]"
-                        href={video.url}
-                        download
-                      >
-                        Download
-                      </a>
-                    )}
-                  </div>
-                  <span className="text-xs text-[#7a6a51]">
-                    {video.lastModified
-                      ? new Date(video.lastModified).toLocaleString()
-                      : "Unknown time"}
-                    {typeof video.size === "number"
-                      ? ` · ${Math.round(video.size / 1024)} KB`
-                      : ""}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
