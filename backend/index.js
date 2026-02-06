@@ -17,12 +17,24 @@ const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const {
   DynamoDBDocumentClient,
   PutCommand,
+  GetCommand,
   QueryCommand,
   DeleteCommand,
 } = require("@aws-sdk/lib-dynamodb");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const Replicate = require("replicate");
 const Jimp = require("jimp");
+const promptBackgrounds = require("./data/prompt-helper/backgrounds.json");
+const promptPoses = require("./data/prompt-helper/poses.json");
+const promptArchetypes = require("./data/prompt-helper/archetypes.json");
+const promptTraits = require("./data/prompt-helper/traits.json");
+const promptFaceDetails = require("./data/prompt-helper/face-details.json");
+const promptEyeDetails = require("./data/prompt-helper/eye-details.json");
+const promptHairDetails = require("./data/prompt-helper/hair-details.json");
+const promptExpressions = require("./data/prompt-helper/expressions.json");
+const promptOutfits = require("./data/prompt-helper/outfits.json");
+const promptPalettes = require("./data/prompt-helper/palettes.json");
+const promptStyles = require("./data/prompt-helper/styles.json");
 
 const app = express();
 app.use(express.json());
@@ -60,6 +72,8 @@ const promptHelperModelId =
   process.env.BEDROCK_PROMPT_HELPER_MODEL_ID ||
   process.env.BEDROCK_CLAUDE_MODEL_ID ||
   "us.anthropic.claude-haiku-4-5-20251001-v1:0";
+const storyModelId =
+  process.env.BEDROCK_STORY_MODEL_ID || promptHelperModelId;
 
 
 const imageModelConfig = {
@@ -104,9 +118,11 @@ const replicateModelConfig = {
       cfg_scale: 5,
       clip_skip: 1,
       pag_scale: 1,
-      scheduler: scheduler || "Euler a",
+      scheduler: scheduler || "DPM++ 2M Karras",
       batch_size: numOutputs,
-      negative_prompt: negativePrompt || "bad quality, bad anatomy, worst quality, low quality, low resolutions, extra fingers, blur, blurry, ugly, wrongs proportions, watermark, image artifacts, lowres, ugly, jpeg artifacts, deformed, noisy image",
+      negative_prompt:
+        negativePrompt ||
+        "multiple characters, companions, crowd, extra people, duplicate face, deformed features, out of frame, messy linework, inconsistent identity",
       guidance_rescale: 1,
       prepend_preprompt: true,
     }),
@@ -160,6 +176,401 @@ const replicateModelConfig = {
       num_inference_steps: 30,
     }),
   },
+};
+
+const storyCharacters = [
+  {
+    id: "frieren",
+    name: "Frieren from Beyond Journey's End",
+    background:
+      "outdoor beach scene, ocean horizon, blue sky, turquoise water, sandy beach, daylight",
+    pose: "front-facing portrait, direct gaze, leaning forward, arms relaxed",
+    archetype: "stoic elf mage",
+    signatureTraits:
+      "recognizable as Frieren, not a generic elf, faithful to the original Frieren anime",
+    faceDetails: "plain understated anime face, very small mouth",
+    eyeDetails: "narrow slightly drooping eyes",
+    hairDetails: "long silver hair",
+    expression: "calm melancholic expression",
+    outfitMaterials: "two-piece bikini",
+    colorPalette: "daylight",
+    styleReference:
+      "anime cinematic illustration, anime movie quality, sharp focus on face",
+    identityPrompt:
+      "outdoor beach scene, ocean horizon, blue sky, turquoise water, sandy beach, daylight, 1girl, solo, (Frieren from Beyond Journey's End:1.4), recognizable as Frieren, not generic elf, plain understated anime face, narrow drooping eyes, very small mouth, calm melancholic expression, front-facing portrait, direct gaze, two-piece bikini, leaning forward, arms relaxed, sharp focus on face, anime movie quality",
+    storyBasePrompt:
+      "outdoor beach scene, ocean horizon, blue sky, turquoise water, sandy beach, daylight, 1girl, solo, (Frieren from Beyond Journey's End:1.4), recognizable as Frieren, not generic elf, plain understated anime face, narrow drooping eyes, very small mouth, calm melancholic expression, front-facing portrait, direct gaze, two-piece bikini, leaning forward, arms relaxed, sharp focus on face, anime movie quality",
+    storyNegativePrompt:
+      "multiple characters, extra people, generic elf, big eyes, sparkly eyes, clone, twin, reflection",
+  },
+];
+
+const storyPresets = [
+  {
+    id: "frieren-road",
+    name: "Frieren’s Road",
+    synopsis:
+      "A quiet journey across misty towns and open fields. Intimate conversations, reflective moments, and gentle adventure.",
+    protagonistId: "frieren",
+    worldPrompt:
+      "fantasy countryside, soft winds, medieval villages, mossy stone roads, tranquil skies",
+    stylePrompt:
+      "anime cinematic illustration, soft pastel palette, luminous lighting, delicate line art, painterly shading",
+    negativePrompt:
+      "low quality, worst quality, blurry, extra limbs, watermark, text, deformed, bad anatomy, lowres, jpeg artifacts",
+    opening:
+      "The road opens into a quiet valley, the wind carrying distant bells. Frieren walks ahead in thoughtful silence, then glances back with a small smile. “We can rest in the next village—or take the ridge and see the lakes at sunset. What feels right to you?”",
+  },
+  {
+    id: "moonlit-tavern",
+    name: "Moonlit Tavern",
+    synopsis:
+      "A cozy tavern at the edge of the kingdom. Warm lantern light, mysterious travelers, and a slowly unfolding quest.",
+    protagonistId: "frieren",
+    worldPrompt:
+      "cozy tavern interior, candlelight glow, wooden beams, rain outside windows, warm ambience",
+    stylePrompt:
+      "anime cinematic illustration, warm amber lighting, soft grain, detailed textures, gentle bokeh",
+    negativePrompt:
+      "low quality, worst quality, blurry, extra limbs, watermark, text, deformed, bad anatomy, lowres, jpeg artifacts",
+    opening:
+      "The tavern door creaks and the scent of rain drifts in. Frieren takes a seat by the hearth, brushing droplets from her cloak. “There’s a traveler here who knows the old ruins,” she says, eyes glinting in the firelight. “Do we listen, or keep moving?”",
+  },
+  {
+    id: "celestial-ruins",
+    name: "Celestial Ruins",
+    synopsis:
+      "Ancient sky-temples and starlit relics. The world feels older here, and the air hums with quiet magic.",
+    protagonistId: "frieren",
+    worldPrompt:
+      "ancient ruins above the clouds, floating stone, starlit sky, glowing runes, ethereal atmosphere",
+    stylePrompt:
+      "anime cinematic illustration, high contrast moonlight, cool blue palette, ethereal glow, ultra-detailed",
+    negativePrompt:
+      "low quality, worst quality, blurry, extra limbs, watermark, text, deformed, bad anatomy, lowres, jpeg artifacts",
+    opening:
+      "The staircase ends above the clouds, where ancient stones hum with starlight. Frieren pauses, listening to the wind. “These ruins are alive with memory,” she whispers. “Do we trace the runes, or search for the relic first?”",
+  },
+];
+
+const promptHelperDefaults = {
+  backgrounds: promptBackgrounds,
+  poses: promptPoses,
+  archetypes: promptArchetypes,
+  traits: promptTraits,
+  faceDetails: promptFaceDetails,
+  eyeDetails: promptEyeDetails,
+  hairDetails: promptHairDetails,
+  expressions: promptExpressions,
+  outfits: promptOutfits,
+  palettes: promptPalettes,
+  styles: promptStyles,
+};
+
+const buildCharacterPrompt = (character) => {
+  if (!character) return "";
+  return [
+    character.name,
+    character.archetype,
+    character.signatureTraits,
+    character.faceDetails,
+    character.eyeDetails,
+    character.hairDetails,
+    character.expression,
+    character.outfitMaterials,
+    character.colorPalette,
+  ]
+    .filter(Boolean)
+    .join(", ");
+};
+
+const ensurePromptHelperOptions = async () => {
+  const pk = buildPromptHelperPk();
+  const existing = await queryBySkPrefix({
+    pk,
+    skPrefix: buildPromptHelperSk(""),
+    limit: 50,
+    scanForward: true,
+  });
+  const existingMap = new Map(
+    existing.map((item) => [item.key || "", item])
+  );
+  const updates = Object.entries(promptHelperDefaults).filter(
+    ([key, options]) => {
+      const current = existingMap.get(key);
+      if (!current || !Array.isArray(current.options)) return true;
+      return JSON.stringify(current.options) !== JSON.stringify(options);
+    }
+  );
+  if (updates.length) {
+    await Promise.all(
+      updates.map(([key, options]) =>
+        dynamoClient.send(
+          new PutCommand({
+            TableName: mediaTable,
+            Item: {
+              pk,
+              sk: buildPromptHelperSk(key),
+              type: "PROMPT_HELPER_OPTIONS",
+              key,
+              options,
+              createdAt: new Date().toISOString(),
+            },
+          })
+        )
+      )
+    );
+  }
+  const refreshed = await queryBySkPrefix({
+    pk,
+    skPrefix: buildPromptHelperSk(""),
+    limit: 50,
+    scanForward: true,
+  });
+  return refreshed;
+};
+
+const ensureStoryCharacters = async () => {
+  const pk = buildStoryCharacterPk();
+  const existing = await queryBySkPrefix({
+    pk,
+    skPrefix: buildStoryCharacterSk(""),
+    limit: 20,
+    scanForward: true,
+  });
+  if (existing.length > 0) {
+    const existingMap = new Map(
+      existing.map((item) => [item.id || "", item])
+    );
+    const fieldsToCompare = [
+      "name",
+      "background",
+      "pose",
+      "archetype",
+      "signatureTraits",
+      "faceDetails",
+      "eyeDetails",
+      "hairDetails",
+      "expression",
+      "outfitMaterials",
+      "colorPalette",
+      "styleReference",
+      "identityPrompt",
+      "storyBasePrompt",
+      "storyNegativePrompt",
+    ];
+    const updates = storyCharacters.filter((character) => {
+      const current = existingMap.get(character.id);
+      if (!current) return false;
+      return fieldsToCompare.some(
+        (field) => (current[field] || "") !== (character[field] || "")
+      );
+    });
+    if (updates.length) {
+      await Promise.all(
+        updates.map((character) =>
+          dynamoClient.send(
+            new PutCommand({
+              TableName: mediaTable,
+              Item: {
+                pk,
+                sk: buildStoryCharacterSk(character.id),
+                type: "STORY_CHARACTER",
+                ...character,
+                createdAt: character.createdAt || new Date().toISOString(),
+              },
+            })
+          )
+        )
+      );
+      const refreshed = await queryBySkPrefix({
+        pk,
+        skPrefix: buildStoryCharacterSk(""),
+        limit: 20,
+        scanForward: true,
+      });
+      return refreshed;
+    }
+    return existing;
+  }
+  await Promise.all(
+    storyCharacters.map((character) =>
+      dynamoClient.send(
+        new PutCommand({
+          TableName: mediaTable,
+          Item: {
+            pk,
+            sk: buildStoryCharacterSk(character.id),
+            type: "STORY_CHARACTER",
+            ...character,
+            createdAt: new Date().toISOString(),
+          },
+        })
+      )
+    )
+  );
+  return storyCharacters.map((character) => ({
+    pk,
+    sk: buildStoryCharacterSk(character.id),
+    type: "STORY_CHARACTER",
+    ...character,
+  }));
+};
+
+const ensureStoryPresets = async () => {
+  const pk = buildStoryPresetPk();
+  await ensureStoryCharacters();
+  const existing = await queryBySkPrefix({
+    pk,
+    skPrefix: buildStoryPresetSk(""),
+    limit: 5,
+    scanForward: true,
+  });
+  if (existing.length > 0) {
+    const existingMap = new Map(
+      existing.map((item) => [item.id || "", item])
+    );
+    const updates = storyPresets.filter((preset) => {
+      const current = existingMap.get(preset.id);
+      return (
+        current &&
+        (!current.protagonistId ||
+          current.protagonistId !== preset.protagonistId)
+      );
+    });
+    if (updates.length) {
+      await Promise.all(
+        updates.map((preset) =>
+          dynamoClient.send(
+            new PutCommand({
+              TableName: mediaTable,
+              Item: {
+                pk,
+                sk: buildStoryPresetSk(preset.id),
+                type: "STORY_PRESET",
+                ...preset,
+                createdAt: preset.createdAt || new Date().toISOString(),
+              },
+            })
+          )
+        )
+      );
+      const refreshed = await queryBySkPrefix({
+        pk,
+        skPrefix: buildStoryPresetSk(""),
+        limit: 5,
+        scanForward: true,
+      });
+      return refreshed;
+    }
+    return existing;
+  }
+  await Promise.all(
+    storyPresets.map((preset) =>
+      dynamoClient.send(
+        new PutCommand({
+          TableName: mediaTable,
+          Item: {
+            pk,
+            sk: buildStoryPresetSk(preset.id),
+            type: "STORY_PRESET",
+            ...preset,
+            createdAt: new Date().toISOString(),
+          },
+        })
+      )
+    )
+  );
+  return storyPresets.map((preset) => ({
+    pk,
+    sk: buildStoryPresetSk(preset.id),
+    type: "STORY_PRESET",
+    ...preset,
+  }));
+};
+
+const safeJsonParse = (text = "") => {
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    try {
+      return JSON.parse(match[0]);
+    } catch (err) {
+      return null;
+    }
+  }
+};
+
+const parsePromptHelperResponse = (text = "") => {
+  const parsed = safeJsonParse(text);
+  if (parsed?.positivePrompt || parsed?.negativePrompt) {
+    return {
+      positive: parsed.positivePrompt?.trim() || "",
+      negative: parsed.negativePrompt?.trim() || "",
+    };
+  }
+  const positiveMatch = text.match(/POSITIVE:\s*([\s\S]*?)(?:\nNEGATIVE:|$)/i);
+  const negativeMatch = text.match(/NEGATIVE:\s*([\s\S]*)/i);
+  return {
+    positive: positiveMatch?.[1]?.trim() || "",
+    negative: negativeMatch?.[1]?.trim() || "",
+  };
+};
+
+const parseSceneHelperResponse = (text = "") => {
+  const parsed = safeJsonParse(text);
+  if (parsed?.scenePrompt) {
+    return {
+      scenePrompt: parsed.scenePrompt?.trim() || "",
+    };
+  }
+  const sceneMatch = text.match(/SCENE:\s*([\s\S]*?)(?:\n|$)/i);
+  return {
+    scenePrompt: sceneMatch?.[1]?.trim() || "",
+  };
+};
+
+const sanitizeScenePrompt = (value = "") => {
+  if (!value) return "";
+  return value
+    .replace(/close[- ]?up/gi, "")
+    .replace(/extreme close[- ]?up/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+};
+
+const MAX_REPLICATE_PROMPT_TOKENS = 75;
+
+const estimateTokenCount = (value = "") =>
+  value
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+
+const clampPromptTokens = (value = "", maxTokens = MAX_REPLICATE_PROMPT_TOKENS) => {
+  if (!value) return "";
+  const parts = value
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  let tokenCount = 0;
+  const kept = [];
+  for (const part of parts) {
+    const partTokens = part.split(/\s+/).filter(Boolean);
+    if (tokenCount + partTokens.length > maxTokens) {
+      break;
+    }
+    kept.push(part);
+    tokenCount += partTokens.length;
+  }
+  if (kept.length) {
+    return kept.join(", ");
+  }
+  const fallbackTokens = parts[0]?.split(/\s+/).filter(Boolean) || [];
+  return fallbackTokens.slice(0, maxTokens).join(" ");
 };
 
 const buildSafeBaseName = (value = "") => {
@@ -275,6 +686,19 @@ const ensureUserKey = (key = "", userId = "") => {
 
 const buildMediaPk = (userId = "") => `USER#${userId}`;
 const buildMediaSk = (type = "IMG", key = "") => `${type}#${key}`;
+const buildStoryPresetPk = () => "PRESET#STORY";
+const buildStoryPresetSk = (presetId = "") => `PRESET#${presetId}`;
+const buildStoryCharacterPk = () => "PRESET#CHARACTER";
+const buildStoryCharacterSk = (characterId = "") => `CHARACTER#${characterId}`;
+const buildPromptHelperPk = () => "PRESET#PROMPT_HELPER";
+const buildPromptHelperSk = (key = "") => `OPTIONS#${key.toUpperCase()}`;
+const buildStorySessionSk = (sessionId = "") => `SESSION#${sessionId}`;
+const buildStoryMessageSk = (sessionId = "", timestamp = Date.now()) =>
+  `SESSION#${sessionId}#MSG#${String(timestamp).padStart(13, "0")}`;
+const buildStorySceneSk = (sessionId = "", sceneId = "") =>
+  `SESSION#${sessionId}#SCENE#${sceneId}`;
+const storyMessagePrefix = (sessionId = "") => `SESSION#${sessionId}#MSG#`;
+const storyScenePrefix = (sessionId = "") => `SESSION#${sessionId}#SCENE#`;
 
 const putMediaItem = async ({ userId, type, key, extra = {} }) => {
   if (!mediaTable || !userId || !key) return;
@@ -318,6 +742,39 @@ const queryMediaItems = async ({ userId, type }) => {
         ":skPrefix": `${type}#`,
       },
       ScanIndexForward: false,
+    })
+  );
+  return response.Items || [];
+};
+
+const getItem = async ({ pk, sk }) => {
+  if (!mediaTable || !pk || !sk) return null;
+  const response = await dynamoClient.send(
+    new GetCommand({
+      TableName: mediaTable,
+      Key: { pk, sk },
+    })
+  );
+  return response.Item || null;
+};
+
+const queryBySkPrefix = async ({
+  pk,
+  skPrefix,
+  limit = 100,
+  scanForward = true,
+}) => {
+  if (!mediaTable || !pk || !skPrefix) return [];
+  const response = await dynamoClient.send(
+    new QueryCommand({
+      TableName: mediaTable,
+      KeyConditionExpression: "pk = :pk AND begins_with(sk, :skPrefix)",
+      ExpressionAttributeValues: {
+        ":pk": pk,
+        ":skPrefix": skPrefix,
+      },
+      ScanIndexForward: scanForward,
+      Limit: limit,
     })
   );
   return response.Items || [];
@@ -532,6 +989,40 @@ app.get("/hello/:name", (req, res) => {
   res.json({ message: `Hello, ${req.params.name}!` });
 });
 
+app.get("/prompt-helper/options", async (req, res) => {
+  if (!mediaTable) {
+    return res.status(500).json({ message: "MEDIA_TABLE is not set" });
+  }
+  try {
+    const items = await ensurePromptHelperOptions();
+    const optionMap = new Map(
+      items.map((item) => [item.key || "", item.options || []])
+    );
+    const getOption = (key) =>
+      Array.isArray(optionMap.get(key))
+        ? optionMap.get(key)
+        : promptHelperDefaults[key] || [];
+    res.json({
+      backgrounds: getOption("backgrounds"),
+      poses: getOption("poses"),
+      archetypes: getOption("archetypes"),
+      traits: getOption("traits"),
+      faceDetails: getOption("faceDetails"),
+      eyeDetails: getOption("eyeDetails"),
+      hairDetails: getOption("hairDetails"),
+      expressions: getOption("expressions"),
+      outfits: getOption("outfits"),
+      palettes: getOption("palettes"),
+      styles: getOption("styles"),
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to load prompt helper options",
+      error: error?.message || String(error),
+    });
+  }
+});
+
 app.post("/bedrock/prompt-helper", async (req, res) => {
   const background = req.body?.background?.trim();
   const character = req.body?.character?.trim();
@@ -589,7 +1080,8 @@ app.post("/bedrock/prompt-helper", async (req, res) => {
     "Depict a single character only; do not introduce additional characters or companions.",
     "Treat all provided traits as belonging to the same single character.",
     "Use short, punchy phrases; avoid full sentences.",
-    "Start the positive prompt with: masterpiece, best quality, amazing quality, very aesthetic, ultra-detailed.",
+    "Do not include the model preprompt tokens: masterpiece, high score, great score, absurdres.",
+    "Do not include the model negative preprompt tokens: lowres, bad anatomy, bad hands, text, error, missing finger, extra digits, fewer digits, cropped, worst quality, low quality, low score, bad score, average score, signature, watermark, username, blurry, bad_fingers, extra_fingers, mutated_fingers, mutated_hands, six_fingers.",
     "Do not use bracketed placeholders or section headers.",
     "Start with the character name and core identity.",
     "Include these phrases verbatim early in the prompt: anime cinematic illustration; faithful anime character design; accurate facial features; consistent identity.",
@@ -1231,7 +1723,7 @@ app.post("/bedrock/image/generate", async (req, res) => {
   const maxPromptLength = 900;
   const width = Number(req.body?.width) || 1280;
   const height = Number(req.body?.height) || 720;
-  const requestedImages = Number(req.body?.numImages) || 2;
+  const requestedImages = Number(req.body?.numImages) || 1;
   const numImages = Math.min(Math.max(requestedImages, 1), 3);
   const seed = req.body?.seed;
   const seeds = buildSeedList(numImages, seed);
@@ -1424,7 +1916,7 @@ app.post("/replicate/image/generate", async (req, res) => {
   const width = Number(req.body?.width) || 1024;
   const height = Number(req.body?.height) || 1024;
   const scheduler = req.body?.scheduler;
-  const requestedImages = Number(req.body?.numImages) || 2;
+  const requestedImages = Number(req.body?.numImages) || 1;
   const isDiffScheduler = scheduler === "diff";
   const numImages = Math.min(
     Math.max(isDiffScheduler ? 2 : requestedImages, 1),
@@ -1478,6 +1970,24 @@ app.post("/replicate/image/generate", async (req, res) => {
       message: `negativePrompt must be ${maxPromptLength} characters or less`,
     });
   }
+  const trimmedPrompt = clampPromptTokens(prompt);
+  const trimmedNegativePrompt = negativePrompt
+    ? clampPromptTokens(negativePrompt)
+    : undefined;
+  const promptWasTrimmed = trimmedPrompt.trim() !== prompt.trim();
+  const negativeWasTrimmed =
+    Boolean(negativePrompt) &&
+    trimmedNegativePrompt?.trim() !== negativePrompt.trim();
+  const promptNotice = [
+    promptWasTrimmed
+      ? `Positive prompt trimmed to ${MAX_REPLICATE_PROMPT_TOKENS} tokens for Replicate.`
+      : null,
+    negativeWasTrimmed
+      ? `Negative prompt trimmed to ${MAX_REPLICATE_PROMPT_TOKENS} tokens for Replicate.`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
   const modelConfig = replicateModelConfig[modelKey];
   if (!modelConfig) {
     return res.status(400).json({
@@ -1515,8 +2025,8 @@ app.post("/replicate/image/generate", async (req, res) => {
             ? modelConfig.schedulers?.[index % modelConfig.schedulers.length]
             : scheduler;
           const input = modelConfig.buildInput({
-            prompt,
-            negativePrompt,
+            prompt: trimmedPrompt,
+            negativePrompt: trimmedNegativePrompt,
             width,
             height,
             numOutputs: 1,
@@ -1572,7 +2082,12 @@ app.post("/replicate/image/generate", async (req, res) => {
       modelId: modelConfig.modelId,
       provider: "replicate",
       batchId,
-      notice: `Generating ${numImages} images with a staggered start. This can take a bit.`,
+      notice: [
+        `Generating ${numImages} images with a staggered start. This can take a bit.`,
+        promptNotice,
+      ]
+        .filter(Boolean)
+        .join(" "),
       images,
     });
   } catch (error) {
@@ -2151,6 +2666,799 @@ app.post("/bedrock/nova-reel/image-to-video-s3", async (req, res) => {
     });
     res.status(500).json({
       message: "Bedrock image-to-video invoke failed",
+      error: error?.message || String(error),
+    });
+  }
+});
+
+app.get("/story/presets", async (req, res) => {
+  if (!mediaTable) {
+    return res.status(500).json({ message: "MEDIA_TABLE is not set" });
+  }
+  try {
+    const presets = await ensureStoryPresets();
+    const characters = await ensureStoryCharacters();
+    const characterMap = new Map(
+      characters.map((character) => [character.id, character])
+    );
+    res.json({
+      presets: presets.map((preset) => ({
+        id: preset.id,
+        name: preset.name,
+        synopsis: preset.synopsis,
+        protagonistName:
+          characterMap.get(preset.protagonistId || "")?.name ||
+          preset.protagonistName ||
+          "",
+        stylePrompt: preset.stylePrompt,
+        opening: preset.opening,
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to load story presets",
+      error: error?.message || String(error),
+    });
+  }
+});
+
+app.get("/story/characters", async (req, res) => {
+  if (!mediaTable) {
+    return res.status(500).json({ message: "MEDIA_TABLE is not set" });
+  }
+  try {
+    const characters = await ensureStoryCharacters();
+    res.json({
+      characters: characters.map((character) => ({
+        id: character.id,
+        name: character.name,
+        archetype: character.archetype,
+        signatureTraits: character.signatureTraits,
+        faceDetails: character.faceDetails,
+        eyeDetails: character.eyeDetails,
+        hairDetails: character.hairDetails,
+        expression: character.expression,
+        background: character.background,
+        pose: character.pose,
+        outfitMaterials: character.outfitMaterials,
+        colorPalette: character.colorPalette,
+        styleReference: character.styleReference,
+        identityPrompt: character.identityPrompt,
+        storyBasePrompt: character.storyBasePrompt,
+        storyNegativePrompt: character.storyNegativePrompt,
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to load story characters",
+      error: error?.message || String(error),
+    });
+  }
+});
+
+app.get("/story/sessions", async (req, res) => {
+  const userId = req.user?.sub;
+  if (!mediaTable) {
+    return res.status(500).json({ message: "MEDIA_TABLE is not set" });
+  }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  try {
+    const items = await queryBySkPrefix({
+      pk: buildMediaPk(userId),
+      skPrefix: "SESSION#",
+      limit: 50,
+      scanForward: false,
+    });
+    const sessions = items.map((item) => ({
+      id: item.sessionId,
+      title: item.title,
+      presetId: item.presetId,
+      protagonistName: item.protagonistName,
+      synopsis: item.synopsis,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+      turnCount: item.turnCount || 0,
+      sceneCount: item.sceneCount || 0,
+    }));
+    res.json({ sessions });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to list story sessions",
+      error: error?.message || String(error),
+    });
+  }
+});
+
+app.post("/story/sessions", async (req, res) => {
+  const userId = req.user?.sub;
+  const presetId = req.body?.presetId;
+  const title = req.body?.title?.trim();
+  if (!mediaTable) {
+    return res.status(500).json({ message: "MEDIA_TABLE is not set" });
+  }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (!presetId) {
+    return res.status(400).json({ message: "presetId is required" });
+  }
+
+  try {
+    const presets = await ensureStoryPresets();
+    const characters = await ensureStoryCharacters();
+    const characterMap = new Map(
+      characters.map((character) => [character.id, character])
+    );
+    const preset =
+      presets.find((item) => item.id === presetId) ||
+      storyPresets.find((item) => item.id === presetId);
+    if (!preset) {
+      return res.status(400).json({ message: "Invalid presetId" });
+    }
+    const resolvedProtagonistId =
+      preset.protagonistId ||
+      (preset.protagonistName?.toLowerCase().includes("frieren")
+        ? "frieren"
+        : "");
+    const character = characterMap.get(resolvedProtagonistId) || null;
+    const protagonistPrompt =
+      preset.protagonistPrompt || character?.identityPrompt || buildCharacterPrompt(character);
+    const protagonistName =
+      character?.name || preset.protagonistName || "Protagonist";
+
+    const sessionId = `story-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 6)}`;
+    const now = new Date().toISOString();
+    const sessionItem = {
+      pk: buildMediaPk(userId),
+      sk: buildStorySessionSk(sessionId),
+      type: "STORY_SESSION",
+      sessionId,
+      title: title || preset.name,
+      presetId: preset.id,
+      synopsis: preset.synopsis,
+      protagonistId: resolvedProtagonistId || character?.id || "",
+      protagonistName,
+      protagonistPrompt,
+      worldPrompt: preset.worldPrompt,
+      stylePrompt: preset.stylePrompt,
+      negativePrompt: preset.negativePrompt,
+      opening: preset.opening,
+      summary: "",
+      turnCount: 0,
+      sceneCount: 1,
+      lastIllustrationTurn: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await dynamoClient.send(
+      new PutCommand({
+        TableName: mediaTable,
+        Item: sessionItem,
+      })
+    );
+
+    const openingMessage = {
+      pk: buildMediaPk(userId),
+      sk: buildStoryMessageSk(sessionId, Date.now()),
+      type: "STORY_MESSAGE",
+      sessionId,
+      role: "assistant",
+      content: preset.opening,
+      createdAt: now,
+    };
+
+    await dynamoClient.send(
+      new PutCommand({
+        TableName: mediaTable,
+        Item: openingMessage,
+      })
+    );
+
+    const openingSceneId = `opening-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 6)}`;
+    const openingScenePrompt = [
+      "establishing shot, environment visible, balanced composition",
+      preset.worldPrompt,
+    ]
+      .filter(Boolean)
+      .join(", ");
+    const openingScene = {
+      pk: buildMediaPk(userId),
+      sk: buildStorySceneSk(sessionId, openingSceneId),
+      type: "STORY_SCENE",
+      sessionId,
+      sceneId: openingSceneId,
+      title: "Opening scene",
+      description: preset.opening,
+      prompt: openingScenePrompt,
+      status: "pending",
+      createdAt: now,
+    };
+
+    await dynamoClient.send(
+      new PutCommand({
+        TableName: mediaTable,
+        Item: openingScene,
+      })
+    );
+
+    res.json({
+      session: {
+        id: sessionId,
+        title: sessionItem.title,
+        presetId: sessionItem.presetId,
+        protagonistName: sessionItem.protagonistName,
+        synopsis: sessionItem.synopsis,
+        createdAt: now,
+        updatedAt: now,
+        turnCount: 0,
+        sceneCount: 1,
+      },
+      messages: [
+        {
+          role: "assistant",
+          content: preset.opening,
+          createdAt: now,
+        },
+      ],
+      scenes: [
+        {
+          sceneId: openingSceneId,
+          title: "Opening scene",
+          description: preset.opening,
+          prompt: openingScenePrompt,
+          status: "pending",
+          createdAt: now,
+        },
+      ],
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to create story session",
+      error: error?.message || String(error),
+    });
+  }
+});
+
+app.get("/story/sessions/:id", async (req, res) => {
+  const userId = req.user?.sub;
+  const sessionId = req.params.id;
+  const bucket = process.env.MEDIA_BUCKET;
+  if (!mediaTable) {
+    return res.status(500).json({ message: "MEDIA_TABLE is not set" });
+  }
+  if (!bucket) {
+    return res.status(500).json({ message: "MEDIA_BUCKET is not set" });
+  }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (!sessionId) {
+    return res.status(400).json({ message: "sessionId is required" });
+  }
+
+  try {
+    const sessionItem = await getItem({
+      pk: buildMediaPk(userId),
+      sk: buildStorySessionSk(sessionId),
+    });
+    if (!sessionItem) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+
+    const messages = await queryBySkPrefix({
+      pk: buildMediaPk(userId),
+      skPrefix: storyMessagePrefix(sessionId),
+      limit: 200,
+      scanForward: true,
+    });
+    const scenes = await queryBySkPrefix({
+      pk: buildMediaPk(userId),
+      skPrefix: storyScenePrefix(sessionId),
+      limit: 50,
+      scanForward: true,
+    });
+
+    const signedScenes = await Promise.all(
+      scenes.map(async (scene) => {
+        if (!scene.imageKey) return scene;
+        const url = await getSignedUrl(
+          s3Client,
+          new GetObjectCommand({
+            Bucket: bucket,
+            Key: scene.imageKey,
+          }),
+          { expiresIn: 900 }
+        );
+        return { ...scene, imageUrl: url };
+      })
+    );
+
+    res.json({
+      session: {
+        id: sessionItem.sessionId,
+        title: sessionItem.title,
+        presetId: sessionItem.presetId,
+        protagonistName: sessionItem.protagonistName,
+        synopsis: sessionItem.synopsis,
+        createdAt: sessionItem.createdAt,
+        updatedAt: sessionItem.updatedAt,
+        turnCount: sessionItem.turnCount || 0,
+        sceneCount: sessionItem.sceneCount || 0,
+      },
+      messages: messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+        createdAt: message.createdAt,
+      })),
+      scenes: signedScenes.map((scene) => ({
+        sceneId: scene.sceneId,
+        title: scene.title,
+        description: scene.description,
+        prompt: scene.prompt,
+        status: scene.status,
+        imageKey: scene.imageKey,
+        imageUrl: scene.imageUrl,
+        promptPositive: scene.promptPositive,
+        promptNegative: scene.promptNegative,
+        createdAt: scene.createdAt,
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to load story session",
+      error: error?.message || String(error),
+    });
+  }
+});
+
+app.post("/story/sessions/:id/message", async (req, res) => {
+  const userId = req.user?.sub;
+  const sessionId = req.params.id;
+  const content = req.body?.content?.trim();
+  if (!mediaTable) {
+    return res.status(500).json({ message: "MEDIA_TABLE is not set" });
+  }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (!sessionId) {
+    return res.status(400).json({ message: "sessionId is required" });
+  }
+  if (!content) {
+    return res.status(400).json({ message: "content is required" });
+  }
+
+  try {
+    const sessionItem = await getItem({
+      pk: buildMediaPk(userId),
+      sk: buildStorySessionSk(sessionId),
+    });
+    if (!sessionItem) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+
+    const now = new Date().toISOString();
+    const newTurnCount = (sessionItem.turnCount || 0) + 1;
+    const lastIllustrationTurn = sessionItem.lastIllustrationTurn || 0;
+    const userMessageItem = {
+      pk: buildMediaPk(userId),
+      sk: buildStoryMessageSk(sessionId, Date.now()),
+      type: "STORY_MESSAGE",
+      sessionId,
+      role: "user",
+      content,
+      createdAt: now,
+    };
+    await dynamoClient.send(
+      new PutCommand({
+        TableName: mediaTable,
+        Item: userMessageItem,
+      })
+    );
+
+    const recentMessages = await queryBySkPrefix({
+      pk: buildMediaPk(userId),
+      skPrefix: storyMessagePrefix(sessionId),
+      limit: 12,
+      scanForward: false,
+    });
+    const orderedMessages = recentMessages.reverse();
+
+    const systemPrompt = [
+      "You are a narrative director for an interactive anime adventure.",
+      `Protagonist: ${sessionItem.protagonistName}.`,
+      "The protagonist must remain the same character in every scene.",
+      "Keep continuity with the story summary and prior dialogue.",
+      "Respond in 2-4 short paragraphs, then end with a question to the player.",
+      "When a meaningful scene beat occurs, mark it as a sceneBeat.",
+      "Return ONLY valid JSON with keys:",
+      "reply (string), summary (string), sceneBeat (boolean), sceneTitle (string), sceneDescription (string), scenePrompt (string).",
+      "scenePrompt should focus on visual details of the moment (environment, action, mood) and be concise.",
+      "scenePrompt should include framing guidance: medium shot or full body, environment visible, no close-ups.",
+      `Story summary: ${sessionItem.summary || "New story."}`,
+      `World: ${sessionItem.worldPrompt}`,
+      `Style: ${sessionItem.stylePrompt}`,
+    ].join("\n");
+
+    const messagePayload = orderedMessages.map((message) => ({
+      role: message.role,
+      content: [{ type: "text", text: message.content }],
+    }));
+
+    const command = new InvokeModelCommand({
+      modelId: storyModelId,
+      contentType: "application/json",
+      accept: "application/json",
+      body: JSON.stringify({
+        anthropic_version: "bedrock-2023-05-31",
+        max_tokens: 600,
+        temperature: 0.7,
+        system: systemPrompt,
+        messages: messagePayload,
+      }),
+    });
+    const response = await bedrockClient.send(command);
+    const responseBody = JSON.parse(
+      new TextDecoder().decode(response.body)
+    );
+    const responseText = (responseBody?.content || [])
+      .map((item) => item?.text)
+      .filter(Boolean)
+      .join("")
+      .trim();
+
+    const parsed = safeJsonParse(responseText) || {};
+    const replyText = parsed.reply || responseText || "The story continues.";
+    const nextSummary =
+      typeof parsed.summary === "string" && parsed.summary.trim().length > 0
+        ? parsed.summary.trim()
+        : sessionItem.summary || "";
+    const sceneBeat = Boolean(parsed.sceneBeat);
+    const sceneTitle = parsed.sceneTitle?.trim() || "";
+    const sceneDescription = parsed.sceneDescription?.trim() || "";
+    const scenePrompt = parsed.scenePrompt?.trim() || "";
+
+    const assistantMessageItem = {
+      pk: buildMediaPk(userId),
+      sk: buildStoryMessageSk(sessionId, Date.now() + 1),
+      type: "STORY_MESSAGE",
+      sessionId,
+      role: "assistant",
+      content: replyText,
+      createdAt: new Date().toISOString(),
+    };
+    await dynamoClient.send(
+      new PutCommand({
+        TableName: mediaTable,
+        Item: assistantMessageItem,
+      })
+    );
+
+    let scene = null;
+    let nextSceneCount = sessionItem.sceneCount || 0;
+    const shouldIllustrate =
+      sceneBeat &&
+      scenePrompt &&
+      newTurnCount - lastIllustrationTurn >= 3;
+
+    if (shouldIllustrate) {
+      const sceneId = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const sceneItem = {
+        pk: buildMediaPk(userId),
+        sk: buildStorySceneSk(sessionId, sceneId),
+        type: "STORY_SCENE",
+        sessionId,
+        sceneId,
+        title: sceneTitle,
+        description: sceneDescription,
+        prompt: scenePrompt,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+      };
+      await dynamoClient.send(
+        new PutCommand({
+          TableName: mediaTable,
+          Item: sceneItem,
+        })
+      );
+      nextSceneCount += 1;
+      scene = {
+        sceneId,
+        title: sceneTitle,
+        description: sceneDescription,
+        prompt: scenePrompt,
+        status: "pending",
+      };
+    }
+
+    const updatedSession = {
+      ...sessionItem,
+      summary: nextSummary,
+      turnCount: newTurnCount,
+      sceneCount: nextSceneCount,
+      lastIllustrationTurn: shouldIllustrate
+        ? newTurnCount
+        : lastIllustrationTurn,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await dynamoClient.send(
+      new PutCommand({
+        TableName: mediaTable,
+        Item: updatedSession,
+      })
+    );
+
+    res.json({
+      sessionId,
+      turnCount: newTurnCount,
+      assistant: {
+        role: "assistant",
+        content: replyText,
+      },
+      scene,
+    });
+  } catch (error) {
+    console.error("Story message error:", {
+      message: error?.message || String(error),
+    });
+    res.status(500).json({
+      message: "Failed to process story message",
+      error: error?.message || String(error),
+    });
+  }
+});
+
+app.post("/story/sessions/:id/illustrations", async (req, res) => {
+  const userId = req.user?.sub;
+  const sessionId = req.params.id;
+  const sceneId = req.body?.sceneId;
+  const regenerate = Boolean(req.body?.regenerate);
+  const bucket = process.env.MEDIA_BUCKET;
+  const apiToken = process.env.REPLICATE_API_TOKEN;
+  const debug = req.query?.debug === "true";
+  if (!mediaTable) {
+    return res.status(500).json({ message: "MEDIA_TABLE is not set" });
+  }
+  if (!bucket) {
+    return res.status(500).json({ message: "MEDIA_BUCKET is not set" });
+  }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (!apiToken) {
+    return res
+      .status(500)
+      .json({ message: "REPLICATE_API_TOKEN must be set" });
+  }
+  if (!sessionId || !sceneId) {
+    return res.status(400).json({ message: "sessionId and sceneId are required" });
+  }
+
+  try {
+    const sessionItem = await getItem({
+      pk: buildMediaPk(userId),
+      sk: buildStorySessionSk(sessionId),
+    });
+    if (!sessionItem) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+
+    const sceneItem = await getItem({
+      pk: buildMediaPk(userId),
+      sk: buildStorySceneSk(sessionId, sceneId),
+    });
+    if (!sceneItem) {
+      return res.status(404).json({ message: "Scene not found" });
+    }
+    if (sceneItem.status === "completed" && sceneItem.imageKey && !regenerate) {
+      const url = await getSignedUrl(
+        s3Client,
+        new GetObjectCommand({
+          Bucket: bucket,
+          Key: sceneItem.imageKey,
+        }),
+        { expiresIn: 900 }
+      );
+      return res.json({ sceneId, imageKey: sceneItem.imageKey, imageUrl: url });
+    }
+
+    const characters = await ensureStoryCharacters();
+    const characterMap = new Map(
+      characters.map((character) => [character.id, character])
+    );
+    const resolvedProtagonistId =
+      sessionItem.protagonistId ||
+      (sessionItem.protagonistName?.toLowerCase().includes("frieren")
+        ? "frieren"
+        : "");
+    const characterItem = resolvedProtagonistId
+      ? await getItem({
+          pk: buildStoryCharacterPk(),
+          sk: buildStoryCharacterSk(resolvedProtagonistId),
+        })
+      : null;
+    const fallbackCharacter =
+      characterMap.get(resolvedProtagonistId || "") || null;
+    const resolvedCharacter =
+      characterItem || fallbackCharacter || characters[0] || null;
+
+    if (
+      resolvedCharacter?.identityPrompt &&
+      sessionItem.protagonistPrompt !== resolvedCharacter.identityPrompt
+    ) {
+      const updatedSession = {
+        ...sessionItem,
+        protagonistPrompt: resolvedCharacter.identityPrompt,
+        protagonistName:
+          resolvedCharacter.name || sessionItem.protagonistName,
+        protagonistId: resolvedProtagonistId || resolvedCharacter.id || "",
+        updatedAt: new Date().toISOString(),
+      };
+      await dynamoClient.send(
+        new PutCommand({
+          TableName: mediaTable,
+          Item: updatedSession,
+        })
+      );
+      sessionItem.protagonistPrompt = updatedSession.protagonistPrompt;
+      sessionItem.protagonistName = updatedSession.protagonistName;
+    }
+
+    const recentMessages = await queryBySkPrefix({
+      pk: buildMediaPk(userId),
+      skPrefix: storyMessagePrefix(sessionId),
+      limit: 6,
+      scanForward: false,
+    });
+    const lastAssistant = recentMessages.find(
+      (message) => message.role === "assistant"
+    );
+    const contextLine = lastAssistant?.content
+      ? `Latest scene context: ${lastAssistant.content}`
+      : "";
+    const summaryLine = sessionItem.summary
+      ? `Story summary: ${sessionItem.summary}`
+      : "";
+    let cleanScenePrompt = sanitizeScenePrompt(sceneItem.prompt || "");
+    if (cleanScenePrompt) {
+      cleanScenePrompt = cleanScenePrompt
+        .replace(/frieren/gi, "")
+        .replace(/elf/gi, "")
+        .replace(/mage/gi, "")
+        .replace(/academy uniform/gi, "")
+        .replace(/emerald eyes/gi, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+    }
+
+    const protagonistLine = sessionItem.protagonistPrompt?.includes(
+      sessionItem.protagonistName
+    )
+      ? sessionItem.protagonistPrompt
+      : `${sessionItem.protagonistName}, ${sessionItem.protagonistPrompt}`;
+
+    const identityBlock =
+      resolvedCharacter?.identityPrompt ||
+      sessionItem.protagonistPrompt ||
+      protagonistLine;
+    const basePrompt =
+      resolvedCharacter?.storyBasePrompt ||
+      resolvedCharacter?.identityPrompt ||
+      identityBlock;
+
+    const positivePrompt = basePrompt;
+
+    const negativePrompt =
+      resolvedCharacter?.storyNegativePrompt ||
+      sessionItem.negativePrompt ||
+      "low quality, worst quality, blurry, extra limbs, watermark, text, deformed, bad anatomy, lowres, jpeg artifacts";
+    const trimmedPositivePrompt = clampPromptTokens(positivePrompt);
+    const trimmedNegativePrompt = clampPromptTokens(negativePrompt);
+    const promptWasTrimmed = trimmedPositivePrompt.trim() !== positivePrompt.trim();
+    const negativeWasTrimmed =
+      trimmedNegativePrompt.trim() !== negativePrompt.trim();
+
+    const modelConfig = replicateModelConfig.animagine;
+    const [seed] = buildSeedList(1);
+    const input = modelConfig.buildInput({
+      prompt: trimmedPositivePrompt,
+      negativePrompt: trimmedNegativePrompt,
+      width: 1024,
+      height: 1024,
+      numOutputs: 1,
+      seed,
+      scheduler: "DPM++ 2M Karras",
+    });
+    const output = await runReplicateWithRetry(modelConfig.modelId, input, 3);
+    const outputItems = Array.isArray(output) ? output : [output];
+    const imageUrl = outputItems.map(getReplicateOutputUrl).find(Boolean);
+    if (!imageUrl) {
+      return res.status(500).json({ message: "No image returned from Replicate" });
+    }
+
+    const { buffer, contentType } = await fetchImageBuffer(imageUrl);
+    const imageKey =
+      sceneItem.imageKey ||
+      `${buildUserPrefix(userId)}stories/${sessionId}/scenes/${sceneId}.png`;
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: imageKey,
+        Body: buffer,
+        ContentType: contentType || "image/png",
+      })
+    );
+
+    const updatedScene = {
+      ...sceneItem,
+      imageKey,
+      status: "completed",
+      promptPositive: trimmedPositivePrompt,
+      promptNegative: trimmedNegativePrompt,
+      updatedAt: new Date().toISOString(),
+    };
+    await dynamoClient.send(
+      new PutCommand({
+        TableName: mediaTable,
+        Item: updatedScene,
+      })
+    );
+
+    const signedUrl = await getSignedUrl(
+      s3Client,
+      new GetObjectCommand({
+        Bucket: bucket,
+        Key: imageKey,
+      }),
+      { expiresIn: 900 }
+    );
+
+    res.json({
+      sceneId,
+      imageKey,
+      imageUrl: signedUrl,
+      ...(debug
+        ? {
+            prompt: {
+              positive: trimmedPositivePrompt,
+              negative: trimmedNegativePrompt,
+            },
+            identity: identityBlock,
+            replicate: {
+              modelId: modelConfig.modelId,
+              input,
+              ...(promptWasTrimmed || negativeWasTrimmed
+                ? {
+                    notice: [
+                      promptWasTrimmed
+                        ? `Positive prompt trimmed to ${MAX_REPLICATE_PROMPT_TOKENS} tokens for Replicate.`
+                        : null,
+                      negativeWasTrimmed
+                        ? `Negative prompt trimmed to ${MAX_REPLICATE_PROMPT_TOKENS} tokens for Replicate.`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" "),
+                  }
+                : {}),
+            },
+          }
+        : {}),
+    });
+  } catch (error) {
+    console.error("Story illustration error:", {
+      message: error?.message || String(error),
+    });
+    res.status(500).json({
+      message: "Failed to generate illustration",
       error: error?.message || String(error),
     });
   }

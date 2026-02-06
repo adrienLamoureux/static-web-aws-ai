@@ -1,6 +1,5 @@
 import React from "react";
 import PromptHelperForm from "./PromptHelperForm";
-import GeneratedImagesGrid from "./GeneratedImagesGrid";
 
 function ImageGenerationPanel({
   imageModel,
@@ -19,16 +18,9 @@ function ImageGenerationPanel({
   imageScheduler,
   imageSchedulerOptions,
   onImageSchedulerChange,
-  imageNumImages,
-  onImageNumImagesChange,
   onGenerateImage,
   isGeneratingImage,
   imageGenerationNotice,
-  generatedImages,
-  selectedGeneratedKey,
-  selectingImageKey,
-  isSelectingImage,
-  onSelectGeneratedImage,
   singleColumn = false,
 }) {
   return (
@@ -149,41 +141,16 @@ function ImageGenerationPanel({
               Generate image
             </button>
 
-            <div className="min-w-[140px]">
-              <label className="field-label">Images</label>
-              <select
-                className="field-select mt-3"
-                value={imageNumImages}
-                onChange={(event) =>
-                  onImageNumImagesChange(Number(event.target.value))
-                }
-                disabled={isGeneratingImage || imageScheduler === "diff"}
-              >
-                {[1, 2, 3].map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
 
           {isGeneratingImage && (
             <div className="mt-4 flex items-center gap-3 text-xs text-[#7a6a51]">
               <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
               {imageGenerationNotice ||
-                "Rendering two images sequentially. This can take a bit..."}
+                "Rendering the image. This can take a bit..."}
             </div>
           )}
         </div>
-
-        <GeneratedImagesGrid
-          images={generatedImages}
-          selectedKey={selectedGeneratedKey}
-          selectingKey={selectingImageKey}
-          isSelecting={isSelectingImage}
-          onSelect={onSelectGeneratedImage}
-        />
       </div>
     </div>
   );

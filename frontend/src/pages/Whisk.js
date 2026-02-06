@@ -92,13 +92,18 @@ function Whisk({ apiBaseUrl = "" }) {
     imageUploadProps,
     isGeneratingImage,
     isUploading,
+    resetImageForm,
   } = useImageStudio({
     apiBaseUrl: resolvedApiBaseUrl,
     onError: setError,
     onVideoReady: handleVideoReady,
     onResetVideoReady: resetVideoReady,
     onAddVideoReadyImage: addVideoReadyImage,
-    onCloseImageModal: () => setActiveModal(""),
+    onCloseImageModal: closeModal,
+    onGenerationComplete: () => {
+      refreshImages(true);
+      refreshVideos(true);
+    },
   });
 
   const {
@@ -187,7 +192,10 @@ function Whisk({ apiBaseUrl = "" }) {
           status={status}
           onOpenVideo={openVideoModalForImage}
           onDeleteImage={removeImage}
-          onOpenImageModal={() => setActiveModal("image")}
+          onOpenImageModal={() => {
+            resetImageForm();
+            setActiveModal("image");
+          }}
           onOpenLightbox={setLightboxImage}
           canLoadMore={canLoadMore}
           onLoadMore={() => setPageIndex((prev) => prev + 1)}

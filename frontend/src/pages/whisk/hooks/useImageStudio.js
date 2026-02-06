@@ -4,14 +4,13 @@ import {
   generatePromptHelper,
 } from "../../../services/bedrock";
 import { generateReplicateImage } from "../../../services/replicate";
-import { createVideoReadyImage, selectGeneratedImage } from "../../../services/images";
+import { createVideoReadyImage } from "../../../services/images";
 import {
   putFileToUrl,
   requestImageUploadUrl,
 } from "../../../services/s3";
 import { buildSafeFileName } from "../../../utils/fileName";
 import promptBackgrounds from "../../../data/prompt-helper/backgrounds.json";
-import promptCharacters from "../../../data/prompt-helper/characters.json";
 import promptPoses from "../../../data/prompt-helper/poses.json";
 import promptArchetypes from "../../../data/prompt-helper/archetypes.json";
 import promptTraits from "../../../data/prompt-helper/traits.json";
@@ -22,7 +21,31 @@ import promptFaceDetails from "../../../data/prompt-helper/face-details.json";
 import promptEyeDetails from "../../../data/prompt-helper/eye-details.json";
 import promptHairDetails from "../../../data/prompt-helper/hair-details.json";
 import promptExpressions from "../../../data/prompt-helper/expressions.json";
-import characterPresets from "../../../data/prompt-helper/character-presets.json";
+import { listStoryCharacters } from "../../../services/story";
+import { listPromptHelperOptions } from "../../../services/promptHelper";
+
+const DEFAULT_IMAGE_SOURCE = "replicate";
+const DEFAULT_IMAGE_MODEL = "animagine";
+const DEFAULT_IMAGE_PROMPT =
+  "Anime key visual, cinematic lighting, clean line art, soft gradients";
+const DEFAULT_IMAGE_NEGATIVE_PROMPT =
+  "photorealistic, 3d render, text, watermark";
+const DEFAULT_IMAGE_SIZE = "1280x720";
+const DEFAULT_IMAGE_SCHEDULER = "DPM++ 2M Karras";
+const DEFAULT_PROMPT_HELPER_SELECTIONS = {
+  background: "",
+  character: "",
+  pose: "",
+  archetype: "",
+  signatureTraits: "",
+  faceDetails: "",
+  eyeDetails: "",
+  hairDetails: "",
+  expression: "",
+  outfitMaterials: "",
+  colorPalette: "",
+  styleReference: "",
+};
 
 export const useImageStudio = ({
   apiBaseUrl,
@@ -31,39 +54,37 @@ export const useImageStudio = ({
   onResetVideoReady,
   onAddVideoReadyImage,
   onCloseImageModal,
+  onGenerationComplete,
 }) => {
-  const [imageSource, setImageSource] = useState("replicate");
-  const [imageModel, setImageModel] = useState("animagine");
+  const [imageSource, setImageSource] = useState(DEFAULT_IMAGE_SOURCE);
+  const [imageModel, setImageModel] = useState(DEFAULT_IMAGE_MODEL);
   const [imageGenerationName, setImageGenerationName] = useState("");
-  const [imagePrompt, setImagePrompt] = useState(
-    "Anime key visual, cinematic lighting, clean line art, soft gradients"
-  );
+  const [imagePrompt, setImagePrompt] = useState(DEFAULT_IMAGE_PROMPT);
   const [imageNegativePrompt, setImageNegativePrompt] = useState(
-    "photorealistic, 3d render, text, watermark"
+    DEFAULT_IMAGE_NEGATIVE_PROMPT
   );
-  const [imageSize, setImageSize] = useState("1280x720");
-  const [imageScheduler, setImageScheduler] = useState("diff");
-  const [imageNumImages, setImageNumImages] = useState(2);
-  const [generatedImages, setGeneratedImages] = useState([]);
+  const [imageSize, setImageSize] = useState(DEFAULT_IMAGE_SIZE);
+  const [imageScheduler, setImageScheduler] = useState(
+    DEFAULT_IMAGE_SCHEDULER
+  );
   const [imageGenerationStatus, setImageGenerationStatus] = useState("idle");
   const [promptHelperStatus, setPromptHelperStatus] = useState("idle");
-  const [imageSelectionStatus, setImageSelectionStatus] = useState("idle");
-  const [selectingImageKey, setSelectingImageKey] = useState("");
-  const [selectedGeneratedKey, setSelectedGeneratedKey] = useState("");
   const [imageGenerationNotice, setImageGenerationNotice] = useState("");
-  const [promptHelperSelections, setPromptHelperSelections] = useState({
-    background: "",
-    character: "",
-    pose: "",
-    archetype: "",
-    signatureTraits: "",
-    faceDetails: "",
-    eyeDetails: "",
-    hairDetails: "",
-    expression: "",
-    outfitMaterials: "",
-    colorPalette: "",
-    styleReference: "",
+  const [promptHelperSelections, setPromptHelperSelections] = useState(
+    DEFAULT_PROMPT_HELPER_SELECTIONS
+  );
+  const [promptHelperOptions, setPromptHelperOptions] = useState({
+    backgrounds: promptBackgrounds,
+    poses: promptPoses,
+    archetypes: promptArchetypes,
+    traits: promptTraits,
+    faceDetails: promptFaceDetails,
+    eyeDetails: promptEyeDetails,
+    hairDetails: promptHairDetails,
+    expressions: promptExpressions,
+    outfits: promptOutfits,
+    palettes: promptPalettes,
+    styles: promptStyles,
   });
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
@@ -73,7 +94,6 @@ export const useImageStudio = ({
 
   const isUploading = uploadStatus === "uploading";
   const isGeneratingImage = imageGenerationStatus === "loading";
-  const isSelectingImage = imageSelectionStatus === "loading";
   const isPromptHelperLoading = promptHelperStatus === "loading";
   const hasPromptHelperSelection = Boolean(
     promptHelperSelections.background ||
@@ -100,13 +120,81 @@ export const useImageStudio = ({
     return () => URL.revokeObjectURL(objectUrl);
   }, [selectedFile]);
 
+  const [characterPresets, setCharacterPresets] = useState([]);
+
+  useEffect(() => {
+    if (!apiBaseUrl) return;
+    listStoryCharacters(apiBaseUrl)
+      .then((data) => {
+        setCharacterPresets(data.characters || []);
+      })
+      .catch((error) => {
+        onError?.(error?.message || "Failed to load character presets.");
+      });
+  }, [apiBaseUrl, onError]);
+
+  useEffect(() => {
+    if (!apiBaseUrl) return;
+    listPromptHelperOptions(apiBaseUrl)
+      .then((data) => {
+        setPromptHelperOptions((prev) => ({
+          backgrounds: Array.isArray(data.backgrounds)
+            ? data.backgrounds
+            : prev.backgrounds,
+          poses: Array.isArray(data.poses) ? data.poses : prev.poses,
+          archetypes: Array.isArray(data.archetypes)
+            ? data.archetypes
+            : prev.archetypes,
+          traits: Array.isArray(data.traits) ? data.traits : prev.traits,
+          faceDetails: Array.isArray(data.faceDetails)
+            ? data.faceDetails
+            : prev.faceDetails,
+          eyeDetails: Array.isArray(data.eyeDetails)
+            ? data.eyeDetails
+            : prev.eyeDetails,
+          hairDetails: Array.isArray(data.hairDetails)
+            ? data.hairDetails
+            : prev.hairDetails,
+          expressions: Array.isArray(data.expressions)
+            ? data.expressions
+            : prev.expressions,
+          outfits: Array.isArray(data.outfits) ? data.outfits : prev.outfits,
+          palettes: Array.isArray(data.palettes) ? data.palettes : prev.palettes,
+          styles: Array.isArray(data.styles) ? data.styles : prev.styles,
+        }));
+      })
+      .catch((error) => {
+        onError?.(error?.message || "Failed to load prompt helper options.");
+      });
+  }, [apiBaseUrl, onError]);
+
+  const resetImageForm = () => {
+    setImageSource(DEFAULT_IMAGE_SOURCE);
+    setImageModel(DEFAULT_IMAGE_MODEL);
+    setImageGenerationName("");
+    setImagePrompt(DEFAULT_IMAGE_PROMPT);
+    setImageNegativePrompt(DEFAULT_IMAGE_NEGATIVE_PROMPT);
+    setImageSize(DEFAULT_IMAGE_SIZE);
+    setImageScheduler(DEFAULT_IMAGE_SCHEDULER);
+    setImageGenerationStatus("idle");
+    setImageGenerationNotice("");
+    setPromptHelperStatus("idle");
+    setPromptHelperSelections({ ...DEFAULT_PROMPT_HELPER_SELECTIONS });
+    setSelectedFile(null);
+    setPreviewUrl("");
+    setImageName("");
+    setUploadKey("");
+    setUploadStatus("idle");
+    onResetVideoReady?.();
+  };
+
   const characterPresetMap = useMemo(() => {
     const entries = (characterPresets || []).map((preset) => [
-      preset.name.toLowerCase(),
+      (preset.name || "").toLowerCase(),
       preset,
     ]);
     return new Map(entries);
-  }, []);
+  }, [characterPresets]);
 
   const imageSourceOptions = [
     {
@@ -178,9 +266,8 @@ export const useImageStudio = ({
   const imageSchedulerOptions = useMemo(() => {
     if (imageSource === "replicate" && imageModel === "animagine") {
       return [
-        { value: "diff", label: "Diff (Euler a vs DPM++ 2M Karras)" },
-        { value: "Euler a", label: "Euler a" },
         { value: "DPM++ 2M Karras", label: "DPM++ 2M Karras" },
+        { value: "Euler a", label: "Euler a" },
       ];
     }
     return [];
@@ -200,12 +287,6 @@ export const useImageStudio = ({
       setImageScheduler(imageSchedulerOptions[0]?.value || "Euler a");
     }
   }, [imageScheduler, imageSchedulerOptions]);
-
-  useEffect(() => {
-    if (imageScheduler === "diff") {
-      setImageNumImages(2);
-    }
-  }, [imageScheduler]);
 
   useEffect(() => {
     const allowedModels = imageModelOptions.map((option) => option.key);
@@ -296,12 +377,9 @@ export const useImageStudio = ({
     }
     onError?.("");
     setImageGenerationStatus("loading");
-    setGeneratedImages([]);
     onResetVideoReady?.();
-    setImageSelectionStatus("idle");
-    setSelectingImageKey("");
-    setSelectedGeneratedKey("");
     setImageGenerationNotice("");
+    onCloseImageModal?.();
 
     try {
       const [width, height] = imageSize.split("x").map(Number);
@@ -312,7 +390,7 @@ export const useImageStudio = ({
         negativePrompt: imageNegativePrompt.trim() || undefined,
         width,
         height,
-        numImages: imageNumImages,
+        numImages: 1,
         ...(imageSource === "replicate" && imageSchedulerOptions.length > 0
           ? { scheduler: imageScheduler }
           : {}),
@@ -321,44 +399,68 @@ export const useImageStudio = ({
         imageSource === "bedrock"
           ? await generateBedrockImage(apiBaseUrl, payload)
           : await generateReplicateImage(apiBaseUrl, payload);
-      const nextImages = data?.images || [];
-      setGeneratedImages(nextImages);
       setImageGenerationNotice(data?.notice || "");
       setImageGenerationStatus("success");
-      onCloseImageModal?.();
+      onGenerationComplete?.();
     } catch (error) {
       setImageGenerationStatus("error");
       onError?.(error?.message || "Image generation failed.");
     }
   };
 
-  const handleSelectGeneratedImage = async (image) => {
-    if (!image?.key) return;
-    if (!apiBaseUrl) {
-      onError?.("API base URL is missing. Set it in config.json or .env.");
-      return;
-    }
-    onError?.("");
-    setImageSelectionStatus("loading");
-    setSelectingImageKey(image.key);
-
-    try {
-      const data = await selectGeneratedImage(apiBaseUrl, image.key);
-      if (data?.videoReadyKey) {
-        onVideoReady?.({ key: data.videoReadyKey, url: image.url || "" });
+  const buildPromptFromSelections = () => {
+    const parts = [];
+    const pushTrimmed = (value) => {
+      const trimmed = value?.trim();
+      if (trimmed) {
+        parts.push(trimmed);
       }
-      setSelectedGeneratedKey(image.key);
-      setGeneratedImages([image]);
-      setImageSelectionStatus("success");
-    } catch (error) {
-      setImageSelectionStatus("error");
-      onError?.(error?.message || "Image selection failed.");
-    } finally {
-      setSelectingImageKey("");
+    };
+    pushTrimmed(promptHelperSelections.background);
+    if (promptHelperSelections.character?.trim()) {
+      parts.push("1girl, solo");
+      const characterValue = promptHelperSelections.character.trim();
+      const preset = characterPresetMap.get(characterValue.toLowerCase());
+      if (preset?.name) {
+        parts.push(`(${preset.name}:1.4)`);
+      } else {
+        parts.push(characterValue);
+      }
     }
+    pushTrimmed(promptHelperSelections.archetype);
+    pushTrimmed(promptHelperSelections.signatureTraits);
+    pushTrimmed(promptHelperSelections.faceDetails);
+    pushTrimmed(promptHelperSelections.eyeDetails);
+    pushTrimmed(promptHelperSelections.hairDetails);
+    pushTrimmed(promptHelperSelections.expression);
+    pushTrimmed(promptHelperSelections.pose);
+    pushTrimmed(promptHelperSelections.outfitMaterials);
+    pushTrimmed(promptHelperSelections.colorPalette);
+    pushTrimmed(promptHelperSelections.styleReference);
+    return parts.filter(Boolean).join(", ");
   };
 
-  const handlePromptHelperGenerate = async () => {
+  const handlePromptHelperCreate = () => {
+    if (!hasPromptHelperSelection) {
+      onError?.("Select at least one prompt helper field.");
+      return;
+    }
+    const prompt = buildPromptFromSelections();
+    if (!prompt) {
+      onError?.("Prompt helper fields are empty.");
+      return;
+    }
+    const selectedPreset = characterPresetMap.get(
+      (promptHelperSelections.character || "").trim().toLowerCase()
+    );
+    if (selectedPreset?.storyNegativePrompt) {
+      setImageNegativePrompt(selectedPreset.storyNegativePrompt);
+    }
+    setPromptHelperStatus("success");
+    setImagePrompt(prompt);
+  };
+
+  const handlePromptHelperGenerateAi = async () => {
     if (!apiBaseUrl) {
       onError?.("API base URL is missing. Set it in config.json or .env.");
       return;
@@ -409,19 +511,34 @@ export const useImageStudio = ({
     setPromptHelperStatus("idle");
   };
 
+  const promptCharacterOptions = useMemo(
+    () =>
+      characterPresets.length
+        ? characterPresets.map((preset) => preset.name).filter(Boolean)
+        : [],
+    [characterPresets]
+  );
+
   const handleCharacterSelection = (value) => {
     const preset = characterPresetMap.get(value.trim().toLowerCase());
     if (preset) {
       setPromptHelperSelections((prev) => ({
         ...prev,
         character: preset.name || value,
+        pose: preset.pose || prev.pose,
         archetype: preset.archetype || "",
         signatureTraits: preset.signatureTraits || "",
         faceDetails: preset.faceDetails || "",
         eyeDetails: preset.eyeDetails || "",
         hairDetails: preset.hairDetails || "",
         expression: preset.expression || "",
+        outfitMaterials: preset.outfitMaterials || "",
+        colorPalette: preset.colorPalette || "",
+        styleReference: preset.styleReference || "",
       }));
+      if (preset.storyNegativePrompt) {
+        setImageNegativePrompt(preset.storyNegativePrompt);
+      }
     } else {
       setPromptHelperSelections((prev) => ({
         ...prev,
@@ -435,22 +552,23 @@ export const useImageStudio = ({
     selections: promptHelperSelections,
     onSelectionChange: handlePromptSelectionChange,
     onCharacterChange: handleCharacterSelection,
-    onGenerate: handlePromptHelperGenerate,
+    onCreate: handlePromptHelperCreate,
+    onAiGenerate: handlePromptHelperGenerateAi,
     isLoading: isPromptHelperLoading,
     status: promptHelperStatus,
     hasSelection: hasPromptHelperSelection,
-    promptBackgrounds,
-    promptCharacters,
-    promptPoses,
-    promptArchetypes,
-    promptTraits,
-    promptFaceDetails,
-    promptEyeDetails,
-    promptHairDetails,
-    promptExpressions,
-    promptOutfits,
-    promptPalettes,
-    promptStyles,
+    promptBackgrounds: promptHelperOptions.backgrounds,
+    promptCharacters: promptCharacterOptions,
+    promptPoses: promptHelperOptions.poses,
+    promptArchetypes: promptHelperOptions.archetypes,
+    promptTraits: promptHelperOptions.traits,
+    promptFaceDetails: promptHelperOptions.faceDetails,
+    promptEyeDetails: promptHelperOptions.eyeDetails,
+    promptHairDetails: promptHelperOptions.hairDetails,
+    promptExpressions: promptHelperOptions.expressions,
+    promptOutfits: promptHelperOptions.outfits,
+    promptPalettes: promptHelperOptions.palettes,
+    promptStyles: promptHelperOptions.styles,
   };
 
   const imageGenerationProps = {
@@ -470,16 +588,9 @@ export const useImageStudio = ({
     imageScheduler,
     imageSchedulerOptions,
     onImageSchedulerChange: setImageScheduler,
-    imageNumImages,
-    onImageNumImagesChange: setImageNumImages,
     onGenerateImage: handleGenerateImage,
     isGeneratingImage,
     imageGenerationNotice,
-    generatedImages,
-    selectedGeneratedKey,
-    selectingImageKey,
-    isSelectingImage,
-    onSelectGeneratedImage: handleSelectGeneratedImage,
   };
 
   const imageUploadProps = {
@@ -501,5 +612,6 @@ export const useImageStudio = ({
     imageUploadProps,
     isGeneratingImage,
     isUploading,
+    resetImageForm,
   };
 };

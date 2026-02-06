@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { BrowserRouter as Router, Route, Routes, Link, Navigate } from "react-router-dom";
 import About from "./pages/About";
 import Whisk from "./pages/Whisk";
+import Story from "./pages/Story";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
 import RequireAuth from "./components/auth/RequireAuth";
@@ -33,6 +34,9 @@ const AppShell = ({ apiBaseUrl }) => {
             <Link to="/" className="nav-link">
               Whisk
             </Link>
+            <Link to="/story" className="nav-link">
+              Story
+            </Link>
             <Link to="/about" className="nav-link">
               About
             </Link>
@@ -62,6 +66,14 @@ const AppShell = ({ apiBaseUrl }) => {
             element={
               <RequireAuth>
                 <Whisk apiBaseUrl={apiBaseUrl} />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/story"
+            element={
+              <RequireAuth>
+                <Story apiBaseUrl={apiBaseUrl} />
               </RequireAuth>
             }
           />

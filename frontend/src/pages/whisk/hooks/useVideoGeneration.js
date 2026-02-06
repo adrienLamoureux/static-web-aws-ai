@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   generateNovaReelVideo,
   getNovaReelJobStatus,
@@ -26,6 +26,11 @@ export const useVideoGeneration = ({
   const [jobStatus, setJobStatus] = useState("");
   const [replicatePredictionId, setReplicatePredictionId] = useState("");
   const [replicateJobStatus, setReplicateJobStatus] = useState("");
+  const onCompletedRef = useRef(onCompleted);
+
+  useEffect(() => {
+    onCompletedRef.current = onCompleted;
+  }, [onCompleted]);
 
   const isGenerating = generationStatus === "loading";
   const isVideoInProgress =
@@ -188,7 +193,7 @@ export const useVideoGeneration = ({
         const statusValue = data?.status || "";
         setJobStatus(statusValue);
         if (statusValue === "Completed") {
-          onCompleted?.();
+          onCompletedRef.current?.();
           return;
         }
         if (statusValue === "Failed") {
@@ -208,7 +213,7 @@ export const useVideoGeneration = ({
         clearTimeout(timeoutId);
       }
     };
-  }, [apiBaseUrl, invocationArn, onCompleted, outputPrefix, selectedImageKey]);
+  }, [apiBaseUrl, invocationArn, outputPrefix, selectedImageKey]);
 
   useEffect(() => {
     if (!replicatePredictionId || !apiBaseUrl) return undefined;
@@ -226,7 +231,7 @@ export const useVideoGeneration = ({
         setReplicateJobStatus(statusValue);
         if (statusValue === "succeeded") {
           setGenerationStatus("success");
-          onCompleted?.();
+          onCompletedRef.current?.();
           return;
         }
         if (statusValue === "failed" || statusValue === "canceled") {
@@ -247,7 +252,7 @@ export const useVideoGeneration = ({
         clearTimeout(timeoutId);
       }
     };
-  }, [apiBaseUrl, onCompleted, replicatePredictionId, selectedImageKey]);
+  }, [apiBaseUrl, replicatePredictionId, selectedImageKey]);
 
   return {
     videoProvider,

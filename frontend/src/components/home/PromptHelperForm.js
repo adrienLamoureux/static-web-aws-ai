@@ -4,7 +4,8 @@ function PromptHelperForm({
   selections,
   onSelectionChange,
   onCharacterChange,
-  onGenerate,
+  onCreate,
+  onAiGenerate,
   isLoading,
   status,
   hasSelection,
@@ -27,16 +28,16 @@ function PromptHelperForm({
         <div>
           <p className="field-label">AI prompt helper</p>
           <p className="mt-1 text-xs text-[#7a6a51]">
-            Pick a scenario and spark a prompt draft.
+            Pick a scenario, then create a prompt draft.
           </p>
         </div>
         <button
           type="button"
-          onClick={onGenerate}
+          onClick={onAiGenerate}
           disabled={isLoading || !hasSelection}
           className="btn-icon disabled:cursor-not-allowed disabled:opacity-60"
-          aria-label="Generate prompt with AI"
-          title="Generate prompt with AI"
+          aria-label="Refine prompt with AI"
+          title="Refine prompt with AI"
         >
           <svg
             viewBox="0 0 24 24"
@@ -332,17 +333,17 @@ function PromptHelperForm({
       )}
       {status === "success" && (
         <p className="mt-3 text-xs text-[#7a6a51]">
-          Prompt applied to positive and negative fields.
+          Prompt applied to the positive field.
         </p>
       )}
 
       <button
         type="button"
-        onClick={onGenerate}
+        onClick={onCreate}
         disabled={isLoading || !hasSelection}
         className="btn-ghost mt-5 w-full px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
       >
-        Generate prompt with AI
+        Create prompt
       </button>
     </div>
   );

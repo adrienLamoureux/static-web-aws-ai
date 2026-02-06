@@ -153,6 +153,11 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       process.env.BEDROCK_MODEL_ID || "amazon.nova-reel-v1:1"
     );
     apiLambda.addEnvironment(
+      "BEDROCK_STORY_MODEL_ID",
+      process.env.BEDROCK_STORY_MODEL_ID ||
+        "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    );
+    apiLambda.addEnvironment(
       "BEDROCK_TITAN_IMAGE_MODEL_ID",
       process.env.BEDROCK_TITAN_IMAGE_MODEL_ID ||
         "amazon.titan-image-generator-v2:0"
