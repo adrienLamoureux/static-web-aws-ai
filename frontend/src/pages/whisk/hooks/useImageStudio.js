@@ -10,17 +10,6 @@ import {
   requestImageUploadUrl,
 } from "../../../services/s3";
 import { buildSafeFileName } from "../../../utils/fileName";
-import promptBackgrounds from "../../../data/prompt-helper/backgrounds.json";
-import promptPoses from "../../../data/prompt-helper/poses.json";
-import promptArchetypes from "../../../data/prompt-helper/archetypes.json";
-import promptTraits from "../../../data/prompt-helper/traits.json";
-import promptOutfits from "../../../data/prompt-helper/outfits.json";
-import promptPalettes from "../../../data/prompt-helper/palettes.json";
-import promptStyles from "../../../data/prompt-helper/styles.json";
-import promptFaceDetails from "../../../data/prompt-helper/face-details.json";
-import promptEyeDetails from "../../../data/prompt-helper/eye-details.json";
-import promptHairDetails from "../../../data/prompt-helper/hair-details.json";
-import promptExpressions from "../../../data/prompt-helper/expressions.json";
 import { listStoryCharacters } from "../../../services/story";
 import { listPromptHelperOptions } from "../../../services/promptHelper";
 
@@ -28,23 +17,61 @@ const DEFAULT_IMAGE_SOURCE = "replicate";
 const DEFAULT_IMAGE_MODEL = "animagine";
 const DEFAULT_IMAGE_PROMPT =
   "Anime key visual, cinematic lighting, clean line art, soft gradients";
-const DEFAULT_IMAGE_NEGATIVE_PROMPT =
-  "photorealistic, 3d render, text, watermark";
 const DEFAULT_IMAGE_SIZE = "1280x720";
-const DEFAULT_IMAGE_SCHEDULER = "DPM++ 2M Karras";
+const DEFAULT_IMAGE_SCHEDULER = "Euler a";
+const DEFAULT_IMAGE_COUNT = "1";
+const DEFAULT_CHARACTER_ID = "frieren";
 const DEFAULT_PROMPT_HELPER_SELECTIONS = {
   background: "",
   character: "",
   pose: "",
-  archetype: "",
   signatureTraits: "",
   faceDetails: "",
   eyeDetails: "",
   hairDetails: "",
-  expression: "",
+  ears: "",
+  tails: "",
+  horns: "",
+  wings: "",
+  hairStyles: "",
+  viewDistance: "",
+  accessories: "",
+  markings: "",
   outfitMaterials: "",
-  colorPalette: "",
   styleReference: "",
+};
+
+const resolveDefaultPreset = (presets = []) =>
+  presets.find((preset) => preset.id === DEFAULT_CHARACTER_ID) ||
+  presets.find((preset) =>
+    (preset.name || "").toLowerCase().includes("frieren")
+  ) ||
+  null;
+
+const buildSelectionsFromPreset = (preset) => {
+  if (!preset) {
+    return { ...DEFAULT_PROMPT_HELPER_SELECTIONS };
+  }
+  return {
+    ...DEFAULT_PROMPT_HELPER_SELECTIONS,
+    character: preset.name || "",
+    background: preset.background || "",
+    pose: preset.pose || "",
+    signatureTraits: preset.signatureTraits || "",
+    faceDetails: preset.faceDetails || "",
+    eyeDetails: preset.eyeDetails || "",
+    hairDetails: preset.hairDetails || "",
+    ears: preset.ears || "",
+    tails: preset.tails || "",
+    horns: preset.horns || "",
+    wings: preset.wings || "",
+    hairStyles: preset.hairStyles || "",
+    viewDistance: preset.viewDistance || "",
+    accessories: preset.accessories || "",
+    markings: preset.markings || "",
+    outfitMaterials: preset.outfitMaterials || "",
+    styleReference: preset.styleReference || "",
+  };
 };
 
 export const useImageStudio = ({
@@ -60,13 +87,12 @@ export const useImageStudio = ({
   const [imageModel, setImageModel] = useState(DEFAULT_IMAGE_MODEL);
   const [imageGenerationName, setImageGenerationName] = useState("");
   const [imagePrompt, setImagePrompt] = useState(DEFAULT_IMAGE_PROMPT);
-  const [imageNegativePrompt, setImageNegativePrompt] = useState(
-    DEFAULT_IMAGE_NEGATIVE_PROMPT
-  );
+  const [imageNegativePrompt, setImageNegativePrompt] = useState("");
   const [imageSize, setImageSize] = useState(DEFAULT_IMAGE_SIZE);
   const [imageScheduler, setImageScheduler] = useState(
     DEFAULT_IMAGE_SCHEDULER
   );
+  const [imageCount, setImageCount] = useState(DEFAULT_IMAGE_COUNT);
   const [imageGenerationStatus, setImageGenerationStatus] = useState("idle");
   const [promptHelperStatus, setPromptHelperStatus] = useState("idle");
   const [imageGenerationNotice, setImageGenerationNotice] = useState("");
@@ -74,18 +100,24 @@ export const useImageStudio = ({
     DEFAULT_PROMPT_HELPER_SELECTIONS
   );
   const [promptHelperOptions, setPromptHelperOptions] = useState({
-    backgrounds: promptBackgrounds,
-    poses: promptPoses,
-    archetypes: promptArchetypes,
-    traits: promptTraits,
-    faceDetails: promptFaceDetails,
-    eyeDetails: promptEyeDetails,
-    hairDetails: promptHairDetails,
-    expressions: promptExpressions,
-    outfits: promptOutfits,
-    palettes: promptPalettes,
-    styles: promptStyles,
+    backgrounds: [],
+    poses: [],
+    traits: [],
+    faceDetails: [],
+    eyeDetails: [],
+    hairDetails: [],
+    ears: [],
+    tails: [],
+    horns: [],
+    wings: [],
+    hairStyles: [],
+    viewDistance: [],
+    accessories: [],
+    markings: [],
+    outfits: [],
+    styles: [],
   });
+  const [defaultNegativePrompt, setDefaultNegativePrompt] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [imageName, setImageName] = useState("");
@@ -96,17 +128,22 @@ export const useImageStudio = ({
   const isGeneratingImage = imageGenerationStatus === "loading";
   const isPromptHelperLoading = promptHelperStatus === "loading";
   const hasPromptHelperSelection = Boolean(
-    promptHelperSelections.background ||
+      promptHelperSelections.background ||
       promptHelperSelections.character ||
       promptHelperSelections.pose ||
-      promptHelperSelections.archetype ||
       promptHelperSelections.signatureTraits ||
       promptHelperSelections.faceDetails ||
       promptHelperSelections.eyeDetails ||
       promptHelperSelections.hairDetails ||
-      promptHelperSelections.expression ||
+      promptHelperSelections.ears ||
+      promptHelperSelections.tails ||
+      promptHelperSelections.horns ||
+      promptHelperSelections.wings ||
+      promptHelperSelections.hairStyles ||
+      promptHelperSelections.viewDistance ||
+      promptHelperSelections.accessories ||
+      promptHelperSelections.markings ||
       promptHelperSelections.outfitMaterials ||
-      promptHelperSelections.colorPalette ||
       promptHelperSelections.styleReference
   );
 
@@ -121,6 +158,10 @@ export const useImageStudio = ({
   }, [selectedFile]);
 
   const [characterPresets, setCharacterPresets] = useState([]);
+  const defaultCharacterPreset = useMemo(
+    () => resolveDefaultPreset(characterPresets),
+    [characterPresets]
+  );
 
   useEffect(() => {
     if (!apiBaseUrl) return;
@@ -137,14 +178,17 @@ export const useImageStudio = ({
     if (!apiBaseUrl) return;
     listPromptHelperOptions(apiBaseUrl)
       .then((data) => {
+        if (typeof data.negativePrompt === "string") {
+          setDefaultNegativePrompt(data.negativePrompt);
+          setImageNegativePrompt((prev) =>
+            prev ? prev : data.negativePrompt
+          );
+        }
         setPromptHelperOptions((prev) => ({
           backgrounds: Array.isArray(data.backgrounds)
             ? data.backgrounds
             : prev.backgrounds,
           poses: Array.isArray(data.poses) ? data.poses : prev.poses,
-          archetypes: Array.isArray(data.archetypes)
-            ? data.archetypes
-            : prev.archetypes,
           traits: Array.isArray(data.traits) ? data.traits : prev.traits,
           faceDetails: Array.isArray(data.faceDetails)
             ? data.faceDetails
@@ -155,11 +199,23 @@ export const useImageStudio = ({
           hairDetails: Array.isArray(data.hairDetails)
             ? data.hairDetails
             : prev.hairDetails,
-          expressions: Array.isArray(data.expressions)
-            ? data.expressions
-            : prev.expressions,
+          ears: Array.isArray(data.ears) ? data.ears : prev.ears,
+          tails: Array.isArray(data.tails) ? data.tails : prev.tails,
+          horns: Array.isArray(data.horns) ? data.horns : prev.horns,
+          wings: Array.isArray(data.wings) ? data.wings : prev.wings,
+          hairStyles: Array.isArray(data.hairStyles)
+            ? data.hairStyles
+            : prev.hairStyles,
+          viewDistance: Array.isArray(data.viewDistance)
+            ? data.viewDistance
+            : prev.viewDistance,
+          accessories: Array.isArray(data.accessories)
+            ? data.accessories
+            : prev.accessories,
+          markings: Array.isArray(data.markings)
+            ? data.markings
+            : prev.markings,
           outfits: Array.isArray(data.outfits) ? data.outfits : prev.outfits,
-          palettes: Array.isArray(data.palettes) ? data.palettes : prev.palettes,
           styles: Array.isArray(data.styles) ? data.styles : prev.styles,
         }));
       })
@@ -168,18 +224,69 @@ export const useImageStudio = ({
       });
   }, [apiBaseUrl, onError]);
 
+  const characterPresetMap = useMemo(() => {
+    const entries = (characterPresets || []).map((preset) => [
+      (preset.name || "").toLowerCase(),
+      preset,
+    ]);
+    return new Map(entries);
+  }, [characterPresets]);
+
+  const buildPromptFromSelectionsWithSelections = (selections) => {
+    const parts = [];
+    const pushTrimmed = (value) => {
+      const trimmed = value?.trim();
+      if (trimmed) {
+        parts.push(trimmed);
+      }
+    };
+    pushTrimmed(selections.viewDistance);
+    pushTrimmed(selections.background);
+    if (selections.character?.trim()) {
+      parts.push("1girl, solo");
+      const characterValue = selections.character.trim();
+      const preset = characterPresetMap.get(characterValue.toLowerCase());
+      if (preset?.name) {
+        const weight =
+          typeof preset.weight === "number" ? preset.weight : 1.4;
+        parts.push(`(${preset.name}:${weight})`);
+      } else {
+        parts.push(characterValue);
+      }
+    }
+    pushTrimmed(selections.signatureTraits);
+    pushTrimmed(selections.eyeDetails);
+    pushTrimmed(selections.pose);
+    pushTrimmed(selections.faceDetails);
+    pushTrimmed(selections.hairDetails);
+    pushTrimmed(selections.ears);
+    pushTrimmed(selections.tails);
+    pushTrimmed(selections.horns);
+    pushTrimmed(selections.wings);
+    pushTrimmed(selections.hairStyles);
+    pushTrimmed(selections.accessories);
+    pushTrimmed(selections.markings);
+    pushTrimmed(selections.outfitMaterials);
+    pushTrimmed(selections.styleReference);
+    return parts.filter(Boolean).join(", ");
+  };
+
   const resetImageForm = () => {
     setImageSource(DEFAULT_IMAGE_SOURCE);
     setImageModel(DEFAULT_IMAGE_MODEL);
     setImageGenerationName("");
-    setImagePrompt(DEFAULT_IMAGE_PROMPT);
-    setImageNegativePrompt(DEFAULT_IMAGE_NEGATIVE_PROMPT);
     setImageSize(DEFAULT_IMAGE_SIZE);
     setImageScheduler(DEFAULT_IMAGE_SCHEDULER);
+    setImageCount(DEFAULT_IMAGE_COUNT);
     setImageGenerationStatus("idle");
     setImageGenerationNotice("");
     setPromptHelperStatus("idle");
-    setPromptHelperSelections({ ...DEFAULT_PROMPT_HELPER_SELECTIONS });
+    const defaultSelections = buildSelectionsFromPreset(defaultCharacterPreset);
+    const defaultPrompt =
+      buildPromptFromSelectionsWithSelections(defaultSelections);
+    setPromptHelperSelections(defaultSelections);
+    setImagePrompt(defaultPrompt || DEFAULT_IMAGE_PROMPT);
+    setImageNegativePrompt(defaultNegativePrompt);
     setSelectedFile(null);
     setPreviewUrl("");
     setImageName("");
@@ -188,13 +295,30 @@ export const useImageStudio = ({
     onResetVideoReady?.();
   };
 
-  const characterPresetMap = useMemo(() => {
-    const entries = (characterPresets || []).map((preset) => [
-      (preset.name || "").toLowerCase(),
-      preset,
-    ]);
-    return new Map(entries);
-  }, [characterPresets]);
+  useEffect(() => {
+    if (!defaultCharacterPreset) return;
+    setPromptHelperSelections((prev) => {
+      const hasAny = Object.values(prev).some((value) => value);
+      if (hasAny) return prev;
+      return buildSelectionsFromPreset(defaultCharacterPreset);
+    });
+    if (!imageNegativePrompt && defaultNegativePrompt) {
+      setImageNegativePrompt(defaultNegativePrompt);
+    }
+    if (!imagePrompt || imagePrompt === DEFAULT_IMAGE_PROMPT) {
+      const defaultPrompt = buildPromptFromSelectionsWithSelections(
+        buildSelectionsFromPreset(defaultCharacterPreset)
+      );
+      if (defaultPrompt) {
+        setImagePrompt(defaultPrompt);
+      }
+    }
+  }, [
+    defaultCharacterPreset,
+    imageNegativePrompt,
+    imagePrompt,
+    defaultNegativePrompt,
+  ]);
 
   const imageSourceOptions = [
     {
@@ -266,8 +390,9 @@ export const useImageStudio = ({
   const imageSchedulerOptions = useMemo(() => {
     if (imageSource === "replicate" && imageModel === "animagine") {
       return [
-        { value: "DPM++ 2M Karras", label: "DPM++ 2M Karras" },
         { value: "Euler a", label: "Euler a" },
+        { value: "DPM++ 2M Karras", label: "DPM++ 2M Karras" },
+        { value: "diff", label: "Both (Euler a + DPM++ 2M Karras)" },
       ];
     }
     return [];
@@ -289,11 +414,31 @@ export const useImageStudio = ({
   }, [imageScheduler, imageSchedulerOptions]);
 
   useEffect(() => {
+    if (imageScheduler === "diff") {
+      setImageCount("2");
+    }
+  }, [imageScheduler]);
+
+  const imageCountOptions = useMemo(
+    () => [
+      { value: "1", label: "1 image" },
+      { value: "2", label: "2 images" },
+    ],
+    []
+  );
+
+  useEffect(() => {
     const allowedModels = imageModelOptions.map((option) => option.key);
     if (!allowedModels.includes(imageModel)) {
       setImageModel(imageModelOptions[0]?.key || "titan");
     }
   }, [imageModel, imageModelOptions]);
+
+  useEffect(() => {
+    if (imageSource !== "replicate") {
+      setImageCount(DEFAULT_IMAGE_COUNT);
+    }
+  }, [imageSource]);
 
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
@@ -390,7 +535,8 @@ export const useImageStudio = ({
         negativePrompt: imageNegativePrompt.trim() || undefined,
         width,
         height,
-        numImages: 1,
+        numImages:
+          imageSource === "replicate" ? Number(imageCount) || 1 : 1,
         ...(imageSource === "replicate" && imageSchedulerOptions.length > 0
           ? { scheduler: imageScheduler }
           : {}),
@@ -408,37 +554,8 @@ export const useImageStudio = ({
     }
   };
 
-  const buildPromptFromSelections = () => {
-    const parts = [];
-    const pushTrimmed = (value) => {
-      const trimmed = value?.trim();
-      if (trimmed) {
-        parts.push(trimmed);
-      }
-    };
-    pushTrimmed(promptHelperSelections.background);
-    if (promptHelperSelections.character?.trim()) {
-      parts.push("1girl, solo");
-      const characterValue = promptHelperSelections.character.trim();
-      const preset = characterPresetMap.get(characterValue.toLowerCase());
-      if (preset?.name) {
-        parts.push(`(${preset.name}:1.4)`);
-      } else {
-        parts.push(characterValue);
-      }
-    }
-    pushTrimmed(promptHelperSelections.archetype);
-    pushTrimmed(promptHelperSelections.signatureTraits);
-    pushTrimmed(promptHelperSelections.faceDetails);
-    pushTrimmed(promptHelperSelections.eyeDetails);
-    pushTrimmed(promptHelperSelections.hairDetails);
-    pushTrimmed(promptHelperSelections.expression);
-    pushTrimmed(promptHelperSelections.pose);
-    pushTrimmed(promptHelperSelections.outfitMaterials);
-    pushTrimmed(promptHelperSelections.colorPalette);
-    pushTrimmed(promptHelperSelections.styleReference);
-    return parts.filter(Boolean).join(", ");
-  };
+  const buildPromptFromSelections = () =>
+    buildPromptFromSelectionsWithSelections(promptHelperSelections);
 
   const handlePromptHelperCreate = () => {
     if (!hasPromptHelperSelection) {
@@ -453,9 +570,7 @@ export const useImageStudio = ({
     const selectedPreset = characterPresetMap.get(
       (promptHelperSelections.character || "").trim().toLowerCase()
     );
-    if (selectedPreset?.storyNegativePrompt) {
-      setImageNegativePrompt(selectedPreset.storyNegativePrompt);
-    }
+    setImageNegativePrompt(defaultNegativePrompt);
     setPromptHelperStatus("success");
     setImagePrompt(prompt);
   };
@@ -477,25 +592,28 @@ export const useImageStudio = ({
         background: promptHelperSelections.background.trim() || undefined,
         character: promptHelperSelections.character.trim() || undefined,
         pose: promptHelperSelections.pose.trim() || undefined,
-        archetype: promptHelperSelections.archetype.trim() || undefined,
         signatureTraits:
           promptHelperSelections.signatureTraits.trim() || undefined,
         faceDetails: promptHelperSelections.faceDetails.trim() || undefined,
         eyeDetails: promptHelperSelections.eyeDetails.trim() || undefined,
         hairDetails: promptHelperSelections.hairDetails.trim() || undefined,
-        expression: promptHelperSelections.expression.trim() || undefined,
+        ears: promptHelperSelections.ears.trim() || undefined,
+        tails: promptHelperSelections.tails.trim() || undefined,
+        horns: promptHelperSelections.horns.trim() || undefined,
+        wings: promptHelperSelections.wings.trim() || undefined,
+        hairStyles: promptHelperSelections.hairStyles.trim() || undefined,
+        viewDistance: promptHelperSelections.viewDistance.trim() || undefined,
+        accessories: promptHelperSelections.accessories.trim() || undefined,
+        markings: promptHelperSelections.markings.trim() || undefined,
         outfitMaterials:
           promptHelperSelections.outfitMaterials.trim() || undefined,
-        colorPalette: promptHelperSelections.colorPalette.trim() || undefined,
         styleReference:
           promptHelperSelections.styleReference.trim() || undefined,
       });
       if (data?.prompt) {
         setImagePrompt(data.prompt);
       }
-      if (data?.negativePrompt) {
-        setImageNegativePrompt(data.negativePrompt);
-      }
+      setImageNegativePrompt(defaultNegativePrompt);
       setPromptHelperStatus("success");
     } catch (error) {
       setPromptHelperStatus("error");
@@ -525,20 +643,23 @@ export const useImageStudio = ({
       setPromptHelperSelections((prev) => ({
         ...prev,
         character: preset.name || value,
-        pose: preset.pose || prev.pose,
-        archetype: preset.archetype || "",
+        pose: preset.pose || "",
         signatureTraits: preset.signatureTraits || "",
         faceDetails: preset.faceDetails || "",
         eyeDetails: preset.eyeDetails || "",
         hairDetails: preset.hairDetails || "",
-        expression: preset.expression || "",
+        ears: preset.ears || "",
+        tails: preset.tails || "",
+        horns: preset.horns || "",
+        wings: preset.wings || "",
+        hairStyles: preset.hairStyles || "",
+        viewDistance: preset.viewDistance || "",
+        accessories: preset.accessories || "",
+        markings: preset.markings || "",
         outfitMaterials: preset.outfitMaterials || "",
-        colorPalette: preset.colorPalette || "",
         styleReference: preset.styleReference || "",
       }));
-      if (preset.storyNegativePrompt) {
-        setImageNegativePrompt(preset.storyNegativePrompt);
-      }
+    setImageNegativePrompt(defaultNegativePrompt);
     } else {
       setPromptHelperSelections((prev) => ({
         ...prev,
@@ -560,18 +681,24 @@ export const useImageStudio = ({
     promptBackgrounds: promptHelperOptions.backgrounds,
     promptCharacters: promptCharacterOptions,
     promptPoses: promptHelperOptions.poses,
-    promptArchetypes: promptHelperOptions.archetypes,
     promptTraits: promptHelperOptions.traits,
     promptFaceDetails: promptHelperOptions.faceDetails,
     promptEyeDetails: promptHelperOptions.eyeDetails,
     promptHairDetails: promptHelperOptions.hairDetails,
-    promptExpressions: promptHelperOptions.expressions,
+    promptEars: promptHelperOptions.ears,
+    promptTails: promptHelperOptions.tails,
+    promptHorns: promptHelperOptions.horns,
+    promptWings: promptHelperOptions.wings,
+    promptHairStyles: promptHelperOptions.hairStyles,
+    promptViewDistance: promptHelperOptions.viewDistance,
+    promptAccessories: promptHelperOptions.accessories,
+    promptMarkings: promptHelperOptions.markings,
     promptOutfits: promptHelperOptions.outfits,
-    promptPalettes: promptHelperOptions.palettes,
     promptStyles: promptHelperOptions.styles,
   };
 
   const imageGenerationProps = {
+    imageSource,
     imageModel,
     imageModelOptions,
     onSelectModel: setImageModel,
@@ -585,6 +712,9 @@ export const useImageStudio = ({
     imageSize,
     imageSizeOptions,
     onImageSizeChange: setImageSize,
+    imageCount,
+    imageCountOptions,
+    onImageCountChange: setImageCount,
     imageScheduler,
     imageSchedulerOptions,
     onImageSchedulerChange: setImageScheduler,

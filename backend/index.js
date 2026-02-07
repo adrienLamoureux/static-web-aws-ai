@@ -26,14 +26,19 @@ const Replicate = require("replicate");
 const Jimp = require("jimp");
 const promptBackgrounds = require("./data/prompt-helper/backgrounds.json");
 const promptPoses = require("./data/prompt-helper/poses.json");
-const promptArchetypes = require("./data/prompt-helper/archetypes.json");
 const promptTraits = require("./data/prompt-helper/traits.json");
 const promptFaceDetails = require("./data/prompt-helper/face-details.json");
 const promptEyeDetails = require("./data/prompt-helper/eye-details.json");
 const promptHairDetails = require("./data/prompt-helper/hair-details.json");
-const promptExpressions = require("./data/prompt-helper/expressions.json");
+const promptEars = require("./data/prompt-helper/ears.json");
+const promptTails = require("./data/prompt-helper/tails.json");
+const promptHorns = require("./data/prompt-helper/horns.json");
+const promptWings = require("./data/prompt-helper/wings.json");
+const promptHairStyles = require("./data/prompt-helper/hair-styles.json");
+const promptViewDistance = require("./data/prompt-helper/view-distance.json");
+const promptAccessories = require("./data/prompt-helper/accessories.json");
+const promptMarkings = require("./data/prompt-helper/markings.json");
 const promptOutfits = require("./data/prompt-helper/outfits.json");
-const promptPalettes = require("./data/prompt-helper/palettes.json");
 const promptStyles = require("./data/prompt-helper/styles.json");
 
 const app = express();
@@ -74,6 +79,8 @@ const promptHelperModelId =
   "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 const storyModelId =
   process.env.BEDROCK_STORY_MODEL_ID || promptHelperModelId;
+const DEFAULT_NEGATIVE_PROMPT =
+  "low quality, worst quality, lowres, pixelated, jpeg artifacts, compression artifacts, blurry, out of focus, oversharpened, grainy, noisy, dithering, flat shading, muddy colors, bad anatomy, bad proportions, multiple characters, extra people, clone, twin, reflection, mirror, big eyes, wide eyes, sparkly eyes";
 
 
 const imageModelConfig = {
@@ -118,11 +125,9 @@ const replicateModelConfig = {
       cfg_scale: 5,
       clip_skip: 1,
       pag_scale: 1,
-      scheduler: scheduler || "DPM++ 2M Karras",
+      scheduler: scheduler || "Euler a",
       batch_size: numOutputs,
-      negative_prompt:
-        negativePrompt ||
-        "multiple characters, companions, crowd, extra people, duplicate face, deformed features, out of frame, messy linework, inconsistent identity",
+      negative_prompt: negativePrompt || DEFAULT_NEGATIVE_PROMPT,
       guidance_rescale: 1,
       prepend_preprompt: true,
     }),
@@ -178,31 +183,86 @@ const replicateModelConfig = {
   },
 };
 
+const pickOption = (options = [], value = "", fallback = "") => {
+  if (value && options.includes(value)) return value;
+  if (fallback && options.includes(fallback)) return fallback;
+  return options[0] || "";
+};
+
+const buildPresetPrompt = (character) => {
+  const parts = [];
+  const push = (value) => {
+    if (value) parts.push(value);
+  };
+
+  // 1) Shot range
+  push(character.viewDistance);
+  // 2) Environment / background
+  push(character.background);
+  // 3) Character block
+  if (character.name) {
+    parts.push("1girl, solo");
+    const weight =
+      typeof character.weight === "number" ? character.weight : 1.4;
+    parts.push(`(${character.name}:${weight})`);
+  }
+  push(character.signatureTraits);
+  // 4) Focus
+  push(character.eyeDetails);
+  push(character.pose);
+  // 5) Face + features
+  push(character.faceDetails);
+  push(character.hairDetails);
+  push(character.ears);
+  push(character.tails);
+  push(character.horns);
+  push(character.wings);
+  push(character.hairStyles);
+  push(character.accessories);
+  push(character.markings);
+  // 6) Clothes
+  push(character.outfitMaterials);
+  // 7) Visuals
+  push(character.styleReference);
+
+  return parts.filter(Boolean).join(", ");
+};
+
+const withPresetPrompt = (character) => {
+  const prompt = buildPresetPrompt(character);
+  return {
+    ...character,
+    identityPrompt: prompt,
+    storyBasePrompt: prompt,
+  };
+};
+
 const storyCharacters = [
-  {
+  withPresetPrompt({
     id: "frieren",
     name: "Frieren from Beyond Journey's End",
-    background:
-      "outdoor beach scene, ocean horizon, blue sky, turquoise water, sandy beach, daylight",
-    pose: "front-facing portrait, direct gaze, leaning forward, arms relaxed",
-    archetype: "stoic elf mage",
-    signatureTraits:
-      "recognizable as Frieren, not a generic elf, faithful to the original Frieren anime",
-    faceDetails: "plain understated anime face, very small mouth",
-    eyeDetails: "narrow slightly drooping eyes",
-    hairDetails: "long silver hair",
-    expression: "calm melancholic expression",
-    outfitMaterials: "two-piece bikini",
-    colorPalette: "daylight",
-    styleReference:
-      "anime cinematic illustration, anime movie quality, sharp focus on face",
-    identityPrompt:
-      "outdoor beach scene, ocean horizon, blue sky, turquoise water, sandy beach, daylight, 1girl, solo, (Frieren from Beyond Journey's End:1.4), recognizable as Frieren, not generic elf, plain understated anime face, narrow drooping eyes, very small mouth, calm melancholic expression, front-facing portrait, direct gaze, two-piece bikini, leaning forward, arms relaxed, sharp focus on face, anime movie quality",
-    storyBasePrompt:
-      "outdoor beach scene, ocean horizon, blue sky, turquoise water, sandy beach, daylight, 1girl, solo, (Frieren from Beyond Journey's End:1.4), recognizable as Frieren, not generic elf, plain understated anime face, narrow drooping eyes, very small mouth, calm melancholic expression, front-facing portrait, direct gaze, two-piece bikini, leaning forward, arms relaxed, sharp focus on face, anime movie quality",
-    storyNegativePrompt:
-      "multiple characters, extra people, generic elf, big eyes, sparkly eyes, clone, twin, reflection",
-  },
+    weight: 1.5,
+    viewDistance: pickOption(promptViewDistance, "long shot"),
+    background: pickOption(
+      promptBackgrounds,
+      "sandy beach at noon, blue sky, turquoise ocean dominate background"
+    ),
+    signatureTraits: pickOption(
+      promptTraits,
+      "official Frieren, recognizable character"
+    ),
+    eyeDetails: pickOption(promptEyeDetails, "eyes looking at the viewer"),
+    faceDetails: pickOption(promptFaceDetails, "cute soft young face"),
+    outfitMaterials: pickOption(
+      promptOutfits,
+      "wearing a cute two-piece bikini"
+    ),
+    styleReference: pickOption(
+      promptStyles,
+      "tasteful anime design, character more detailed than background, anime key visual art, gacha"
+    ),
+    storyNegativePrompt: DEFAULT_NEGATIVE_PROMPT,
+  }),
 ];
 
 const storyPresets = [
@@ -216,8 +276,7 @@ const storyPresets = [
       "fantasy countryside, soft winds, medieval villages, mossy stone roads, tranquil skies",
     stylePrompt:
       "anime cinematic illustration, soft pastel palette, luminous lighting, delicate line art, painterly shading",
-    negativePrompt:
-      "low quality, worst quality, blurry, extra limbs, watermark, text, deformed, bad anatomy, lowres, jpeg artifacts",
+    negativePrompt: DEFAULT_NEGATIVE_PROMPT,
     opening:
       "The road opens into a quiet valley, the wind carrying distant bells. Frieren walks ahead in thoughtful silence, then glances back with a small smile. “We can rest in the next village—or take the ridge and see the lakes at sunset. What feels right to you?”",
   },
@@ -231,8 +290,7 @@ const storyPresets = [
       "cozy tavern interior, candlelight glow, wooden beams, rain outside windows, warm ambience",
     stylePrompt:
       "anime cinematic illustration, warm amber lighting, soft grain, detailed textures, gentle bokeh",
-    negativePrompt:
-      "low quality, worst quality, blurry, extra limbs, watermark, text, deformed, bad anatomy, lowres, jpeg artifacts",
+    negativePrompt: DEFAULT_NEGATIVE_PROMPT,
     opening:
       "The tavern door creaks and the scent of rain drifts in. Frieren takes a seat by the hearth, brushing droplets from her cloak. “There’s a traveler here who knows the old ruins,” she says, eyes glinting in the firelight. “Do we listen, or keep moving?”",
   },
@@ -246,8 +304,7 @@ const storyPresets = [
       "ancient ruins above the clouds, floating stone, starlit sky, glowing runes, ethereal atmosphere",
     stylePrompt:
       "anime cinematic illustration, high contrast moonlight, cool blue palette, ethereal glow, ultra-detailed",
-    negativePrompt:
-      "low quality, worst quality, blurry, extra limbs, watermark, text, deformed, bad anatomy, lowres, jpeg artifacts",
+    negativePrompt: DEFAULT_NEGATIVE_PROMPT,
     opening:
       "The staircase ends above the clouds, where ancient stones hum with starlight. Frieren pauses, listening to the wind. “These ruins are alive with memory,” she whispers. “Do we trace the runes, or search for the relic first?”",
   },
@@ -256,32 +313,25 @@ const storyPresets = [
 const promptHelperDefaults = {
   backgrounds: promptBackgrounds,
   poses: promptPoses,
-  archetypes: promptArchetypes,
   traits: promptTraits,
   faceDetails: promptFaceDetails,
   eyeDetails: promptEyeDetails,
   hairDetails: promptHairDetails,
-  expressions: promptExpressions,
+  ears: promptEars,
+  tails: promptTails,
+  horns: promptHorns,
+  wings: promptWings,
+  hairStyles: promptHairStyles,
+  viewDistance: promptViewDistance,
+  accessories: promptAccessories,
+  markings: promptMarkings,
   outfits: promptOutfits,
-  palettes: promptPalettes,
   styles: promptStyles,
 };
 
 const buildCharacterPrompt = (character) => {
   if (!character) return "";
-  return [
-    character.name,
-    character.archetype,
-    character.signatureTraits,
-    character.faceDetails,
-    character.eyeDetails,
-    character.hairDetails,
-    character.expression,
-    character.outfitMaterials,
-    character.colorPalette,
-  ]
-    .filter(Boolean)
-    .join(", ");
+  return buildPresetPrompt(character);
 };
 
 const ensurePromptHelperOptions = async () => {
@@ -344,16 +394,22 @@ const ensureStoryCharacters = async () => {
     );
     const fieldsToCompare = [
       "name",
+      "weight",
       "background",
       "pose",
-      "archetype",
       "signatureTraits",
       "faceDetails",
       "eyeDetails",
       "hairDetails",
-      "expression",
+      "ears",
+      "tails",
+      "horns",
+      "wings",
+      "hairStyles",
+      "viewDistance",
+      "accessories",
+      "markings",
       "outfitMaterials",
-      "colorPalette",
       "styleReference",
       "identityPrompt",
       "storyBasePrompt",
@@ -1005,15 +1061,21 @@ app.get("/prompt-helper/options", async (req, res) => {
     res.json({
       backgrounds: getOption("backgrounds"),
       poses: getOption("poses"),
-      archetypes: getOption("archetypes"),
       traits: getOption("traits"),
       faceDetails: getOption("faceDetails"),
       eyeDetails: getOption("eyeDetails"),
       hairDetails: getOption("hairDetails"),
-      expressions: getOption("expressions"),
+      ears: getOption("ears"),
+      tails: getOption("tails"),
+      horns: getOption("horns"),
+      wings: getOption("wings"),
+      hairStyles: getOption("hairStyles"),
+      viewDistance: getOption("viewDistance"),
+      accessories: getOption("accessories"),
+      markings: getOption("markings"),
       outfits: getOption("outfits"),
-      palettes: getOption("palettes"),
       styles: getOption("styles"),
+      negativePrompt: DEFAULT_NEGATIVE_PROMPT,
     });
   } catch (error) {
     res.status(500).json({
@@ -1027,28 +1089,38 @@ app.post("/bedrock/prompt-helper", async (req, res) => {
   const background = req.body?.background?.trim();
   const character = req.body?.character?.trim();
   const pose = req.body?.pose?.trim();
-  const archetype = req.body?.archetype?.trim();
   const signatureTraits = req.body?.signatureTraits?.trim();
   const faceDetails = req.body?.faceDetails?.trim();
   const eyeDetails = req.body?.eyeDetails?.trim();
   const hairDetails = req.body?.hairDetails?.trim();
-  const expression = req.body?.expression?.trim();
+  const ears = req.body?.ears?.trim();
+  const tails = req.body?.tails?.trim();
+  const horns = req.body?.horns?.trim();
+  const wings = req.body?.wings?.trim();
+  const hairStyles = req.body?.hairStyles?.trim();
+  const viewDistance = req.body?.viewDistance?.trim();
+  const accessories = req.body?.accessories?.trim();
+  const markings = req.body?.markings?.trim();
   const outfitMaterials = req.body?.outfitMaterials?.trim();
-  const colorPalette = req.body?.colorPalette?.trim();
   const styleReference = req.body?.styleReference?.trim();
 
   const hasSelection = Boolean(
-    background ||
+      background ||
       character ||
       pose ||
-      archetype ||
       signatureTraits ||
       faceDetails ||
       eyeDetails ||
       hairDetails ||
-      expression ||
+      ears ||
+      tails ||
+      horns ||
+      wings ||
+      hairStyles ||
+      viewDistance ||
+      accessories ||
+      markings ||
       outfitMaterials ||
-      colorPalette ||
       styleReference
   );
   if (!hasSelection) {
@@ -1061,14 +1133,19 @@ app.post("/bedrock/prompt-helper", async (req, res) => {
     background ? `Background: ${background}` : null,
     character ? `Character: ${character}` : null,
     pose ? `Pose: ${pose}` : null,
-    archetype ? `Archetype: ${archetype}` : null,
     signatureTraits ? `Signature traits: ${signatureTraits}` : null,
     faceDetails ? `Face details: ${faceDetails}` : null,
     eyeDetails ? `Eye details: ${eyeDetails}` : null,
     hairDetails ? `Hair details: ${hairDetails}` : null,
-    expression ? `Expression: ${expression}` : null,
+    ears ? `Ears: ${ears}` : null,
+    tails ? `Tail: ${tails}` : null,
+    horns ? `Horns: ${horns}` : null,
+    wings ? `Wings: ${wings}` : null,
+    hairStyles ? `Hair style: ${hairStyles}` : null,
+    viewDistance ? `View distance: ${viewDistance}` : null,
+    accessories ? `Accessories: ${accessories}` : null,
+    markings ? `Markings: ${markings}` : null,
     outfitMaterials ? `Outfit/materials: ${outfitMaterials}` : null,
-    colorPalette ? `Color palette: ${colorPalette}` : null,
     styleReference ? `Style reference: ${styleReference}` : null,
   ].filter(Boolean);
 
@@ -1724,7 +1801,7 @@ app.post("/bedrock/image/generate", async (req, res) => {
   const width = Number(req.body?.width) || 1280;
   const height = Number(req.body?.height) || 720;
   const requestedImages = Number(req.body?.numImages) || 1;
-  const numImages = Math.min(Math.max(requestedImages, 1), 3);
+  const numImages = Math.min(Math.max(requestedImages, 1), 2);
   const seed = req.body?.seed;
   const seeds = buildSeedList(numImages, seed);
   const batchId = buildImageBatchId();
@@ -1920,7 +1997,7 @@ app.post("/replicate/image/generate", async (req, res) => {
   const isDiffScheduler = scheduler === "diff";
   const numImages = Math.min(
     Math.max(isDiffScheduler ? 2 : requestedImages, 1),
-    3
+    2
   );
   const seed = req.body?.seed;
   const seeds = isDiffScheduler
@@ -2712,16 +2789,22 @@ app.get("/story/characters", async (req, res) => {
       characters: characters.map((character) => ({
         id: character.id,
         name: character.name,
-        archetype: character.archetype,
+        weight: character.weight,
         signatureTraits: character.signatureTraits,
         faceDetails: character.faceDetails,
         eyeDetails: character.eyeDetails,
         hairDetails: character.hairDetails,
-        expression: character.expression,
+        ears: character.ears,
+        tails: character.tails,
+        horns: character.horns,
+        wings: character.wings,
+        hairStyles: character.hairStyles,
+        viewDistance: character.viewDistance,
+        accessories: character.accessories,
+        markings: character.markings,
         background: character.background,
         pose: character.pose,
         outfitMaterials: character.outfitMaterials,
-        colorPalette: character.colorPalette,
         styleReference: character.styleReference,
         identityPrompt: character.identityPrompt,
         storyBasePrompt: character.storyBasePrompt,
@@ -3359,7 +3442,7 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
     const negativePrompt =
       resolvedCharacter?.storyNegativePrompt ||
       sessionItem.negativePrompt ||
-      "low quality, worst quality, blurry, extra limbs, watermark, text, deformed, bad anatomy, lowres, jpeg artifacts";
+      DEFAULT_NEGATIVE_PROMPT;
     const trimmedPositivePrompt = clampPromptTokens(positivePrompt);
     const trimmedNegativePrompt = clampPromptTokens(negativePrompt);
     const promptWasTrimmed = trimmedPositivePrompt.trim() !== positivePrompt.trim();
@@ -3375,7 +3458,7 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
       height: 1024,
       numOutputs: 1,
       seed,
-      scheduler: "DPM++ 2M Karras",
+      scheduler: "Euler a",
     });
     const output = await runReplicateWithRetry(modelConfig.modelId, input, 3);
     const outputItems = Array.isArray(output) ? output : [output];

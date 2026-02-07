@@ -12,14 +12,19 @@ function PromptHelperForm({
   promptBackgrounds,
   promptCharacters,
   promptPoses,
-  promptArchetypes,
   promptTraits,
   promptFaceDetails,
   promptEyeDetails,
   promptHairDetails,
-  promptExpressions,
+  promptEars,
+  promptTails,
+  promptHorns,
+  promptWings,
+  promptHairStyles,
+  promptViewDistance,
+  promptAccessories,
+  promptMarkings,
   promptOutfits,
-  promptPalettes,
   promptStyles,
 }) {
   return (
@@ -62,26 +67,6 @@ function PromptHelperForm({
       </div>
 
       <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        <div>
-          <label className="field-label">
-            Background
-          </label>
-          <input
-            className="field-input mt-3"
-            list="prompt-helper-backgrounds"
-            value={selections.background}
-            onChange={(event) =>
-              onSelectionChange("background", event.target.value)
-            }
-            placeholder="neon-lit city alley"
-          />
-          <datalist id="prompt-helper-backgrounds">
-            {promptBackgrounds.map((option) => (
-              <option key={option} value={option} />
-            ))}
-          </datalist>
-        </div>
-
         <div>
           <label className="field-label">
             Character
@@ -134,26 +119,6 @@ function PromptHelperForm({
       <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         <div>
           <label className="field-label">
-            Archetype
-          </label>
-          <input
-            className="field-input mt-3"
-            list="prompt-helper-archetypes"
-            value={selections.archetype}
-            onChange={(event) =>
-              onSelectionChange("archetype", event.target.value)
-            }
-            placeholder="stoic elf mage"
-          />
-          <datalist id="prompt-helper-archetypes">
-            {promptArchetypes.map((option) => (
-              <option key={option} value={option} />
-            ))}
-          </datalist>
-        </div>
-
-        <div>
-          <label className="field-label">
             Signature traits
           </label>
           <input
@@ -174,7 +139,7 @@ function PromptHelperForm({
 
         <div>
           <label className="field-label">
-            Face details
+            Expression & face
           </label>
           <input
             className="field-input mt-3"
@@ -232,31 +197,179 @@ function PromptHelperForm({
           </datalist>
         </div>
 
+        <div className="md:col-span-2 xl:col-span-3">
+          <p className="field-label">Furry traits</p>
+          <p className="mt-1 text-xs text-[#7a6a51]">
+            Ears, tails, wings, and other body features (comma-separated).
+          </p>
+        </div>
+
         <div>
           <label className="field-label">
-            Expression
+            Ears
           </label>
           <input
             className="field-input mt-3"
-            list="prompt-helper-expressions"
-            value={selections.expression}
+            list="prompt-helper-ears"
+            value={selections.ears}
             onChange={(event) =>
-              onSelectionChange("expression", event.target.value)
+              onSelectionChange("ears", event.target.value)
             }
-            placeholder="quiet, thoughtful expression"
+            placeholder="elf ears"
           />
-          <datalist id="prompt-helper-expressions">
-            {promptExpressions.map((option) => (
+          <datalist id="prompt-helper-ears">
+            {promptEars.map((option) => (
               <option key={option} value={option} />
             ))}
           </datalist>
         </div>
+
+        <div>
+          <label className="field-label">
+            Tail
+          </label>
+          <input
+            className="field-input mt-3"
+            list="prompt-helper-tails"
+            value={selections.tails}
+            onChange={(event) =>
+              onSelectionChange("tails", event.target.value)
+            }
+            placeholder="fox tail"
+          />
+          <datalist id="prompt-helper-tails">
+            {promptTails.map((option) => (
+              <option key={option} value={option} />
+            ))}
+          </datalist>
+        </div>
+
+        <div>
+          <label className="field-label">
+            Horns
+          </label>
+          <input
+            className="field-input mt-3"
+            list="prompt-helper-horns"
+            value={selections.horns}
+            onChange={(event) =>
+              onSelectionChange("horns", event.target.value)
+            }
+            placeholder="small horns"
+          />
+          <datalist id="prompt-helper-horns">
+            {promptHorns.map((option) => (
+              <option key={option} value={option} />
+            ))}
+          </datalist>
+        </div>
+
+        <div>
+          <label className="field-label">
+            Wings
+          </label>
+          <input
+            className="field-input mt-3"
+            list="prompt-helper-wings"
+            value={selections.wings}
+            onChange={(event) =>
+              onSelectionChange("wings", event.target.value)
+            }
+            placeholder="angel wings"
+          />
+          <datalist id="prompt-helper-wings">
+            {promptWings.map((option) => (
+              <option key={option} value={option} />
+            ))}
+          </datalist>
+        </div>
+
+        <div>
+          <label className="field-label">
+            Hair style
+          </label>
+          <input
+            className="field-input mt-3"
+            list="prompt-helper-hair-styles"
+            value={selections.hairStyles}
+            onChange={(event) =>
+              onSelectionChange("hairStyles", event.target.value)
+            }
+            placeholder="twin tails"
+          />
+          <datalist id="prompt-helper-hair-styles">
+            {promptHairStyles.map((option) => (
+              <option key={option} value={option} />
+            ))}
+          </datalist>
+        </div>
+
+        <div>
+          <label className="field-label">
+            View / distance
+          </label>
+          <input
+            className="field-input mt-3"
+            list="prompt-helper-view-distance"
+            value={selections.viewDistance}
+            onChange={(event) =>
+              onSelectionChange("viewDistance", event.target.value)
+            }
+            placeholder="mid-shot"
+          />
+          <datalist id="prompt-helper-view-distance">
+            {promptViewDistance.map((option) => (
+              <option key={option} value={option} />
+            ))}
+          </datalist>
+        </div>
+
+        <div>
+          <label className="field-label">
+            Accessories
+          </label>
+          <input
+            className="field-input mt-3"
+            list="prompt-helper-accessories"
+            value={selections.accessories}
+            onChange={(event) =>
+              onSelectionChange("accessories", event.target.value)
+            }
+            placeholder="ribbon hair accessory"
+          />
+          <datalist id="prompt-helper-accessories">
+            {promptAccessories.map((option) => (
+              <option key={option} value={option} />
+            ))}
+          </datalist>
+        </div>
+
+        <div>
+          <label className="field-label">
+            Markings
+          </label>
+          <input
+            className="field-input mt-3"
+            list="prompt-helper-markings"
+            value={selections.markings}
+            onChange={(event) =>
+              onSelectionChange("markings", event.target.value)
+            }
+            placeholder="freckles"
+          />
+          <datalist id="prompt-helper-markings">
+            {promptMarkings.map((option) => (
+              <option key={option} value={option} />
+            ))}
+          </datalist>
+        </div>
+
       </div>
 
       <div className="gallery-divider" />
       <div>
         <p className="field-label">
-          Styling & palette
+          Styling
         </p>
         <p className="mt-1 text-xs text-[#7a6a51]">
           Keep these independent of character presets.
@@ -264,6 +377,26 @@ function PromptHelperForm({
       </div>
 
       <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div>
+          <label className="field-label">
+            Background
+          </label>
+          <input
+            className="field-input mt-3"
+            list="prompt-helper-backgrounds"
+            value={selections.background}
+            onChange={(event) =>
+              onSelectionChange("background", event.target.value)
+            }
+            placeholder="neon-lit city alley"
+          />
+          <datalist id="prompt-helper-backgrounds">
+            {promptBackgrounds.map((option) => (
+              <option key={option} value={option} />
+            ))}
+          </datalist>
+        </div>
+
         <div>
           <label className="field-label">
             Outfit/materials
@@ -279,26 +412,6 @@ function PromptHelperForm({
           />
           <datalist id="prompt-helper-outfits">
             {promptOutfits.map((option) => (
-              <option key={option} value={option} />
-            ))}
-          </datalist>
-        </div>
-
-        <div>
-          <label className="field-label">
-            Color palette
-          </label>
-          <input
-            className="field-input mt-3"
-            list="prompt-helper-palettes"
-            value={selections.colorPalette}
-            onChange={(event) =>
-              onSelectionChange("colorPalette", event.target.value)
-            }
-            placeholder="muted teal and warm gold"
-          />
-          <datalist id="prompt-helper-palettes">
-            {promptPalettes.map((option) => (
               <option key={option} value={option} />
             ))}
           </datalist>

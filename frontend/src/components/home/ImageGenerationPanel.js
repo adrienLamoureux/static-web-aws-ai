@@ -2,6 +2,7 @@ import React from "react";
 import PromptHelperForm from "./PromptHelperForm";
 
 function ImageGenerationPanel({
+  imageSource,
   imageModel,
   imageModelOptions,
   onSelectModel,
@@ -15,6 +16,9 @@ function ImageGenerationPanel({
   imageSize,
   imageSizeOptions,
   onImageSizeChange,
+  imageCount,
+  imageCountOptions,
+  onImageCountChange,
   imageScheduler,
   imageSchedulerOptions,
   onImageSchedulerChange,
@@ -109,6 +113,29 @@ function ImageGenerationPanel({
             ))}
           </select>
         </div>
+
+        {imageSource === "replicate" && (
+          <div className="gallery-section">
+            <label className="field-label">Images</label>
+            <select
+              className="field-select mt-3"
+              value={imageCount}
+              onChange={(event) => onImageCountChange(event.target.value)}
+              disabled={imageScheduler === "diff"}
+            >
+              {imageCountOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {imageScheduler === "diff" && (
+              <p className="mt-2 text-xs text-[#7a6a51]">
+                Both schedulers selected. Generating two images.
+              </p>
+            )}
+          </div>
+        )}
 
         {imageSchedulerOptions.length > 0 && (
           <div className="gallery-section">
