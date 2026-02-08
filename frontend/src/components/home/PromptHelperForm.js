@@ -16,6 +16,7 @@ function PromptHelperForm({
   promptFaceDetails,
   promptEyeDetails,
   promptHairDetails,
+  promptBreastSizes,
   promptEars,
   promptTails,
   promptHorns,
@@ -192,6 +193,26 @@ function PromptHelperForm({
           />
           <datalist id="prompt-helper-hair-details">
             {promptHairDetails.map((option) => (
+              <option key={option} value={option} />
+            ))}
+          </datalist>
+        </div>
+
+        <div>
+          <label className="field-label">
+            Breats size
+          </label>
+          <input
+            className="field-input mt-3"
+            list="prompt-helper-breast-sizes"
+            value={selections.breastSize}
+            onChange={(event) =>
+              onSelectionChange("breastSize", event.target.value)
+            }
+            placeholder="medium bust"
+          />
+          <datalist id="prompt-helper-breast-sizes">
+            {promptBreastSizes.map((option) => (
               <option key={option} value={option} />
             ))}
           </datalist>

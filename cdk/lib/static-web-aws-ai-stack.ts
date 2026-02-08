@@ -17,6 +17,7 @@ export class StaticWebAWSAIStack extends cdk.Stack {
     super(scope, id, props);
 
     const adminEmail = "vergil1534@gmail.com";
+    const secondaryAdminEmail = "kirito153464@gmail.com";
     const adminTempPassword = "WhiskStudio!2026";
 
     const mediaTable = new dynamodb.Table(this, "MediaTable", {
@@ -107,6 +108,58 @@ export class StaticWebAWSAIStack extends cdk.Stack {
         parameters: {
           UserPoolId: userPool.userPoolId,
           Username: adminEmail,
+        },
+      },
+      policy: cr.AwsCustomResourcePolicy.fromStatements([
+        new iam.PolicyStatement({
+          actions: [
+            "cognito-idp:AdminCreateUser",
+            "cognito-idp:AdminDeleteUser",
+          ],
+          resources: [userPool.userPoolArn],
+        }),
+      ]),
+    });
+
+    new cr.AwsCustomResource(this, "SecondaryAdminUser", {
+      onCreate: {
+        service: "CognitoIdentityServiceProvider",
+        action: "adminCreateUser",
+        parameters: {
+          UserPoolId: userPool.userPoolId,
+          Username: secondaryAdminEmail,
+          TemporaryPassword: adminTempPassword,
+          MessageAction: "SUPPRESS",
+          UserAttributes: [
+            { Name: "email", Value: secondaryAdminEmail },
+            { Name: "email_verified", Value: "true" },
+          ],
+        },
+        physicalResourceId: cr.PhysicalResourceId.of(
+          `default-admin-${secondaryAdminEmail}`
+        ),
+      },
+      onUpdate: {
+        service: "CognitoIdentityServiceProvider",
+        action: "adminUpdateUserAttributes",
+        parameters: {
+          UserPoolId: userPool.userPoolId,
+          Username: secondaryAdminEmail,
+          UserAttributes: [
+            { Name: "email", Value: secondaryAdminEmail },
+            { Name: "email_verified", Value: "true" },
+          ],
+        },
+        physicalResourceId: cr.PhysicalResourceId.of(
+          `default-admin-${secondaryAdminEmail}`
+        ),
+      },
+      onDelete: {
+        service: "CognitoIdentityServiceProvider",
+        action: "adminDeleteUser",
+        parameters: {
+          UserPoolId: userPool.userPoolId,
+          Username: secondaryAdminEmail,
         },
       },
       policy: cr.AwsCustomResourcePolicy.fromStatements([
@@ -355,6 +408,10 @@ export class StaticWebAWSAIStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, "AdminUserEmail", {
       value: adminEmail,
+    });
+
+    new cdk.CfnOutput(this, "SecondaryAdminUserEmail", {
+      value: secondaryAdminEmail,
     });
   }
 }

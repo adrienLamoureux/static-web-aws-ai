@@ -17,6 +17,7 @@ function Whisk({ apiBaseUrl = "" }) {
   const [activeModal, setActiveModal] = useState("");
   const [videoSelectStatus, setVideoSelectStatus] = useState("idle");
   const [selectedImageKey, setSelectedImageKey] = useState("");
+  const [selectedSourceImageKey, setSelectedSourceImageKey] = useState("");
   const [selectedImageUrl, setSelectedImageUrl] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
   const [lightboxImage, setLightboxImage] = useState(null);
@@ -52,9 +53,12 @@ function Whisk({ apiBaseUrl = "" }) {
     onError: setError,
   });
 
-  const handleVideoReady = ({ key, url }) => {
+  const handleVideoReady = ({ key, url, sourceKey }) => {
     if (key) {
       setSelectedImageKey(key);
+    }
+    if (sourceKey) {
+      setSelectedSourceImageKey(sourceKey);
     }
     if (typeof url === "string") {
       setSelectedImageUrl(url);
@@ -63,6 +67,7 @@ function Whisk({ apiBaseUrl = "" }) {
 
   const resetVideoReady = () => {
     setSelectedImageKey("");
+    setSelectedSourceImageKey("");
     setSelectedImageUrl("");
   };
 
@@ -124,6 +129,7 @@ function Whisk({ apiBaseUrl = "" }) {
   } = useVideoGeneration({
     apiBaseUrl: resolvedApiBaseUrl,
     selectedImageKey,
+    selectedSourceImageKey,
     selectedImageUrl,
     onError: setError,
     onSubmitted: () => closeModal({ refreshVideos: true }),
@@ -140,9 +146,9 @@ function Whisk({ apiBaseUrl = "" }) {
     setVideoSelectStatus("loading");
     try {
       const data = await selectGeneratedImage(resolvedApiBaseUrl, image.key);
-      if (data?.videoReadyKey) {
-        setSelectedImageKey(data.videoReadyKey);
-      }
+      const resolvedVideoReadyKey = data?.videoReadyKey || image.key;
+      setSelectedImageKey(resolvedVideoReadyKey);
+      setSelectedSourceImageKey(image.key);
       if (image?.url) {
         setSelectedImageUrl(image.url);
       }

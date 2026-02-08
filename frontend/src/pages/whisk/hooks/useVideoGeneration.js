@@ -11,6 +11,7 @@ import {
 export const useVideoGeneration = ({
   apiBaseUrl,
   selectedImageKey,
+  selectedSourceImageKey,
   selectedImageUrl,
   onError,
   onSubmitted,
@@ -26,6 +27,8 @@ export const useVideoGeneration = ({
   const [jobStatus, setJobStatus] = useState("");
   const [replicatePredictionId, setReplicatePredictionId] = useState("");
   const [replicateJobStatus, setReplicateJobStatus] = useState("");
+  const [replicateInputKey, setReplicateInputKey] = useState("");
+  const [bedrockInputKey, setBedrockInputKey] = useState("");
   const onCompletedRef = useRef(onCompleted);
 
   useEffect(() => {
@@ -108,7 +111,7 @@ export const useVideoGeneration = ({
   };
 
   const handleGenerateVideo = async () => {
-    if (!selectedImageKey) {
+    if (!selectedImageKey && !selectedSourceImageKey) {
       onError?.("Select an image before generating a video.");
       return;
     }
@@ -123,6 +126,8 @@ export const useVideoGeneration = ({
     setJobStatus("");
     setReplicatePredictionId("");
     setReplicateJobStatus("");
+    setReplicateInputKey("");
+    setBedrockInputKey("");
 
     try {
       if (videoProvider === "replicate") {
@@ -142,10 +147,14 @@ export const useVideoGeneration = ({
         if (!selectedImageUrl) {
           throw new Error("Selected image URL is missing.");
         }
+        const resolvedInputKey =
+          videoModel === "wan-2.2-i2v-fast" && selectedSourceImageKey
+            ? selectedSourceImageKey
+            : selectedImageKey || selectedSourceImageKey;
         const data = await generateReplicateVideo(apiBaseUrl, {
           model: videoModel,
           prompt: prompt?.trim() || undefined,
-          inputKey: selectedImageKey,
+          inputKey: resolvedInputKey,
           imageUrl: selectedImageUrl,
           ...(isReplicateAudioOption
             ? { generateAudio: videoGenerateAudio }
@@ -154,14 +163,16 @@ export const useVideoGeneration = ({
         if (data?.predictionId && data?.status !== "succeeded") {
           setReplicatePredictionId(data.predictionId);
           setReplicateJobStatus(data.status || "starting");
+          setReplicateInputKey(resolvedInputKey);
         } else {
           setGenerationStatus("success");
         }
         onSubmitted?.();
       } else {
+        const resolvedInputKey = selectedImageKey || selectedSourceImageKey;
         const data = await generateNovaReelVideo(apiBaseUrl, {
           prompt: prompt?.trim() || undefined,
-          inputKey: selectedImageKey,
+          inputKey: resolvedInputKey,
           model: videoModel,
         });
         setGenerationStatus("success");
@@ -169,6 +180,7 @@ export const useVideoGeneration = ({
         const resolvedPrefix =
           data?.outputPrefix || derivePrefixFromS3Uri(data?.outputS3Uri || "");
         setOutputPrefix(resolvedPrefix);
+        setBedrockInputKey(resolvedInputKey);
         onSubmitted?.();
       }
     } catch (error) {
@@ -187,7 +199,7 @@ export const useVideoGeneration = ({
       try {
         const data = await getNovaReelJobStatus(apiBaseUrl, {
           invocationArn,
-          inputKey: selectedImageKey,
+          inputKey: bedrockInputKey || selectedImageKey || selectedSourceImageKey,
           outputPrefix,
         });
         const statusValue = data?.status || "";
@@ -213,7 +225,14 @@ export const useVideoGeneration = ({
         clearTimeout(timeoutId);
       }
     };
-  }, [apiBaseUrl, invocationArn, outputPrefix, selectedImageKey]);
+  }, [
+    apiBaseUrl,
+    invocationArn,
+    outputPrefix,
+    bedrockInputKey,
+    selectedImageKey,
+    selectedSourceImageKey,
+  ]);
 
   useEffect(() => {
     if (!replicatePredictionId || !apiBaseUrl) return undefined;
@@ -225,7 +244,7 @@ export const useVideoGeneration = ({
       try {
         const data = await getReplicateVideoStatus(apiBaseUrl, {
           predictionId: replicatePredictionId,
-          inputKey: selectedImageKey,
+          inputKey: replicateInputKey || selectedImageKey,
         });
         const statusValue = data?.status || "";
         setReplicateJobStatus(statusValue);
@@ -252,7 +271,7 @@ export const useVideoGeneration = ({
         clearTimeout(timeoutId);
       }
     };
-  }, [apiBaseUrl, replicatePredictionId, selectedImageKey]);
+  }, [apiBaseUrl, replicatePredictionId, replicateInputKey, selectedImageKey]);
 
   return {
     videoProvider,

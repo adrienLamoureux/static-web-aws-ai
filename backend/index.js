@@ -30,6 +30,7 @@ const promptTraits = require("./data/prompt-helper/traits.json");
 const promptFaceDetails = require("./data/prompt-helper/face-details.json");
 const promptEyeDetails = require("./data/prompt-helper/eye-details.json");
 const promptHairDetails = require("./data/prompt-helper/hair-details.json");
+const promptBreastSizes = require("./data/prompt-helper/breast-sizes.json");
 const promptEars = require("./data/prompt-helper/ears.json");
 const promptTails = require("./data/prompt-helper/tails.json");
 const promptHorns = require("./data/prompt-helper/horns.json");
@@ -100,6 +101,7 @@ const replicateModelConfig = {
   animagine: {
     modelId:
       "aisha-ai-official/animagine-xl-v4-opt:cfd0f86fbcd03df45fca7ce83af9bb9c07850a3317303fe8dcf677038541db8a",
+    usePredictions: false,
     sizes: [
       { width: 1280, height: 720 },
       { width: 1024, height: 1024 },
@@ -115,7 +117,7 @@ const replicateModelConfig = {
       seed,
       scheduler,
     }) => ({
-      vae: "default",
+      vae: "Animagine-XL-v4-Opt",
       model: "Animagine-XL-v4-Opt",
       seed: seed ?? -1,
       steps: 30,
@@ -134,6 +136,7 @@ const replicateModelConfig = {
   },
   "seedream-4.5": {
     modelId: "bytedance/seedream-4.5",
+    usePredictions: true,
     sizes: [
       { width: 2048, height: 2048 },
       { width: 2048, height: 1152 },
@@ -155,30 +158,90 @@ const replicateModelConfig = {
       };
     },
   },
-  proteus: {
+  "wai-nsfw-illustrious-v12": {
     modelId:
-      "datacte/proteus-v0.3:b28b79d725c8548b173b6a19ff9bffd16b9b80df5b18b8dc5cb9e1ee471bfa48",
-    sizes: [{ width: 1024, height: 1024 }],
+      process.env.REPLICATE_WAI_NSFW_ILLUSTRIOUS_V12_MODEL_ID || "aisha-ai-official/wai-nsfw-illustrious-v12:0fc0fa9885b284901a6f9c0b4d67701fd7647d157b88371427d63f8089ce140e",
+    usePredictions: true,
+    sizes: [
+      { width: 1280, height: 720 },
+      { width: 1024, height: 1024 },
+      { width: 768, height: 1024 },
+    ],
     buildInput: ({
       prompt,
       negativePrompt,
       width,
       height,
       numOutputs,
+      seed,
+      scheduler,
     }) => ({
+      batch_size: numOutputs,
+      cfg_scale: 7,
+      clip_skip: 2,
+      guidance_rescale: 1,
+      height,
+      model: "WAI-NSFW-Illustrious-SDXL-v12",
+      negative_prompt: negativePrompt || DEFAULT_NEGATIVE_PROMPT,
+      pag_scale: 0,
+      prepend_preprompt: true,
+      prompt,
+      scheduler: scheduler || "Euler a",
+      seed: seed ?? -1,
+      steps: 30,
+      vae: "WAI-NSFW-Illustrious-SDXL-v12",
+      width,
+    }),
+  },
+  "anillustrious-v4": {
+    modelId:
+      process.env.REPLICATE_ANILLUSTRIOUS_V4_MODEL_ID ||
+      "aisha-ai-official/anillustrious-v4:80441e2c32a55f2fcf9b77fa0a74c6c86ad7deac51eed722b9faedb253265cb4",
+    usePredictions: true,
+    sizes: [
+      { width: 1280, height: 720 },
+      { width: 1024, height: 1024 },
+      { width: 768, height: 1024 },
+    ],
+    buildInput: ({
+      prompt,
+      negativePrompt,
+      width,
+      height,
+      numOutputs,
+      seed,
+      scheduler,
+    }) => ({
+      vae: "NeptuniaXL-VAE-ContrastSaturation",
+      seed: seed ?? -1,
+      model: "Anillustrious-v4",
+      steps: 30,
       width,
       height,
       prompt,
-      scheduler: "DPM++2MSDE",
-      num_outputs: numOutputs,
-      guidance_scale: 7.5,
-      disable_safety_checker: true,
-      apply_watermark: true,
-      negative_prompt:
-        negativePrompt ||
-        "bad quality, bad anatomy, worst quality, low quality, low resolutions, extra fingers, blur, blurry, ugly, wrongs proportions, watermark, image artifacts, lowres, ugly, jpeg artifacts, deformed, noisy image",
-      prompt_strength: 0.8,
-      num_inference_steps: 30,
+      refiner: false,
+      upscale: "x4",
+      cfg_scale: 7,
+      clip_skip: 2,
+      pag_scale: 0,
+      scheduler: scheduler || "Euler",
+      adetailer_face: false,
+      adetailer_hand: false,
+      refiner_prompt: "",
+      negative_prompt: negativePrompt || DEFAULT_NEGATIVE_PROMPT,
+      adetailer_person: false,
+      guidance_rescale: 1,
+      refiner_strength: 0.8,
+      prepend_preprompt: true,
+      prompt_conjunction: true,
+      adetailer_face_prompt: "",
+      adetailer_hand_prompt: "",
+      adetailer_person_prompt: "",
+      negative_prompt_conjunction: false,
+      adetailer_face_negative_prompt: "",
+      adetailer_hand_negative_prompt: "",
+      adetailer_person_negative_prompt: "",
+      batch_size: numOutputs,
     }),
   },
 };
@@ -202,6 +265,7 @@ const buildPresetPrompt = (character) => {
   // 3) Character block
   if (character.name) {
     parts.push("1girl, solo");
+    push(character.outfitMaterials);
     const weight =
       typeof character.weight === "number" ? character.weight : 1.4;
     parts.push(`(${character.name}:${weight})`);
@@ -213,6 +277,7 @@ const buildPresetPrompt = (character) => {
   // 5) Face + features
   push(character.faceDetails);
   push(character.hairDetails);
+  push(character.breastSize);
   push(character.ears);
   push(character.tails);
   push(character.horns);
@@ -221,7 +286,9 @@ const buildPresetPrompt = (character) => {
   push(character.accessories);
   push(character.markings);
   // 6) Clothes
-  push(character.outfitMaterials);
+  if (!character.name) {
+    push(character.outfitMaterials);
+  }
   // 7) Visuals
   push(character.styleReference);
 
@@ -317,6 +384,7 @@ const promptHelperDefaults = {
   faceDetails: promptFaceDetails,
   eyeDetails: promptEyeDetails,
   hairDetails: promptHairDetails,
+  breastSizes: promptBreastSizes,
   ears: promptEars,
   tails: promptTails,
   horns: promptHorns,
@@ -401,6 +469,7 @@ const ensureStoryCharacters = async () => {
       "faceDetails",
       "eyeDetails",
       "hairDetails",
+      "breastSize",
       "ears",
       "tails",
       "horns",
@@ -949,20 +1018,33 @@ const copyS3Object = async ({ bucket, sourceKey, destinationKey }) => {
   );
 };
 
-const getReplicateOutputUrl = (output) => {
-  if (!output) return null;
+const collectReplicateOutputUrls = (output, urls) => {
+  if (!output) return;
   if (Array.isArray(output)) {
-    for (const item of output) {
-      const url = getReplicateOutputUrl(item);
-      if (url) return url;
-    }
-    return null;
+    output.forEach((item) => collectReplicateOutputUrls(item, urls));
+    return;
   }
-  if (typeof output === "string") return output;
-  if (typeof output.url === "function") return output.url();
-  if (typeof output.url === "string") return output.url;
-  return null;
+  if (typeof output === "string") {
+    urls.push(output);
+    return;
+  }
+  if (typeof output.url === "function") {
+    urls.push(output.url());
+    return;
+  }
+  if (typeof output.url === "string") {
+    urls.push(output.url);
+  }
 };
+
+const getReplicateOutputUrls = (output) => {
+  const urls = [];
+  collectReplicateOutputUrls(output, urls);
+  return urls.filter(Boolean);
+};
+
+const getReplicateOutputUrl = (output) =>
+  getReplicateOutputUrls(output)[0] || null;
 
 const replicateVideoConfig = {
   "wan-2.2-i2v-fast": {
@@ -1065,6 +1147,7 @@ app.get("/prompt-helper/options", async (req, res) => {
       faceDetails: getOption("faceDetails"),
       eyeDetails: getOption("eyeDetails"),
       hairDetails: getOption("hairDetails"),
+      breastSizes: getOption("breastSizes"),
       ears: getOption("ears"),
       tails: getOption("tails"),
       horns: getOption("horns"),
@@ -1093,6 +1176,7 @@ app.post("/bedrock/prompt-helper", async (req, res) => {
   const faceDetails = req.body?.faceDetails?.trim();
   const eyeDetails = req.body?.eyeDetails?.trim();
   const hairDetails = req.body?.hairDetails?.trim();
+  const breastSize = req.body?.breastSize?.trim();
   const ears = req.body?.ears?.trim();
   const tails = req.body?.tails?.trim();
   const horns = req.body?.horns?.trim();
@@ -1112,6 +1196,7 @@ app.post("/bedrock/prompt-helper", async (req, res) => {
       faceDetails ||
       eyeDetails ||
       hairDetails ||
+      breastSize ||
       ears ||
       tails ||
       horns ||
@@ -1132,11 +1217,13 @@ app.post("/bedrock/prompt-helper", async (req, res) => {
   const selectionLines = [
     background ? `Background: ${background}` : null,
     character ? `Character: ${character}` : null,
+    outfitMaterials ? `Outfit/materials: ${outfitMaterials}` : null,
     pose ? `Pose: ${pose}` : null,
     signatureTraits ? `Signature traits: ${signatureTraits}` : null,
     faceDetails ? `Face details: ${faceDetails}` : null,
     eyeDetails ? `Eye details: ${eyeDetails}` : null,
     hairDetails ? `Hair details: ${hairDetails}` : null,
+    breastSize ? `Breast size: ${breastSize}` : null,
     ears ? `Ears: ${ears}` : null,
     tails ? `Tail: ${tails}` : null,
     horns ? `Horns: ${horns}` : null,
@@ -1145,7 +1232,6 @@ app.post("/bedrock/prompt-helper", async (req, res) => {
     viewDistance ? `View distance: ${viewDistance}` : null,
     accessories ? `Accessories: ${accessories}` : null,
     markings ? `Markings: ${markings}` : null,
-    outfitMaterials ? `Outfit/materials: ${outfitMaterials}` : null,
     styleReference ? `Style reference: ${styleReference}` : null,
   ].filter(Boolean);
 
@@ -1160,10 +1246,11 @@ app.post("/bedrock/prompt-helper", async (req, res) => {
     "Do not include the model preprompt tokens: masterpiece, high score, great score, absurdres.",
     "Do not include the model negative preprompt tokens: lowres, bad anatomy, bad hands, text, error, missing finger, extra digits, fewer digits, cropped, worst quality, low quality, low score, bad score, average score, signature, watermark, username, blurry, bad_fingers, extra_fingers, mutated_fingers, mutated_hands, six_fingers.",
     "Do not use bracketed placeholders or section headers.",
-    "Start with the character name and core identity.",
+    "Start with: 1girl, solo, then outfit/materials (if provided), then the character name and core identity.",
+    "Place outfit/materials immediately after 1girl, solo and before the character name.",
     "Include these phrases verbatim early in the prompt: anime cinematic illustration; faithful anime character design; accurate facial features; consistent identity.",
-    "Follow this order of information after the character identity:",
-    "camera & framing, character placement, pose & body dynamics, outfit/material/color fidelity, hair/fabric motion, action/interaction, effects (controlled), background type, environment details, depth/lighting, art quality & style, image clarity & coherence.",
+    "Follow this order of information after the opening identity:",
+    "camera & framing, character placement, pose & body dynamics, hair/fabric motion, action/interaction, effects (controlled), background type, environment details, depth/lighting, art quality & style, image clarity & coherence.",
     "For named characters, explicitly call out facial details first (eye color/shape, face structure, expression) and hair color/style.",
     "Use the following selections when present:",
     selectionLines.join("\n"),
@@ -2072,6 +2159,11 @@ app.post("/replicate/image/generate", async (req, res) => {
       allowed: Object.keys(replicateModelConfig),
     });
   }
+  if (!modelConfig.modelId) {
+    return res.status(500).json({
+      message: `Replicate modelId is not configured for ${modelKey}`,
+    });
+  }
   const sizeAllowed = modelConfig.sizes?.some(
     (size) => size.width === width && size.height === height
   );
@@ -2092,6 +2184,101 @@ app.post("/replicate/image/generate", async (req, res) => {
   }
 
   try {
+    if (modelConfig.usePredictions) {
+      const resolvedSeed = Number.isFinite(Number(seed))
+        ? Number(seed)
+        : undefined;
+      const input = modelConfig.buildInput({
+        prompt: trimmedPrompt,
+        negativePrompt: trimmedNegativePrompt,
+        width,
+        height,
+        numOutputs: numImages,
+        seed: resolvedSeed,
+        scheduler,
+      });
+      console.log("Replicate image prediction create:", {
+        modelId: modelConfig.modelId,
+        batchId,
+      });
+      const prediction = await replicateClient.predictions.create(
+        {
+          model: modelConfig.modelId,
+          input,
+        },
+        {
+          headers: {
+            Prefer: "wait=5",
+            "Cancel-After": "10m",
+          },
+        }
+      );
+      if (!prediction) {
+        return res.status(500).json({
+          message: "No prediction returned from Replicate",
+        });
+      }
+      if (prediction.status !== "succeeded") {
+        return res.json({
+          modelId: modelConfig.modelId,
+          provider: "replicate",
+          predictionId: prediction.id,
+          status: prediction.status,
+          batchId,
+          notice: [
+            "Replicate is generating the image. We'll keep checking.",
+            promptNotice,
+          ]
+            .filter(Boolean)
+            .join(" "),
+        });
+      }
+      const outputUrls = getReplicateOutputUrls(prediction.output);
+      if (!outputUrls.length) {
+        return res.status(500).json({
+          message: "No images returned from Replicate",
+          response: prediction,
+        });
+      }
+      const images = await Promise.all(
+        outputUrls.slice(0, numImages).map(async (url, index) => {
+          const { buffer, contentType } = await fetchImageBuffer(url);
+          const key = buildImageKey({
+            userId,
+            provider: "replicate",
+            index,
+            baseName: imageName,
+            batchId,
+          });
+          await s3Client.send(
+            new PutObjectCommand({
+              Bucket: mediaBucket,
+              Key: key,
+              Body: buffer,
+              ContentType: contentType,
+            })
+          );
+          await putMediaItem({ userId, type: "IMG", key });
+          const signedUrl = await getSignedUrl(
+            s3Client,
+            new GetObjectCommand({
+              Bucket: mediaBucket,
+              Key: key,
+            }),
+            { expiresIn: 900 }
+          );
+          return { key, url: signedUrl };
+        })
+      );
+      return res.json({
+        modelId: modelConfig.modelId,
+        provider: "replicate",
+        batchId,
+        notice: promptNotice,
+        images,
+      });
+    }
+
     const images = await Promise.all(
       seeds.map((currentSeed, index) =>
         (async () => {
@@ -2176,6 +2363,107 @@ app.post("/replicate/image/generate", async (req, res) => {
     });
     res.status(500).json({
       message: "Replicate image generation failed",
+      error: error?.message || String(error),
+    });
+  }
+});
+
+app.get("/replicate/image/status", async (req, res) => {
+  const mediaBucket = process.env.MEDIA_BUCKET;
+  const userId = req.user?.sub;
+  const apiToken = process.env.REPLICATE_API_TOKEN;
+  const predictionId = req.query?.predictionId;
+  const imageName = req.query?.imageName;
+  const batchId = req.query?.batchId;
+
+  if (!mediaBucket) {
+    return res.status(500).json({ message: "MEDIA_BUCKET must be set" });
+  }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (!apiToken) {
+    return res
+      .status(500)
+      .json({ message: "REPLICATE_API_TOKEN must be set" });
+  }
+  if (!predictionId) {
+    return res.status(400).json({ message: "predictionId is required" });
+  }
+  if (!imageName) {
+    return res.status(400).json({ message: "imageName is required" });
+  }
+  if (!batchId) {
+    return res.status(400).json({ message: "batchId is required" });
+  }
+
+  try {
+    const prediction = await replicateClient.predictions.get(predictionId);
+    if (!prediction) {
+      return res.status(500).json({
+        message: "Prediction not found",
+      });
+    }
+    if (prediction.status !== "succeeded") {
+      return res.json({
+        predictionId,
+        status: prediction.status,
+      });
+    }
+    const outputUrls = getReplicateOutputUrls(prediction.output);
+    if (!outputUrls.length) {
+      return res.status(500).json({
+        message: "No images returned from Replicate",
+        response: prediction,
+      });
+    }
+
+    const images = await Promise.all(
+      outputUrls.map(async (url, index) => {
+        const { buffer, contentType } = await fetchImageBuffer(url);
+        const key = buildImageKey({
+          userId,
+          provider: "replicate",
+          index,
+          baseName: imageName,
+          batchId,
+        });
+        await s3Client.send(
+          new PutObjectCommand({
+            Bucket: mediaBucket,
+            Key: key,
+            Body: buffer,
+            ContentType: contentType,
+          })
+        );
+        await putMediaItem({ userId, type: "IMG", key });
+        const signedUrl = await getSignedUrl(
+          s3Client,
+          new GetObjectCommand({
+            Bucket: mediaBucket,
+            Key: key,
+          }),
+          { expiresIn: 900 }
+        );
+        return { key, url: signedUrl };
+      })
+    );
+
+    res.json({
+      predictionId,
+      status: prediction.status,
+      batchId,
+      images,
+    });
+  } catch (error) {
+    console.error("Replicate image status error details:", {
+      name: error?.name,
+      message: error?.message,
+      metadata: error?.$metadata,
+      cause: error?.cause,
+    });
+    res.status(500).json({
+      message: "Failed to get Replicate prediction status",
       error: error?.message || String(error),
     });
   }

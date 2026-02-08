@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   generateBedrockImage,
   generatePromptHelper,
 } from "../../../services/bedrock";
-import { generateReplicateImage } from "../../../services/replicate";
+import {
+  generateReplicateImage,
+  getReplicateImageStatus,
+} from "../../../services/replicate";
 import { createVideoReadyImage } from "../../../services/images";
 import {
   putFileToUrl,
@@ -29,6 +32,7 @@ const DEFAULT_PROMPT_HELPER_SELECTIONS = {
   faceDetails: "",
   eyeDetails: "",
   hairDetails: "",
+  breastSize: "",
   ears: "",
   tails: "",
   horns: "",
@@ -61,6 +65,7 @@ const buildSelectionsFromPreset = (preset) => {
     faceDetails: preset.faceDetails || "",
     eyeDetails: preset.eyeDetails || "",
     hairDetails: preset.hairDetails || "",
+    breastSize: preset.breastSize || "",
     ears: preset.ears || "",
     tails: preset.tails || "",
     horns: preset.horns || "",
@@ -106,6 +111,7 @@ export const useImageStudio = ({
     faceDetails: [],
     eyeDetails: [],
     hairDetails: [],
+    breastSizes: [],
     ears: [],
     tails: [],
     horns: [],
@@ -123,6 +129,7 @@ export const useImageStudio = ({
   const [imageName, setImageName] = useState("");
   const [uploadKey, setUploadKey] = useState("");
   const [uploadStatus, setUploadStatus] = useState("idle");
+  const replicatePollRef = useRef(null);
 
   const isUploading = uploadStatus === "uploading";
   const isGeneratingImage = imageGenerationStatus === "loading";
@@ -135,6 +142,7 @@ export const useImageStudio = ({
       promptHelperSelections.faceDetails ||
       promptHelperSelections.eyeDetails ||
       promptHelperSelections.hairDetails ||
+      promptHelperSelections.breastSize ||
       promptHelperSelections.ears ||
       promptHelperSelections.tails ||
       promptHelperSelections.horns ||
@@ -146,6 +154,15 @@ export const useImageStudio = ({
       promptHelperSelections.outfitMaterials ||
       promptHelperSelections.styleReference
   );
+
+  const clearReplicatePoll = () => {
+    if (replicatePollRef.current) {
+      clearTimeout(replicatePollRef.current);
+      replicatePollRef.current = null;
+    }
+  };
+
+  useEffect(() => () => clearReplicatePoll(), []);
 
   useEffect(() => {
     if (!selectedFile) {
@@ -199,6 +216,9 @@ export const useImageStudio = ({
           hairDetails: Array.isArray(data.hairDetails)
             ? data.hairDetails
             : prev.hairDetails,
+          breastSizes: Array.isArray(data.breastSizes)
+            ? data.breastSizes
+            : prev.breastSizes,
           ears: Array.isArray(data.ears) ? data.ears : prev.ears,
           tails: Array.isArray(data.tails) ? data.tails : prev.tails,
           horns: Array.isArray(data.horns) ? data.horns : prev.horns,
@@ -242,8 +262,10 @@ export const useImageStudio = ({
     };
     pushTrimmed(selections.viewDistance);
     pushTrimmed(selections.background);
-    if (selections.character?.trim()) {
+    const hasCharacter = Boolean(selections.character?.trim());
+    if (hasCharacter) {
       parts.push("1girl, solo");
+      pushTrimmed(selections.outfitMaterials);
       const characterValue = selections.character.trim();
       const preset = characterPresetMap.get(characterValue.toLowerCase());
       if (preset?.name) {
@@ -259,6 +281,7 @@ export const useImageStudio = ({
     pushTrimmed(selections.pose);
     pushTrimmed(selections.faceDetails);
     pushTrimmed(selections.hairDetails);
+    pushTrimmed(selections.breastSize);
     pushTrimmed(selections.ears);
     pushTrimmed(selections.tails);
     pushTrimmed(selections.horns);
@@ -266,7 +289,9 @@ export const useImageStudio = ({
     pushTrimmed(selections.hairStyles);
     pushTrimmed(selections.accessories);
     pushTrimmed(selections.markings);
-    pushTrimmed(selections.outfitMaterials);
+    if (!hasCharacter) {
+      pushTrimmed(selections.outfitMaterials);
+    }
     pushTrimmed(selections.styleReference);
     return parts.filter(Boolean).join(", ");
   };
@@ -350,25 +375,44 @@ export const useImageStudio = ({
     }
     return [
       {
+        key: "wai-nsfw-illustrious-v12",
+        name: "WAI NSFW Illustrious v12",
+        description: "Cheap, uncensored",
+      },
+      {
         key: "animagine",
         name: "Animagine XL v4 Opt",
-        description: "High-fidelity anime characters",
+        description: "Cheap, balanced composition",
       },
       {
         key: "seedream-4.5",
         name: "Seedream 4.5",
-        description: "High-resolution cinematic scenes",
+        description: "Expensive, high landscape quality",
       },
       {
-        key: "proteus",
-        name: "Proteus v0.3",
-        description: "Stylized anime portraits",
+        key: "anillustrious-v4",
+        name: "Anillustrious v4",
+        description: "Expensive, high details character, uncensored",
       },
     ];
   }, [imageSource]);
 
   const imageSizeOptions = useMemo(() => {
     if (imageModel === "animagine") {
+      return [
+        { value: "1280x720", label: "1280x720 (16:9)" },
+        { value: "1024x1024", label: "1024x1024 (Square)" },
+        { value: "768x1024", label: "768x1024 (Portrait)" },
+      ];
+    }
+    if (imageModel === "wai-nsfw-illustrious-v12") {
+      return [
+        { value: "1280x720", label: "1280x720 (16:9)" },
+        { value: "1024x1024", label: "1024x1024 (Square)" },
+        { value: "768x1024", label: "768x1024 (Portrait)" },
+      ];
+    }
+    if (imageModel === "anillustrious-v4") {
       return [
         { value: "1280x720", label: "1280x720 (16:9)" },
         { value: "1024x1024", label: "1024x1024 (Square)" },
@@ -493,6 +537,7 @@ export const useImageStudio = ({
         onVideoReady?.({
           key: videoReadyData.videoReadyKey,
           url: videoReadyData.url || "",
+          sourceKey: presignData.key,
         });
       }
       if (videoReadyData?.videoReadyKey && videoReadyData?.url) {
@@ -505,6 +550,48 @@ export const useImageStudio = ({
       setUploadStatus("error");
       onError?.(error?.message || "Upload failed.");
     }
+  };
+
+  const startReplicateImagePolling = ({
+    predictionId,
+    batchId,
+    imageName,
+  }) => {
+    if (!apiBaseUrl) return;
+    const poll = async () => {
+      try {
+        const data = await getReplicateImageStatus(apiBaseUrl, {
+          predictionId,
+          batchId,
+          imageName,
+        });
+        if (data?.status === "succeeded") {
+          setImageGenerationNotice(data?.notice || "");
+          setImageGenerationStatus("success");
+          clearReplicatePoll();
+          onGenerationComplete?.();
+          return;
+        }
+        if (data?.status === "failed" || data?.status === "canceled") {
+          clearReplicatePoll();
+          setImageGenerationStatus("error");
+          onError?.(
+            data?.error || "Replicate image generation failed."
+          );
+          return;
+        }
+        setImageGenerationNotice(
+          "Replicate is still generating the image..."
+        );
+      } catch (error) {
+        setImageGenerationNotice(
+          "Replicate is still generating the image..."
+        );
+      }
+      replicatePollRef.current = setTimeout(poll, 2500);
+    };
+    clearReplicatePoll();
+    replicatePollRef.current = setTimeout(poll, 2500);
   };
 
   const handleGenerateImage = async () => {
@@ -525,6 +612,7 @@ export const useImageStudio = ({
     onResetVideoReady?.();
     setImageGenerationNotice("");
     onCloseImageModal?.();
+    clearReplicatePoll();
 
     try {
       const [width, height] = imageSize.split("x").map(Number);
@@ -545,6 +633,30 @@ export const useImageStudio = ({
         imageSource === "bedrock"
           ? await generateBedrockImage(apiBaseUrl, payload)
           : await generateReplicateImage(apiBaseUrl, payload);
+      if (
+        data?.predictionId &&
+        data?.status &&
+        data.status !== "succeeded"
+      ) {
+        if (data.status === "failed" || data.status === "canceled") {
+          setImageGenerationStatus("error");
+          onError?.(
+            data?.error || "Replicate image generation failed."
+          );
+          return;
+        }
+        setImageGenerationNotice(
+          data?.notice ||
+            "Replicate is processing the image. We'll keep checking."
+        );
+        setImageGenerationStatus("loading");
+        startReplicateImagePolling({
+          predictionId: data.predictionId,
+          batchId: data.batchId,
+          imageName: payload.imageName,
+        });
+        return;
+      }
       setImageGenerationNotice(data?.notice || "");
       setImageGenerationStatus("success");
       onGenerationComplete?.();
@@ -597,6 +709,7 @@ export const useImageStudio = ({
         faceDetails: promptHelperSelections.faceDetails.trim() || undefined,
         eyeDetails: promptHelperSelections.eyeDetails.trim() || undefined,
         hairDetails: promptHelperSelections.hairDetails.trim() || undefined,
+        breastSize: promptHelperSelections.breastSize.trim() || undefined,
         ears: promptHelperSelections.ears.trim() || undefined,
         tails: promptHelperSelections.tails.trim() || undefined,
         horns: promptHelperSelections.horns.trim() || undefined,
@@ -648,6 +761,7 @@ export const useImageStudio = ({
         faceDetails: preset.faceDetails || "",
         eyeDetails: preset.eyeDetails || "",
         hairDetails: preset.hairDetails || "",
+        breastSize: preset.breastSize || "",
         ears: preset.ears || "",
         tails: preset.tails || "",
         horns: preset.horns || "",
@@ -685,6 +799,7 @@ export const useImageStudio = ({
     promptFaceDetails: promptHelperOptions.faceDetails,
     promptEyeDetails: promptHelperOptions.eyeDetails,
     promptHairDetails: promptHelperOptions.hairDetails,
+    promptBreastSizes: promptHelperOptions.breastSizes,
     promptEars: promptHelperOptions.ears,
     promptTails: promptHelperOptions.tails,
     promptHorns: promptHelperOptions.horns,

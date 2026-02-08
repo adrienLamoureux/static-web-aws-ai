@@ -14,6 +14,13 @@ export const generateReplicateVideo = (baseUrl, payload) =>
     "Failed to start video generation."
   );
 
+export const getReplicateImageStatus = (baseUrl, params) =>
+  fetchJson(
+    buildUrlWithQuery(baseUrl, "/replicate/image/status", params),
+    {},
+    "Failed to fetch prediction status."
+  );
+
 export const getReplicateVideoStatus = (baseUrl, params) =>
   fetchJson(
     buildUrlWithQuery(baseUrl, "/replicate/video/status", params),
