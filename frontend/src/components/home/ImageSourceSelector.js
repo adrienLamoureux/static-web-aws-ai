@@ -4,7 +4,7 @@ function ImageSourceSelector({ options, value, onChange }) {
   return (
     <div>
       <p className="field-label">Choose a source</p>
-      <div className="choice-row mt-3 md:grid-cols-3">
+      <div className="choice-row mt-3 md:grid-cols-4">
         {options.map((option) => {
           const isSelected = value === option.key;
           return (

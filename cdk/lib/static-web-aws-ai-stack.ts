@@ -219,6 +219,10 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       "REPLICATE_API_TOKEN",
       process.env.REPLICATE_API_TOKEN || ""
     );
+    apiLambda.addEnvironment(
+      "HUGGING_FACE_TOKEN",
+      process.env.HUGGING_FACE_TOKEN || ""
+    );
 
     apiLambda.addToRolePolicy(
       new iam.PolicyStatement({

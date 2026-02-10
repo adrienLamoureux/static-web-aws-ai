@@ -1,4 +1,4 @@
-import { buildApiUrl, fetchJson, postJson } from "./apiClient";
+import { buildApiUrl, fetchJson, postJson, deleteJson } from "./apiClient";
 
 export const listStoryPresets = (baseUrl) =>
   fetchJson(
@@ -52,4 +52,10 @@ export const generateStoryIllustration = (baseUrl, sessionId, payload, options =
     ),
     payload,
     "Failed to generate illustration."
+  );
+
+export const deleteStorySession = (baseUrl, sessionId) =>
+  deleteJson(
+    buildApiUrl(baseUrl, `/story/sessions/${sessionId}`),
+    "Failed to delete story session."
   );

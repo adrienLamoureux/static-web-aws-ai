@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   createStorySession,
+  deleteStorySession,
   generateStoryIllustration,
   getStorySession,
   listStoryPresets,
@@ -19,6 +20,10 @@ function Story({ apiBaseUrl = "" }) {
   const [error, setError] = useState("");
   const [selectedPresetId, setSelectedPresetId] = useState("");
   const [isLoadingSession, setIsLoadingSession] = useState(false);
+  const [illustrationContextMode, setIllustrationContextMode] = useState(
+    "summary+scene"
+  );
+  const [illustrationDebugEnabled, setIllustrationDebugEnabled] = useState(true);
 
   const resolvedApiBaseUrl = apiBaseUrl || process.env.REACT_APP_API_URL || "";
 
@@ -71,16 +76,58 @@ function Story({ apiBaseUrl = "" }) {
     }
   };
 
+  const handleDeleteSession = async (session) => {
+    if (!session?.id) return;
+    const confirmed = window.confirm(
+      `Delete "${session.title}"? This will remove the session, messages, and scenes.`
+    );
+    if (!confirmed) return;
+    if (!resolvedApiBaseUrl) {
+      setError("API base URL is missing. Set it in config.json or .env.");
+      return;
+    }
+    setError("");
+    try {
+      await deleteStorySession(resolvedApiBaseUrl, session.id);
+      setSessions((prev) => prev.filter((item) => item.id !== session.id));
+      if (activeSessionId === session.id) {
+        setActiveSessionId("");
+        setMessages([]);
+        setScenes([]);
+      }
+    } catch (err) {
+      setError(err?.message || "Failed to delete session.");
+    }
+  };
+
   const triggerIllustration = async (sessionId, sceneId, options = {}) => {
     if (!resolvedApiBaseUrl || !sessionId || !sceneId) return;
+    const shouldDebug =
+      typeof options.debug === "boolean"
+        ? options.debug
+        : illustrationDebugEnabled;
     try {
       const illustration = await generateStoryIllustration(
         resolvedApiBaseUrl,
         sessionId,
-        { sceneId, ...(options.regenerate ? { regenerate: true } : {}) },
-        { debug: options.debug }
+        {
+          sceneId,
+          contextMode:
+            options.contextMode || illustrationContextMode,
+          ...(options.regenerate ? { regenerate: true } : {}),
+        },
+        { debug: shouldDebug }
       );
       if (illustration?.imageUrl) {
+        const debugData =
+          illustration?.identity || illustration?.context || illustration?.replicate
+            ? {
+                identity: illustration.identity,
+                context: illustration.context,
+                promptPattern: illustration.promptPattern,
+                replicate: illustration.replicate,
+              }
+            : null;
         setScenes((prev) =>
           prev.map((scene) =>
             scene.sceneId === sceneId
@@ -91,6 +138,12 @@ function Story({ apiBaseUrl = "" }) {
                   imageKey: illustration.imageKey,
                   promptPositive: illustration.prompt?.positive || scene.promptPositive,
                   promptNegative: illustration.prompt?.negative || scene.promptNegative,
+                  sceneEnvironment:
+                    illustration.context?.sceneEnvironment ||
+                    scene.sceneEnvironment,
+                  sceneAction:
+                    illustration.context?.sceneAction || scene.sceneAction,
+                  debug: debugData || scene.debug,
                 }
               : scene
           )
@@ -123,9 +176,7 @@ function Story({ apiBaseUrl = "" }) {
         setScenes(data.scenes || []);
           const openingScene = data.scenes?.[0];
           if (openingScene?.sceneId) {
-            await triggerIllustration(data.session.id, openingScene.sceneId, {
-              debug: true,
-            });
+            await triggerIllustration(data.session.id, openingScene.sceneId);
           }
       }
       setStatus("idle");
@@ -178,7 +229,7 @@ function Story({ apiBaseUrl = "" }) {
         };
         setScenes((prev) => [...prev, pendingScene]);
         await triggerIllustration(activeSessionId, data.scene.sceneId, {
-          debug: true,
+          contextMode: illustrationContextMode,
         });
       }
       refreshSessions();
@@ -216,19 +267,29 @@ function Story({ apiBaseUrl = "" }) {
               <p className="story-empty">No sessions yet.</p>
             )}
             {sessions.map((session) => (
-              <button
-                key={session.id}
-                type="button"
-                className={`story-session-item ${
-                  session.id === activeSessionId ? "is-active" : ""
-                }`}
-                onClick={() => loadSession(session.id)}
-              >
-                <span className="story-session-title">{session.title}</span>
-                <span className="story-session-meta">
-                  {session.turnCount} turns · {session.sceneCount} scenes
-                </span>
-              </button>
+              <div key={session.id} className="story-session-row">
+                <button
+                  type="button"
+                  className={`story-session-item ${
+                    session.id === activeSessionId ? "is-active" : ""
+                  }`}
+                  onClick={() => loadSession(session.id)}
+                >
+                  <span className="story-session-title">{session.title}</span>
+                  <span className="story-session-meta">
+                    {session.turnCount} turns · {session.sceneCount} scenes
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="story-session-delete"
+                  onClick={() => handleDeleteSession(session)}
+                  aria-label={`Delete ${session.title}`}
+                  title="Delete session"
+                >
+                  Delete
+                </button>
+              </div>
             ))}
           </div>
         </div>
@@ -340,6 +401,36 @@ function Story({ apiBaseUrl = "" }) {
               {scenes.length} scene{scenes.length === 1 ? "" : "s"}
             </span>
           </div>
+          <div className="story-scenes-controls">
+            <label className="story-scenes-label" htmlFor="story-context-mode">
+              Illustration context
+            </label>
+            <select
+              id="story-context-mode"
+              className="field-select story-scenes-select"
+              value={illustrationContextMode}
+              onChange={(event) =>
+                setIllustrationContextMode(event.target.value)
+              }
+            >
+              <option value="scene">Scene prompt only</option>
+              <option value="summary">Summary only (Haiku)</option>
+              <option value="summary+scene">Summary + scene</option>
+              <option value="summary+latest">Summary + latest reply</option>
+              <option value="summary+recent">Summary + recent turns</option>
+              <option value="recent">Recent turns only</option>
+            </select>
+            <label className="story-scenes-toggle">
+              <input
+                type="checkbox"
+                checked={illustrationDebugEnabled}
+                onChange={(event) =>
+                  setIllustrationDebugEnabled(event.target.checked)
+                }
+              />
+              Include debug data
+            </label>
+          </div>
           <div className="story-scene-grid">
             {scenes.length === 0 && (
               <div className="story-empty">
@@ -347,45 +438,97 @@ function Story({ apiBaseUrl = "" }) {
               </div>
             )}
             {scenes.map((scene) => (
-              <div key={scene.sceneId} className="story-scene-card">
-                {scene.imageUrl ? (
-                  <>
-                    <img src={scene.imageUrl} alt={scene.title || "Scene"} />
-                    <button
-                      type="button"
-                      className="story-scene-regenerate"
-                      onClick={() =>
-                        triggerIllustration(activeSessionId, scene.sceneId, {
-                          regenerate: true,
-                        })
-                      }
-                    >
-                      Regenerate
-                    </button>
-                  </>
-                ) : (
-                  <div className="story-scene-placeholder">
-                    <span>Illustration pending</span>
-                    <button
-                      type="button"
-                      className="story-scene-generate"
-                      onClick={() =>
-                        triggerIllustration(activeSessionId, scene.sceneId)
-                      }
-                      disabled={status === "sending"}
-                    >
-                      Generate
-                    </button>
+              <div key={scene.sceneId} className="story-scene-item">
+                <div className="story-scene-card">
+                  {scene.imageUrl ? (
+                    <>
+                      <img src={scene.imageUrl} alt={scene.title || "Scene"} />
+                      <button
+                        type="button"
+                        className="story-scene-regenerate"
+                        onClick={() =>
+                          triggerIllustration(activeSessionId, scene.sceneId, {
+                            regenerate: true,
+                          })
+                        }
+                      >
+                        Regenerate
+                      </button>
+                    </>
+                  ) : (
+                    <div className="story-scene-placeholder">
+                      <span>Illustration pending</span>
+                      <button
+                        type="button"
+                        className="story-scene-generate"
+                        onClick={() =>
+                          triggerIllustration(activeSessionId, scene.sceneId)
+                        }
+                        disabled={status === "sending"}
+                      >
+                        Generate
+                      </button>
+                      </div>
+                    )}
+                    <div className="story-scene-overlay">
+                      <p className="story-scene-title">
+                        {scene.title || "Scene beat"}
+                      </p>
+                      <p className="story-scene-description">
+                        {scene.description}
+                      </p>
+                    </div>
+                  </div>
+                  {illustrationDebugEnabled && (
+                    <div className="story-scene-debug">
+                      <p className="story-debug-title">Debug</p>
+                      <p className="story-debug-line">
+                        <span className="story-debug-label">Scene prompt:</span>{" "}
+                        {scene.prompt || "—"}
+                      </p>
+                      <p className="story-debug-line">
+                        <span className="story-debug-label">Scene environment:</span>{" "}
+                        {scene.sceneEnvironment || "—"}
+                      </p>
+                      <p className="story-debug-line">
+                        <span className="story-debug-label">Scene action:</span>{" "}
+                        {scene.sceneAction || "—"}
+                      </p>
+                      <p className="story-debug-line">
+                        <span className="story-debug-label">Positive prompt:</span>{" "}
+                        {scene.promptPositive || "—"}
+                      </p>
+                      <p className="story-debug-line">
+                        <span className="story-debug-label">Negative prompt:</span>{" "}
+                        {scene.promptNegative || "—"}
+                      </p>
+                      {scene.debug?.context && (
+                        <>
+                          <p className="story-debug-line">
+                            <span className="story-debug-label">Context mode:</span>{" "}
+                            {scene.debug.context.mode || "—"}
+                          </p>
+                          <p className="story-debug-line">
+                            <span className="story-debug-label">Context summary:</span>{" "}
+                            {scene.debug.context.summary || "—"}
+                          </p>
+                          <p className="story-debug-line">
+                            <span className="story-debug-label">Context latest:</span>{" "}
+                            {scene.debug.context.latest || "—"}
+                          </p>
+                          <p className="story-debug-line">
+                            <span className="story-debug-label">Context recent:</span>{" "}
+                            {scene.debug.context.recent || "—"}
+                          </p>
+                        </>
+                      )}
+                      {scene.debug?.replicate?.input && (
+                        <pre className="story-debug-code">
+                          {JSON.stringify(scene.debug.replicate.input, null, 2)}
+                        </pre>
+                      )}
                     </div>
                   )}
-                  <div className="story-scene-overlay">
-                    <p className="story-scene-title">
-                      {scene.title || "Scene beat"}
-                    </p>
-                    <p className="story-scene-description">
-                      {scene.description}
-                    </p>
-                  </div>
                 </div>
               ))}
             </div>

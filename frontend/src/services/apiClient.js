@@ -54,3 +54,12 @@ export const postJson = (url, payload, errorMessage) =>
     },
     errorMessage
   );
+
+export const deleteJson = (url, errorMessage) =>
+  fetchJson(
+    url,
+    {
+      method: "DELETE",
+    },
+    errorMessage
+  );

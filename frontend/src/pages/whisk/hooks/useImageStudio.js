@@ -7,6 +7,7 @@ import {
   generateReplicateImage,
   getReplicateImageStatus,
 } from "../../../services/replicate";
+import { generateHuggingFaceImage } from "../../../services/huggingface";
 import { createVideoReadyImage } from "../../../services/images";
 import {
   putFileToUrl,
@@ -31,7 +32,6 @@ const DEFAULT_PROMPT_HELPER_SELECTIONS = {
   signatureTraits: "",
   faceDetails: "",
   eyeDetails: "",
-  hairDetails: "",
   breastSize: "",
   ears: "",
   tails: "",
@@ -64,7 +64,6 @@ const buildSelectionsFromPreset = (preset) => {
     signatureTraits: preset.signatureTraits || "",
     faceDetails: preset.faceDetails || "",
     eyeDetails: preset.eyeDetails || "",
-    hairDetails: preset.hairDetails || "",
     breastSize: preset.breastSize || "",
     ears: preset.ears || "",
     tails: preset.tails || "",
@@ -110,7 +109,6 @@ export const useImageStudio = ({
     traits: [],
     faceDetails: [],
     eyeDetails: [],
-    hairDetails: [],
     breastSizes: [],
     ears: [],
     tails: [],
@@ -141,7 +139,6 @@ export const useImageStudio = ({
       promptHelperSelections.signatureTraits ||
       promptHelperSelections.faceDetails ||
       promptHelperSelections.eyeDetails ||
-      promptHelperSelections.hairDetails ||
       promptHelperSelections.breastSize ||
       promptHelperSelections.ears ||
       promptHelperSelections.tails ||
@@ -213,9 +210,6 @@ export const useImageStudio = ({
           eyeDetails: Array.isArray(data.eyeDetails)
             ? data.eyeDetails
             : prev.eyeDetails,
-          hairDetails: Array.isArray(data.hairDetails)
-            ? data.hairDetails
-            : prev.hairDetails,
           breastSizes: Array.isArray(data.breastSizes)
             ? data.breastSizes
             : prev.breastSizes,
@@ -280,7 +274,6 @@ export const useImageStudio = ({
     pushTrimmed(selections.eyeDetails);
     pushTrimmed(selections.pose);
     pushTrimmed(selections.faceDetails);
-    pushTrimmed(selections.hairDetails);
     pushTrimmed(selections.breastSize);
     pushTrimmed(selections.ears);
     pushTrimmed(selections.tails);
@@ -357,6 +350,11 @@ export const useImageStudio = ({
       description: "Anime-focused models",
     },
     {
+      key: "huggingface",
+      name: "Generate with Hugging Face",
+      description: "Gradio Space models",
+    },
+    {
       key: "upload",
       name: "Upload a JPEG",
       description: "Send your own image to S3",
@@ -370,6 +368,20 @@ export const useImageStudio = ({
           key: "titan",
           name: "Titan Image Generator",
           description: "Clean, consistent outputs",
+        },
+      ];
+    }
+    if (imageSource === "huggingface") {
+      return [
+        {
+          key: "wainsfw",
+          name: "WAI NSFW Illustrious v150",
+          description: "Menyu Gradio Space",
+        },
+        {
+          key: "animagine-xl-3.1",
+          name: "Animagine XL 3.1",
+          description: "Asahina2K Gradio Space",
         },
       ];
     }
@@ -398,6 +410,22 @@ export const useImageStudio = ({
   }, [imageSource]);
 
   const imageSizeOptions = useMemo(() => {
+    if (imageSource === "huggingface") {
+      if (imageModel === "wainsfw") {
+        return [
+          { value: "832x1216", label: "832x1216 (Portrait)" },
+          { value: "1024x1024", label: "1024x1024 (Square)" },
+          { value: "1216x832", label: "1216x832 (Landscape)" },
+          { value: "1280x720", label: "1280x720 (16:9)" },
+        ];
+      }
+      return [
+        { value: "1024x1024", label: "1024x1024 (Square)" },
+        { value: "832x1216", label: "832x1216 (Portrait)" },
+        { value: "1216x832", label: "1216x832 (Landscape)" },
+        { value: "1280x720", label: "1280x720 (16:9)" },
+      ];
+    }
     if (imageModel === "animagine") {
       return [
         { value: "1280x720", label: "1280x720 (16:9)" },
@@ -632,7 +660,9 @@ export const useImageStudio = ({
       const data =
         imageSource === "bedrock"
           ? await generateBedrockImage(apiBaseUrl, payload)
-          : await generateReplicateImage(apiBaseUrl, payload);
+          : imageSource === "huggingface"
+            ? await generateHuggingFaceImage(apiBaseUrl, payload)
+            : await generateReplicateImage(apiBaseUrl, payload);
       if (
         data?.predictionId &&
         data?.status &&
@@ -708,7 +738,6 @@ export const useImageStudio = ({
           promptHelperSelections.signatureTraits.trim() || undefined,
         faceDetails: promptHelperSelections.faceDetails.trim() || undefined,
         eyeDetails: promptHelperSelections.eyeDetails.trim() || undefined,
-        hairDetails: promptHelperSelections.hairDetails.trim() || undefined,
         breastSize: promptHelperSelections.breastSize.trim() || undefined,
         ears: promptHelperSelections.ears.trim() || undefined,
         tails: promptHelperSelections.tails.trim() || undefined,
@@ -760,7 +789,6 @@ export const useImageStudio = ({
         signatureTraits: preset.signatureTraits || "",
         faceDetails: preset.faceDetails || "",
         eyeDetails: preset.eyeDetails || "",
-        hairDetails: preset.hairDetails || "",
         breastSize: preset.breastSize || "",
         ears: preset.ears || "",
         tails: preset.tails || "",
@@ -798,7 +826,6 @@ export const useImageStudio = ({
     promptTraits: promptHelperOptions.traits,
     promptFaceDetails: promptHelperOptions.faceDetails,
     promptEyeDetails: promptHelperOptions.eyeDetails,
-    promptHairDetails: promptHelperOptions.hairDetails,
     promptBreastSizes: promptHelperOptions.breastSizes,
     promptEars: promptHelperOptions.ears,
     promptTails: promptHelperOptions.tails,

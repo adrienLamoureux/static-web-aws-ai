@@ -15,7 +15,6 @@ function PromptHelperForm({
   promptTraits,
   promptFaceDetails,
   promptEyeDetails,
-  promptHairDetails,
   promptBreastSizes,
   promptEars,
   promptTails,
@@ -113,7 +112,7 @@ function PromptHelperForm({
           Character aesthetics
         </p>
         <p className="mt-1 text-xs text-[#7a6a51]">
-          Face, styling, and gacha-style cues.
+          Face vibe and styling cues.
         </p>
       </div>
 
@@ -140,7 +139,7 @@ function PromptHelperForm({
 
         <div>
           <label className="field-label">
-            Expression & face
+            Face vibe
           </label>
           <input
             className="field-input mt-3"
@@ -149,7 +148,7 @@ function PromptHelperForm({
             onChange={(event) =>
               onSelectionChange("faceDetails", event.target.value)
             }
-            placeholder="soft youthful face"
+            placeholder="young face, gentle smile"
           />
           <datalist id="prompt-helper-face-details">
             {promptFaceDetails.map((option) => (
@@ -173,26 +172,6 @@ function PromptHelperForm({
           />
           <datalist id="prompt-helper-eye-details">
             {promptEyeDetails.map((option) => (
-              <option key={option} value={option} />
-            ))}
-          </datalist>
-        </div>
-
-        <div>
-          <label className="field-label">
-            Hair details
-          </label>
-          <input
-            className="field-input mt-3"
-            list="prompt-helper-hair-details"
-            value={selections.hairDetails}
-            onChange={(event) =>
-              onSelectionChange("hairDetails", event.target.value)
-            }
-            placeholder="long flowing hair"
-          />
-          <datalist id="prompt-helper-hair-details">
-            {promptHairDetails.map((option) => (
               <option key={option} value={option} />
             ))}
           </datalist>

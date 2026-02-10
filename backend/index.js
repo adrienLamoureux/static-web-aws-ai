@@ -29,7 +29,6 @@ const promptPoses = require("./data/prompt-helper/poses.json");
 const promptTraits = require("./data/prompt-helper/traits.json");
 const promptFaceDetails = require("./data/prompt-helper/face-details.json");
 const promptEyeDetails = require("./data/prompt-helper/eye-details.json");
-const promptHairDetails = require("./data/prompt-helper/hair-details.json");
 const promptBreastSizes = require("./data/prompt-helper/breast-sizes.json");
 const promptEars = require("./data/prompt-helper/ears.json");
 const promptTails = require("./data/prompt-helper/tails.json");
@@ -82,6 +81,8 @@ const storyModelId =
   process.env.BEDROCK_STORY_MODEL_ID || promptHelperModelId;
 const DEFAULT_NEGATIVE_PROMPT =
   "low quality, worst quality, lowres, pixelated, jpeg artifacts, compression artifacts, blurry, out of focus, oversharpened, grainy, noisy, dithering, flat shading, muddy colors, bad anatomy, bad proportions, multiple characters, extra people, clone, twin, reflection, mirror, big eyes, wide eyes, sparkly eyes";
+const DEFAULT_GRADIO_NEGATIVE_PROMPT =
+  "lowres, {bad}, error, fewer, extra, missing, worst quality, jpeg artifacts, bad quality, watermark, unfinished, displeasing, chromatic aberration, signature, extra digits, artistic error, username, scan, [abstract]";
 
 
 const imageModelConfig = {
@@ -246,6 +247,118 @@ const replicateModelConfig = {
   },
 };
 
+const gradioSpaceConfig = {
+  wainsfw: {
+    spaceId: "Menyu/wainsfw",
+    apiName: "/infer",
+    defaultWidth: 832,
+    defaultHeight: 1216,
+    guidanceScale: 7,
+    numInferenceSteps: 28,
+    buildInput: ({
+      prompt,
+      negativePrompt,
+      width,
+      height,
+      seed,
+      randomizeSeed,
+      guidanceScale,
+      numInferenceSteps,
+      useNegativePrompt,
+    }) => ({
+      prompt,
+      negative_prompt: negativePrompt,
+      use_negative_prompt: useNegativePrompt,
+      seed: Number.isFinite(Number(seed)) ? Number(seed) : 0,
+      width,
+      height,
+      guidance_scale: guidanceScale,
+      num_inference_steps: numInferenceSteps,
+      randomize_seed: randomizeSeed,
+    }),
+  },
+  "animagine-xl-3.1": {
+    spaceId: "Asahina2K/animagine-xl-3.1",
+    apiName: "/run",
+    defaultWidth: 1024,
+    defaultHeight: 1024,
+    guidanceScale: 7,
+    numInferenceSteps: 28,
+    sampler: "DPM++ 2M Karras",
+    aspectRatio: "1024 x 1024",
+    stylePreset: "(None)",
+    qualityTagsPreset: "(None)",
+    useUpscaler: false,
+    upscalerStrength: 0,
+    upscaleBy: 1,
+    addQualityTags: false,
+    buildInput: ({
+      prompt,
+      negativePrompt,
+      width,
+      height,
+      seed,
+      randomizeSeed,
+      guidanceScale,
+      numInferenceSteps,
+      sampler,
+      aspectRatio,
+      stylePreset,
+      qualityTagsPreset,
+      useUpscaler,
+      upscalerStrength,
+      upscaleBy,
+      addQualityTags,
+    }) => {
+      const resolvedSeed = Number.isFinite(Number(seed))
+        ? Number(seed)
+        : randomizeSeed
+          ? Math.floor(Math.random() * 2147483647)
+          : 0;
+      return [
+        prompt,
+        negativePrompt,
+        resolvedSeed,
+        width,
+        height,
+        guidanceScale,
+        numInferenceSteps,
+        sampler,
+        aspectRatio,
+        stylePreset,
+        qualityTagsPreset,
+        useUpscaler,
+        upscalerStrength,
+        upscaleBy,
+        addQualityTags,
+      ];
+    },
+  },
+};
+
+let gradioClientPromise;
+const loadGradioClient = async () => {
+  if (!gradioClientPromise) {
+    gradioClientPromise = import("@gradio/client");
+  }
+  const module = await gradioClientPromise;
+  return module.Client;
+};
+
+const gradioClientCache = new Map();
+const getGradioSpaceClient = async (spaceId, token) => {
+  const cacheKey = `${spaceId}:${token ? "token" : "anon"}`;
+  if (gradioClientCache.has(cacheKey)) {
+    return gradioClientCache.get(cacheKey);
+  }
+  const Client = await loadGradioClient();
+  const client = token
+    ? await Client.connect(spaceId, { hf_token: token })
+    : await Client.connect(spaceId);
+  gradioClientCache.set(cacheKey, client);
+  return client;
+};
+
 const pickOption = (options = [], value = "", fallback = "") => {
   if (value && options.includes(value)) return value;
   if (fallback && options.includes(fallback)) return fallback;
@@ -276,7 +389,6 @@ const buildPresetPrompt = (character) => {
   push(character.pose);
   // 5) Face + features
   push(character.faceDetails);
-  push(character.hairDetails);
   push(character.breastSize);
   push(character.ears);
   push(character.tails);
@@ -309,25 +421,23 @@ const storyCharacters = [
     id: "frieren",
     name: "Frieren from Beyond Journey's End",
     weight: 1.5,
-    viewDistance: pickOption(promptViewDistance, "long shot"),
-    background: pickOption(
-      promptBackgrounds,
-      "sandy beach at noon, blue sky, turquoise ocean dominate background"
-    ),
-    signatureTraits: pickOption(
-      promptTraits,
-      "official Frieren, recognizable character"
-    ),
-    eyeDetails: pickOption(promptEyeDetails, "eyes looking at the viewer"),
-    faceDetails: pickOption(promptFaceDetails, "cute soft young face"),
-    outfitMaterials: pickOption(
-      promptOutfits,
-      "wearing a cute two-piece bikini"
-    ),
-    styleReference: pickOption(
-      promptStyles,
-      "tasteful anime design, character more detailed than background, anime key visual art, gacha"
-    ),
+    viewDistance: "",
+    background: "",
+    signatureTraits: "official Frieren",
+    eyeDetails: "",
+    faceDetails: "",
+    hairDetails: "",
+    breastSize: "",
+    ears: "",
+    tails: "",
+    horns: "",
+    wings: "",
+    hairStyles: "",
+    accessories: "",
+    markings: "",
+    pose: "",
+    outfitMaterials: "",
+    styleReference: "character more detailed than background",
     storyNegativePrompt: DEFAULT_NEGATIVE_PROMPT,
   }),
 ];
@@ -383,7 +493,6 @@ const promptHelperDefaults = {
   traits: promptTraits,
   faceDetails: promptFaceDetails,
   eyeDetails: promptEyeDetails,
-  hairDetails: promptHairDetails,
   breastSizes: promptBreastSizes,
   ears: promptEars,
   tails: promptTails,
@@ -660,11 +769,197 @@ const parseSceneHelperResponse = (text = "") => {
 
 const sanitizeScenePrompt = (value = "") => {
   if (!value) return "";
-  return value
+  const cleaned = value
     .replace(/close[- ]?up/gi, "")
     .replace(/extreme close[- ]?up/gi, "")
     .replace(/\s{2,}/g, " ")
     .trim();
+  if (cleaned.includes("?")) {
+    return cleaned.split("?")[0].trim();
+  }
+  return cleaned;
+};
+
+const normalizePromptFragment = (value = "") =>
+  value
+    .replace(/[\r\n]+/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+const ENVIRONMENT_HINTS = [
+  "background",
+  "environment",
+  "interior",
+  "exterior",
+  "landscape",
+  "sky",
+  "sunset",
+  "sunrise",
+  "cloud",
+  "forest",
+  "woods",
+  "mountain",
+  "beach",
+  "ocean",
+  "sea",
+  "lake",
+  "river",
+  "ruins",
+  "temple",
+  "castle",
+  "village",
+  "town",
+  "street",
+  "alley",
+  "tavern",
+  "room",
+  "hall",
+  "garden",
+  "field",
+  "snow",
+  "rain",
+  "storm",
+  "fog",
+  "mist",
+];
+
+const splitPromptFragments = (value = "") =>
+  value
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+const isEnvironmentFragment = (fragment = "") => {
+  const normalized = fragment.toLowerCase();
+  return ENVIRONMENT_HINTS.some((hint) => normalized.includes(hint));
+};
+
+const extractSceneContextFragments = (scenePrompt = "") => {
+  const parts = splitPromptFragments(scenePrompt);
+  const environment = [];
+  const action = [];
+  parts.forEach((part) => {
+    if (isEnvironmentFragment(part)) {
+      environment.push(part);
+    } else {
+      action.push(part);
+    }
+  });
+  return { environment, action };
+};
+
+const dedupeFragments = (parts = []) => {
+  const seen = new Set();
+  return parts.filter((part) => {
+    const normalized = String(part || "").trim();
+    if (!normalized) return false;
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const buildStoryIllustrationPrompt = ({
+  character,
+  sessionItem,
+  summaryLine,
+  contextLine,
+  recentTranscript,
+  cleanScenePrompt,
+  sceneEnvironment,
+  sceneAction,
+  contextMode,
+}) => {
+  const shotRange = character?.viewDistance || "medium shot";
+  const includeScene =
+    contextMode === "scene" ||
+    contextMode === "summary+scene" ||
+    contextMode === "summary+latest" ||
+    contextMode === "recent" ||
+    contextMode === "summary+recent";
+  const sceneContext = includeScene
+    ? {
+        environment: splitPromptFragments(sceneEnvironment),
+        action: splitPromptFragments(sceneAction),
+      }
+    : { environment: [], action: [] };
+  const resolvedSceneContext =
+    sceneContext.environment.length || sceneContext.action.length
+      ? sceneContext
+      : includeScene
+        ? extractSceneContextFragments(cleanScenePrompt)
+        : { environment: [], action: [] };
+  const hasSceneEnvironment = resolvedSceneContext.environment.length > 0;
+  const environmentParts = dedupeFragments([
+    ...(hasSceneEnvironment ? [] : [sessionItem?.worldPrompt]),
+    ...resolvedSceneContext.environment,
+  ]);
+  const clothes = character?.outfitMaterials || "";
+
+  const characterParts = ["1girl, solo"];
+  if (character?.name) {
+    const weight =
+      typeof character.weight === "number" ? character.weight : 1.4;
+    characterParts.push(`(${character.name}:${weight})`);
+  }
+  if (character?.signatureTraits) {
+    characterParts.push(character.signatureTraits);
+  }
+
+  const focusActionParts = dedupeFragments([
+    character?.eyeDetails,
+    character?.pose,
+    ...resolvedSceneContext.action,
+  ]);
+
+  const contextParts = [];
+  if (contextMode === "summary") {
+    if (summaryLine) contextParts.push(summaryLine);
+  } else if (contextMode === "summary+latest") {
+    if (summaryLine) contextParts.push(summaryLine);
+    if (contextLine) contextParts.push(contextLine);
+  } else if (contextMode === "recent") {
+    if (recentTranscript) contextParts.push(recentTranscript);
+  } else if (contextMode === "summary+recent") {
+    if (summaryLine) contextParts.push(summaryLine);
+    if (recentTranscript) contextParts.push(recentTranscript);
+  } else if (contextMode === "summary+scene") {
+    if (summaryLine) contextParts.push(summaryLine);
+  } else if (!contextMode || contextMode === "scene") {
+    // no extra context beyond scene fragments
+  } else {
+    if (summaryLine) contextParts.push(summaryLine);
+  }
+
+  const faceParts = dedupeFragments([
+    character?.faceDetails,
+    character?.breastSize,
+    character?.ears,
+    character?.tails,
+    character?.horns,
+    character?.wings,
+    character?.hairStyles,
+    character?.accessories,
+    character?.markings,
+  ]);
+
+  const visualParts = dedupeFragments([
+    character?.styleReference,
+    sessionItem?.stylePrompt,
+  ]);
+
+  return [
+    shotRange,
+    environmentParts.join(", "),
+    clothes,
+    characterParts.join(", "),
+    [...focusActionParts, ...contextParts].join(", "),
+    faceParts.join(", "),
+    visualParts.join(", "),
+  ]
+    .filter(Boolean)
+    .join(", ");
 };
 
 const MAX_REPLICATE_PROMPT_TOKENS = 75;
@@ -754,6 +1049,34 @@ const streamToBuffer = async (stream) => {
 };
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const deleteS3ObjectsByPrefix = async (bucket, prefix) => {
+  if (!bucket || !prefix) return;
+  let continuationToken;
+  do {
+    const response = await s3Client.send(
+      new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      })
+    );
+    const keys = (response.Contents || [])
+      .map((item) => item.Key)
+      .filter(Boolean);
+    for (const key of keys) {
+      await s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: bucket,
+          Key: key,
+        })
+      );
+    }
+    continuationToken = response.IsTruncated
+      ? response.NextContinuationToken
+      : undefined;
+  } while (continuationToken);
+};
 
 const extractRetryAfterSeconds = (errorMessage = "") => {
   const match = errorMessage.match(/retry_after\":\s*(\d+)/i);
@@ -932,6 +1255,54 @@ const fetchImageBuffer = async (url) => {
   const contentType =
     response.headers.get("content-type") || "image/png";
   return { buffer: Buffer.from(arrayBuffer), contentType };
+};
+
+const isDataUrl = (value = "") => /^data:/i.test(value);
+
+const decodeDataUrl = (value = "") => {
+  const match = value.match(/^data:([^;]+);base64,(.*)$/i);
+  if (!match) {
+    throw new Error("Unsupported data URL format");
+  }
+  const [, contentType, base64] = match;
+  return { buffer: Buffer.from(base64, "base64"), contentType };
+};
+
+const looksLikeBase64 = (value = "") =>
+  /^[a-z0-9+/=]+$/i.test(value) && value.length > 256;
+
+const resolveGradioImageBuffer = async (output) => {
+  if (!output) {
+    throw new Error("No image returned from Gradio");
+  }
+  if (Array.isArray(output)) {
+    if (!output.length) {
+      throw new Error("No image returned from Gradio");
+    }
+    return resolveGradioImageBuffer(output[0]);
+  }
+  if (typeof output === "string") {
+    if (isDataUrl(output)) {
+      return decodeDataUrl(output);
+    }
+    if (/^https?:\/\//i.test(output)) {
+      return fetchImageBuffer(output);
+    }
+    if (looksLikeBase64(output)) {
+      return { buffer: Buffer.from(output, "base64"), contentType: "image/png" };
+    }
+    throw new Error("Unsupported Gradio image output");
+  }
+  if (typeof output === "object") {
+    if (output.image) {
+      return resolveGradioImageBuffer(output.image);
+    }
+    const url = output.url || output.path || output.data;
+    if (typeof url === "string") {
+      return resolveGradioImageBuffer(url);
+    }
+  }
+  throw new Error("Unsupported Gradio image output");
 };
 
 const fetchS3ImageBuffer = async (bucket, key) => {
@@ -1146,7 +1517,6 @@ app.get("/prompt-helper/options", async (req, res) => {
       traits: getOption("traits"),
       faceDetails: getOption("faceDetails"),
       eyeDetails: getOption("eyeDetails"),
-      hairDetails: getOption("hairDetails"),
       breastSizes: getOption("breastSizes"),
       ears: getOption("ears"),
       tails: getOption("tails"),
@@ -1175,7 +1545,6 @@ app.post("/bedrock/prompt-helper", async (req, res) => {
   const signatureTraits = req.body?.signatureTraits?.trim();
   const faceDetails = req.body?.faceDetails?.trim();
   const eyeDetails = req.body?.eyeDetails?.trim();
-  const hairDetails = req.body?.hairDetails?.trim();
   const breastSize = req.body?.breastSize?.trim();
   const ears = req.body?.ears?.trim();
   const tails = req.body?.tails?.trim();
@@ -1195,7 +1564,6 @@ app.post("/bedrock/prompt-helper", async (req, res) => {
       signatureTraits ||
       faceDetails ||
       eyeDetails ||
-      hairDetails ||
       breastSize ||
       ears ||
       tails ||
@@ -1222,7 +1590,6 @@ app.post("/bedrock/prompt-helper", async (req, res) => {
     signatureTraits ? `Signature traits: ${signatureTraits}` : null,
     faceDetails ? `Face details: ${faceDetails}` : null,
     eyeDetails ? `Eye details: ${eyeDetails}` : null,
-    hairDetails ? `Hair details: ${hairDetails}` : null,
     breastSize ? `Breast size: ${breastSize}` : null,
     ears ? `Ears: ${ears}` : null,
     tails ? `Tail: ${tails}` : null,
@@ -2368,6 +2735,195 @@ app.post("/replicate/image/generate", async (req, res) => {
   }
 });
 
+app.post("/gradio/image/generate", async (req, res) => {
+  const mediaBucket = process.env.MEDIA_BUCKET;
+  const userId = req.user?.sub;
+  const modelKey = req.body?.model || "wainsfw";
+  const imageName = req.body?.imageName?.trim();
+  const prompt = req.body?.prompt?.trim();
+  const negativePrompt = req.body?.negativePrompt?.trim();
+  const width = Number(req.body?.width);
+  const height = Number(req.body?.height);
+  const seed = req.body?.seed;
+  const randomizeSeed = req.body?.randomizeSeed;
+  const guidanceScale = Number(req.body?.guidanceScale);
+  const numInferenceSteps = Number(req.body?.numInferenceSteps);
+  const useNegativePrompt = req.body?.useNegativePrompt;
+  const maxPromptLength = 900;
+
+  console.log("Gradio image generate request:", {
+    modelKey,
+    imageName,
+    promptLength: prompt?.length || 0,
+    hasNegativePrompt: Boolean(negativePrompt),
+    width,
+    height,
+  });
+
+  if (!mediaBucket) {
+    return res.status(500).json({ message: "MEDIA_BUCKET must be set" });
+  }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (!imageName) {
+    return res.status(400).json({ message: "imageName is required" });
+  }
+  if (!prompt) {
+    return res.status(400).json({ message: "prompt is required" });
+  }
+  if (prompt.length > maxPromptLength) {
+    return res.status(400).json({
+      message: `prompt must be ${maxPromptLength} characters or less`,
+    });
+  }
+  if (negativePrompt && negativePrompt.length > maxPromptLength) {
+    return res.status(400).json({
+      message: `negativePrompt must be ${maxPromptLength} characters or less`,
+    });
+  }
+
+  const modelConfig = gradioSpaceConfig[modelKey];
+  if (!modelConfig) {
+    return res.status(400).json({
+      message: `Unsupported model selection: ${modelKey}`,
+      allowed: Object.keys(gradioSpaceConfig),
+    });
+  }
+
+  const resolvedWidth = Number.isFinite(width)
+    ? width
+    : modelConfig.defaultWidth;
+  const resolvedHeight = Number.isFinite(height)
+    ? height
+    : modelConfig.defaultHeight;
+  const resolvedGuidanceScale = Number.isFinite(guidanceScale)
+    ? guidanceScale
+    : modelConfig.guidanceScale;
+  const resolvedSteps = Number.isFinite(numInferenceSteps)
+    ? numInferenceSteps
+    : modelConfig.numInferenceSteps;
+  const resolvedSampler = modelConfig.sampler || "DPM++ 2M Karras";
+  const resolvedAspectRatio =
+    modelConfig.aspectRatio ||
+    `${resolvedWidth} x ${resolvedHeight}`;
+  const resolvedStylePreset = modelConfig.stylePreset || "(None)";
+  const resolvedQualityTagsPreset = modelConfig.qualityTagsPreset || "(None)";
+  const resolvedUseUpscaler =
+    typeof modelConfig.useUpscaler === "boolean"
+      ? modelConfig.useUpscaler
+      : false;
+  const resolvedUpscalerStrength = Number.isFinite(modelConfig.upscalerStrength)
+    ? modelConfig.upscalerStrength
+    : 0;
+  const resolvedUpscaleBy = Number.isFinite(modelConfig.upscaleBy)
+    ? modelConfig.upscaleBy
+    : 1;
+  const resolvedAddQualityTags =
+    typeof modelConfig.addQualityTags === "boolean"
+      ? modelConfig.addQualityTags
+      : false;
+  const resolvedUseNegativePrompt =
+    typeof useNegativePrompt === "boolean"
+      ? useNegativePrompt
+      : Boolean(negativePrompt || DEFAULT_GRADIO_NEGATIVE_PROMPT);
+  const resolvedNegativePrompt =
+    negativePrompt ||
+    (resolvedUseNegativePrompt ? DEFAULT_GRADIO_NEGATIVE_PROMPT : "");
+  const shouldRandomizeSeed =
+    typeof randomizeSeed === "boolean"
+      ? randomizeSeed
+      : !Number.isFinite(Number(seed));
+
+  try {
+    const hfToken =
+      process.env.HUGGING_FACE_TOKEN || process.env.HUGGINGFACE_TOKEN;
+    const client = await getGradioSpaceClient(
+      modelConfig.spaceId,
+      hfToken
+    );
+    const input = modelConfig.buildInput({
+      prompt,
+      negativePrompt: resolvedNegativePrompt,
+      width: resolvedWidth,
+      height: resolvedHeight,
+      seed,
+      randomizeSeed: shouldRandomizeSeed,
+      guidanceScale: resolvedGuidanceScale,
+      numInferenceSteps: resolvedSteps,
+      sampler: resolvedSampler,
+      aspectRatio: resolvedAspectRatio,
+      stylePreset: resolvedStylePreset,
+      qualityTagsPreset: resolvedQualityTagsPreset,
+      useUpscaler: resolvedUseUpscaler,
+      upscalerStrength: resolvedUpscalerStrength,
+      upscaleBy: resolvedUpscaleBy,
+      addQualityTags: resolvedAddQualityTags,
+      useNegativePrompt: resolvedUseNegativePrompt,
+    });
+    const result = Array.isArray(input)
+      ? await client.predict(modelConfig.apiName, input)
+      : await client.predict(modelConfig.apiName, input);
+    const resultData = result?.data ?? result;
+    let imageOutput = resultData;
+    let returnedSeed;
+    if (Array.isArray(resultData)) {
+      imageOutput = resultData[0];
+      returnedSeed = resultData[1];
+    }
+    const resolvedImageOutput = Array.isArray(imageOutput)
+      ? imageOutput[0]
+      : imageOutput;
+    const { buffer, contentType } =
+      await resolveGradioImageBuffer(resolvedImageOutput);
+    const key = buildImageKey({
+      userId,
+      provider: "huggingface",
+      index: 0,
+      baseName: imageName,
+      batchId: buildImageBatchId(),
+    });
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: mediaBucket,
+        Key: key,
+        Body: buffer,
+        ContentType: contentType || "image/png",
+      })
+    );
+    await putMediaItem({ userId, type: "IMG", key });
+    const signedUrl = await getSignedUrl(
+      s3Client,
+      new GetObjectCommand({
+        Bucket: mediaBucket,
+        Key: key,
+      }),
+      { expiresIn: 900 }
+    );
+    return res.json({
+      modelId: modelConfig.spaceId,
+      provider: "huggingface",
+      seed: Number.isFinite(Number(returnedSeed))
+        ? Number(returnedSeed)
+        : Number.isFinite(Number(seed))
+          ? Number(seed)
+          : undefined,
+      images: [{ key, url: signedUrl }],
+    });
+  } catch (error) {
+    console.error("Gradio image generation error details:", {
+      name: error?.name,
+      message: error?.message,
+      metadata: error?.$metadata,
+      cause: error?.cause,
+    });
+    return res.status(500).json({
+      message: "Gradio image generation failed",
+      error: error?.message || String(error),
+    });
+  }
+});
+
 app.get("/replicate/image/status", async (req, res) => {
   const mediaBucket = process.env.MEDIA_BUCKET;
   const userId = req.user?.sub;
@@ -3373,6 +3929,8 @@ app.get("/story/sessions/:id", async (req, res) => {
         title: scene.title,
         description: scene.description,
         prompt: scene.prompt,
+        sceneEnvironment: scene.sceneEnvironment,
+        sceneAction: scene.sceneAction,
         status: scene.status,
         imageKey: scene.imageKey,
         imageUrl: scene.imageUrl,
@@ -3384,6 +3942,92 @@ app.get("/story/sessions/:id", async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Failed to load story session",
+      error: error?.message || String(error),
+    });
+  }
+});
+
+app.delete("/story/sessions/:id", async (req, res) => {
+  const mediaBucket = process.env.MEDIA_BUCKET;
+  const mediaTableName = process.env.MEDIA_TABLE;
+  const userId = req.user?.sub;
+  const sessionId = req.params.id;
+
+  if (!mediaTableName) {
+    return res.status(500).json({ message: "MEDIA_TABLE is not set" });
+  }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (!sessionId) {
+    return res.status(400).json({ message: "sessionId is required" });
+  }
+
+  try {
+    const sessionItem = await getItem({
+      pk: buildMediaPk(userId),
+      sk: buildStorySessionSk(sessionId),
+    });
+    if (!sessionItem) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+
+    const messages = await queryBySkPrefix({
+      pk: buildMediaPk(userId),
+      skPrefix: storyMessagePrefix(sessionId),
+      limit: 200,
+      scanForward: true,
+    });
+    const scenes = await queryBySkPrefix({
+      pk: buildMediaPk(userId),
+      skPrefix: storyScenePrefix(sessionId),
+      limit: 200,
+      scanForward: true,
+    });
+
+    const deleteItems = [
+      { pk: buildMediaPk(userId), sk: buildStorySessionSk(sessionId) },
+      ...messages.map((item) => ({ pk: item.pk, sk: item.sk })),
+      ...scenes.map((item) => ({ pk: item.pk, sk: item.sk })),
+    ];
+
+    await Promise.all(
+      deleteItems.map((item) =>
+        dynamoClient.send(
+          new DeleteCommand({
+            TableName: mediaTableName,
+            Key: item,
+          })
+        )
+      )
+    );
+
+    if (mediaBucket) {
+      const prefix = `${buildUserPrefix(userId)}stories/${sessionId}/`;
+      try {
+        await deleteS3ObjectsByPrefix(mediaBucket, prefix);
+      } catch (error) {
+        console.warn("Failed to delete story assets:", {
+          message: error?.message || String(error),
+          prefix,
+        });
+      }
+    }
+
+    res.json({
+      sessionId,
+      deletedMessages: messages.length,
+      deletedScenes: scenes.length,
+    });
+  } catch (error) {
+    console.error("Story session delete error:", {
+      name: error?.name,
+      message: error?.message,
+      metadata: error?.$metadata,
+      cause: error?.cause,
+    });
+    res.status(500).json({
+      message: "Failed to delete story session",
       error: error?.message || String(error),
     });
   }
@@ -3437,7 +4081,7 @@ app.post("/story/sessions/:id/message", async (req, res) => {
     const recentMessages = await queryBySkPrefix({
       pk: buildMediaPk(userId),
       skPrefix: storyMessagePrefix(sessionId),
-      limit: 12,
+      limit: 8,
       scanForward: false,
     });
     const orderedMessages = recentMessages.reverse();
@@ -3450,8 +4094,11 @@ app.post("/story/sessions/:id/message", async (req, res) => {
       "Respond in 2-4 short paragraphs, then end with a question to the player.",
       "When a meaningful scene beat occurs, mark it as a sceneBeat.",
       "Return ONLY valid JSON with keys:",
-      "reply (string), summary (string), sceneBeat (boolean), sceneTitle (string), sceneDescription (string), scenePrompt (string).",
+      "reply (string), summary (string), sceneBeat (boolean), sceneTitle (string), sceneDescription (string), scenePrompt (string), sceneEnvironment (string), sceneAction (string).",
       "scenePrompt should focus on visual details of the moment (environment, action, mood) and be concise.",
+      "scenePrompt must be purely visual fragments (comma-separated). No dialogue, no questions, no second-person phrasing.",
+      "sceneEnvironment: comma-separated background/environment fragments (short phrases).",
+      "sceneAction: comma-separated action/pose/motion fragments (short phrases).",
       "scenePrompt should include framing guidance: medium shot or full body, environment visible, no close-ups.",
       `Story summary: ${sessionItem.summary || "New story."}`,
       `World: ${sessionItem.worldPrompt}`,
@@ -3495,6 +4142,8 @@ app.post("/story/sessions/:id/message", async (req, res) => {
     const sceneTitle = parsed.sceneTitle?.trim() || "";
     const sceneDescription = parsed.sceneDescription?.trim() || "";
     const scenePrompt = parsed.scenePrompt?.trim() || "";
+    const sceneEnvironment = parsed.sceneEnvironment?.trim() || "";
+    const sceneAction = parsed.sceneAction?.trim() || "";
 
     const assistantMessageItem = {
       pk: buildMediaPk(userId),
@@ -3514,10 +4163,10 @@ app.post("/story/sessions/:id/message", async (req, res) => {
 
     let scene = null;
     let nextSceneCount = sessionItem.sceneCount || 0;
+    const hasSceneVisual =
+      Boolean(scenePrompt) || Boolean(sceneEnvironment) || Boolean(sceneAction);
     const shouldIllustrate =
-      sceneBeat &&
-      scenePrompt &&
-      newTurnCount - lastIllustrationTurn >= 3;
+      sceneBeat && hasSceneVisual && newTurnCount - lastIllustrationTurn >= 3;
 
     if (shouldIllustrate) {
       const sceneId = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -3530,6 +4179,8 @@ app.post("/story/sessions/:id/message", async (req, res) => {
         title: sceneTitle,
         description: sceneDescription,
         prompt: scenePrompt,
+        sceneEnvironment,
+        sceneAction,
         status: "pending",
         createdAt: new Date().toISOString(),
       };
@@ -3545,6 +4196,8 @@ app.post("/story/sessions/:id/message", async (req, res) => {
         title: sceneTitle,
         description: sceneDescription,
         prompt: scenePrompt,
+        sceneEnvironment,
+        sceneAction,
         status: "pending",
       };
     }
@@ -3592,6 +4245,7 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
   const sessionId = req.params.id;
   const sceneId = req.body?.sceneId;
   const regenerate = Boolean(req.body?.regenerate);
+  const contextMode = req.body?.contextMode || "summary+scene";
   const bucket = process.env.MEDIA_BUCKET;
   const apiToken = process.env.REPLICATE_API_TOKEN;
   const debug = req.query?.debug === "true";
@@ -3689,15 +4343,23 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
       limit: 6,
       scanForward: false,
     });
+    const orderedRecent = recentMessages.slice().reverse();
     const lastAssistant = recentMessages.find(
       (message) => message.role === "assistant"
     );
     const contextLine = lastAssistant?.content
-      ? `Latest scene context: ${lastAssistant.content}`
+      ? normalizePromptFragment(lastAssistant.content)
       : "";
     const summaryLine = sessionItem.summary
-      ? `Story summary: ${sessionItem.summary}`
+      ? normalizePromptFragment(sessionItem.summary)
       : "";
+    const recentTranscript = orderedRecent
+      .map((message) => {
+        const label = message.role === "user" ? "Player" : "Narrator";
+        return `${label}: ${normalizePromptFragment(message.content || "")}`;
+      })
+      .filter(Boolean)
+      .join(" ");
     let cleanScenePrompt = sanitizeScenePrompt(sceneItem.prompt || "");
     if (cleanScenePrompt) {
       cleanScenePrompt = cleanScenePrompt
@@ -3725,7 +4387,17 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
       resolvedCharacter?.identityPrompt ||
       identityBlock;
 
-    const positivePrompt = basePrompt;
+    const positivePrompt = buildStoryIllustrationPrompt({
+      character: resolvedCharacter,
+      sessionItem,
+      summaryLine,
+      contextLine,
+      recentTranscript,
+      cleanScenePrompt,
+      sceneEnvironment: sceneItem.sceneEnvironment || "",
+      sceneAction: sceneItem.sceneAction || "",
+      contextMode,
+    });
 
     const negativePrompt =
       resolvedCharacter?.storyNegativePrompt ||
@@ -3803,6 +4475,24 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
               negative: trimmedNegativePrompt,
             },
             identity: identityBlock,
+            context: {
+              mode: contextMode,
+              summary: summaryLine,
+              latest: contextLine,
+              recent: recentTranscript,
+              scene: cleanScenePrompt,
+              sceneEnvironment: sceneItem.sceneEnvironment || "",
+              sceneAction: sceneItem.sceneAction || "",
+            },
+            promptPattern: [
+              "shot range",
+              "environment/background",
+              "clothes",
+              "character (1girl, solo + name + recognizable)",
+              "focus/action",
+              "face/furry details",
+              "visual/style",
+            ],
             replicate: {
               modelId: modelConfig.modelId,
               input,
