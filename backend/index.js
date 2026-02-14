@@ -80,7 +80,7 @@ const promptHelperModelId =
 const storyModelId =
   process.env.BEDROCK_STORY_MODEL_ID || promptHelperModelId;
 const DEFAULT_NEGATIVE_PROMPT =
-  "low quality, worst quality, lowres, pixelated, jpeg artifacts, compression artifacts, blurry, out of focus, oversharpened, grainy, noisy, dithering, flat shading, muddy colors, bad anatomy, bad proportions, multiple characters, extra people, clone, twin, reflection, mirror, big eyes, wide eyes, sparkly eyes";
+  "low quality, worst quality, lowres, pixelated, jpeg artifacts, compression artifacts, blurry, blurry face, out of focus, oversharpened, grainy, noisy, dithering, flat shading, muddy colors, bad anatomy, bad proportions, tiny face, distant face, multiple characters, extra people, clone, twin, reflection, mirror, big eyes, wide eyes, sparkly eyes";
 const DEFAULT_GRADIO_NEGATIVE_PROMPT =
   "lowres, {bad}, error, fewer, extra, missing, worst quality, jpeg artifacts, bad quality, watermark, unfinished, displeasing, chromatic aberration, signature, extra digits, artistic error, username, scan, [abstract]";
 
@@ -365,6 +365,1308 @@ const pickOption = (options = [], value = "", fallback = "") => {
   return options[0] || "";
 };
 
+const STORY_LOREBOOK_VERSION = 1;
+const STORY_STATE_VERSION = 1;
+
+const clampNumber = (value, min, max) => {
+  if (typeof value !== "number" || Number.isNaN(value)) return min;
+  return Math.min(Math.max(value, min), max);
+};
+
+const normalizeStringArray = (value) => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => String(item || "").trim())
+    .filter(Boolean);
+};
+
+const uniqueStringArray = (value) => {
+  const seen = new Set();
+  return normalizeStringArray(value).filter((item) => {
+    const key = item.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const deepMerge = (base, override) => {
+  if (override === undefined || override === null) return base;
+  if (Array.isArray(base) || Array.isArray(override)) {
+    return Array.isArray(override) ? override : base;
+  }
+  if (
+    typeof base !== "object" ||
+    base === null ||
+    typeof override !== "object" ||
+    override === null
+  ) {
+    return override;
+  }
+  const next = { ...base };
+  Object.keys(override).forEach((key) => {
+    next[key] = deepMerge(base[key], override[key]);
+  });
+  return next;
+};
+
+const buildDefaultLorebook = (preset = {}, protagonistName = "Protagonist") => {
+  const base = {
+    version: STORY_LOREBOOK_VERSION,
+    overview: {
+      title: preset.name || "Untitled Story",
+      synopsis: preset.synopsis || "",
+      tone: "quiet, reflective, character-driven",
+      themes: ["memory", "journey", "choice"],
+    },
+    initialScene: {
+      locationId: "starting-point",
+      locationName: "Starting point",
+      description: preset.worldPrompt || preset.opening || "",
+      timeOfDay: "late afternoon",
+      weather: "clear",
+      mood: "calm",
+      direction: "forward",
+      tags: ["journey", "quiet"],
+      nearby: [],
+      npcsPresent: [],
+    },
+    directions: ["north", "south", "east", "west", "uphill", "downhill"],
+    locations: [],
+    npcs: [],
+    goals: {
+      primary: "Continue the journey",
+      secondary: [],
+      longTerm: "Uncover the deeper meaning behind the quest",
+    },
+    rules: {
+      initiative: {
+        baseRate: 0.45,
+        minTurnsBetween: 1,
+        maxTurnsBetween: 3,
+        protagonistBias: 1.6,
+      },
+      eventSelection: {
+        cooldownTurns: 2,
+        recentLimit: 4,
+        allowRepeat: false,
+        fallbackEventId: "quiet-beat",
+      },
+    },
+    events: [
+      {
+        id: "quiet-beat",
+        title: "A quiet beat",
+        type: "quiet",
+        baseWeight: 1,
+        tags: ["quiet", "reflection"],
+        initiative: "protagonist",
+        prompt: {
+          beat: `${protagonistName} notices a small detail in the environment and shares a quiet observation.`,
+          focus: "environment detail + character reflection",
+          sensory: "soft wind, distant sounds",
+          hooks: ["invite a response from the player"],
+        },
+        effects: {
+          metricsDelta: { tension: -0.05, mystery: 0.03 },
+        },
+      },
+    ],
+  };
+
+  if (preset.id === "frieren-road") {
+    return deepMerge(base, {
+      overview: {
+        tone: "gentle, wistful, contemplative",
+        themes: ["journey", "memory", "quiet companionship"],
+      },
+      initialScene: {
+        locationId: "road-valley",
+        locationName: "Misty valley road",
+        description:
+          "A soft mist settles over a winding road, with distant bells and open fields.",
+        timeOfDay: "late afternoon",
+        weather: "mist",
+        mood: "quiet",
+        direction: "northbound",
+        tags: ["travel", "quiet", "countryside"],
+        nearby: ["ridge-overlook", "village-outer"],
+      },
+      locations: [
+        {
+          id: "road-valley",
+          name: "Misty valley road",
+          description: "A winding path through open fields and low hills.",
+          tags: ["travel", "open", "quiet"],
+          neighbors: ["ridge-overlook", "village-outer"],
+        },
+        {
+          id: "ridge-overlook",
+          name: "Ridge overlook",
+          description: "A high path with a view of lakes and distant mountains.",
+          tags: ["scenic", "windy", "quiet"],
+          neighbors: ["road-valley"],
+        },
+        {
+          id: "village-outer",
+          name: "Village outskirts",
+          description: "Stone roads, lanterns, and soft smoke from chimneys.",
+          tags: ["settlement", "warm", "safe"],
+          neighbors: ["road-valley"],
+        },
+      ],
+      npcs: [
+        {
+          id: "traveler",
+          name: "Traveling merchant",
+          role: "wayfarer",
+          disposition: "cautious but friendly",
+          tags: ["road", "rumors"],
+          goals: ["trade", "share rumors"],
+        },
+        {
+          id: "elder",
+          name: "Village elder",
+          role: "guide",
+          disposition: "warm, deliberate",
+          tags: ["village", "knowledge"],
+          goals: ["warn travelers", "protect village"],
+        },
+      ],
+      goals: {
+        primary: "Reach the next village before nightfall",
+        secondary: ["Decide on the ridge or village path"],
+        longTerm: "Trace the echoes of ancient magic across the countryside",
+      },
+      events: [
+        {
+          id: "road-choice",
+          title: "A fork in the road",
+          type: "choice",
+          baseWeight: 1.2,
+          tags: ["travel", "choice", "quiet"],
+          initiative: "protagonist",
+          when: { locationIds: ["road-valley"], sceneTagsAny: ["travel"] },
+          prompt: {
+            beat:
+              "The road splits toward a ridge and a village, inviting a calm decision.",
+            focus: "path choice + landscape",
+            sensory: "distant bells, soft wind",
+            hooks: ["ridge view", "village lights"],
+          },
+          effects: {
+            flags: { add: ["path-choice"] },
+            goals: { activeAdd: ["Choose the route forward"] },
+            metricsDelta: { progress: 0.05 },
+          },
+        },
+        {
+          id: "passing-traveler",
+          title: "A passing traveler",
+          type: "npc",
+          baseWeight: 0.9,
+          tags: ["npc", "rumor", "travel"],
+          initiative: "npc",
+          when: { locationIds: ["road-valley", "village-outer"] },
+          prompt: {
+            beat:
+              "A traveler crosses paths and offers a small rumor about nearby ruins.",
+            focus: "npc encounter + hint",
+            sensory: "footsteps on stone, muted chatter",
+            hooks: ["rumor", "direction hint"],
+          },
+          effects: {
+            npcs: { presentAdd: ["traveler"] },
+            flags: { add: ["rumor-ruins"] },
+            metricsDelta: { mystery: 0.08 },
+          },
+        },
+        {
+          id: "weather-shift",
+          title: "Weather shifts",
+          type: "environment",
+          baseWeight: 0.8,
+          tags: ["environment", "travel"],
+          initiative: "environment",
+          prompt: {
+            beat: "The mist thickens, changing the mood and visibility.",
+            focus: "environment shift",
+            sensory: "cool damp air, muted sounds",
+            hooks: ["slower pace", "closer voices"],
+          },
+          effects: {
+            scene: { weather: "thick mist", tagsAdd: ["mist"] },
+            metricsDelta: { tension: 0.05 },
+          },
+        },
+        {
+          id: "quiet-memory",
+          title: "A quiet memory",
+          type: "reflection",
+          baseWeight: 0.95,
+          tags: ["quiet", "reflection", "memory"],
+          initiative: "protagonist",
+          when: { sceneTagsAny: ["quiet", "countryside"] },
+          prompt: {
+            beat:
+              `${protagonistName} shares a small memory tied to the landscape.`,
+            focus: "character reflection",
+            sensory: "soft light, distant birds",
+            hooks: ["memory link", "gentle question"],
+          },
+          effects: {
+            metricsDelta: { mystery: 0.04, tension: -0.03 },
+          },
+        },
+        {
+          id: "ruin-hint",
+          title: "A hint of ruins",
+          type: "discovery",
+          baseWeight: 0.85,
+          tags: ["discovery", "mystery"],
+          initiative: "protagonist",
+          when: { flagsAny: ["rumor-ruins"] },
+          prompt: {
+            beat:
+              "A distant silhouette or carved stone hints at ancient ruins nearby.",
+            focus: "discovery + environment",
+            sensory: "faint glow, stone texture",
+            hooks: ["investigation", "detour"],
+          },
+          effects: {
+            goals: { activeAdd: ["Investigate the ruins"] },
+            metricsDelta: { mystery: 0.1 },
+          },
+        },
+      ],
+    });
+  }
+
+  if (preset.id === "moonlit-tavern") {
+    return deepMerge(base, {
+      overview: {
+        tone: "warm, intimate, slowly unfolding",
+        themes: ["rumor", "comfort", "choice"],
+      },
+      initialScene: {
+        locationId: "tavern-hall",
+        locationName: "Moonlit tavern",
+        description:
+          "A warm tavern glow contrasts with rain-soaked windows and muted chatter.",
+        timeOfDay: "night",
+        weather: "rain",
+        mood: "cozy",
+        direction: "inward",
+        tags: ["interior", "warm", "rain"],
+        nearby: ["tavern-backroom", "rainy-alley"],
+      },
+      locations: [
+        {
+          id: "tavern-hall",
+          name: "Tavern hall",
+          description: "Lantern light, wooden beams, hushed conversations.",
+          tags: ["interior", "warm"],
+          neighbors: ["tavern-backroom", "rainy-alley"],
+        },
+        {
+          id: "tavern-backroom",
+          name: "Backroom",
+          description: "A quieter space with hidden whispers and secrets.",
+          tags: ["interior", "secret"],
+          neighbors: ["tavern-hall"],
+        },
+        {
+          id: "rainy-alley",
+          name: "Rainy alley",
+          description: "Wet stone, dripping eaves, and shadowed corners.",
+          tags: ["exterior", "rain", "urban"],
+          neighbors: ["tavern-hall"],
+        },
+      ],
+      npcs: [
+        {
+          id: "traveler",
+          name: "Mysterious traveler",
+          role: "informant",
+          disposition: "guarded",
+          tags: ["rumor", "quest"],
+          goals: ["test trust", "share clue"],
+        },
+        {
+          id: "bartender",
+          name: "Bartender",
+          role: "host",
+          disposition: "steady, observant",
+          tags: ["tavern", "local"],
+          goals: ["keep peace", "share local lore"],
+        },
+      ],
+      goals: {
+        primary: "Learn about the old ruins from the traveler",
+        secondary: ["Decide whether to trust the rumor"],
+        longTerm: "Unlock the hidden quest tied to the ruins",
+      },
+      events: [
+        {
+          id: "whispered-rumor",
+          title: "Whispered rumor",
+          type: "npc",
+          baseWeight: 1.05,
+          tags: ["npc", "rumor", "mystery"],
+          initiative: "npc",
+          when: { locationIds: ["tavern-hall", "tavern-backroom"] },
+          prompt: {
+            beat:
+              "A traveler shares a rumor about the ruins, testing the mood.",
+            focus: "npc encounter + clue",
+            sensory: "low voices, clinking cups",
+            hooks: ["cryptic hint", "request"],
+          },
+          effects: {
+            npcs: { presentAdd: ["traveler"] },
+            flags: { add: ["rumor-ruins"] },
+            metricsDelta: { mystery: 0.1 },
+          },
+        },
+        {
+          id: "lantern-flicker",
+          title: "Lanterns flicker",
+          type: "environment",
+          baseWeight: 0.85,
+          tags: ["environment", "quiet"],
+          initiative: "environment",
+          prompt: {
+            beat:
+              "The lanterns flicker, adding a hush to the tavern's warmth.",
+            focus: "environment shift",
+            sensory: "warm glow, rain tapping glass",
+            hooks: ["subtle tension", "closer conversation"],
+          },
+          effects: {
+            scene: { mood: "intimate" },
+            metricsDelta: { tension: 0.04 },
+          },
+        },
+        {
+          id: "sealed-letter",
+          title: "A sealed letter",
+          type: "discovery",
+          baseWeight: 0.9,
+          tags: ["discovery", "mystery"],
+          initiative: "protagonist",
+          when: { sceneTagsAny: ["interior", "warm"] },
+          prompt: {
+            beat:
+              `${protagonistName} notices a sealed letter tied to the ruins.`,
+            focus: "discovery + prop",
+            sensory: "wax seal, old parchment",
+            hooks: ["investigation", "decision"],
+          },
+          effects: {
+            flags: { add: ["letter-found"] },
+            goals: { activeAdd: ["Decipher the letter"] },
+            metricsDelta: { mystery: 0.08 },
+          },
+        },
+        {
+          id: "backroom-invite",
+          title: "Backroom invitation",
+          type: "choice",
+          baseWeight: 0.95,
+          tags: ["choice", "npc"],
+          initiative: "npc",
+          when: { flagsAny: ["rumor-ruins"] },
+          prompt: {
+            beat: "An invitation to the backroom suggests a private talk.",
+            focus: "npc request + decision",
+            sensory: "muffled voices, warm shadows",
+            hooks: ["trust", "risk"],
+          },
+          effects: {
+            goals: { activeAdd: ["Decide on the backroom meeting"] },
+            metricsDelta: { tension: 0.06 },
+          },
+        },
+      ],
+    });
+  }
+
+  if (preset.id === "celestial-ruins") {
+    return deepMerge(base, {
+      overview: {
+        tone: "ethereal, ancient, quietly tense",
+        themes: ["mystery", "wonder", "ancient power"],
+      },
+      initialScene: {
+        locationId: "ruins-entrance",
+        locationName: "Celestial ruins",
+        description:
+          "Ancient stones float above the clouds, glowing with starlit runes.",
+        timeOfDay: "night",
+        weather: "clear",
+        mood: "awe",
+        direction: "upward",
+        tags: ["ancient", "mystic", "high-altitude"],
+        nearby: ["ruins-hall", "starlit-platform"],
+      },
+      locations: [
+        {
+          id: "ruins-entrance",
+          name: "Ruins entrance",
+          description: "A broad stairway carved with glowing runes.",
+          tags: ["ancient", "mystic"],
+          neighbors: ["ruins-hall"],
+        },
+        {
+          id: "ruins-hall",
+          name: "Ruins hall",
+          description: "Echoing chambers with suspended stone bridges.",
+          tags: ["ancient", "echo"],
+          neighbors: ["ruins-entrance", "starlit-platform"],
+        },
+        {
+          id: "starlit-platform",
+          name: "Starlit platform",
+          description: "An open platform bathed in pale starlight.",
+          tags: ["open", "mystic"],
+          neighbors: ["ruins-hall"],
+        },
+      ],
+      npcs: [
+        {
+          id: "sentinel",
+          name: "Silent sentinel",
+          role: "guardian spirit",
+          disposition: "watchful",
+          tags: ["ancient", "guardian"],
+          goals: ["test worthiness", "protect relic"],
+        },
+      ],
+      goals: {
+        primary: "Trace the runes and locate the relic",
+        secondary: ["Understand the ruins' purpose"],
+        longTerm: "Recover the ancient relic safely",
+      },
+      events: [
+        {
+          id: "runic-pulse",
+          title: "Runic pulse",
+          type: "environment",
+          baseWeight: 1.05,
+          tags: ["environment", "mystery", "ancient"],
+          initiative: "environment",
+          prompt: {
+            beat:
+              "The runes pulse with light, hinting at a hidden path or pattern.",
+            focus: "environment shift + mystery",
+            sensory: "cold light, humming stones",
+            hooks: ["investigate pattern", "touch the runes"],
+          },
+          effects: {
+            metricsDelta: { mystery: 0.1 },
+          },
+        },
+        {
+          id: "echoing-voice",
+          title: "Echoing voice",
+          type: "npc",
+          baseWeight: 0.9,
+          tags: ["npc", "ancient", "warning"],
+          initiative: "npc",
+          prompt: {
+            beat:
+              "A disembodied voice offers a warning about the relic's cost.",
+            focus: "npc encounter + warning",
+            sensory: "echoing whispers, distant chimes",
+            hooks: ["risk", "resolve"],
+          },
+          effects: {
+            npcs: { presentAdd: ["sentinel"] },
+            metricsDelta: { tension: 0.08 },
+          },
+        },
+        {
+          id: "fractured-stair",
+          title: "Fractured stair",
+          type: "conflict",
+          baseWeight: 0.85,
+          tags: ["conflict", "danger"],
+          initiative: "environment",
+          when: { locationIds: ["ruins-hall", "starlit-platform"] },
+          prompt: {
+            beat:
+              "A stone stair fractures, forcing careful movement or quick action.",
+            focus: "hazard + movement",
+            sensory: "cracking stone, falling dust",
+            hooks: ["leap", "stabilize"],
+          },
+          effects: {
+            metricsDelta: { tension: 0.12, urgency: 0.08 },
+          },
+        },
+        {
+          id: "starlit-relic",
+          title: "Starlit relic",
+          type: "discovery",
+          baseWeight: 0.95,
+          tags: ["discovery", "goal", "mystery"],
+          initiative: "protagonist",
+          when: { sceneTagsAny: ["mystic", "open"] },
+          prompt: {
+            beat:
+              `${protagonistName} notices a relic glinting under starlight.`,
+            focus: "discovery + relic",
+            sensory: "cold light, metallic shimmer",
+            hooks: ["approach", "inspect"],
+          },
+          effects: {
+            goals: { activeAdd: ["Secure the relic"] },
+            metricsDelta: { mystery: 0.08, progress: 0.1 },
+          },
+        },
+      ],
+    });
+  }
+
+  return base;
+};
+
+const resolveStoryLorebook = (preset = {}, protagonistName = "Protagonist") => {
+  const base = buildDefaultLorebook(preset, protagonistName);
+  if (!preset?.lorebook) return base;
+  return deepMerge(base, preset.lorebook);
+};
+
+const buildInitialStoryState = (lorebook = {}) => {
+  const scene = lorebook.initialScene || {};
+  const goals = lorebook.goals || {};
+  return {
+    version: STORY_STATE_VERSION,
+    scene: {
+      locationId: scene.locationId || "starting-point",
+      locationName: scene.locationName || "Starting point",
+      description: scene.description || "",
+      timeOfDay: scene.timeOfDay || "late afternoon",
+      weather: scene.weather || "clear",
+      mood: scene.mood || "calm",
+      direction: scene.direction || "forward",
+      tags: uniqueStringArray(scene.tags || []),
+      nearby: uniqueStringArray(scene.nearby || []),
+    },
+    metrics: {
+      tension: clampNumber(scene.tension ?? lorebook?.initialMetrics?.tension ?? 0.2, 0, 1),
+      mystery: clampNumber(scene.mystery ?? lorebook?.initialMetrics?.mystery ?? 0.35, 0, 1),
+      urgency: clampNumber(scene.urgency ?? lorebook?.initialMetrics?.urgency ?? 0.2, 0, 1),
+      progress: clampNumber(scene.progress ?? lorebook?.initialMetrics?.progress ?? 0.1, 0, 1),
+      fatigue: clampNumber(scene.fatigue ?? lorebook?.initialMetrics?.fatigue ?? 0.1, 0, 1),
+    },
+    goals: {
+      active: uniqueStringArray([
+        goals.primary,
+        ...(goals.secondary || []),
+      ]),
+      completed: [],
+    },
+    flags: [],
+    npcs: {
+      present: uniqueStringArray(scene.npcsPresent || []),
+    },
+    meta: {
+      turn: 0,
+      lastEventId: "",
+      recentEvents: [],
+      turnsSinceInitiative: 0,
+    },
+  };
+};
+
+const applyStateDelta = (state = {}, delta = {}) => {
+  if (!delta || typeof delta !== "object") return state;
+  const next = {
+    ...state,
+    scene: { ...(state.scene || {}) },
+    metrics: { ...(state.metrics || {}) },
+    goals: { ...(state.goals || {}) },
+    flags: uniqueStringArray(state.flags || []),
+    npcs: { ...(state.npcs || {}) },
+    meta: { ...(state.meta || {}) },
+  };
+
+  const sceneDelta = delta.scene || {};
+  if (typeof sceneDelta.locationId === "string") next.scene.locationId = sceneDelta.locationId;
+  if (typeof sceneDelta.locationName === "string") next.scene.locationName = sceneDelta.locationName;
+  if (typeof sceneDelta.description === "string") next.scene.description = sceneDelta.description;
+  if (typeof sceneDelta.timeOfDay === "string") next.scene.timeOfDay = sceneDelta.timeOfDay;
+  if (typeof sceneDelta.weather === "string") next.scene.weather = sceneDelta.weather;
+  if (typeof sceneDelta.mood === "string") next.scene.mood = sceneDelta.mood;
+  if (typeof sceneDelta.direction === "string") next.scene.direction = sceneDelta.direction;
+
+  const currentTags = uniqueStringArray(next.scene.tags || []);
+  const addTags = normalizeStringArray(sceneDelta.tagsAdd || []);
+  const removeTags = new Set(normalizeStringArray(sceneDelta.tagsRemove || []));
+  next.scene.tags = uniqueStringArray(
+    currentTags
+      .filter((tag) => !removeTags.has(tag))
+      .concat(addTags)
+  );
+
+  const currentNearby = uniqueStringArray(next.scene.nearby || []);
+  const addNearby = normalizeStringArray(sceneDelta.nearbyAdd || []);
+  const removeNearby = new Set(normalizeStringArray(sceneDelta.nearbyRemove || []));
+  next.scene.nearby = uniqueStringArray(
+    currentNearby
+      .filter((item) => !removeNearby.has(item))
+      .concat(addNearby)
+  );
+
+  const metricsDelta = delta.metricsDelta || {};
+  const metricsSet = delta.metrics || {};
+  ["tension", "mystery", "urgency", "progress", "fatigue"].forEach((key) => {
+    const baseValue =
+      typeof next.metrics[key] === "number" ? next.metrics[key] : 0;
+    if (typeof metricsDelta[key] === "number") {
+      next.metrics[key] = clampNumber(baseValue + metricsDelta[key], 0, 1);
+    }
+    if (typeof metricsSet[key] === "number") {
+      next.metrics[key] = clampNumber(metricsSet[key], 0, 1);
+    }
+  });
+
+  const goalsDelta = delta.goals || {};
+  const activeGoals = uniqueStringArray(next.goals.active || []);
+  const completedGoals = uniqueStringArray(next.goals.completed || []);
+  const addGoals = normalizeStringArray(goalsDelta.activeAdd || []);
+  const removeGoals = new Set(normalizeStringArray(goalsDelta.activeRemove || []));
+  const completeGoals = normalizeStringArray(goalsDelta.completedAdd || []);
+  next.goals.active = uniqueStringArray(
+    activeGoals
+      .filter((goal) => !removeGoals.has(goal))
+      .concat(addGoals)
+      .filter((goal) => !completeGoals.includes(goal))
+  );
+  next.goals.completed = uniqueStringArray(
+    completedGoals.concat(completeGoals)
+  );
+
+  const flagsDelta = delta.flags || {};
+  const flagsAdd = normalizeStringArray(flagsDelta.add || []);
+  const flagsRemove = new Set(normalizeStringArray(flagsDelta.remove || []));
+  next.flags = uniqueStringArray(
+    next.flags
+      .filter((flag) => !flagsRemove.has(flag))
+      .concat(flagsAdd)
+  );
+
+  const npcsDelta = delta.npcs || {};
+  const presentNpcs = uniqueStringArray(next.npcs.present || []);
+  const npcsAdd = normalizeStringArray(npcsDelta.presentAdd || []);
+  const npcsRemove = new Set(normalizeStringArray(npcsDelta.presentRemove || []));
+  next.npcs.present = uniqueStringArray(
+    presentNpcs
+      .filter((npc) => !npcsRemove.has(npc))
+      .concat(npcsAdd)
+  );
+
+  return next;
+};
+
+const TAG_METRIC_BIASES = {
+  quiet: { tension: -0.6, urgency: -0.3 },
+  reflection: { fatigue: 0.5, tension: -0.2 },
+  conflict: { tension: 0.7, urgency: 0.4 },
+  danger: { tension: 0.6, urgency: 0.5 },
+  discovery: { mystery: 0.6 },
+  mystery: { mystery: 0.5 },
+  travel: { progress: -0.4 },
+  goal: { progress: -0.5, urgency: 0.3 },
+};
+
+const applyMetricBias = (weight, metrics = {}, bias = {}) => {
+  let adjusted = weight;
+  Object.entries(bias).forEach(([metric, factor]) => {
+    const value =
+      typeof metrics[metric] === "number"
+        ? clampNumber(metrics[metric], 0, 1)
+        : 0.5;
+    const delta = (value - 0.5) * factor;
+    adjusted *= 1 + delta;
+  });
+  return adjusted;
+};
+
+const metricInRange = (value, range) => {
+  if (range === undefined || range === null) return true;
+  if (typeof range === "number") return value >= range;
+  if (typeof range !== "object") return true;
+  if (typeof range.min === "number" && value < range.min) return false;
+  if (typeof range.max === "number" && value > range.max) return false;
+  return true;
+};
+
+const matchesAll = (needles = [], haystack = []) =>
+  normalizeStringArray(needles).every((item) =>
+    haystack.includes(item)
+  );
+
+const matchesAny = (needles = [], haystack = []) =>
+  normalizeStringArray(needles).some((item) =>
+    haystack.includes(item)
+  );
+
+const computeEventWeight = (event = {}, state = {}, selection = {}) => {
+  const baseWeight =
+    typeof event.baseWeight === "number" ? event.baseWeight : 1;
+  if (baseWeight <= 0) return 0;
+
+  const scene = state.scene || {};
+  const metrics = state.metrics || {};
+  const flags = uniqueStringArray(state.flags || []);
+  const npcsPresent = uniqueStringArray(state.npcs?.present || []);
+  const tags = uniqueStringArray(scene.tags || []);
+
+  const when = event.when || {};
+  if (
+    Array.isArray(when.locationIds) &&
+    when.locationIds.length > 0 &&
+    !when.locationIds.includes(scene.locationId)
+  ) {
+    return 0;
+  }
+  if (
+    Array.isArray(when.timeOfDay) &&
+    when.timeOfDay.length > 0 &&
+    !when.timeOfDay.includes(scene.timeOfDay)
+  ) {
+    return 0;
+  }
+  if (
+    Array.isArray(when.weather) &&
+    when.weather.length > 0 &&
+    !when.weather.includes(scene.weather)
+  ) {
+    return 0;
+  }
+  if (
+    Array.isArray(when.mood) &&
+    when.mood.length > 0 &&
+    !when.mood.includes(scene.mood)
+  ) {
+    return 0;
+  }
+  if (Array.isArray(when.sceneTagsAll) && when.sceneTagsAll.length > 0) {
+    if (!matchesAll(when.sceneTagsAll, tags)) return 0;
+  }
+  if (Array.isArray(when.sceneTagsAny) && when.sceneTagsAny.length > 0) {
+    if (!matchesAny(when.sceneTagsAny, tags)) return 0;
+  }
+  if (Array.isArray(when.flagsAll) && when.flagsAll.length > 0) {
+    if (!matchesAll(when.flagsAll, flags)) return 0;
+  }
+  if (Array.isArray(when.flagsAny) && when.flagsAny.length > 0) {
+    if (!matchesAny(when.flagsAny, flags)) return 0;
+  }
+  if (Array.isArray(when.npcsPresentAll) && when.npcsPresentAll.length > 0) {
+    if (!matchesAll(when.npcsPresentAll, npcsPresent)) return 0;
+  }
+  if (Array.isArray(when.npcsPresentAny) && when.npcsPresentAny.length > 0) {
+    if (!matchesAny(when.npcsPresentAny, npcsPresent)) return 0;
+  }
+
+  const metricsWhen = when.metrics || {};
+  const metricKeys = Object.keys(metricsWhen);
+  for (const key of metricKeys) {
+    const value =
+      typeof metrics[key] === "number" ? metrics[key] : 0;
+    if (!metricInRange(value, metricsWhen[key])) return 0;
+  }
+
+  let weight = baseWeight;
+  const eventTags = normalizeStringArray(event.tags || []);
+  eventTags.forEach((tag) => {
+    if (TAG_METRIC_BIASES[tag]) {
+      weight = applyMetricBias(weight, metrics, TAG_METRIC_BIASES[tag]);
+    }
+  });
+
+  const recentIds = selection.recentIds || [];
+  const cooldownTurns =
+    typeof event.cooldownTurns === "number"
+      ? event.cooldownTurns
+      : selection.cooldownTurns;
+  const allowRepeat = selection.allowRepeat;
+  if (recentIds.includes(event.id)) {
+    if (!allowRepeat && cooldownTurns > 0) return 0;
+    weight *= 0.2;
+  }
+
+  const initiativeFocus = selection.initiativeFocus;
+  if (initiativeFocus) {
+    if (event.initiative === "protagonist") {
+      const bias =
+        typeof selection.protagonistBias === "number"
+          ? selection.protagonistBias
+          : 1.4;
+      weight *= bias;
+    } else {
+      weight *= 0.7;
+    }
+  }
+
+  return Math.max(weight, 0);
+};
+
+const pickWeighted = (items = []) => {
+  const total = items.reduce((sum, item) => sum + item.weight, 0);
+  if (total <= 0) return null;
+  let roll = Math.random() * total;
+  for (const item of items) {
+    roll -= item.weight;
+    if (roll <= 0) return item;
+  }
+  return items[items.length - 1] || null;
+};
+
+const buildDirectorCue = (event) => {
+  if (!event) return null;
+  return {
+    eventId: event.id,
+    title: event.title,
+    type: event.type,
+    initiative: event.initiative,
+    beat: event.prompt?.beat || "",
+    focus: event.prompt?.focus || "",
+    sensory: event.prompt?.sensory || "",
+    hooks: event.prompt?.hooks || [],
+  };
+};
+
+const selectStoryEvent = (lorebook = {}, storyState = {}, turnCount = 0) => {
+  const events = Array.isArray(lorebook.events) ? lorebook.events : [];
+  if (!events.length) {
+    return { event: null, cue: null, initiativeFocus: false };
+  }
+
+  const policy = lorebook.rules?.eventSelection || {};
+  const initiative = lorebook.rules?.initiative || {};
+  const cooldownTurns =
+    typeof policy.cooldownTurns === "number" ? policy.cooldownTurns : 2;
+  const recentLimit =
+    typeof policy.recentLimit === "number" ? policy.recentLimit : 4;
+  const allowRepeat = Boolean(policy.allowRepeat);
+
+  const recentEvents = Array.isArray(storyState?.meta?.recentEvents)
+    ? storyState.meta.recentEvents
+    : [];
+  const recentIds = recentEvents
+    .filter((item) =>
+      typeof item?.turn === "number"
+        ? turnCount - item.turn <= cooldownTurns
+        : true
+    )
+    .map((item) => item.id)
+    .filter(Boolean);
+
+  const turnsSinceInitiative =
+    typeof storyState?.meta?.turnsSinceInitiative === "number"
+      ? storyState.meta.turnsSinceInitiative
+      : 0;
+  const minTurnsBetween =
+    typeof initiative.minTurnsBetween === "number"
+      ? initiative.minTurnsBetween
+      : 1;
+  const maxTurnsBetween =
+    typeof initiative.maxTurnsBetween === "number"
+      ? initiative.maxTurnsBetween
+      : 3;
+  const baseRate =
+    typeof initiative.baseRate === "number" ? initiative.baseRate : 0.4;
+  const protagonistBias =
+    typeof initiative.protagonistBias === "number"
+      ? initiative.protagonistBias
+      : 1.4;
+  const forceInitiative = turnsSinceInitiative >= maxTurnsBetween;
+  const encourageInitiative =
+    turnsSinceInitiative >= minTurnsBetween && Math.random() < baseRate;
+  const initiativeFocus = forceInitiative || encourageInitiative;
+
+  const weighted = events
+    .map((event) => ({
+      event,
+      weight: computeEventWeight(event, storyState, {
+        recentIds,
+        cooldownTurns,
+        allowRepeat,
+        initiativeFocus,
+        protagonistBias,
+      }),
+    }))
+    .filter((item) => item.weight > 0);
+
+  const picked =
+    pickWeighted(weighted) ||
+    events.find((event) => event.id === policy.fallbackEventId) ||
+    events[0];
+  const cue = buildDirectorCue(picked);
+  return {
+    event: picked,
+    cue,
+    initiativeFocus,
+    recentLimit,
+  };
+};
+
+const updateStoryMeta = (state = {}, event = null, turnCount = 0, recentLimit = 4) => {
+  const next = {
+    ...(state.meta || {}),
+  };
+  next.turn = turnCount;
+  next.lastEventId = event?.id || "";
+  const recentEvents = Array.isArray(state.meta?.recentEvents)
+    ? state.meta.recentEvents.slice()
+    : [];
+  if (event?.id) {
+    recentEvents.push({ id: event.id, turn: turnCount });
+  }
+  if (recentEvents.length > recentLimit) {
+    next.recentEvents = recentEvents.slice(recentEvents.length - recentLimit);
+  } else {
+    next.recentEvents = recentEvents;
+  }
+  const turnsSinceInitiative =
+    typeof state.meta?.turnsSinceInitiative === "number"
+      ? state.meta.turnsSinceInitiative
+      : 0;
+  next.turnsSinceInitiative =
+    event?.initiative === "protagonist" ? 0 : turnsSinceInitiative + 1;
+  return next;
+};
+
+const normalizeNarrativeText = (value = "") =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+const tokenizeNarrativeText = (value = "") =>
+  normalizeNarrativeText(value)
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 3);
+
+const buildLocationKeywordSet = (location = {}) => {
+  const raw = [
+    location.id,
+    location.name,
+    location.description,
+    ...(Array.isArray(location.tags) ? location.tags : []),
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return Array.from(new Set(tokenizeNarrativeText(raw)));
+};
+
+const inferLocationFromText = ({
+  text = "",
+  lorebook = {},
+  currentLocationId = "",
+}) => {
+  const normalized = normalizeNarrativeText(text);
+  if (!normalized) return null;
+  const tokenSet = new Set(tokenizeNarrativeText(normalized));
+  const locations = Array.isArray(lorebook?.locations) ? lorebook.locations : [];
+  if (!locations.length) return null;
+
+  const hasInnCue = /\b(inn|innkeeper|room|upstairs|hearth|counter|tavern)\b/.test(
+    normalized
+  );
+  const hasVillageCue = /\b(village|town)\b/.test(normalized);
+  const hasRidgeCue = /\b(ridge|cliff|overlook)\b/.test(normalized);
+  const hasRoadCue = /\b(road|path|valley|trail)\b/.test(normalized);
+
+  let best = null;
+  locations.forEach((location) => {
+    const keywords = buildLocationKeywordSet(location);
+    let score = 0;
+    const locationName = normalizeNarrativeText(location.name || "");
+    const locationId = normalizeNarrativeText((location.id || "").replace(/-/g, " "));
+    if (locationName && normalized.includes(locationName)) score += 4;
+    if (locationId && normalized.includes(locationId)) score += 3;
+    keywords.forEach((keyword) => {
+      if (tokenSet.has(keyword)) score += 1;
+    });
+
+    const locationText = normalizeNarrativeText(
+      `${location.id || ""} ${location.name || ""} ${(location.tags || []).join(" ")}`
+    );
+    if (hasInnCue && /\b(village|town|settlement|warm|inn|tavern)\b/.test(locationText)) {
+      score += 3;
+    }
+    if (hasVillageCue && /\b(village|town|settlement)\b/.test(locationText)) {
+      score += 2;
+    }
+    if (hasRidgeCue && /\b(ridge|overlook|scenic)\b/.test(locationText)) {
+      score += 2;
+    }
+    if (hasRoadCue && /\b(road|valley|travel|path)\b/.test(locationText)) {
+      score += 2;
+    }
+    if (currentLocationId && location.id === currentLocationId) {
+      score -= 0.5;
+    }
+
+    if (!best || score > best.score) {
+      best = {
+        id: location.id,
+        name: location.name,
+        description: location.description,
+        tags: uniqueStringArray(location.tags || []),
+        neighbors: uniqueStringArray(location.neighbors || []),
+        score,
+      };
+    }
+  });
+
+  if (!best || best.score < 2) return null;
+  return best;
+};
+
+const inferInteriorSceneFromText = (text = "") => {
+  const normalized = normalizeNarrativeText(text);
+  if (!normalized) return null;
+  const hasInnCue = /\b(inn|innkeeper|tavern|common room|counter|stool|hearth|fire|flames|room|upstairs|woodsmoke)\b/.test(
+    normalized
+  );
+  if (!hasInnCue) return null;
+
+  if (/\b(room|upstairs|bed|window)\b/.test(normalized)) {
+    return {
+      description:
+        "Modest inn room interior, wooden walls, warm lamplight, simple beds and a small window.",
+      mood: "warm",
+      tagsAdd: ["interior", "settlement", "warm", "safe", "rest"],
+      weather: "",
+    };
+  }
+
+  return {
+    description:
+      "Cozy inn common room, wooden tables, hearth firelight, warm lantern glow and drifting woodsmoke.",
+    mood: "warm",
+    tagsAdd: ["interior", "settlement", "warm", "safe", "hearth"],
+    weather: "",
+  };
+};
+
+const inferTimeOfDayFromText = (text = "", current = "") => {
+  const normalized = normalizeNarrativeText(text);
+  if (!normalized) return current || "";
+  if (
+    /\b(tomorrow|later|next)\b/.test(normalized) &&
+    /\b(morning|night|evening|dusk|afternoon)\b/.test(normalized)
+  ) {
+    return current || "";
+  }
+  if (
+    /\bin the morning\b/.test(normalized) &&
+    !/\b(this morning|morning light|it is morning|at morning)\b/.test(normalized)
+  ) {
+    return current || "";
+  }
+  if (/\b(midnight|late night|night)\b/.test(normalized)) return "night";
+  if (/\b(evening|dusk|sunset|darkening)\b/.test(normalized)) return "dusk";
+  if (/\b(morning|sunrise|dawn)\b/.test(normalized)) return "morning";
+  if (/\b(noon|midday)\b/.test(normalized)) return "midday";
+  if (/\b(afternoon)\b/.test(normalized)) return "afternoon";
+  return current || "";
+};
+
+const inferWeatherFromText = (text = "", current = "") => {
+  const normalized = normalizeNarrativeText(text);
+  if (!normalized) return current || "";
+  if (/\b(storm|thunder)\b/.test(normalized)) return "storm";
+  if (/\b(rain|rainy|drizzle)\b/.test(normalized)) return "rain";
+  if (/\b(snow|snowy)\b/.test(normalized)) return "snow";
+  if (/\b(fog|mist|haze)\b/.test(normalized)) return "mist";
+  if (/\b(clear|sunny|bright)\b/.test(normalized)) return "clear";
+  return current || "";
+};
+
+const inferMoodFromText = (text = "", current = "") => {
+  const normalized = normalizeNarrativeText(text);
+  if (!normalized) return current || "";
+  if (/\b(safe|warm|welcoming|cozy|rest)\b/.test(normalized)) return "warm";
+  if (/\b(suspicious|danger|tense|watched)\b/.test(normalized)) return "tense";
+  if (/\b(quiet|calm)\b/.test(normalized)) return "quiet";
+  return current || "";
+};
+
+const inferSceneTagsFromText = (text = "") => {
+  const normalized = normalizeNarrativeText(text);
+  if (!normalized) return [];
+  const tags = [];
+  if (/\b(inn|tavern|village|town|room)\b/.test(normalized)) {
+    tags.push("settlement", "warm", "safe");
+  }
+  if (/\b(ridge|overlook)\b/.test(normalized)) {
+    tags.push("scenic", "windy");
+  }
+  if (/\b(road|path|trail|journey|travel)\b/.test(normalized)) {
+    tags.push("travel");
+  }
+  return uniqueStringArray(tags);
+};
+
+const inferSeparationFlags = (userText = "", assistantText = "") => {
+  const combined = normalizeNarrativeText(`${userText} ${assistantText}`);
+  const user = normalizeNarrativeText(userText);
+  const add = [];
+  const remove = [];
+  if (
+    /\b(leave you|you stay|i ll wait|see you in the room|without me)\b/.test(
+      user
+    )
+  ) {
+    add.push("player-separated");
+  }
+  if (
+    /\b(find your room|rejoin|back together|you both|meet you|arrive together)\b/.test(
+      combined
+    )
+  ) {
+    remove.push("player-separated");
+  }
+  return {
+    add: uniqueStringArray(add),
+    remove: uniqueStringArray(remove),
+  };
+};
+
+const inferStateDeltaFromText = ({
+  userText = "",
+  assistantText = "",
+  lorebook = {},
+  storyState = {},
+}) => {
+  const combinedText = `${userText} ${assistantText}`.trim();
+  if (!combinedText) return {};
+  const currentScene = storyState.scene || {};
+  const sceneDelta = {};
+  const inferredLocation = inferLocationFromText({
+    text: combinedText,
+    lorebook,
+    currentLocationId: currentScene.locationId || "",
+  });
+
+  if (inferredLocation) {
+    const isLocationChange = inferredLocation.id !== currentScene.locationId;
+    if (isLocationChange) {
+      sceneDelta.locationId = inferredLocation.id;
+      sceneDelta.locationName = inferredLocation.name;
+      sceneDelta.description = inferredLocation.description;
+      sceneDelta.tagsAdd = inferredLocation.tags;
+      sceneDelta.nearbyAdd = inferredLocation.neighbors;
+      sceneDelta.nearbyRemove = uniqueStringArray(currentScene.nearby || []);
+    }
+  }
+
+  const inferredInterior = inferInteriorSceneFromText(combinedText);
+  if (inferredInterior) {
+    sceneDelta.description =
+      sceneDelta.description || inferredInterior.description;
+    sceneDelta.mood = sceneDelta.mood || inferredInterior.mood;
+    sceneDelta.tagsAdd = uniqueStringArray([
+      ...(sceneDelta.tagsAdd || []),
+      ...(inferredInterior.tagsAdd || []),
+    ]);
+  }
+
+  const inferredTime = inferTimeOfDayFromText(combinedText, currentScene.timeOfDay);
+  if (inferredTime && inferredTime !== currentScene.timeOfDay) {
+    sceneDelta.timeOfDay = inferredTime;
+  }
+
+  const inferredWeather = inferWeatherFromText(combinedText, currentScene.weather);
+  if (inferredWeather && inferredWeather !== currentScene.weather) {
+    sceneDelta.weather = inferredWeather;
+  }
+
+  const inferredMood = inferMoodFromText(combinedText, currentScene.mood);
+  if (!sceneDelta.mood && inferredMood && inferredMood !== currentScene.mood) {
+    sceneDelta.mood = inferredMood;
+  }
+
+  const inferredTags = inferSceneTagsFromText(combinedText);
+  if (inferredTags.length > 0) {
+    sceneDelta.tagsAdd = uniqueStringArray([...(sceneDelta.tagsAdd || []), ...inferredTags]);
+  }
+
+  const separationFlags = inferSeparationFlags(userText, assistantText);
+  const delta = {};
+  if (Object.keys(sceneDelta).length > 0) {
+    delta.scene = sceneDelta;
+  }
+  if (separationFlags.add.length > 0 || separationFlags.remove.length > 0) {
+    delta.flags = {};
+    if (separationFlags.add.length > 0) delta.flags.add = separationFlags.add;
+    if (separationFlags.remove.length > 0) delta.flags.remove = separationFlags.remove;
+  }
+  return delta;
+};
+
+const mergeStateDeltaWithInference = (stateDelta = {}, inferredDelta = {}) => {
+  const merged = stateDelta && typeof stateDelta === "object" ? { ...stateDelta } : {};
+  if (!inferredDelta || typeof inferredDelta !== "object") return merged;
+
+  if (inferredDelta.scene) {
+    merged.scene = merged.scene && typeof merged.scene === "object" ? { ...merged.scene } : {};
+    const sceneFields = [
+      "locationId",
+      "locationName",
+      "description",
+      "timeOfDay",
+      "weather",
+      "mood",
+      "direction",
+    ];
+    sceneFields.forEach((field) => {
+      if (!merged.scene[field] && inferredDelta.scene[field]) {
+        merged.scene[field] = inferredDelta.scene[field];
+      }
+    });
+    merged.scene.tagsAdd = uniqueStringArray([
+      ...(merged.scene.tagsAdd || []),
+      ...(inferredDelta.scene.tagsAdd || []),
+    ]);
+    merged.scene.tagsRemove = uniqueStringArray([
+      ...(merged.scene.tagsRemove || []),
+      ...(inferredDelta.scene.tagsRemove || []),
+    ]);
+    merged.scene.nearbyAdd = uniqueStringArray([
+      ...(merged.scene.nearbyAdd || []),
+      ...(inferredDelta.scene.nearbyAdd || []),
+    ]);
+    merged.scene.nearbyRemove = uniqueStringArray([
+      ...(merged.scene.nearbyRemove || []),
+      ...(inferredDelta.scene.nearbyRemove || []),
+    ]);
+  }
+
+  if (inferredDelta.flags) {
+    merged.flags = merged.flags && typeof merged.flags === "object" ? { ...merged.flags } : {};
+    merged.flags.add = uniqueStringArray([
+      ...(merged.flags.add || []),
+      ...(inferredDelta.flags.add || []),
+    ]);
+    merged.flags.remove = uniqueStringArray([
+      ...(merged.flags.remove || []),
+      ...(inferredDelta.flags.remove || []),
+    ]);
+  }
+
+  return merged;
+};
+
 const buildPresetPrompt = (character) => {
   const parts = [];
   const push = (value) => {
@@ -421,7 +1723,7 @@ const storyCharacters = [
     id: "frieren",
     name: "Frieren from Beyond Journey's End",
     weight: 1.5,
-    viewDistance: "",
+    viewDistance: "medium shot",
     background: "",
     signatureTraits: "official Frieren",
     eyeDetails: "",
@@ -437,7 +1739,7 @@ const storyCharacters = [
     markings: "",
     pose: "",
     outfitMaterials: "",
-    styleReference: "character more detailed than background",
+    styleReference: "tasteful anime design, character more detailed than background",
     storyNegativePrompt: DEFAULT_NEGATIVE_PROMPT,
   }),
 ];
@@ -738,6 +2040,40 @@ const safeJsonParse = (text = "") => {
   }
 };
 
+const extractJsonStringField = (text = "", field = "") => {
+  if (!text || !field) return "";
+  const fieldToken = `"${field}"`;
+  const fieldIndex = text.indexOf(fieldToken);
+  if (fieldIndex === -1) return "";
+  const colonIndex = text.indexOf(":", fieldIndex + fieldToken.length);
+  if (colonIndex === -1) return "";
+  let start = colonIndex + 1;
+  while (start < text.length && /\s/.test(text[start])) start += 1;
+  if (text[start] !== "\"") return "";
+  let i = start + 1;
+  let escaped = false;
+  for (; i < text.length; i += 1) {
+    const ch = text[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (ch === "\\") {
+      escaped = true;
+      continue;
+    }
+    if (ch === "\"") {
+      const raw = text.slice(start, i + 1);
+      try {
+        return JSON.parse(raw);
+      } catch (err) {
+        return "";
+      }
+    }
+  }
+  return "";
+};
+
 const parsePromptHelperResponse = (text = "") => {
   const parsed = safeJsonParse(text);
   if (parsed?.positivePrompt || parsed?.negativePrompt) {
@@ -770,6 +2106,14 @@ const parseSceneHelperResponse = (text = "") => {
 const sanitizeScenePrompt = (value = "") => {
   if (!value) return "";
   const cleaned = value
+    .replace(/establishing shot/gi, "")
+    .replace(/extreme wide/gi, "")
+    .replace(/ultra wide/gi, "")
+    .replace(/medium[- ]?long shot/gi, "")
+    .replace(/environment visible/gi, "")
+    .replace(/balanced composition/gi, "")
+    .replace(/\bwide shot\b/gi, "")
+    .replace(/\blong shot\b/gi, "")
     .replace(/close[- ]?up/gi, "")
     .replace(/extreme close[- ]?up/gi, "")
     .replace(/\s{2,}/g, " ")
@@ -860,6 +2204,302 @@ const dedupeFragments = (parts = []) => {
   });
 };
 
+const buildSceneFragmentsFromStoryState = (storyState = {}, worldPrompt = "") => {
+  const scene = storyState?.scene || {};
+  const environment = dedupeFragments([
+    scene.locationName,
+    scene.description,
+    scene.weather,
+    scene.timeOfDay,
+    scene.mood,
+    worldPrompt,
+  ]);
+  const action = dedupeFragments([
+    scene.direction ? `moving ${scene.direction}` : "",
+    scene.mood ? `mood ${scene.mood}` : "",
+  ]);
+  return {
+    environment,
+    action,
+    prompt: dedupeFragments([...environment, ...action]).join(", "),
+  };
+};
+
+const extractContextualSceneFragments = (text = "") => {
+  const normalized = normalizeNarrativeText(text);
+  if (!normalized) {
+    return { environment: [], action: [] };
+  }
+  const environment = [];
+  const action = [];
+
+  if (/\b(inn|tavern|innkeeper|common room|counter|stool|wooden table)\b/.test(normalized)) {
+    environment.push("cozy inn common room", "wooden interior", "warm lantern light");
+  }
+  if (/\b(hearth|fire|flame|firelight|woodsmoke)\b/.test(normalized)) {
+    environment.push("hearth firelight", "soft warm glow");
+    action.push("seated near the hearth", "watching the flames");
+  }
+  if (/\b(room|upstairs|bed|window)\b/.test(normalized)) {
+    environment.push("modest inn room interior", "warm lamplight");
+    action.push("resting in an inn room");
+  }
+  if (/\b(road|path|valley|trail)\b/.test(normalized)) {
+    environment.push("stone road", "misty path");
+  }
+  if (/\b(village|town|lantern)\b/.test(normalized)) {
+    environment.push("village lights", "settlement edge");
+  }
+  if (/\b(tea|teacup|cup)\b/.test(normalized)) {
+    action.push("holding a teacup");
+  }
+  if (/\b(sit|seated|sits|stool|table)\b/.test(normalized)) {
+    action.push("seated posture");
+  }
+  if (/\b(glance|gaze|watching|looking)\b/.test(normalized)) {
+    action.push("attentive gaze");
+  }
+
+  return {
+    environment: dedupeFragments(environment),
+    action: dedupeFragments(action),
+  };
+};
+
+const INTERIOR_SCENE_HINTS = [
+  "inn",
+  "tavern",
+  "room",
+  "interior",
+  "hearth",
+  "fire",
+  "flame",
+  "lantern",
+  "lamplight",
+  "wooden",
+  "table",
+  "bed",
+  "window",
+];
+
+const EXTERIOR_SCENE_HINTS = [
+  "road",
+  "valley",
+  "village outskirts",
+  "countryside",
+  "field",
+  "mountain",
+  "sky",
+  "village",
+];
+
+const META_SCENE_HINTS = [
+  "morning",
+  "afternoon",
+  "dusk",
+  "night",
+  "mood",
+  "moving",
+  "northbound",
+  "southbound",
+  "eastbound",
+  "westbound",
+];
+
+const isFragmentWithHints = (fragment = "", hints = []) => {
+  const normalized = normalizeNarrativeText(fragment);
+  return hints.some((hint) => normalized.includes(hint));
+};
+
+const buildCompactSceneContext = ({
+  environment = [],
+  action = [],
+  maxEnvironment = 6,
+  maxAction = 1,
+}) => {
+  const env = dedupeFragments(environment)
+    .map((fragment) => normalizePromptFragment(fragment))
+    .filter(Boolean)
+    .filter((fragment) => fragment.length <= 90);
+  const act = dedupeFragments(action)
+    .map((fragment) => normalizePromptFragment(fragment))
+    .filter(Boolean)
+    .filter((fragment) => fragment.length <= 70);
+
+  const hasInteriorCue = env.some((fragment) =>
+    isFragmentWithHints(fragment, INTERIOR_SCENE_HINTS)
+  );
+
+  const filteredEnvironment = env.filter((fragment) => {
+    const isMeta = isFragmentWithHints(fragment, META_SCENE_HINTS);
+    if (isMeta) return false;
+    if (hasInteriorCue && isFragmentWithHints(fragment, EXTERIOR_SCENE_HINTS)) {
+      return false;
+    }
+    return true;
+  });
+
+  const filteredAction = act.filter((fragment) => {
+    const isMeta = isFragmentWithHints(fragment, META_SCENE_HINTS);
+    if (isMeta) return false;
+    if (
+      hasInteriorCue &&
+      isFragmentWithHints(fragment, ["moving", "walking", "traveling"])
+    ) {
+      return false;
+    }
+    return true;
+  });
+
+  const compactEnvironment = dedupeFragments(filteredEnvironment).slice(
+    0,
+    maxEnvironment
+  );
+  const compactAction = dedupeFragments(filteredAction).slice(0, maxAction);
+  return {
+    environment: compactEnvironment,
+    action: compactAction,
+    prompt: dedupeFragments([...compactEnvironment, ...compactAction]).join(", "),
+  };
+};
+
+const compactScenePayload = ({
+  scenePrompt = "",
+  sceneEnvironment = "",
+  sceneAction = "",
+  contextText = "",
+}) => {
+  const promptContext = extractSceneContextFragments(scenePrompt || "");
+  const contextual = extractContextualSceneFragments(contextText || "");
+  const mergedEnvironment = dedupeFragments([
+    ...contextual.environment,
+    ...splitPromptFragments(sceneEnvironment || ""),
+    ...promptContext.environment,
+  ]);
+  const mergedAction = dedupeFragments([
+    ...contextual.action,
+    ...splitPromptFragments(sceneAction || ""),
+    ...promptContext.action,
+  ]);
+  const compact = buildCompactSceneContext({
+    environment: mergedEnvironment,
+    action: mergedAction,
+  });
+  return {
+    scenePrompt: compact.prompt,
+    sceneEnvironment: compact.environment.join(", "),
+    sceneAction: compact.action.join(", "),
+  };
+};
+
+const clipText = (value = "", max = 1200) => {
+  const normalized = normalizePromptFragment(value);
+  if (normalized.length <= max) return normalized;
+  return `${normalized.slice(0, max).trim()}...`;
+};
+
+const aiCraftSceneContext = async ({
+  scenePrompt = "",
+  sceneEnvironment = "",
+  sceneAction = "",
+  contextText = "",
+  storyState = {},
+  lorebook = {},
+}) => {
+  const fallback = compactScenePayload({
+    scenePrompt,
+    sceneEnvironment,
+    sceneAction,
+    contextText,
+  });
+  const signalText = clipText(contextText, 1200);
+  const sourcePayload = {
+    scenePrompt: clipText(scenePrompt, 600),
+    sceneEnvironment: clipText(sceneEnvironment, 600),
+    sceneAction: clipText(sceneAction, 300),
+    context: signalText,
+    currentScene: {
+      locationName: storyState?.scene?.locationName || "",
+      description: storyState?.scene?.description || "",
+      weather: storyState?.scene?.weather || "",
+      timeOfDay: storyState?.scene?.timeOfDay || "",
+      mood: storyState?.scene?.mood || "",
+      tags: uniqueStringArray(storyState?.scene?.tags || []),
+    },
+    knownLocations: Array.isArray(lorebook?.locations)
+      ? lorebook.locations.map((location) => ({
+          id: location.id,
+          name: location.name,
+          tags: uniqueStringArray(location.tags || []),
+        }))
+      : [],
+  };
+
+  try {
+    const command = new InvokeModelCommand({
+      modelId: promptHelperModelId,
+      contentType: "application/json",
+      accept: "application/json",
+      body: JSON.stringify({
+        anthropic_version: "bedrock-2023-05-31",
+        max_tokens: 260,
+        temperature: 0.1,
+        system: [
+          "You compress scene context for anime illustration prompts with strong character-fidelity priority.",
+          "Return ONLY valid JSON object with keys: scenePrompt, sceneEnvironment, sceneAction.",
+          "Use `context` as highest-priority truth (what is visible now). Use `currentScene` only if context is missing.",
+          "Choose ONE dominant setting cluster for this frame.",
+          "Do not mix indoor and outdoor clusters unless the context explicitly says both are visible in one shot.",
+          "Drop narrative/meta information: mood labels, directions, goals, future plans, summaries, off-screen events.",
+          "Do not include location IDs or abstract tokens.",
+          "Each fragment should be 2-6 words and concrete visual language.",
+          "sceneEnvironment: 3-6 short visual fragments, comma-separated, no duplicates.",
+          "sceneAction: 0-1 short visible action fragment, comma-separated.",
+          "scenePrompt: concise merge of sceneEnvironment then sceneAction.",
+        ].join("\n"),
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(sourcePayload),
+              },
+            ],
+          },
+        ],
+      }),
+    });
+    const response = await bedrockClient.send(command);
+    const responseBody = JSON.parse(new TextDecoder().decode(response.body));
+    const responseText = (responseBody?.content || [])
+      .map((item) => item?.text)
+      .filter(Boolean)
+      .join("")
+      .trim();
+    const parsed = safeJsonParse(responseText) || {};
+    const aiScenePrompt = normalizePromptFragment(parsed.scenePrompt || "");
+    const aiSceneEnvironment = normalizePromptFragment(
+      parsed.sceneEnvironment || ""
+    );
+    const aiSceneAction = normalizePromptFragment(parsed.sceneAction || "");
+    if (!aiScenePrompt && !aiSceneEnvironment && !aiSceneAction) {
+      return fallback;
+    }
+    const compact = compactScenePayload({
+      scenePrompt: aiScenePrompt || fallback.scenePrompt,
+      sceneEnvironment: aiSceneEnvironment || fallback.sceneEnvironment,
+      sceneAction: aiSceneAction || fallback.sceneAction,
+      contextText: signalText,
+    });
+    return compact.scenePrompt || compact.sceneEnvironment || compact.sceneAction
+      ? compact
+      : fallback;
+  } catch (error) {
+    return fallback;
+  }
+};
+
 const buildStoryIllustrationPrompt = ({
   character,
   sessionItem,
@@ -890,12 +2530,43 @@ const buildStoryIllustrationPrompt = ({
       : includeScene
         ? extractSceneContextFragments(cleanScenePrompt)
         : { environment: [], action: [] };
-  const hasSceneEnvironment = resolvedSceneContext.environment.length > 0;
+  const contextSignalText =
+    contextMode === "summary+scene" || contextMode === "summary+latest"
+      ? contextLine
+      : contextMode === "recent" || contextMode === "summary+recent"
+        ? recentTranscript
+        : "";
+  const contextualScene = extractContextualSceneFragments(contextSignalText);
+  const stateSceneContext = buildSceneFragmentsFromStoryState(
+    sessionItem?.storyState || {},
+    sessionItem?.worldPrompt || ""
+  );
+  const hasSceneEnvironment =
+    resolvedSceneContext.environment.length > 0 ||
+    contextualScene.environment.length > 0;
   const environmentParts = dedupeFragments([
-    ...(hasSceneEnvironment ? [] : [sessionItem?.worldPrompt]),
+    ...contextualScene.environment,
     ...resolvedSceneContext.environment,
+    ...(hasSceneEnvironment
+      ? []
+      : [...stateSceneContext.environment, sessionItem?.worldPrompt]),
+    "background detailed but secondary",
   ]);
-  const clothes = character?.outfitMaterials || "";
+  const actionParts = dedupeFragments([
+    ...contextualScene.action,
+    ...resolvedSceneContext.action,
+    ...(resolvedSceneContext.action.length > 0 || contextualScene.action.length > 0
+      ? []
+      : stateSceneContext.action),
+  ]);
+  const compactScene = buildCompactSceneContext({
+    environment: environmentParts,
+    action: actionParts,
+  });
+  const promptEnvironment = dedupeFragments([
+    ...compactScene.environment,
+    "background detailed but secondary",
+  ]);
 
   const characterParts = ["1girl, solo"];
   if (character?.name) {
@@ -910,52 +2581,19 @@ const buildStoryIllustrationPrompt = ({
   const focusActionParts = dedupeFragments([
     character?.eyeDetails,
     character?.pose,
-    ...resolvedSceneContext.action,
   ]);
 
-  const contextParts = [];
-  if (contextMode === "summary") {
-    if (summaryLine) contextParts.push(summaryLine);
-  } else if (contextMode === "summary+latest") {
-    if (summaryLine) contextParts.push(summaryLine);
-    if (contextLine) contextParts.push(contextLine);
-  } else if (contextMode === "recent") {
-    if (recentTranscript) contextParts.push(recentTranscript);
-  } else if (contextMode === "summary+recent") {
-    if (summaryLine) contextParts.push(summaryLine);
-    if (recentTranscript) contextParts.push(recentTranscript);
-  } else if (contextMode === "summary+scene") {
-    if (summaryLine) contextParts.push(summaryLine);
-  } else if (!contextMode || contextMode === "scene") {
-    // no extra context beyond scene fragments
-  } else {
-    if (summaryLine) contextParts.push(summaryLine);
-  }
-
-  const faceParts = dedupeFragments([
-    character?.faceDetails,
-    character?.breastSize,
-    character?.ears,
-    character?.tails,
-    character?.horns,
-    character?.wings,
-    character?.hairStyles,
-    character?.accessories,
-    character?.markings,
-  ]);
-
-  const visualParts = dedupeFragments([
-    character?.styleReference,
-    sessionItem?.stylePrompt,
+  const visualParts = dedupeFragments([character?.styleReference]);
+  const focusParts = dedupeFragments([
+    ...focusActionParts,
+    ...compactScene.action.slice(0, 1),
   ]);
 
   return [
     shotRange,
-    environmentParts.join(", "),
-    clothes,
     characterParts.join(", "),
-    [...focusActionParts, ...contextParts].join(", "),
-    faceParts.join(", "),
+    promptEnvironment.join(", "),
+    focusParts.join(", "),
     visualParts.join(", "),
   ]
     .filter(Boolean)
@@ -3734,6 +5372,8 @@ app.post("/story/sessions", async (req, res) => {
       preset.protagonistPrompt || character?.identityPrompt || buildCharacterPrompt(character);
     const protagonistName =
       character?.name || preset.protagonistName || "Protagonist";
+    const resolvedLorebook = resolveStoryLorebook(preset, protagonistName);
+    const initialStoryState = buildInitialStoryState(resolvedLorebook);
 
     const sessionId = `story-${Date.now()}-${Math.random()
       .toString(36)
@@ -3754,6 +5394,8 @@ app.post("/story/sessions", async (req, res) => {
       stylePrompt: preset.stylePrompt,
       negativePrompt: preset.negativePrompt,
       opening: preset.opening,
+      lorebook: resolvedLorebook,
+      storyState: initialStoryState,
       summary: "",
       turnCount: 0,
       sceneCount: 1,
@@ -3790,7 +5432,7 @@ app.post("/story/sessions", async (req, res) => {
       .toString(36)
       .slice(2, 6)}`;
     const openingScenePrompt = [
-      "establishing shot, environment visible, balanced composition",
+      "medium shot, balanced composition",
       preset.worldPrompt,
     ]
       .filter(Boolean)
@@ -3822,6 +5464,8 @@ app.post("/story/sessions", async (req, res) => {
         presetId: sessionItem.presetId,
         protagonistName: sessionItem.protagonistName,
         synopsis: sessionItem.synopsis,
+        lorebook: sessionItem.lorebook,
+        storyState: sessionItem.storyState,
         createdAt: now,
         updatedAt: now,
         turnCount: 0,
@@ -3914,6 +5558,8 @@ app.get("/story/sessions/:id", async (req, res) => {
         presetId: sessionItem.presetId,
         protagonistName: sessionItem.protagonistName,
         synopsis: sessionItem.synopsis,
+        lorebook: sessionItem.lorebook,
+        storyState: sessionItem.storyState,
         createdAt: sessionItem.createdAt,
         updatedAt: sessionItem.updatedAt,
         turnCount: sessionItem.turnCount || 0,
@@ -4085,21 +5731,57 @@ app.post("/story/sessions/:id/message", async (req, res) => {
       scanForward: false,
     });
     const orderedMessages = recentMessages.reverse();
+    const lorebookSeed = {
+      id: sessionItem.presetId,
+      name: sessionItem.title,
+      synopsis: sessionItem.synopsis,
+      worldPrompt: sessionItem.worldPrompt,
+      opening: sessionItem.opening,
+      lorebook: sessionItem.lorebook,
+    };
+    const resolvedLorebook =
+      sessionItem.lorebook ||
+      resolveStoryLorebook(lorebookSeed, sessionItem.protagonistName);
+    const resolvedStoryState =
+      sessionItem.storyState || buildInitialStoryState(resolvedLorebook);
+    const directorSelection = selectStoryEvent(
+      resolvedLorebook,
+      resolvedStoryState,
+      newTurnCount
+    );
+    const directorCue = directorSelection.cue;
+    const isPlayerSeparated = (resolvedStoryState.flags || []).includes(
+      "player-separated"
+    );
 
     const systemPrompt = [
       "You are a narrative director for an interactive anime adventure.",
       `Protagonist: ${sessionItem.protagonistName}.`,
       "The protagonist must remain the same character in every scene.",
       "Keep continuity with the story summary and prior dialogue.",
+      "Keep narration minimal. Favor direct action and dialogue from the protagonist.",
+      "Each paragraph should include the protagonist acting or speaking. Avoid long exposition.",
+      "Environment changes should be concise (one short sentence max) and reflected in stateDelta.",
+      "Perspective rule: the player only knows what they directly perceive.",
+      "If Frieren acts away from the player, do not render full off-screen conversations; summarize key outcome in 1-2 concise sentences, then return to direct interaction with the player.",
+      "When the player indicates movement or a new place (inn, village, road, ruins), update stateDelta.scene.locationId/locationName/description accordingly using the Lorebook locations.",
+      "Use the Lorebook and Current State to keep environment, NPCs, and goals coherent.",
+      "Integrate the Director cue into the next reply. If initiative is protagonist, the protagonist should act first or propose an action without waiting for the player.",
       "Respond in 2-4 short paragraphs, then end with a question to the player.",
       "When a meaningful scene beat occurs, mark it as a sceneBeat.",
+      "Update stateDelta to reflect changes in location, time, weather, tags, goals, flags, NPC presence, and metrics (tension, mystery, urgency, progress, fatigue).",
+      "stateDelta schema: { scene: { locationId, locationName, description, timeOfDay, weather, mood, direction, tagsAdd, tagsRemove, nearbyAdd, nearbyRemove }, metrics: { tension, mystery, urgency, progress, fatigue }, metricsDelta: { tension, mystery, urgency, progress, fatigue }, goals: { activeAdd, activeRemove, completedAdd }, flags: { add, remove }, npcs: { presentAdd, presentRemove } }.",
       "Return ONLY valid JSON with keys:",
-      "reply (string), summary (string), sceneBeat (boolean), sceneTitle (string), sceneDescription (string), scenePrompt (string), sceneEnvironment (string), sceneAction (string).",
+      "reply (string), summary (string), sceneBeat (boolean), sceneTitle (string), sceneDescription (string), scenePrompt (string), sceneEnvironment (string), sceneAction (string), stateDelta (object).",
       "scenePrompt should focus on visual details of the moment (environment, action, mood) and be concise.",
       "scenePrompt must be purely visual fragments (comma-separated). No dialogue, no questions, no second-person phrasing.",
       "sceneEnvironment: comma-separated background/environment fragments (short phrases).",
       "sceneAction: comma-separated action/pose/motion fragments (short phrases).",
-      "scenePrompt should include framing guidance: medium shot or full body, environment visible, no close-ups.",
+      "scenePrompt should include framing guidance: medium shot or full body, face readable, no extreme wide shots.",
+      `Player separation mode: ${isPlayerSeparated ? "separated" : "shared-scene"}.`,
+      `Lorebook: ${JSON.stringify(resolvedLorebook)}`,
+      `Current state: ${JSON.stringify(resolvedStoryState)}`,
+      `Director cue: ${directorCue ? JSON.stringify(directorCue) : "none"}`,
       `Story summary: ${sessionItem.summary || "New story."}`,
       `World: ${sessionItem.worldPrompt}`,
       `Style: ${sessionItem.stylePrompt}`,
@@ -4133,17 +5815,38 @@ app.post("/story/sessions/:id/message", async (req, res) => {
       .trim();
 
     const parsed = safeJsonParse(responseText) || {};
-    const replyText = parsed.reply || responseText || "The story continues.";
+    const extractedReply =
+      typeof parsed.reply === "string" && parsed.reply.trim().length > 0
+        ? ""
+        : extractJsonStringField(responseText, "reply");
+    const replyText =
+      parsed.reply ||
+      extractedReply ||
+      responseText ||
+      "The story continues.";
     const nextSummary =
       typeof parsed.summary === "string" && parsed.summary.trim().length > 0
         ? parsed.summary.trim()
         : sessionItem.summary || "";
-    const sceneBeat = Boolean(parsed.sceneBeat);
+    let sceneBeat = Boolean(parsed.sceneBeat);
     const sceneTitle = parsed.sceneTitle?.trim() || "";
     const sceneDescription = parsed.sceneDescription?.trim() || "";
-    const scenePrompt = parsed.scenePrompt?.trim() || "";
-    const sceneEnvironment = parsed.sceneEnvironment?.trim() || "";
-    const sceneAction = parsed.sceneAction?.trim() || "";
+    let scenePrompt = parsed.scenePrompt?.trim() || "";
+    let sceneEnvironment = parsed.sceneEnvironment?.trim() || "";
+    let sceneAction = parsed.sceneAction?.trim() || "";
+    const rawStateDelta = parsed.stateDelta;
+    const stateDelta =
+      rawStateDelta && typeof rawStateDelta === "object" ? rawStateDelta : {};
+    const inferredStateDelta = inferStateDeltaFromText({
+      userText: content,
+      assistantText: replyText,
+      lorebook: resolvedLorebook,
+      storyState: resolvedStoryState,
+    });
+    const resolvedStateDelta = mergeStateDeltaWithInference(
+      stateDelta,
+      inferredStateDelta
+    );
 
     const assistantMessageItem = {
       pk: buildMediaPk(userId),
@@ -4161,12 +5864,109 @@ app.post("/story/sessions/:id/message", async (req, res) => {
       })
     );
 
+    let nextStoryState = applyStateDelta(
+      resolvedStoryState,
+      directorSelection.event?.effects || {}
+    );
+    nextStoryState = applyStateDelta(nextStoryState, resolvedStateDelta);
+    nextStoryState.meta = updateStoryMeta(
+      nextStoryState,
+      directorSelection.event,
+      newTurnCount,
+      directorSelection.recentLimit
+    );
+
+    const contextualSceneFromReply = extractContextualSceneFragments(replyText);
+    if (
+      contextualSceneFromReply.environment.length > 0 ||
+      contextualSceneFromReply.action.length > 0
+    ) {
+      sceneEnvironment = dedupeFragments([
+        ...splitPromptFragments(sceneEnvironment),
+        ...contextualSceneFromReply.environment,
+      ]).join(", ");
+      sceneAction = dedupeFragments([
+        ...splitPromptFragments(sceneAction),
+        ...contextualSceneFromReply.action,
+      ]).join(", ");
+      if (!scenePrompt) {
+        scenePrompt = dedupeFragments([
+          ...splitPromptFragments(sceneEnvironment),
+          ...splitPromptFragments(sceneAction),
+        ]).join(", ");
+      }
+    }
+
+    const locationChanged = Boolean(
+      resolvedStateDelta?.scene?.locationId ||
+        resolvedStateDelta?.scene?.locationName ||
+        resolvedStateDelta?.scene?.description
+    );
+    const eventType = directorSelection.event?.type;
+    const turnsSinceIllustration = newTurnCount - lastIllustrationTurn;
+    const shouldAutoIllustrate = turnsSinceIllustration >= 2;
+    const shouldForceScene =
+      locationChanged ||
+      eventType === "environment" ||
+      eventType === "discovery" ||
+      eventType === "npc" ||
+      eventType === "choice" ||
+      shouldAutoIllustrate;
+    let hasSceneVisual =
+      Boolean(scenePrompt) || Boolean(sceneEnvironment) || Boolean(sceneAction);
+    if (!hasSceneVisual && shouldForceScene) {
+      const fallbackScene = buildSceneFragmentsFromStoryState(
+        nextStoryState,
+        sessionItem.worldPrompt
+      );
+      scenePrompt = fallbackScene.prompt;
+      sceneEnvironment = fallbackScene.environment.join(", ");
+      sceneAction = fallbackScene.action.join(", ");
+      sceneBeat = true;
+      hasSceneVisual =
+        Boolean(scenePrompt) || Boolean(sceneEnvironment) || Boolean(sceneAction);
+    }
+    if (locationChanged) {
+      const stateScene = buildSceneFragmentsFromStoryState(
+        nextStoryState,
+        sessionItem.worldPrompt
+      );
+      sceneEnvironment = dedupeFragments([
+        ...splitPromptFragments(sceneEnvironment),
+        ...stateScene.environment,
+      ]).join(", ");
+      sceneAction = dedupeFragments([
+        ...splitPromptFragments(sceneAction),
+        ...stateScene.action,
+      ]).join(", ");
+      scenePrompt = dedupeFragments([
+        ...splitPromptFragments(scenePrompt),
+        ...stateScene.environment,
+        ...stateScene.action,
+      ]).join(", ");
+      hasSceneVisual =
+        Boolean(scenePrompt) || Boolean(sceneEnvironment) || Boolean(sceneAction);
+    }
+    if (hasSceneVisual) {
+      const compactScene = await aiCraftSceneContext({
+        scenePrompt,
+        sceneEnvironment,
+        sceneAction,
+        contextText: replyText,
+        storyState: nextStoryState,
+        lorebook: resolvedLorebook,
+      });
+      scenePrompt = compactScene.scenePrompt;
+      sceneEnvironment = compactScene.sceneEnvironment;
+      sceneAction = compactScene.sceneAction;
+      hasSceneVisual =
+        Boolean(scenePrompt) || Boolean(sceneEnvironment) || Boolean(sceneAction);
+    }
+
     let scene = null;
     let nextSceneCount = sessionItem.sceneCount || 0;
-    const hasSceneVisual =
-      Boolean(scenePrompt) || Boolean(sceneEnvironment) || Boolean(sceneAction);
     const shouldIllustrate =
-      sceneBeat && hasSceneVisual && newTurnCount - lastIllustrationTurn >= 3;
+      sceneBeat && hasSceneVisual && turnsSinceIllustration >= 2;
 
     if (shouldIllustrate) {
       const sceneId = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -4205,6 +6005,8 @@ app.post("/story/sessions/:id/message", async (req, res) => {
     const updatedSession = {
       ...sessionItem,
       summary: nextSummary,
+      lorebook: resolvedLorebook,
+      storyState: nextStoryState,
       turnCount: newTurnCount,
       sceneCount: nextSceneCount,
       lastIllustrationTurn: shouldIllustrate
@@ -4223,6 +6025,9 @@ app.post("/story/sessions/:id/message", async (req, res) => {
     res.json({
       sessionId,
       turnCount: newTurnCount,
+      storyState: nextStoryState,
+      lorebook: resolvedLorebook,
+      summary: nextSummary,
       assistant: {
         role: "assistant",
         content: replyText,
@@ -4243,7 +6048,8 @@ app.post("/story/sessions/:id/message", async (req, res) => {
 app.post("/story/sessions/:id/illustrations", async (req, res) => {
   const userId = req.user?.sub;
   const sessionId = req.params.id;
-  const sceneId = req.body?.sceneId;
+  let sceneId = req.body?.sceneId;
+  const forceCurrent = Boolean(req.body?.forceCurrent);
   const regenerate = Boolean(req.body?.regenerate);
   const contextMode = req.body?.contextMode || "summary+scene";
   const bucket = process.env.MEDIA_BUCKET;
@@ -4263,8 +6069,10 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
       .status(500)
       .json({ message: "REPLICATE_API_TOKEN must be set" });
   }
-  if (!sessionId || !sceneId) {
-    return res.status(400).json({ message: "sessionId and sceneId are required" });
+  if (!sessionId || (!sceneId && !forceCurrent)) {
+    return res
+      .status(400)
+      .json({ message: "sessionId and sceneId are required unless forceCurrent is true" });
   }
 
   try {
@@ -4276,10 +6084,83 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
       return res.status(404).json({ message: "Session not found" });
     }
 
-    const sceneItem = await getItem({
-      pk: buildMediaPk(userId),
-      sk: buildStorySceneSk(sessionId, sceneId),
-    });
+    let sceneItem = null;
+    if (sceneId) {
+      sceneItem = await getItem({
+        pk: buildMediaPk(userId),
+        sk: buildStorySceneSk(sessionId, sceneId),
+      });
+    }
+    if (!sceneItem && forceCurrent) {
+      const recentMessages = await queryBySkPrefix({
+        pk: buildMediaPk(userId),
+        skPrefix: storyMessagePrefix(sessionId),
+        limit: 6,
+        scanForward: false,
+      });
+      const latestAssistant = recentMessages.find(
+        (message) => message.role === "assistant"
+      );
+      const stateScene = buildSceneFragmentsFromStoryState(
+        sessionItem.storyState || {},
+        sessionItem.worldPrompt || ""
+      );
+      const contextualScene = extractContextualSceneFragments(
+        latestAssistant?.content || ""
+      );
+      const mergedEnvironment = dedupeFragments([
+        ...contextualScene.environment,
+        ...stateScene.environment,
+      ]);
+      const mergedAction = dedupeFragments([
+        ...contextualScene.action,
+        ...stateScene.action,
+      ]);
+      const compactCurrentScene = await aiCraftSceneContext({
+        scenePrompt: dedupeFragments([...mergedEnvironment, ...mergedAction]).join(", "),
+        sceneEnvironment: mergedEnvironment.join(", "),
+        sceneAction: mergedAction.join(", "),
+        contextText: latestAssistant?.content || "",
+        storyState: sessionItem.storyState || {},
+        lorebook: sessionItem.lorebook || {},
+      });
+      sceneId = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      sceneItem = {
+        pk: buildMediaPk(userId),
+        sk: buildStorySceneSk(sessionId, sceneId),
+        type: "STORY_SCENE",
+        sessionId,
+        sceneId,
+        title: "Current moment",
+        description:
+          normalizePromptFragment(latestAssistant?.content || "") ||
+          `Current scene with ${sessionItem.protagonistName}.`,
+        prompt: compactCurrentScene.scenePrompt,
+        sceneEnvironment: compactCurrentScene.sceneEnvironment,
+        sceneAction: compactCurrentScene.sceneAction,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+      };
+      await dynamoClient.send(
+        new PutCommand({
+          TableName: mediaTable,
+          Item: sceneItem,
+        })
+      );
+      const updatedSession = {
+        ...sessionItem,
+        sceneCount: (sessionItem.sceneCount || 0) + 1,
+        updatedAt: new Date().toISOString(),
+      };
+      await dynamoClient.send(
+        new PutCommand({
+          TableName: mediaTable,
+          Item: updatedSession,
+        })
+      );
+      sessionItem.sceneCount = updatedSession.sceneCount;
+      sessionItem.updatedAt = updatedSession.updatedAt;
+    }
     if (!sceneItem) {
       return res.status(404).json({ message: "Scene not found" });
     }
@@ -4292,7 +6173,21 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
         }),
         { expiresIn: 900 }
       );
-      return res.json({ sceneId, imageKey: sceneItem.imageKey, imageUrl: url });
+      return res.json({
+        sceneId,
+        imageKey: sceneItem.imageKey,
+        imageUrl: url,
+        scene: {
+          sceneId: sceneItem.sceneId,
+          title: sceneItem.title,
+          description: sceneItem.description,
+          prompt: sceneItem.prompt,
+          sceneEnvironment: sceneItem.sceneEnvironment,
+          sceneAction: sceneItem.sceneAction,
+          status: sceneItem.status,
+          createdAt: sceneItem.createdAt,
+        },
+      });
     }
 
     const characters = await ensureStoryCharacters();
@@ -4360,7 +6255,17 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
       })
       .filter(Boolean)
       .join(" ");
-    let cleanScenePrompt = sanitizeScenePrompt(sceneItem.prompt || "");
+    const compactSceneForPrompt = await aiCraftSceneContext({
+      scenePrompt: sceneItem.prompt || "",
+      sceneEnvironment: sceneItem.sceneEnvironment || "",
+      sceneAction: sceneItem.sceneAction || "",
+      contextText: contextLine || recentTranscript,
+      storyState: sessionItem.storyState || {},
+      lorebook: sessionItem.lorebook || {},
+    });
+    let cleanScenePrompt = sanitizeScenePrompt(
+      compactSceneForPrompt.scenePrompt || sceneItem.prompt || ""
+    );
     if (cleanScenePrompt) {
       cleanScenePrompt = cleanScenePrompt
         .replace(/frieren/gi, "")
@@ -4394,8 +6299,9 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
       contextLine,
       recentTranscript,
       cleanScenePrompt,
-      sceneEnvironment: sceneItem.sceneEnvironment || "",
-      sceneAction: sceneItem.sceneAction || "",
+      sceneEnvironment:
+        compactSceneForPrompt.sceneEnvironment || sceneItem.sceneEnvironment || "",
+      sceneAction: compactSceneForPrompt.sceneAction || sceneItem.sceneAction || "",
       contextMode,
     });
 
@@ -4442,6 +6348,10 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
 
     const updatedScene = {
       ...sceneItem,
+      prompt: compactSceneForPrompt.scenePrompt || sceneItem.prompt,
+      sceneEnvironment:
+        compactSceneForPrompt.sceneEnvironment || sceneItem.sceneEnvironment,
+      sceneAction: compactSceneForPrompt.sceneAction || sceneItem.sceneAction,
       imageKey,
       status: "completed",
       promptPositive: trimmedPositivePrompt,
@@ -4468,6 +6378,16 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
       sceneId,
       imageKey,
       imageUrl: signedUrl,
+      scene: {
+        sceneId: updatedScene.sceneId,
+        title: updatedScene.title,
+        description: updatedScene.description,
+        prompt: updatedScene.prompt,
+        sceneEnvironment: updatedScene.sceneEnvironment,
+        sceneAction: updatedScene.sceneAction,
+        status: updatedScene.status,
+        createdAt: updatedScene.createdAt,
+      },
       ...(debug
         ? {
             prompt: {
@@ -4481,8 +6401,8 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
               latest: contextLine,
               recent: recentTranscript,
               scene: cleanScenePrompt,
-              sceneEnvironment: sceneItem.sceneEnvironment || "",
-              sceneAction: sceneItem.sceneAction || "",
+              sceneEnvironment: updatedScene.sceneEnvironment || "",
+              sceneAction: updatedScene.sceneAction || "",
             },
             promptPattern: [
               "shot range",

@@ -24,6 +24,10 @@ function Story({ apiBaseUrl = "" }) {
     "summary+scene"
   );
   const [illustrationDebugEnabled, setIllustrationDebugEnabled] = useState(true);
+  const [activeSessionDetail, setActiveSessionDetail] = useState(null);
+  const [storyDebugEnabled, setStoryDebugEnabled] = useState(false);
+  const [storyDebugView, setStoryDebugView] = useState("state");
+  const [isForcingIllustration, setIsForcingIllustration] = useState(false);
 
   const resolvedApiBaseUrl = apiBaseUrl || process.env.REACT_APP_API_URL || "";
 
@@ -31,6 +35,11 @@ function Story({ apiBaseUrl = "" }) {
     () => sessions.find((session) => session.id === activeSessionId),
     [sessions, activeSessionId]
   );
+  const activeTurnCount =
+    activeSessionDetail?.turnCount ??
+    activeSessionDetail?.storyState?.meta?.turn ??
+    activeSession?.turnCount ??
+    0;
 
   useEffect(() => {
     if (!resolvedApiBaseUrl) return;
@@ -60,6 +69,16 @@ function Story({ apiBaseUrl = "" }) {
     refreshSessions();
   }, [resolvedApiBaseUrl]);
 
+  const refreshActiveSessionDetail = async (sessionId) => {
+    if (!resolvedApiBaseUrl || !sessionId) return;
+    try {
+      const data = await getStorySession(resolvedApiBaseUrl, sessionId);
+      setActiveSessionDetail(data.session || null);
+    } catch (err) {
+      setError(err?.message || "Failed to refresh session detail.");
+    }
+  };
+
   const loadSession = async (sessionId) => {
     if (!resolvedApiBaseUrl || !sessionId) return;
     setIsLoadingSession(true);
@@ -69,6 +88,7 @@ function Story({ apiBaseUrl = "" }) {
       setActiveSessionId(sessionId);
       setMessages(data.messages || []);
       setScenes(data.scenes || []);
+      setActiveSessionDetail(data.session || null);
     } catch (err) {
       setError(err?.message || "Failed to load session.");
     } finally {
@@ -94,6 +114,7 @@ function Story({ apiBaseUrl = "" }) {
         setActiveSessionId("");
         setMessages([]);
         setScenes([]);
+        setActiveSessionDetail(null);
       }
     } catch (err) {
       setError(err?.message || "Failed to delete session.");
@@ -154,6 +175,68 @@ function Story({ apiBaseUrl = "" }) {
     }
   };
 
+  const handleForceIllustration = async () => {
+    if (!resolvedApiBaseUrl || !activeSessionId) {
+      setError("Select or create a story session first.");
+      return;
+    }
+    if (isForcingIllustration) return;
+    setIsForcingIllustration(true);
+    setError("");
+    try {
+      const illustration = await generateStoryIllustration(
+        resolvedApiBaseUrl,
+        activeSessionId,
+        {
+          forceCurrent: true,
+          contextMode: illustrationContextMode,
+        },
+        { debug: illustrationDebugEnabled }
+      );
+      const scene = illustration?.scene;
+      if (!scene?.sceneId) {
+        setError("Failed to create a scene from current context.");
+        return;
+      }
+      const debugData =
+        illustration?.identity || illustration?.context || illustration?.replicate
+          ? {
+              identity: illustration.identity,
+              context: illustration.context,
+              promptPattern: illustration.promptPattern,
+              replicate: illustration.replicate,
+            }
+          : null;
+      setScenes((prev) => {
+        const exists = prev.some((item) => item.sceneId === scene.sceneId);
+        const nextScene = {
+          ...scene,
+          imageUrl: illustration.imageUrl,
+          imageKey: illustration.imageKey,
+          status: illustration.imageUrl ? "completed" : scene.status || "pending",
+          promptPositive: illustration.prompt?.positive || scene.promptPositive,
+          promptNegative: illustration.prompt?.negative || scene.promptNegative,
+          sceneEnvironment:
+            illustration.context?.sceneEnvironment || scene.sceneEnvironment,
+          sceneAction: illustration.context?.sceneAction || scene.sceneAction,
+          debug: debugData || scene.debug,
+        };
+        if (exists) {
+          return prev.map((item) =>
+            item.sceneId === scene.sceneId ? { ...item, ...nextScene } : item
+          );
+        }
+        return [...prev, nextScene];
+      });
+      await refreshActiveSessionDetail(activeSessionId);
+      refreshSessions();
+    } catch (err) {
+      setError(err?.message || "Failed to force an illustration.");
+    } finally {
+      setIsForcingIllustration(false);
+    }
+  };
+
   const handleCreateSession = async () => {
     if (!resolvedApiBaseUrl) {
       setError("API base URL is missing. Set it in config.json or .env.");
@@ -174,6 +257,7 @@ function Story({ apiBaseUrl = "" }) {
         setActiveSessionId(data.session.id);
         setMessages(data.messages || []);
         setScenes(data.scenes || []);
+        setActiveSessionDetail(data.session || null);
           const openingScene = data.scenes?.[0];
           if (openingScene?.sceneId) {
             await triggerIllustration(data.session.id, openingScene.sceneId);
@@ -220,6 +304,37 @@ function Story({ apiBaseUrl = "" }) {
           },
         ]);
       }
+      if (typeof data.turnCount === "number") {
+        setSessions((prev) =>
+          prev.map((session) =>
+            session.id === activeSessionId
+              ? { ...session, turnCount: data.turnCount }
+              : session
+          )
+        );
+      }
+      if (data?.storyState || data?.lorebook) {
+        setActiveSessionDetail((prev) => {
+          if (!prev) {
+            return {
+              id: activeSessionId,
+              storyState: data.storyState || null,
+              lorebook: data.lorebook || null,
+              turnCount:
+                typeof data.turnCount === "number" ? data.turnCount : 0,
+            };
+          }
+          return {
+            ...prev,
+            storyState: data.storyState || prev.storyState,
+            lorebook: data.lorebook || prev.lorebook,
+            turnCount:
+              typeof data.turnCount === "number"
+                ? data.turnCount
+                : prev.turnCount,
+          };
+        });
+      }
 
       if (data?.scene?.sceneId) {
         const pendingScene = {
@@ -232,6 +347,7 @@ function Story({ apiBaseUrl = "" }) {
           contextMode: illustrationContextMode,
         });
       }
+      await refreshActiveSessionDetail(activeSessionId);
       refreshSessions();
     } catch (err) {
       setError(err?.message || "Failed to send message.");
@@ -339,7 +455,7 @@ function Story({ apiBaseUrl = "" }) {
             </div>
             <span className="story-chat-meta">
               {activeSession
-                ? `${activeSession.turnCount || 0} turns`
+                ? `${activeTurnCount} turns`
                 : "No session"}
             </span>
           </div>
@@ -377,19 +493,77 @@ function Story({ apiBaseUrl = "" }) {
               rows={3}
             />
             <div className="story-chat-actions">
-              <button
-                type="button"
-                className="btn-accent px-6 py-2 text-sm"
-                onClick={handleSendMessage}
-                disabled={!input.trim() || status === "sending"}
-              >
-                {status === "sending" ? "Sending..." : "Send"}
-              </button>
+              <div className="story-chat-action-buttons">
+                <button
+                  type="button"
+                  className="story-chat-force-illustration"
+                  onClick={handleForceIllustration}
+                  disabled={!activeSessionId || status === "sending" || isForcingIllustration}
+                  title="Generate an illustration from current context"
+                  aria-label="Generate an illustration from current context"
+                >
+                  *
+                </button>
+                <button
+                  type="button"
+                  className="btn-accent px-6 py-2 text-sm"
+                  onClick={handleSendMessage}
+                  disabled={!input.trim() || status === "sending"}
+                >
+                  {status === "sending" ? "Sending..." : "Send"}
+                </button>
+              </div>
               <span className="story-chat-hint">
-                Illustrations appear on impactful moments, max one every 3 turns.
+                Auto scenes every ~2 turns. Use * to force a scene from current context.
               </span>
             </div>
           </div>
+          {activeSessionDetail && (
+            <div className="story-session-debug">
+              <div className="story-session-debug-header">
+                <p className="story-debug-title">Story debug</p>
+                <label className="story-scenes-toggle">
+                  <input
+                    type="checkbox"
+                    checked={storyDebugEnabled}
+                    onChange={(event) =>
+                      setStoryDebugEnabled(event.target.checked)
+                    }
+                  />
+                  Show
+                </label>
+                <select
+                  className="field-select story-session-debug-select"
+                  value={storyDebugView}
+                  onChange={(event) => setStoryDebugView(event.target.value)}
+                >
+                  <option value="state">State</option>
+                  <option value="lorebook">Lorebook</option>
+                  <option value="both">Both</option>
+                </select>
+              </div>
+              {storyDebugEnabled && (
+                <div className="story-session-debug-body">
+                  {(storyDebugView === "state" || storyDebugView === "both") && (
+                    <>
+                      <p className="story-debug-label">State</p>
+                      <pre className="story-debug-code">
+                        {JSON.stringify(activeSessionDetail.storyState || {}, null, 2)}
+                      </pre>
+                    </>
+                  )}
+                  {(storyDebugView === "lorebook" || storyDebugView === "both") && (
+                    <>
+                      <p className="story-debug-label">Lorebook</p>
+                      <pre className="story-debug-code">
+                        {JSON.stringify(activeSessionDetail.lorebook || {}, null, 2)}
+                      </pre>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="story-book-spine" />
