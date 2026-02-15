@@ -80,7 +80,7 @@ const promptHelperModelId =
 const storyModelId =
   process.env.BEDROCK_STORY_MODEL_ID || promptHelperModelId;
 const DEFAULT_NEGATIVE_PROMPT =
-  "low quality, worst quality, lowres, pixelated, jpeg artifacts, compression artifacts, blurry, blurry face, out of focus, oversharpened, grainy, noisy, dithering, flat shading, muddy colors, bad anatomy, bad proportions, tiny face, distant face, multiple characters, extra people, clone, twin, reflection, mirror, big eyes, wide eyes, sparkly eyes";
+  "low quality, worst quality, lowres, pixelated, jpeg artifacts, compression artifacts, blurry, blurry face, out of focus, oversharpened, grainy, noisy, dithering, flat shading, muddy colors, bad anatomy, bad proportions, tiny face, distant face, empty room, empty scene, scenery only, no person, no character, face obscured, faceless, cropped face, multiple characters, extra people, clone, twin, reflection, mirror, big eyes, wide eyes, sparkly eyes";
 const DEFAULT_GRADIO_NEGATIVE_PROMPT =
   "lowres, {bad}, error, fewer, extra, missing, worst quality, jpeg artifacts, bad quality, watermark, unfinished, displeasing, chromatic aberration, signature, extra digits, artistic error, username, scan, [abstract]";
 
@@ -1341,332 +1341,6 @@ const updateStoryMeta = (state = {}, event = null, turnCount = 0, recentLimit = 
   return next;
 };
 
-const normalizeNarrativeText = (value = "") =>
-  String(value || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, " ")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-
-const tokenizeNarrativeText = (value = "") =>
-  normalizeNarrativeText(value)
-    .split(/\s+/)
-    .map((token) => token.trim())
-    .filter((token) => token.length >= 3);
-
-const buildLocationKeywordSet = (location = {}) => {
-  const raw = [
-    location.id,
-    location.name,
-    location.description,
-    ...(Array.isArray(location.tags) ? location.tags : []),
-  ]
-    .filter(Boolean)
-    .join(" ");
-  return Array.from(new Set(tokenizeNarrativeText(raw)));
-};
-
-const inferLocationFromText = ({
-  text = "",
-  lorebook = {},
-  currentLocationId = "",
-}) => {
-  const normalized = normalizeNarrativeText(text);
-  if (!normalized) return null;
-  const tokenSet = new Set(tokenizeNarrativeText(normalized));
-  const locations = Array.isArray(lorebook?.locations) ? lorebook.locations : [];
-  if (!locations.length) return null;
-
-  const hasInnCue = /\b(inn|innkeeper|room|upstairs|hearth|counter|tavern)\b/.test(
-    normalized
-  );
-  const hasVillageCue = /\b(village|town)\b/.test(normalized);
-  const hasRidgeCue = /\b(ridge|cliff|overlook)\b/.test(normalized);
-  const hasRoadCue = /\b(road|path|valley|trail)\b/.test(normalized);
-
-  let best = null;
-  locations.forEach((location) => {
-    const keywords = buildLocationKeywordSet(location);
-    let score = 0;
-    const locationName = normalizeNarrativeText(location.name || "");
-    const locationId = normalizeNarrativeText((location.id || "").replace(/-/g, " "));
-    if (locationName && normalized.includes(locationName)) score += 4;
-    if (locationId && normalized.includes(locationId)) score += 3;
-    keywords.forEach((keyword) => {
-      if (tokenSet.has(keyword)) score += 1;
-    });
-
-    const locationText = normalizeNarrativeText(
-      `${location.id || ""} ${location.name || ""} ${(location.tags || []).join(" ")}`
-    );
-    if (hasInnCue && /\b(village|town|settlement|warm|inn|tavern)\b/.test(locationText)) {
-      score += 3;
-    }
-    if (hasVillageCue && /\b(village|town|settlement)\b/.test(locationText)) {
-      score += 2;
-    }
-    if (hasRidgeCue && /\b(ridge|overlook|scenic)\b/.test(locationText)) {
-      score += 2;
-    }
-    if (hasRoadCue && /\b(road|valley|travel|path)\b/.test(locationText)) {
-      score += 2;
-    }
-    if (currentLocationId && location.id === currentLocationId) {
-      score -= 0.5;
-    }
-
-    if (!best || score > best.score) {
-      best = {
-        id: location.id,
-        name: location.name,
-        description: location.description,
-        tags: uniqueStringArray(location.tags || []),
-        neighbors: uniqueStringArray(location.neighbors || []),
-        score,
-      };
-    }
-  });
-
-  if (!best || best.score < 2) return null;
-  return best;
-};
-
-const inferInteriorSceneFromText = (text = "") => {
-  const normalized = normalizeNarrativeText(text);
-  if (!normalized) return null;
-  const hasInnCue = /\b(inn|innkeeper|tavern|common room|counter|stool|hearth|fire|flames|room|upstairs|woodsmoke)\b/.test(
-    normalized
-  );
-  if (!hasInnCue) return null;
-
-  if (/\b(room|upstairs|bed|window)\b/.test(normalized)) {
-    return {
-      description:
-        "Modest inn room interior, wooden walls, warm lamplight, simple beds and a small window.",
-      mood: "warm",
-      tagsAdd: ["interior", "settlement", "warm", "safe", "rest"],
-      weather: "",
-    };
-  }
-
-  return {
-    description:
-      "Cozy inn common room, wooden tables, hearth firelight, warm lantern glow and drifting woodsmoke.",
-    mood: "warm",
-    tagsAdd: ["interior", "settlement", "warm", "safe", "hearth"],
-    weather: "",
-  };
-};
-
-const inferTimeOfDayFromText = (text = "", current = "") => {
-  const normalized = normalizeNarrativeText(text);
-  if (!normalized) return current || "";
-  if (
-    /\b(tomorrow|later|next)\b/.test(normalized) &&
-    /\b(morning|night|evening|dusk|afternoon)\b/.test(normalized)
-  ) {
-    return current || "";
-  }
-  if (
-    /\bin the morning\b/.test(normalized) &&
-    !/\b(this morning|morning light|it is morning|at morning)\b/.test(normalized)
-  ) {
-    return current || "";
-  }
-  if (/\b(midnight|late night|night)\b/.test(normalized)) return "night";
-  if (/\b(evening|dusk|sunset|darkening)\b/.test(normalized)) return "dusk";
-  if (/\b(morning|sunrise|dawn)\b/.test(normalized)) return "morning";
-  if (/\b(noon|midday)\b/.test(normalized)) return "midday";
-  if (/\b(afternoon)\b/.test(normalized)) return "afternoon";
-  return current || "";
-};
-
-const inferWeatherFromText = (text = "", current = "") => {
-  const normalized = normalizeNarrativeText(text);
-  if (!normalized) return current || "";
-  if (/\b(storm|thunder)\b/.test(normalized)) return "storm";
-  if (/\b(rain|rainy|drizzle)\b/.test(normalized)) return "rain";
-  if (/\b(snow|snowy)\b/.test(normalized)) return "snow";
-  if (/\b(fog|mist|haze)\b/.test(normalized)) return "mist";
-  if (/\b(clear|sunny|bright)\b/.test(normalized)) return "clear";
-  return current || "";
-};
-
-const inferMoodFromText = (text = "", current = "") => {
-  const normalized = normalizeNarrativeText(text);
-  if (!normalized) return current || "";
-  if (/\b(safe|warm|welcoming|cozy|rest)\b/.test(normalized)) return "warm";
-  if (/\b(suspicious|danger|tense|watched)\b/.test(normalized)) return "tense";
-  if (/\b(quiet|calm)\b/.test(normalized)) return "quiet";
-  return current || "";
-};
-
-const inferSceneTagsFromText = (text = "") => {
-  const normalized = normalizeNarrativeText(text);
-  if (!normalized) return [];
-  const tags = [];
-  if (/\b(inn|tavern|village|town|room)\b/.test(normalized)) {
-    tags.push("settlement", "warm", "safe");
-  }
-  if (/\b(ridge|overlook)\b/.test(normalized)) {
-    tags.push("scenic", "windy");
-  }
-  if (/\b(road|path|trail|journey|travel)\b/.test(normalized)) {
-    tags.push("travel");
-  }
-  return uniqueStringArray(tags);
-};
-
-const inferSeparationFlags = (userText = "", assistantText = "") => {
-  const combined = normalizeNarrativeText(`${userText} ${assistantText}`);
-  const user = normalizeNarrativeText(userText);
-  const add = [];
-  const remove = [];
-  if (
-    /\b(leave you|you stay|i ll wait|see you in the room|without me)\b/.test(
-      user
-    )
-  ) {
-    add.push("player-separated");
-  }
-  if (
-    /\b(find your room|rejoin|back together|you both|meet you|arrive together)\b/.test(
-      combined
-    )
-  ) {
-    remove.push("player-separated");
-  }
-  return {
-    add: uniqueStringArray(add),
-    remove: uniqueStringArray(remove),
-  };
-};
-
-const inferStateDeltaFromText = ({
-  userText = "",
-  assistantText = "",
-  lorebook = {},
-  storyState = {},
-}) => {
-  const combinedText = `${userText} ${assistantText}`.trim();
-  if (!combinedText) return {};
-  const currentScene = storyState.scene || {};
-  const sceneDelta = {};
-  const inferredLocation = inferLocationFromText({
-    text: combinedText,
-    lorebook,
-    currentLocationId: currentScene.locationId || "",
-  });
-
-  if (inferredLocation) {
-    const isLocationChange = inferredLocation.id !== currentScene.locationId;
-    if (isLocationChange) {
-      sceneDelta.locationId = inferredLocation.id;
-      sceneDelta.locationName = inferredLocation.name;
-      sceneDelta.description = inferredLocation.description;
-      sceneDelta.tagsAdd = inferredLocation.tags;
-      sceneDelta.nearbyAdd = inferredLocation.neighbors;
-      sceneDelta.nearbyRemove = uniqueStringArray(currentScene.nearby || []);
-    }
-  }
-
-  const inferredInterior = inferInteriorSceneFromText(combinedText);
-  if (inferredInterior) {
-    sceneDelta.description =
-      sceneDelta.description || inferredInterior.description;
-    sceneDelta.mood = sceneDelta.mood || inferredInterior.mood;
-    sceneDelta.tagsAdd = uniqueStringArray([
-      ...(sceneDelta.tagsAdd || []),
-      ...(inferredInterior.tagsAdd || []),
-    ]);
-  }
-
-  const inferredTime = inferTimeOfDayFromText(combinedText, currentScene.timeOfDay);
-  if (inferredTime && inferredTime !== currentScene.timeOfDay) {
-    sceneDelta.timeOfDay = inferredTime;
-  }
-
-  const inferredWeather = inferWeatherFromText(combinedText, currentScene.weather);
-  if (inferredWeather && inferredWeather !== currentScene.weather) {
-    sceneDelta.weather = inferredWeather;
-  }
-
-  const inferredMood = inferMoodFromText(combinedText, currentScene.mood);
-  if (!sceneDelta.mood && inferredMood && inferredMood !== currentScene.mood) {
-    sceneDelta.mood = inferredMood;
-  }
-
-  const inferredTags = inferSceneTagsFromText(combinedText);
-  if (inferredTags.length > 0) {
-    sceneDelta.tagsAdd = uniqueStringArray([...(sceneDelta.tagsAdd || []), ...inferredTags]);
-  }
-
-  const separationFlags = inferSeparationFlags(userText, assistantText);
-  const delta = {};
-  if (Object.keys(sceneDelta).length > 0) {
-    delta.scene = sceneDelta;
-  }
-  if (separationFlags.add.length > 0 || separationFlags.remove.length > 0) {
-    delta.flags = {};
-    if (separationFlags.add.length > 0) delta.flags.add = separationFlags.add;
-    if (separationFlags.remove.length > 0) delta.flags.remove = separationFlags.remove;
-  }
-  return delta;
-};
-
-const mergeStateDeltaWithInference = (stateDelta = {}, inferredDelta = {}) => {
-  const merged = stateDelta && typeof stateDelta === "object" ? { ...stateDelta } : {};
-  if (!inferredDelta || typeof inferredDelta !== "object") return merged;
-
-  if (inferredDelta.scene) {
-    merged.scene = merged.scene && typeof merged.scene === "object" ? { ...merged.scene } : {};
-    const sceneFields = [
-      "locationId",
-      "locationName",
-      "description",
-      "timeOfDay",
-      "weather",
-      "mood",
-      "direction",
-    ];
-    sceneFields.forEach((field) => {
-      if (!merged.scene[field] && inferredDelta.scene[field]) {
-        merged.scene[field] = inferredDelta.scene[field];
-      }
-    });
-    merged.scene.tagsAdd = uniqueStringArray([
-      ...(merged.scene.tagsAdd || []),
-      ...(inferredDelta.scene.tagsAdd || []),
-    ]);
-    merged.scene.tagsRemove = uniqueStringArray([
-      ...(merged.scene.tagsRemove || []),
-      ...(inferredDelta.scene.tagsRemove || []),
-    ]);
-    merged.scene.nearbyAdd = uniqueStringArray([
-      ...(merged.scene.nearbyAdd || []),
-      ...(inferredDelta.scene.nearbyAdd || []),
-    ]);
-    merged.scene.nearbyRemove = uniqueStringArray([
-      ...(merged.scene.nearbyRemove || []),
-      ...(inferredDelta.scene.nearbyRemove || []),
-    ]);
-  }
-
-  if (inferredDelta.flags) {
-    merged.flags = merged.flags && typeof merged.flags === "object" ? { ...merged.flags } : {};
-    merged.flags.add = uniqueStringArray([
-      ...(merged.flags.add || []),
-      ...(inferredDelta.flags.add || []),
-    ]);
-    merged.flags.remove = uniqueStringArray([
-      ...(merged.flags.remove || []),
-      ...(inferredDelta.flags.remove || []),
-    ]);
-  }
-
-  return merged;
-};
-
 const buildPresetPrompt = (character) => {
   const parts = [];
   const push = (value) => {
@@ -2130,66 +1804,23 @@ const normalizePromptFragment = (value = "") =>
     .replace(/\s{2,}/g, " ")
     .trim();
 
-const ENVIRONMENT_HINTS = [
-  "background",
-  "environment",
-  "interior",
-  "exterior",
-  "landscape",
-  "sky",
-  "sunset",
-  "sunrise",
-  "cloud",
-  "forest",
-  "woods",
-  "mountain",
-  "beach",
-  "ocean",
-  "sea",
-  "lake",
-  "river",
-  "ruins",
-  "temple",
-  "castle",
-  "village",
-  "town",
-  "street",
-  "alley",
-  "tavern",
-  "room",
-  "hall",
-  "garden",
-  "field",
-  "snow",
-  "rain",
-  "storm",
-  "fog",
-  "mist",
-];
-
 const splitPromptFragments = (value = "") =>
-  value
-    .split(",")
-    .map((part) => part.trim())
+  String(value || "")
+    .replace(/[\r\n]+/g, ",")
+    .split(/,|;|\.(?=\s|$)/g)
+    .map((part) =>
+      normalizePromptFragment(part)
+        .replace(/^[,;:\-\s]+/, "")
+        .replace(/[,;:\-\s]+$/, "")
+    )
     .filter(Boolean);
 
-const isEnvironmentFragment = (fragment = "") => {
-  const normalized = fragment.toLowerCase();
-  return ENVIRONMENT_HINTS.some((hint) => normalized.includes(hint));
-};
-
 const extractSceneContextFragments = (scenePrompt = "") => {
-  const parts = splitPromptFragments(scenePrompt);
-  const environment = [];
-  const action = [];
-  parts.forEach((part) => {
-    if (isEnvironmentFragment(part)) {
-      environment.push(part);
-    } else {
-      action.push(part);
-    }
-  });
-  return { environment, action };
+  // We treat scenePrompt as already compact visual context from the model.
+  return {
+    environment: splitPromptFragments(scenePrompt),
+    action: [],
+  };
 };
 
 const dedupeFragments = (parts = []) => {
@@ -2211,104 +1842,14 @@ const buildSceneFragmentsFromStoryState = (storyState = {}, worldPrompt = "") =>
     scene.description,
     scene.weather,
     scene.timeOfDay,
-    scene.mood,
     worldPrompt,
   ]);
-  const action = dedupeFragments([
-    scene.direction ? `moving ${scene.direction}` : "",
-    scene.mood ? `mood ${scene.mood}` : "",
-  ]);
+  const action = [];
   return {
     environment,
     action,
     prompt: dedupeFragments([...environment, ...action]).join(", "),
   };
-};
-
-const extractContextualSceneFragments = (text = "") => {
-  const normalized = normalizeNarrativeText(text);
-  if (!normalized) {
-    return { environment: [], action: [] };
-  }
-  const environment = [];
-  const action = [];
-
-  if (/\b(inn|tavern|innkeeper|common room|counter|stool|wooden table)\b/.test(normalized)) {
-    environment.push("cozy inn common room", "wooden interior", "warm lantern light");
-  }
-  if (/\b(hearth|fire|flame|firelight|woodsmoke)\b/.test(normalized)) {
-    environment.push("hearth firelight", "soft warm glow");
-    action.push("seated near the hearth", "watching the flames");
-  }
-  if (/\b(room|upstairs|bed|window)\b/.test(normalized)) {
-    environment.push("modest inn room interior", "warm lamplight");
-    action.push("resting in an inn room");
-  }
-  if (/\b(road|path|valley|trail)\b/.test(normalized)) {
-    environment.push("stone road", "misty path");
-  }
-  if (/\b(village|town|lantern)\b/.test(normalized)) {
-    environment.push("village lights", "settlement edge");
-  }
-  if (/\b(tea|teacup|cup)\b/.test(normalized)) {
-    action.push("holding a teacup");
-  }
-  if (/\b(sit|seated|sits|stool|table)\b/.test(normalized)) {
-    action.push("seated posture");
-  }
-  if (/\b(glance|gaze|watching|looking)\b/.test(normalized)) {
-    action.push("attentive gaze");
-  }
-
-  return {
-    environment: dedupeFragments(environment),
-    action: dedupeFragments(action),
-  };
-};
-
-const INTERIOR_SCENE_HINTS = [
-  "inn",
-  "tavern",
-  "room",
-  "interior",
-  "hearth",
-  "fire",
-  "flame",
-  "lantern",
-  "lamplight",
-  "wooden",
-  "table",
-  "bed",
-  "window",
-];
-
-const EXTERIOR_SCENE_HINTS = [
-  "road",
-  "valley",
-  "village outskirts",
-  "countryside",
-  "field",
-  "mountain",
-  "sky",
-  "village",
-];
-
-const META_SCENE_HINTS = [
-  "morning",
-  "afternoon",
-  "dusk",
-  "night",
-  "mood",
-  "moving",
-  "northbound",
-  "southbound",
-  "eastbound",
-  "westbound",
-];
-
-const isFragmentWithHints = (fragment = "", hints = []) => {
-  const normalized = normalizeNarrativeText(fragment);
-  return hints.some((hint) => normalized.includes(hint));
 };
 
 const buildCompactSceneContext = ({
@@ -2326,36 +1867,8 @@ const buildCompactSceneContext = ({
     .filter(Boolean)
     .filter((fragment) => fragment.length <= 70);
 
-  const hasInteriorCue = env.some((fragment) =>
-    isFragmentWithHints(fragment, INTERIOR_SCENE_HINTS)
-  );
-
-  const filteredEnvironment = env.filter((fragment) => {
-    const isMeta = isFragmentWithHints(fragment, META_SCENE_HINTS);
-    if (isMeta) return false;
-    if (hasInteriorCue && isFragmentWithHints(fragment, EXTERIOR_SCENE_HINTS)) {
-      return false;
-    }
-    return true;
-  });
-
-  const filteredAction = act.filter((fragment) => {
-    const isMeta = isFragmentWithHints(fragment, META_SCENE_HINTS);
-    if (isMeta) return false;
-    if (
-      hasInteriorCue &&
-      isFragmentWithHints(fragment, ["moving", "walking", "traveling"])
-    ) {
-      return false;
-    }
-    return true;
-  });
-
-  const compactEnvironment = dedupeFragments(filteredEnvironment).slice(
-    0,
-    maxEnvironment
-  );
-  const compactAction = dedupeFragments(filteredAction).slice(0, maxAction);
+  const compactEnvironment = env.slice(0, maxEnvironment);
+  const compactAction = act.slice(0, maxAction);
   return {
     environment: compactEnvironment,
     action: compactAction,
@@ -2367,20 +1880,22 @@ const compactScenePayload = ({
   scenePrompt = "",
   sceneEnvironment = "",
   sceneAction = "",
-  contextText = "",
 }) => {
   const promptContext = extractSceneContextFragments(scenePrompt || "");
-  const contextual = extractContextualSceneFragments(contextText || "");
-  const mergedEnvironment = dedupeFragments([
-    ...contextual.environment,
+  const rawMergedEnvironment = dedupeFragments([
     ...splitPromptFragments(sceneEnvironment || ""),
     ...promptContext.environment,
   ]);
   const mergedAction = dedupeFragments([
-    ...contextual.action,
     ...splitPromptFragments(sceneAction || ""),
     ...promptContext.action,
   ]);
+  const actionSet = new Set(
+    mergedAction.map((fragment) => fragment.toLowerCase())
+  );
+  const mergedEnvironment = rawMergedEnvironment.filter(
+    (fragment) => !actionSet.has(fragment.toLowerCase())
+  );
   const compact = buildCompactSceneContext({
     environment: mergedEnvironment,
     action: mergedAction,
@@ -2410,7 +1925,6 @@ const aiCraftSceneContext = async ({
     scenePrompt,
     sceneEnvironment,
     sceneAction,
-    contextText,
   });
   const signalText = clipText(contextText, 1200);
   const sourcePayload = {
@@ -2448,13 +1962,16 @@ const aiCraftSceneContext = async ({
           "You compress scene context for anime illustration prompts with strong character-fidelity priority.",
           "Return ONLY valid JSON object with keys: scenePrompt, sceneEnvironment, sceneAction.",
           "Use `context` as highest-priority truth (what is visible now). Use `currentScene` only if context is missing.",
+          "Assume the protagonist is on-screen for this frame; choose context that keeps a single visible subject readable.",
           "Choose ONE dominant setting cluster for this frame.",
           "Do not mix indoor and outdoor clusters unless the context explicitly says both are visible in one shot.",
+          "Do not invent canned fallback phrases; only use concrete details supported by the input payload.",
+          "Avoid relational wording (for example: together, with someone, with the player). Keep action phrasing for one visible protagonist only.",
           "Drop narrative/meta information: mood labels, directions, goals, future plans, summaries, off-screen events.",
           "Do not include location IDs or abstract tokens.",
           "Each fragment should be 2-6 words and concrete visual language.",
           "sceneEnvironment: 3-6 short visual fragments, comma-separated, no duplicates.",
-          "sceneAction: 0-1 short visible action fragment, comma-separated.",
+          "sceneAction: 0-1 short visible protagonist action/pose fragment, comma-separated (e.g., seated by hearth, standing at counter, walking on road).",
           "scenePrompt: concise merge of sceneEnvironment then sceneAction.",
         ].join("\n"),
         messages: [
@@ -2490,7 +2007,6 @@ const aiCraftSceneContext = async ({
       scenePrompt: aiScenePrompt || fallback.scenePrompt,
       sceneEnvironment: aiSceneEnvironment || fallback.sceneEnvironment,
       sceneAction: aiSceneAction || fallback.sceneAction,
-      contextText: signalText,
     });
     return compact.scenePrompt || compact.sceneEnvironment || compact.sceneAction
       ? compact
@@ -2503,9 +2019,6 @@ const aiCraftSceneContext = async ({
 const buildStoryIllustrationPrompt = ({
   character,
   sessionItem,
-  summaryLine,
-  contextLine,
-  recentTranscript,
   cleanScenePrompt,
   sceneEnvironment,
   sceneAction,
@@ -2530,45 +2043,29 @@ const buildStoryIllustrationPrompt = ({
       : includeScene
         ? extractSceneContextFragments(cleanScenePrompt)
         : { environment: [], action: [] };
-  const contextSignalText =
-    contextMode === "summary+scene" || contextMode === "summary+latest"
-      ? contextLine
-      : contextMode === "recent" || contextMode === "summary+recent"
-        ? recentTranscript
-        : "";
-  const contextualScene = extractContextualSceneFragments(contextSignalText);
   const stateSceneContext = buildSceneFragmentsFromStoryState(
     sessionItem?.storyState || {},
     sessionItem?.worldPrompt || ""
   );
   const hasSceneEnvironment =
-    resolvedSceneContext.environment.length > 0 ||
-    contextualScene.environment.length > 0;
+    resolvedSceneContext.environment.length > 0;
   const environmentParts = dedupeFragments([
-    ...contextualScene.environment,
     ...resolvedSceneContext.environment,
     ...(hasSceneEnvironment
       ? []
       : [...stateSceneContext.environment, sessionItem?.worldPrompt]),
-    "background detailed but secondary",
   ]);
   const actionParts = dedupeFragments([
-    ...contextualScene.action,
     ...resolvedSceneContext.action,
-    ...(resolvedSceneContext.action.length > 0 || contextualScene.action.length > 0
-      ? []
-      : stateSceneContext.action),
+    ...(resolvedSceneContext.action.length > 0 ? [] : stateSceneContext.action),
   ]);
   const compactScene = buildCompactSceneContext({
     environment: environmentParts,
     action: actionParts,
   });
-  const promptEnvironment = dedupeFragments([
-    ...compactScene.environment,
-    "background detailed but secondary",
-  ]);
+  const promptEnvironment = dedupeFragments(compactScene.environment).slice(0, 4);
 
-  const characterParts = ["1girl, solo"];
+  const characterParts = ["1girl", "solo"];
   if (character?.name) {
     const weight =
       typeof character.weight === "number" ? character.weight : 1.4;
@@ -2588,12 +2085,31 @@ const buildStoryIllustrationPrompt = ({
     ...focusActionParts,
     ...compactScene.action.slice(0, 1),
   ]);
+  const resolvedFocusParts =
+    focusParts.length > 0 ? focusParts : ["visible character posture"];
+  const hasFullBodyShot = /\bfull body\b/i.test(shotRange);
+  const subjectFocusParts = dedupeFragments(
+    hasFullBodyShot
+      ? [
+          "character occupies most of frame",
+          "face clearly visible",
+          "sharp focus on face",
+        ]
+      : [
+          "character in foreground",
+          "face clearly visible",
+          "sharp focus on face",
+        ]
+  );
+  const backgroundBalance = "background detailed but secondary";
 
   return [
-    shotRange,
     characterParts.join(", "),
+    shotRange,
+    resolvedFocusParts.join(", "),
+    subjectFocusParts.join(", "),
     promptEnvironment.join(", "),
-    focusParts.join(", "),
+    backgroundBalance,
     visualParts.join(", "),
   ]
     .filter(Boolean)
@@ -5683,6 +5199,7 @@ app.post("/story/sessions/:id/message", async (req, res) => {
   const userId = req.user?.sub;
   const sessionId = req.params.id;
   const content = req.body?.content?.trim();
+  const debug = req.query?.debug === "true";
   if (!mediaTable) {
     return res.status(500).json({ message: "MEDIA_TABLE is not set" });
   }
@@ -5837,16 +5354,6 @@ app.post("/story/sessions/:id/message", async (req, res) => {
     const rawStateDelta = parsed.stateDelta;
     const stateDelta =
       rawStateDelta && typeof rawStateDelta === "object" ? rawStateDelta : {};
-    const inferredStateDelta = inferStateDeltaFromText({
-      userText: content,
-      assistantText: replyText,
-      lorebook: resolvedLorebook,
-      storyState: resolvedStoryState,
-    });
-    const resolvedStateDelta = mergeStateDeltaWithInference(
-      stateDelta,
-      inferredStateDelta
-    );
 
     const assistantMessageItem = {
       pk: buildMediaPk(userId),
@@ -5868,7 +5375,7 @@ app.post("/story/sessions/:id/message", async (req, res) => {
       resolvedStoryState,
       directorSelection.event?.effects || {}
     );
-    nextStoryState = applyStateDelta(nextStoryState, resolvedStateDelta);
+    nextStoryState = applyStateDelta(nextStoryState, stateDelta);
     nextStoryState.meta = updateStoryMeta(
       nextStoryState,
       directorSelection.event,
@@ -5876,31 +5383,10 @@ app.post("/story/sessions/:id/message", async (req, res) => {
       directorSelection.recentLimit
     );
 
-    const contextualSceneFromReply = extractContextualSceneFragments(replyText);
-    if (
-      contextualSceneFromReply.environment.length > 0 ||
-      contextualSceneFromReply.action.length > 0
-    ) {
-      sceneEnvironment = dedupeFragments([
-        ...splitPromptFragments(sceneEnvironment),
-        ...contextualSceneFromReply.environment,
-      ]).join(", ");
-      sceneAction = dedupeFragments([
-        ...splitPromptFragments(sceneAction),
-        ...contextualSceneFromReply.action,
-      ]).join(", ");
-      if (!scenePrompt) {
-        scenePrompt = dedupeFragments([
-          ...splitPromptFragments(sceneEnvironment),
-          ...splitPromptFragments(sceneAction),
-        ]).join(", ");
-      }
-    }
-
     const locationChanged = Boolean(
-      resolvedStateDelta?.scene?.locationId ||
-        resolvedStateDelta?.scene?.locationName ||
-        resolvedStateDelta?.scene?.description
+      stateDelta?.scene?.locationId ||
+        stateDelta?.scene?.locationName ||
+        stateDelta?.scene?.description
     );
     const eventType = directorSelection.event?.type;
     const turnsSinceIllustration = newTurnCount - lastIllustrationTurn;
@@ -5914,19 +5400,39 @@ app.post("/story/sessions/:id/message", async (req, res) => {
       shouldAutoIllustrate;
     let hasSceneVisual =
       Boolean(scenePrompt) || Boolean(sceneEnvironment) || Boolean(sceneAction);
+    const hadModelSceneVisual = hasSceneVisual;
+    let sceneWasCompacted = false;
+    let sceneCompactionFailed = false;
+    let sceneDebugReason = "";
     if (!hasSceneVisual && shouldForceScene) {
-      const fallbackScene = buildSceneFragmentsFromStoryState(
-        nextStoryState,
-        sessionItem.worldPrompt
-      );
-      scenePrompt = fallbackScene.prompt;
-      sceneEnvironment = fallbackScene.environment.join(", ");
-      sceneAction = fallbackScene.action.join(", ");
-      sceneBeat = true;
+      const aiSeedScene = await aiCraftSceneContext({
+        scenePrompt,
+        sceneEnvironment,
+        sceneAction,
+        contextText: replyText,
+        storyState: nextStoryState,
+        lorebook: resolvedLorebook,
+      });
+      scenePrompt = aiSeedScene.scenePrompt;
+      sceneEnvironment = aiSeedScene.sceneEnvironment;
+      sceneAction = aiSeedScene.sceneAction;
       hasSceneVisual =
         Boolean(scenePrompt) || Boolean(sceneEnvironment) || Boolean(sceneAction);
+      sceneWasCompacted = hasSceneVisual;
     }
-    if (locationChanged) {
+    if (!hasSceneVisual && shouldForceScene) {
+      sceneCompactionFailed = true;
+      sceneDebugReason =
+        "Scene compaction returned no visual fragments; illustration skipped for this turn.";
+      console.warn("Story scene compaction empty output", {
+        sessionId,
+        userId,
+        turnCount: newTurnCount,
+        locationChanged,
+        eventType: eventType || "",
+      });
+    }
+    if (locationChanged && hasSceneVisual) {
       const stateScene = buildSceneFragmentsFromStoryState(
         nextStoryState,
         sessionItem.worldPrompt
@@ -5946,8 +5452,9 @@ app.post("/story/sessions/:id/message", async (req, res) => {
       ]).join(", ");
       hasSceneVisual =
         Boolean(scenePrompt) || Boolean(sceneEnvironment) || Boolean(sceneAction);
+      sceneWasCompacted = false;
     }
-    if (hasSceneVisual) {
+    if (hasSceneVisual && !sceneWasCompacted) {
       const compactScene = await aiCraftSceneContext({
         scenePrompt,
         sceneEnvironment,
@@ -5961,12 +5468,24 @@ app.post("/story/sessions/:id/message", async (req, res) => {
       sceneAction = compactScene.sceneAction;
       hasSceneVisual =
         Boolean(scenePrompt) || Boolean(sceneEnvironment) || Boolean(sceneAction);
+      sceneWasCompacted = true;
     }
 
     let scene = null;
     let nextSceneCount = sessionItem.sceneCount || 0;
+    const isSituationIllustration =
+      locationChanged ||
+      eventType === "environment" ||
+      eventType === "discovery";
+    const isCadenceIllustration = shouldAutoIllustrate;
     const shouldIllustrate =
-      sceneBeat && hasSceneVisual && turnsSinceIllustration >= 2;
+      hasSceneVisual &&
+      (sceneBeat || isSituationIllustration || isCadenceIllustration);
+    if (!shouldIllustrate && !sceneDebugReason) {
+      sceneDebugReason = hasSceneVisual
+        ? "Illustration gating not met (sceneBeat/situation/cadence)."
+        : "No scene visual available for illustration.";
+    }
 
     if (shouldIllustrate) {
       const sceneId = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -6033,6 +5552,22 @@ app.post("/story/sessions/:id/message", async (req, res) => {
         content: replyText,
       },
       scene,
+      ...(sceneCompactionFailed || debug
+        ? {
+            sceneDebug: {
+              hadModelSceneVisual,
+              shouldForceScene,
+              locationChanged,
+              eventType: eventType || "",
+              turnsSinceIllustration,
+              shouldAutoIllustrate,
+              hasSceneVisual,
+              sceneWasCompacted,
+              shouldIllustrate,
+              reason: sceneDebugReason,
+            },
+          }
+        : {}),
     });
   } catch (error) {
     console.error("Story message error:", {
@@ -6105,17 +5640,8 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
         sessionItem.storyState || {},
         sessionItem.worldPrompt || ""
       );
-      const contextualScene = extractContextualSceneFragments(
-        latestAssistant?.content || ""
-      );
-      const mergedEnvironment = dedupeFragments([
-        ...contextualScene.environment,
-        ...stateScene.environment,
-      ]);
-      const mergedAction = dedupeFragments([
-        ...contextualScene.action,
-        ...stateScene.action,
-      ]);
+      const mergedEnvironment = dedupeFragments([...stateScene.environment]);
+      const mergedAction = dedupeFragments([...stateScene.action]);
       const compactCurrentScene = await aiCraftSceneContext({
         scenePrompt: dedupeFragments([...mergedEnvironment, ...mergedAction]).join(", "),
         sceneEnvironment: mergedEnvironment.join(", "),
@@ -6287,17 +5813,10 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
       resolvedCharacter?.identityPrompt ||
       sessionItem.protagonistPrompt ||
       protagonistLine;
-    const basePrompt =
-      resolvedCharacter?.storyBasePrompt ||
-      resolvedCharacter?.identityPrompt ||
-      identityBlock;
 
     const positivePrompt = buildStoryIllustrationPrompt({
       character: resolvedCharacter,
       sessionItem,
-      summaryLine,
-      contextLine,
-      recentTranscript,
       cleanScenePrompt,
       sceneEnvironment:
         compactSceneForPrompt.sceneEnvironment || sceneItem.sceneEnvironment || "",
@@ -6405,12 +5924,11 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
               sceneAction: updatedScene.sceneAction || "",
             },
             promptPattern: [
-              "shot range",
-              "environment/background",
-              "clothes",
               "character (1girl, solo + name + recognizable)",
+              "shot range",
               "focus/action",
-              "face/furry details",
+              "subject framing/facial fidelity",
+              "environment/background",
               "visual/style",
             ],
             replicate: {
