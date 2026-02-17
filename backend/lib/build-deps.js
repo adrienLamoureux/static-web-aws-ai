@@ -48,14 +48,12 @@ const {
 const {
   safeJsonParse,
   extractJsonStringField,
-  sanitizeScenePrompt,
   normalizePromptFragment,
   splitPromptFragments,
   dedupeFragments,
   buildSceneFragmentsFromStoryState,
   compactScenePayload,
   clipText,
-  buildStoryIllustrationPrompt,
   MAX_REPLICATE_PROMPT_TOKENS,
   clampPromptTokens,
 } = require("./story-prompt");
@@ -113,7 +111,10 @@ const {
   resolveVideoPosterKey,
   copyS3Object: copyS3ObjectRaw,
 } = require("./s3-utils");
-const { createAiCraftSceneContext } = require("./scene-context");
+const {
+  createAiCraftSceneContext,
+  createAiCraftIllustrationPrompts,
+} = require("./scene-context");
 
 const createDeps = () => {
   const bedrockClient = new BedrockRuntimeClient({
@@ -156,6 +157,14 @@ const createDeps = () => {
     safeJsonParse,
     normalizePromptFragment,
     compactScenePayload,
+    clipText,
+  });
+
+  const aiCraftIllustrationPrompts = createAiCraftIllustrationPrompts({
+    bedrockClient,
+    promptHelperModelId,
+    safeJsonParse,
+    normalizePromptFragment,
     clipText,
   });
 
@@ -210,14 +219,12 @@ const createDeps = () => {
     updateStoryMeta,
     safeJsonParse,
     extractJsonStringField,
-    sanitizeScenePrompt,
     normalizePromptFragment,
     splitPromptFragments,
     dedupeFragments,
     buildSceneFragmentsFromStoryState,
     compactScenePayload,
     clipText,
-    buildStoryIllustrationPrompt,
     MAX_REPLICATE_PROMPT_TOKENS,
     clampPromptTokens,
     requireUserMiddleware,
@@ -246,6 +253,7 @@ const createDeps = () => {
     ensureStoryPresets: storySeedStore.ensureStoryPresets,
     getGradioSpaceClient,
     aiCraftSceneContext,
+    aiCraftIllustrationPrompts,
     delay,
     runReplicateWithRetry: runReplicateWithRetryBound,
     collectReplicateOutputUrls,

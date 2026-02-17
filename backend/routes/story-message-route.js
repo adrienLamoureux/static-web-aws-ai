@@ -26,7 +26,18 @@ module.exports = (app, deps) => {
     buildStorySceneSk,
   } = deps;
 
-app.post("/story/sessions/:id/message", async (req, res) => {
+  const parseBooleanLike = (value) => {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "number") return value !== 0;
+    if (typeof value === "string") {
+      const normalized = value.trim().toLowerCase();
+      if (["true", "1", "yes", "y"].includes(normalized)) return true;
+      if (["false", "0", "no", "n", ""].includes(normalized)) return false;
+    }
+    return false;
+  };
+
+  app.post("/story/sessions/:id/message", async (req, res) => {
   const userId = req.user?.sub;
   const sessionId = req.params.id;
   const content = req.body?.content?.trim();
@@ -125,7 +136,7 @@ app.post("/story/sessions/:id/message", async (req, res) => {
       "scenePrompt must be purely visual fragments (comma-separated). No dialogue, no questions, no second-person phrasing.",
       "sceneEnvironment: comma-separated background/environment fragments (short phrases).",
       "sceneAction: comma-separated action/pose/motion fragments (short phrases).",
-      "scenePrompt should include framing guidance: medium shot or full body, face readable, no extreme wide shots.",
+      "scenePrompt should include framing guidance that fits the visible action and preserves body continuity, with readable face and no extreme wide shots.",
       `Player separation mode: ${isPlayerSeparated ? "separated" : "shared-scene"}.`,
       `Lorebook: ${JSON.stringify(resolvedLorebook)}`,
       `Current state: ${JSON.stringify(resolvedStoryState)}`,
@@ -176,7 +187,7 @@ app.post("/story/sessions/:id/message", async (req, res) => {
       typeof parsed.summary === "string" && parsed.summary.trim().length > 0
         ? parsed.summary.trim()
         : sessionItem.summary || "";
-    let sceneBeat = Boolean(parsed.sceneBeat);
+    const sceneBeat = parseBooleanLike(parsed.sceneBeat);
     const sceneTitle = parsed.sceneTitle?.trim() || "";
     const sceneDescription = parsed.sceneDescription?.trim() || "";
     let scenePrompt = parsed.scenePrompt?.trim() || "";

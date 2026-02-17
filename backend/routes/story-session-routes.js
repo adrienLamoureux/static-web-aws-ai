@@ -25,6 +25,97 @@ module.exports = (app, deps) => {
     deleteS3ObjectsByPrefix,
   } = deps;
 
+  const toTimestamp = (value = "") => {
+    const parsed = Date.parse(value || "");
+    return Number.isNaN(parsed) ? 0 : parsed;
+  };
+
+  const sortSessionsByRecent = (items = []) =>
+    [...items].sort(
+      (left, right) =>
+        toTimestamp(right.updatedAt || right.createdAt) -
+        toTimestamp(left.updatedAt || left.createdAt)
+    );
+
+  const resolveSessionId = (item = {}) => {
+    if (item.sessionId) return item.sessionId;
+    if (typeof item.sk === "string" && item.sk.startsWith("SESSION#")) {
+      return item.sk.slice("SESSION#".length);
+    }
+    return "";
+  };
+
+  const normalizeSessionItem = (item = {}) => ({
+    ...item,
+    sessionId: resolveSessionId(item),
+  });
+
+  const buildSessionResponse = (item = {}) => ({
+    id: resolveSessionId(item),
+    title: item.title,
+    presetId: item.presetId,
+    protagonistName: item.protagonistName,
+    synopsis: item.synopsis,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+    turnCount: item.turnCount || 0,
+    sceneCount: item.sceneCount || 0,
+  });
+
+  const deleteSessionCascade = async ({
+    userId,
+    sessionId,
+    mediaTableName,
+    mediaBucket,
+  }) => {
+    const messages = await queryBySkPrefix({
+      pk: buildMediaPk(userId),
+      skPrefix: storyMessagePrefix(sessionId),
+      limit: 200,
+      scanForward: true,
+    });
+    const scenes = await queryBySkPrefix({
+      pk: buildMediaPk(userId),
+      skPrefix: storyScenePrefix(sessionId),
+      limit: 200,
+      scanForward: true,
+    });
+
+    const deleteItems = [
+      { pk: buildMediaPk(userId), sk: buildStorySessionSk(sessionId) },
+      ...messages.map((item) => ({ pk: item.pk, sk: item.sk })),
+      ...scenes.map((item) => ({ pk: item.pk, sk: item.sk })),
+    ];
+
+    await Promise.all(
+      deleteItems.map((item) =>
+        dynamoClient.send(
+          new DeleteCommand({
+            TableName: mediaTableName,
+            Key: item,
+          })
+        )
+      )
+    );
+
+    if (mediaBucket) {
+      const prefix = `${buildUserPrefix(userId)}stories/${sessionId}/`;
+      try {
+        await deleteS3ObjectsByPrefix(mediaBucket, prefix);
+      } catch (error) {
+        console.warn("Failed to delete story assets:", {
+          message: error?.message || String(error),
+          prefix,
+        });
+      }
+    }
+
+    return {
+      deletedMessages: messages.length,
+      deletedScenes: scenes.length,
+    };
+  };
+
 app.get("/story/presets", async (req, res) => {
   if (!mediaTable) {
     return res.status(500).json({ message: "MEDIA_TABLE is not set" });
@@ -105,27 +196,99 @@ app.get("/story/sessions", async (req, res) => {
     return res.status(401).json({ message: "Unauthorized" });
   }
   try {
-    const items = await queryBySkPrefix({
+    const rawItems = await queryBySkPrefix({
       pk: buildMediaPk(userId),
       skPrefix: "SESSION#",
-      limit: 50,
+      limit: 200,
       scanForward: false,
     });
-    const sessions = items.map((item) => ({
-      id: item.sessionId,
-      title: item.title,
-      presetId: item.presetId,
-      protagonistName: item.protagonistName,
-      synopsis: item.synopsis,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
-      turnCount: item.turnCount || 0,
-      sceneCount: item.sceneCount || 0,
-    }));
-    res.json({ sessions });
+    const items = rawItems
+      .map(normalizeSessionItem)
+      .filter((item) => item.sessionId);
+    const keepByPreset = new Map();
+    const duplicateSessions = [];
+
+    sortSessionsByRecent(items).forEach((item) => {
+      const key = item.presetId || item.sessionId;
+      if (!keepByPreset.has(key)) {
+        keepByPreset.set(key, item);
+        return;
+      }
+      duplicateSessions.push(item);
+    });
+
+    const sessions = sortSessionsByRecent(
+      Array.from(keepByPreset.values())
+    ).map(buildSessionResponse);
+
+    res.json({
+      sessions,
+      duplicateSessionsHidden: duplicateSessions.length,
+    });
   } catch (error) {
     res.status(500).json({
       message: "Failed to list story sessions",
+      error: error?.message || String(error),
+    });
+  }
+});
+
+app.delete("/story/sessions", async (req, res) => {
+  const userId = req.user?.sub;
+  const mediaBucket = process.env.MEDIA_BUCKET;
+  if (!mediaTable) {
+    return res.status(500).json({ message: "MEDIA_TABLE is not set" });
+  }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const rawSessions = await queryBySkPrefix({
+      pk: buildMediaPk(userId),
+      skPrefix: "SESSION#",
+      limit: 200,
+      scanForward: false,
+    });
+    const sessions = rawSessions
+      .map(normalizeSessionItem)
+      .filter((item) => item.sessionId);
+
+    if (sessions.length === 0) {
+      return res.json({
+        deletedSessions: 0,
+        deletedMessages: 0,
+        deletedScenes: 0,
+      });
+    }
+
+    const deleted = await Promise.all(
+      sessions.map((item) =>
+        deleteSessionCascade({
+          userId,
+          sessionId: item.sessionId,
+          mediaTableName: mediaTable,
+          mediaBucket,
+        })
+      )
+    );
+
+    const totals = deleted.reduce(
+      (acc, item) => ({
+        deletedMessages: acc.deletedMessages + (item.deletedMessages || 0),
+        deletedScenes: acc.deletedScenes + (item.deletedScenes || 0),
+      }),
+      { deletedMessages: 0, deletedScenes: 0 }
+    );
+
+    return res.json({
+      deletedSessions: sessions.length,
+      deletedMessages: totals.deletedMessages,
+      deletedScenes: totals.deletedScenes,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Failed to delete story sessions",
       error: error?.message || String(error),
     });
   }
@@ -146,6 +309,7 @@ app.post("/story/sessions", async (req, res) => {
   }
 
   try {
+    const mediaBucket = process.env.MEDIA_BUCKET;
     const presets = await ensureStoryPresets();
     const characters = await ensureStoryCharacters();
     const characterMap = new Map(
@@ -169,6 +333,104 @@ app.post("/story/sessions", async (req, res) => {
       character?.name || preset.protagonistName || "Protagonist";
     const resolvedLorebook = resolveStoryLorebook(preset, protagonistName);
     const initialStoryState = buildInitialStoryState(resolvedLorebook);
+
+    const rawExistingSessions = await queryBySkPrefix({
+      pk: buildMediaPk(userId),
+      skPrefix: "SESSION#",
+      limit: 200,
+      scanForward: false,
+    });
+    const existingSessions = rawExistingSessions
+      .map(normalizeSessionItem)
+      .filter((item) => item.sessionId);
+    const samePresetSessions = sortSessionsByRecent(
+      existingSessions.filter((item) => item.presetId === preset.id)
+    );
+    if (samePresetSessions.length > 0) {
+      const primarySession = samePresetSessions[0];
+      const duplicateSessions = samePresetSessions.slice(1);
+
+      if (duplicateSessions.length > 0) {
+        await Promise.all(
+          duplicateSessions.map((item) =>
+            deleteSessionCascade({
+              userId,
+              sessionId: item.sessionId,
+              mediaTableName: mediaTable,
+              mediaBucket,
+            })
+          )
+        );
+      }
+
+      const messages = await queryBySkPrefix({
+        pk: buildMediaPk(userId),
+        skPrefix: storyMessagePrefix(primarySession.sessionId),
+        limit: 200,
+        scanForward: true,
+      });
+      const scenes = await queryBySkPrefix({
+        pk: buildMediaPk(userId),
+        skPrefix: storyScenePrefix(primarySession.sessionId),
+        limit: 50,
+        scanForward: true,
+      });
+      const signedScenes = await Promise.all(
+        scenes.map(async (scene) => {
+          if (!scene.imageKey || !mediaBucket) return scene;
+          try {
+            const imageUrl = await getSignedUrl(
+              s3Client,
+              new GetObjectCommand({
+                Bucket: mediaBucket,
+                Key: scene.imageKey,
+              }),
+              { expiresIn: 900 }
+            );
+            return { ...scene, imageUrl };
+          } catch {
+            return scene;
+          }
+        })
+      );
+
+      return res.json({
+        session: {
+          id: primarySession.sessionId,
+          title: primarySession.title,
+          presetId: primarySession.presetId,
+          protagonistName: primarySession.protagonistName,
+          synopsis: primarySession.synopsis,
+          lorebook: primarySession.lorebook,
+          storyState: primarySession.storyState,
+          createdAt: primarySession.createdAt,
+          updatedAt: primarySession.updatedAt,
+          turnCount: primarySession.turnCount || 0,
+          sceneCount: primarySession.sceneCount || 0,
+        },
+        messages: messages.map((message) => ({
+          role: message.role,
+          content: message.content,
+          createdAt: message.createdAt,
+        })),
+        scenes: signedScenes.map((scene) => ({
+          sceneId: scene.sceneId,
+          title: scene.title,
+          description: scene.description,
+          prompt: scene.prompt,
+          sceneEnvironment: scene.sceneEnvironment,
+          sceneAction: scene.sceneAction,
+          status: scene.status,
+          imageKey: scene.imageKey,
+          imageUrl: scene.imageUrl,
+          promptPositive: scene.promptPositive,
+          promptNegative: scene.promptNegative,
+          createdAt: scene.createdAt,
+        })),
+        reused: true,
+        cleanedDuplicateSessions: duplicateSessions.length,
+      });
+    }
 
     const sessionId = `story-${Date.now()}-${Math.random()
       .toString(36)
@@ -227,7 +489,7 @@ app.post("/story/sessions", async (req, res) => {
       .toString(36)
       .slice(2, 6)}`;
     const openingScenePrompt = [
-      "medium shot, balanced composition",
+      "balanced composition, coherent staging",
       preset.worldPrompt,
     ]
       .filter(Boolean)
@@ -413,52 +675,17 @@ app.delete("/story/sessions/:id", async (req, res) => {
       return res.status(404).json({ message: "Session not found" });
     }
 
-    const messages = await queryBySkPrefix({
-      pk: buildMediaPk(userId),
-      skPrefix: storyMessagePrefix(sessionId),
-      limit: 200,
-      scanForward: true,
+    const deleted = await deleteSessionCascade({
+      userId,
+      sessionId,
+      mediaTableName,
+      mediaBucket,
     });
-    const scenes = await queryBySkPrefix({
-      pk: buildMediaPk(userId),
-      skPrefix: storyScenePrefix(sessionId),
-      limit: 200,
-      scanForward: true,
-    });
-
-    const deleteItems = [
-      { pk: buildMediaPk(userId), sk: buildStorySessionSk(sessionId) },
-      ...messages.map((item) => ({ pk: item.pk, sk: item.sk })),
-      ...scenes.map((item) => ({ pk: item.pk, sk: item.sk })),
-    ];
-
-    await Promise.all(
-      deleteItems.map((item) =>
-        dynamoClient.send(
-          new DeleteCommand({
-            TableName: mediaTableName,
-            Key: item,
-          })
-        )
-      )
-    );
-
-    if (mediaBucket) {
-      const prefix = `${buildUserPrefix(userId)}stories/${sessionId}/`;
-      try {
-        await deleteS3ObjectsByPrefix(mediaBucket, prefix);
-      } catch (error) {
-        console.warn("Failed to delete story assets:", {
-          message: error?.message || String(error),
-          prefix,
-        });
-      }
-    }
 
     res.json({
       sessionId,
-      deletedMessages: messages.length,
-      deletedScenes: scenes.length,
+      deletedMessages: deleted.deletedMessages,
+      deletedScenes: deleted.deletedScenes,
     });
   } catch (error) {
     console.error("Story session delete error:", {

@@ -19,9 +19,6 @@ module.exports = (app, deps) => {
     ensureStoryCharacters,
     buildStoryCharacterPk,
     buildStoryCharacterSk,
-    sanitizeScenePrompt,
-    buildStoryIllustrationPrompt,
-    DEFAULT_NEGATIVE_PROMPT,
     clampPromptTokens,
     replicateModelConfig,
     buildSeedList,
@@ -31,6 +28,7 @@ module.exports = (app, deps) => {
     buildUserPrefix,
     PutObjectCommand,
     MAX_REPLICATE_PROMPT_TOKENS,
+    aiCraftIllustrationPrompts,
   } = deps;
 
 app.post("/story/sessions/:id/illustrations", async (req, res) => {
@@ -242,19 +240,8 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
       storyState: sessionItem.storyState || {},
       lorebook: sessionItem.lorebook || {},
     });
-    let cleanScenePrompt = sanitizeScenePrompt(
-      compactSceneForPrompt.scenePrompt || sceneItem.prompt || ""
-    );
-    if (cleanScenePrompt) {
-      cleanScenePrompt = cleanScenePrompt
-        .replace(/frieren/gi, "")
-        .replace(/elf/gi, "")
-        .replace(/mage/gi, "")
-        .replace(/academy uniform/gi, "")
-        .replace(/emerald eyes/gi, "")
-        .replace(/\s{2,}/g, " ")
-        .trim();
-    }
+    const cleanScenePrompt =
+      compactSceneForPrompt.scenePrompt || sceneItem.prompt || "";
 
     const protagonistLine = sessionItem.protagonistPrompt?.includes(
       sessionItem.protagonistName
@@ -267,20 +254,33 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
       sessionItem.protagonistPrompt ||
       protagonistLine;
 
-    const positivePrompt = buildStoryIllustrationPrompt({
-      character: resolvedCharacter,
-      sessionItem,
-      cleanScenePrompt,
+    const draftedPrompts = await aiCraftIllustrationPrompts({
+      character: {
+        name: resolvedCharacter?.name || sessionItem.protagonistName || "",
+        identityPrompt: identityBlock,
+        signatureTraits: resolvedCharacter?.signatureTraits || "",
+        styleReference:
+          resolvedCharacter?.styleReference || sessionItem.stylePrompt || "",
+        viewDistance: resolvedCharacter?.viewDistance || "",
+        eyeDetails: resolvedCharacter?.eyeDetails || "",
+        pose: resolvedCharacter?.pose || "",
+      },
+      scenePrompt: cleanScenePrompt,
       sceneEnvironment:
         compactSceneForPrompt.sceneEnvironment || sceneItem.sceneEnvironment || "",
       sceneAction: compactSceneForPrompt.sceneAction || sceneItem.sceneAction || "",
+      summary: summaryLine,
+      latest: contextLine,
+      recent: recentTranscript,
       contextMode,
     });
-
-    const negativePrompt =
-      resolvedCharacter?.storyNegativePrompt ||
-      sessionItem.negativePrompt ||
-      DEFAULT_NEGATIVE_PROMPT;
+    const positivePrompt = draftedPrompts?.positivePrompt || "";
+    const negativePrompt = draftedPrompts?.negativePrompt || "";
+    if (!positivePrompt || !negativePrompt) {
+      return res.status(500).json({
+        message: "Failed to generate prompts from Haiku.",
+      });
+    }
     const trimmedPositivePrompt = clampPromptTokens(positivePrompt);
     const trimmedNegativePrompt = clampPromptTokens(negativePrompt);
     const promptWasTrimmed = trimmedPositivePrompt.trim() !== positivePrompt.trim();

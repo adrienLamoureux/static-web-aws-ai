@@ -72,7 +72,7 @@ const storyCharacters = [
     id: "frieren",
     name: "Frieren from Beyond Journey's End",
     weight: 1.5,
-    viewDistance: "medium shot",
+    viewDistance: "",
     background: "",
     signatureTraits: "official Frieren",
     eyeDetails: "",

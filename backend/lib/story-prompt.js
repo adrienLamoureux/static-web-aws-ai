@@ -76,27 +76,6 @@ const parseSceneHelperResponse = (text = "") => {
   };
 };
 
-const sanitizeScenePrompt = (value = "") => {
-  if (!value) return "";
-  const cleaned = value
-    .replace(/establishing shot/gi, "")
-    .replace(/extreme wide/gi, "")
-    .replace(/ultra wide/gi, "")
-    .replace(/medium[- ]?long shot/gi, "")
-    .replace(/environment visible/gi, "")
-    .replace(/balanced composition/gi, "")
-    .replace(/\bwide shot\b/gi, "")
-    .replace(/\blong shot\b/gi, "")
-    .replace(/close[- ]?up/gi, "")
-    .replace(/extreme close[- ]?up/gi, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-  if (cleaned.includes("?")) {
-    return cleaned.split("?")[0].trim();
-  }
-  return cleaned;
-};
-
 const normalizePromptFragment = (value = "") =>
   value
     .replace(/[\r\n]+/g, " ")
@@ -212,107 +191,6 @@ const clipText = (value = "", max = 1200) => {
   return `${normalized.slice(0, max).trim()}...`;
 };
 
-
-const buildStoryIllustrationPrompt = ({
-  character,
-  sessionItem,
-  cleanScenePrompt,
-  sceneEnvironment,
-  sceneAction,
-  contextMode,
-}) => {
-  const shotRange = character?.viewDistance || "medium shot";
-  const includeScene =
-    contextMode === "scene" ||
-    contextMode === "summary+scene" ||
-    contextMode === "summary+latest" ||
-    contextMode === "recent" ||
-    contextMode === "summary+recent";
-  const sceneContext = includeScene
-    ? {
-        environment: splitPromptFragments(sceneEnvironment),
-        action: splitPromptFragments(sceneAction),
-      }
-    : { environment: [], action: [] };
-  const resolvedSceneContext =
-    sceneContext.environment.length || sceneContext.action.length
-      ? sceneContext
-      : includeScene
-        ? extractSceneContextFragments(cleanScenePrompt)
-        : { environment: [], action: [] };
-  const stateSceneContext = buildSceneFragmentsFromStoryState(
-    sessionItem?.storyState || {},
-    sessionItem?.worldPrompt || ""
-  );
-  const hasSceneEnvironment =
-    resolvedSceneContext.environment.length > 0;
-  const environmentParts = dedupeFragments([
-    ...resolvedSceneContext.environment,
-    ...(hasSceneEnvironment
-      ? []
-      : [...stateSceneContext.environment, sessionItem?.worldPrompt]),
-  ]);
-  const actionParts = dedupeFragments([
-    ...resolvedSceneContext.action,
-    ...(resolvedSceneContext.action.length > 0 ? [] : stateSceneContext.action),
-  ]);
-  const compactScene = buildCompactSceneContext({
-    environment: environmentParts,
-    action: actionParts,
-  });
-  const promptEnvironment = dedupeFragments(compactScene.environment).slice(0, 4);
-
-  const characterParts = ["1girl", "solo"];
-  if (character?.name) {
-    const weight =
-      typeof character.weight === "number" ? character.weight : 1.4;
-    characterParts.push(`(${character.name}:${weight})`);
-  }
-  if (character?.signatureTraits) {
-    characterParts.push(character.signatureTraits);
-  }
-
-  const focusActionParts = dedupeFragments([
-    character?.eyeDetails,
-    character?.pose,
-  ]);
-
-  const visualParts = dedupeFragments([character?.styleReference]);
-  const focusParts = dedupeFragments([
-    ...focusActionParts,
-    ...compactScene.action.slice(0, 1),
-  ]);
-  const resolvedFocusParts =
-    focusParts.length > 0 ? focusParts : ["visible character posture"];
-  const hasFullBodyShot = /\bfull body\b/i.test(shotRange);
-  const subjectFocusParts = dedupeFragments(
-    hasFullBodyShot
-      ? [
-          "character occupies most of frame",
-          "face clearly visible",
-          "sharp focus on face",
-        ]
-      : [
-          "character in foreground",
-          "face clearly visible",
-          "sharp focus on face",
-        ]
-  );
-  const backgroundBalance = "background detailed but secondary";
-
-  return [
-    characterParts.join(", "),
-    shotRange,
-    resolvedFocusParts.join(", "),
-    subjectFocusParts.join(", "),
-    promptEnvironment.join(", "),
-    backgroundBalance,
-    visualParts.join(", "),
-  ]
-    .filter(Boolean)
-    .join(", ");
-};
-
 const MAX_REPLICATE_PROMPT_TOKENS = 75;
 
 const estimateTokenCount = (value = "") =>
@@ -350,7 +228,6 @@ module.exports = {
   extractJsonStringField,
   parsePromptHelperResponse,
   parseSceneHelperResponse,
-  sanitizeScenePrompt,
   normalizePromptFragment,
   splitPromptFragments,
   extractSceneContextFragments,
@@ -359,7 +236,6 @@ module.exports = {
   buildCompactSceneContext,
   compactScenePayload,
   clipText,
-  buildStoryIllustrationPrompt,
   MAX_REPLICATE_PROMPT_TOKENS,
   estimateTokenCount,
   clampPromptTokens,
