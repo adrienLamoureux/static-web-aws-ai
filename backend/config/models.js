@@ -78,6 +78,43 @@ const replicateModelConfig = {
       };
     },
   },
+  "wai-nsfw-illustrious-v11": {
+    modelId:
+      process.env.REPLICATE_WAI_NSFW_ILLUSTRIOUS_V11_MODEL_ID ||
+      "aisha-ai-official/wai-nsfw-illustrious-v11:c1d5b02687df6081c7953c74bcc527858702e8c153c9382012ccc3906752d3ec",
+    usePredictions: false,
+    sizes: [
+      { width: 1280, height: 720 },
+      { width: 1024, height: 1024 },
+      { width: 768, height: 1024 },
+    ],
+    schedulers: ["Euler a"],
+    buildInput: ({
+      prompt,
+      negativePrompt,
+      width,
+      height,
+      numOutputs,
+      seed,
+      scheduler,
+    }) => ({
+      vae: "WAI-NSFW-illustrious-SDXL-v11",
+      seed: seed ?? -1,
+      model: "WAI-NSFW-illustrious-SDXL-v11",
+      steps: 30,
+      width,
+      height,
+      prompt,
+      cfg_scale: 7,
+      clip_skip: 2,
+      pag_scale: 3,
+      scheduler: scheduler || "Euler a",
+      batch_size: numOutputs,
+      negative_prompt: negativePrompt || "nsfw, naked",
+      guidance_rescale: 0.5,
+      prepend_preprompt: true,
+    }),
+  },
   "wai-nsfw-illustrious-v12": {
     modelId:
       process.env.REPLICATE_WAI_NSFW_ILLUSTRIOUS_V12_MODEL_ID || "aisha-ai-official/wai-nsfw-illustrious-v12:0fc0fa9885b284901a6f9c0b4d67701fd7647d157b88371427d63f8089ce140e",

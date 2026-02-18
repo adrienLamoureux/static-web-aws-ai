@@ -1,4 +1,10 @@
-import { buildApiUrl, fetchJson, postJson, deleteJson } from "./apiClient";
+import {
+  buildApiUrl,
+  buildUrlWithQuery,
+  fetchJson,
+  postJson,
+  deleteJson,
+} from "./apiClient";
 
 export const listStoryPresets = (baseUrl) =>
   fetchJson(
@@ -52,6 +58,34 @@ export const generateStoryIllustration = (baseUrl, sessionId, payload, options =
     ),
     payload,
     "Failed to generate illustration."
+  );
+
+export const startStorySceneAnimation = (
+  baseUrl,
+  sessionId,
+  sceneId,
+  payload
+) =>
+  postJson(
+    buildApiUrl(baseUrl, `/story/sessions/${sessionId}/scenes/${sceneId}/animation`),
+    payload,
+    "Failed to start scene animation."
+  );
+
+export const getStorySceneAnimationStatus = (
+  baseUrl,
+  sessionId,
+  sceneId,
+  params = {}
+) =>
+  fetchJson(
+    buildUrlWithQuery(
+      baseUrl,
+      `/story/sessions/${sessionId}/scenes/${sceneId}/animation`,
+      params
+    ),
+    {},
+    "Failed to fetch scene animation status."
   );
 
 export const deleteStorySession = (baseUrl, sessionId) =>

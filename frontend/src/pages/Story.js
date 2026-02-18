@@ -20,6 +20,8 @@ function Story({ apiBaseUrl = "" }) {
     selectedPresetId,
     isLoadingSession,
     illustrationContextMode,
+    illustrationModel,
+    animationPrompt,
     illustrationDebugEnabled,
     activeSessionDetail,
     storyDebugEnabled,
@@ -33,6 +35,8 @@ function Story({ apiBaseUrl = "" }) {
     setInput,
     setSelectedPresetId,
     setIllustrationContextMode,
+    setIllustrationModel,
+    setAnimationPrompt,
     setIllustrationDebugEnabled,
     setStoryDebugEnabled,
     setStoryDebugView,
@@ -44,7 +48,9 @@ function Story({ apiBaseUrl = "" }) {
     handleSendMessage,
     handleForceIllustration,
     triggerIllustration,
+    triggerSceneAnimation,
     isSceneGenerating,
+    isSceneAnimating,
   } = useStoryStudio(apiBaseUrl);
 
   return (
@@ -105,10 +111,16 @@ function Story({ apiBaseUrl = "" }) {
           status={status}
           illustrationContextMode={illustrationContextMode}
           setIllustrationContextMode={setIllustrationContextMode}
+          illustrationModel={illustrationModel}
+          setIllustrationModel={setIllustrationModel}
+          animationPrompt={animationPrompt}
+          setAnimationPrompt={setAnimationPrompt}
           illustrationDebugEnabled={illustrationDebugEnabled}
           setIllustrationDebugEnabled={setIllustrationDebugEnabled}
           triggerIllustration={triggerIllustration}
+          triggerSceneAnimation={triggerSceneAnimation}
           isSceneGenerating={isSceneGenerating}
+          isSceneAnimating={isSceneAnimating}
           featuredScene={featuredScene}
           readerScenes={readerScenes}
         />

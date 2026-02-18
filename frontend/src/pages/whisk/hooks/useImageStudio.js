@@ -387,6 +387,11 @@ export const useImageStudio = ({
     }
     return [
       {
+        key: "wai-nsfw-illustrious-v11",
+        name: "WAI NSFW Illustrious v11",
+        description: "Cheapest, uncensored",
+      },
+      {
         key: "wai-nsfw-illustrious-v12",
         name: "WAI NSFW Illustrious v12",
         description: "Cheap, uncensored",
@@ -394,7 +399,7 @@ export const useImageStudio = ({
       {
         key: "animagine",
         name: "Animagine XL v4 Opt",
-        description: "Cheap, balanced composition",
+        description: "Cheapest, balanced composition",
       },
       {
         key: "seedream-4.5",
@@ -434,6 +439,13 @@ export const useImageStudio = ({
       ];
     }
     if (imageModel === "wai-nsfw-illustrious-v12") {
+      return [
+        { value: "1280x720", label: "1280x720 (16:9)" },
+        { value: "1024x1024", label: "1024x1024 (Square)" },
+        { value: "768x1024", label: "768x1024 (Portrait)" },
+      ];
+    }
+    if (imageModel === "wai-nsfw-illustrious-v11") {
       return [
         { value: "1280x720", label: "1280x720 (16:9)" },
         { value: "1024x1024", label: "1024x1024 (Square)" },

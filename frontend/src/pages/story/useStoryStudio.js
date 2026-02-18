@@ -1,15 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   createStorySession,
   deleteStorySession,
   generateStoryIllustration,
+  getStorySceneAnimationStatus,
   getStorySession,
   listStoryPresets,
   listStorySessions,
   sendStoryMessage,
+  startStorySceneAnimation,
 } from "../../services/story";
 import { STORY_VIEW_MODE } from "./constants";
 const DEFAULT_CONTEXT_MODE = "summary+scene";
+const DEFAULT_ILLUSTRATION_MODEL = "wai-nsfw-illustrious-v11";
+const DEFAULT_ANIMATION_PROMPT = "A lot of movements";
 function useStoryStudio(apiBaseUrl = "") {
   const [presets, setPresets] = useState([]);
   const [sessions, setSessions] = useState([]);
@@ -23,6 +27,12 @@ function useStoryStudio(apiBaseUrl = "") {
   const [isLoadingSession, setIsLoadingSession] = useState(false);
   const [illustrationContextMode, setIllustrationContextMode] =
     useState(DEFAULT_CONTEXT_MODE);
+  const [illustrationModel, setIllustrationModel] = useState(
+    DEFAULT_ILLUSTRATION_MODEL
+  );
+  const [animationPrompt, setAnimationPrompt] = useState(
+    DEFAULT_ANIMATION_PROMPT
+  );
   const [illustrationDebugEnabled, setIllustrationDebugEnabled] = useState(true);
   const [activeSessionDetail, setActiveSessionDetail] = useState(null);
   const [storyDebugEnabled, setStoryDebugEnabled] = useState(false);
@@ -30,6 +40,8 @@ function useStoryStudio(apiBaseUrl = "") {
   const [isForcingIllustration, setIsForcingIllustration] = useState(false);
   const [storyViewMode, setStoryViewMode] = useState(STORY_VIEW_MODE.READER);
   const [sceneLoadingMap, setSceneLoadingMap] = useState({});
+  const [sceneAnimationLoadingMap, setSceneAnimationLoadingMap] = useState({});
+  const sceneAnimationPollRef = useRef({});
   const resolvedApiBaseUrl = apiBaseUrl || process.env.REACT_APP_API_URL || "";
   const isDirectorMode = storyViewMode === STORY_VIEW_MODE.DIRECTOR;
   const activeSession = useMemo(
@@ -43,12 +55,27 @@ function useStoryStudio(apiBaseUrl = "") {
     0;
   const readerScenes = useMemo(() => [...scenes].reverse(), [scenes]);
   const featuredScene = readerScenes[0] || null;
+  const clearSceneAnimationPoll = useCallback((sceneId) => {
+    if (!sceneId) return;
+    const timerId = sceneAnimationPollRef.current[sceneId];
+    if (timerId) {
+      clearTimeout(timerId);
+      delete sceneAnimationPollRef.current[sceneId];
+    }
+  }, []);
+  const clearAllSceneAnimationPolls = useCallback(() => {
+    Object.keys(sceneAnimationPollRef.current).forEach((sceneId) => {
+      clearSceneAnimationPoll(sceneId);
+    });
+  }, [clearSceneAnimationPoll]);
   const clearActiveSession = useCallback(() => {
+    clearAllSceneAnimationPolls();
+    setSceneAnimationLoadingMap({});
     setActiveSessionId("");
     setMessages([]);
     setScenes([]);
     setActiveSessionDetail(null);
-  }, []);
+  }, [clearAllSceneAnimationPolls]);
   const refreshSessions = useCallback(() => {
     if (!resolvedApiBaseUrl) return;
     listStorySessions(resolvedApiBaseUrl)
@@ -59,6 +86,12 @@ function useStoryStudio(apiBaseUrl = "") {
         setError(err?.message || "Failed to load sessions.");
       });
   }, [resolvedApiBaseUrl]);
+  useEffect(
+    () => () => {
+      clearAllSceneAnimationPolls();
+    },
+    [clearAllSceneAnimationPolls]
+  );
   const refreshActiveSessionDetail = useCallback(
     async (sessionId) => {
       if (!resolvedApiBaseUrl || !sessionId) return;
@@ -92,17 +125,23 @@ function useStoryStudio(apiBaseUrl = "") {
   );
   const handleSelectSession = useCallback(
     async (sessionId) => {
+      clearAllSceneAnimationPolls();
+      setSceneAnimationLoadingMap({});
       if (!sessionId) {
         clearActiveSession();
         return;
       }
       await loadSession(sessionId);
     },
-    [clearActiveSession, loadSession]
+    [clearActiveSession, clearAllSceneAnimationPolls, loadSession]
   );
   const isSceneGenerating = useCallback(
     (sceneId) => Boolean(sceneLoadingMap[sceneId]),
     [sceneLoadingMap]
+  );
+  const isSceneAnimating = useCallback(
+    (sceneId) => Boolean(sceneAnimationLoadingMap[sceneId]),
+    [sceneAnimationLoadingMap]
   );
   const triggerIllustration = useCallback(
     async (sessionId, sceneId, options = {}) => {
@@ -129,6 +168,7 @@ function useStoryStudio(apiBaseUrl = "") {
           {
             sceneId,
             contextMode: options.contextMode || illustrationContextMode,
+            model: options.model || illustrationModel,
             ...(options.regenerate ? { regenerate: true } : {}),
           },
           { debug: shouldDebug }
@@ -159,6 +199,14 @@ function useStoryStudio(apiBaseUrl = "") {
                       illustration.context?.sceneEnvironment || scene.sceneEnvironment,
                     sceneAction:
                       illustration.context?.sceneAction || scene.sceneAction,
+                    videoKey:
+                      illustration.scene?.videoKey ?? illustration.videoKey ?? "",
+                    videoUrl:
+                      illustration.scene?.videoUrl ?? illustration.videoUrl ?? "",
+                    videoStatus: illustration.scene?.videoStatus || "",
+                    videoPredictionId:
+                      illustration.scene?.videoPredictionId || "",
+                    videoPrompt: illustration.scene?.videoPrompt || "",
                     debug: debugData || scene.debug,
                   }
                 : scene
@@ -198,10 +246,139 @@ function useStoryStudio(apiBaseUrl = "") {
     },
     [
       illustrationContextMode,
+      illustrationModel,
       illustrationDebugEnabled,
       resolvedApiBaseUrl,
       setScenes,
       setSceneLoadingMap,
+    ]
+  );
+  const triggerSceneAnimation = useCallback(
+    async (sessionId, sceneId, options = {}) => {
+      if (!resolvedApiBaseUrl || !sessionId || !sceneId) return;
+      if (sceneAnimationLoadingMap[sceneId]) return;
+      const resolvedPrompt =
+        (options.prompt || animationPrompt || DEFAULT_ANIMATION_PROMPT).trim() ||
+        DEFAULT_ANIMATION_PROMPT;
+
+      const applyAnimationData = (data) => {
+        if (!data) return;
+        setScenes((prev) =>
+          prev.map((scene) =>
+            scene.sceneId === sceneId
+              ? {
+                  ...scene,
+                  videoStatus: data.status || scene.videoStatus || "",
+                  videoPredictionId:
+                    data.predictionId || scene.videoPredictionId || "",
+                  videoPrompt: data.prompt || resolvedPrompt,
+                  videoKey:
+                    data.status === "succeeded"
+                      ? data.videoKey || scene.videoKey || ""
+                      : data.videoKey || "",
+                  videoUrl:
+                    data.status === "succeeded"
+                      ? data.videoUrl || scene.videoUrl || ""
+                      : data.videoUrl || "",
+                }
+              : scene
+          )
+        );
+      };
+
+      const finishAnimation = () => {
+        clearSceneAnimationPoll(sceneId);
+        setSceneAnimationLoadingMap((prev) => {
+          const next = { ...prev };
+          delete next[sceneId];
+          return next;
+        });
+      };
+
+      clearSceneAnimationPoll(sceneId);
+      setError("");
+      setSceneAnimationLoadingMap((prev) => ({ ...prev, [sceneId]: true }));
+      setScenes((prev) =>
+        prev.map((scene) =>
+          scene.sceneId === sceneId
+            ? {
+                ...scene,
+                videoStatus: "starting",
+                videoPrompt: resolvedPrompt,
+                videoPredictionId: "",
+                videoKey: "",
+                videoUrl: "",
+              }
+            : scene
+        )
+      );
+
+      const pollAnimation = async (predictionId) => {
+        try {
+          const statusData = await getStorySceneAnimationStatus(
+            resolvedApiBaseUrl,
+            sessionId,
+            sceneId,
+            { predictionId }
+          );
+          applyAnimationData(statusData);
+          const status = statusData?.status || "";
+          if (status === "succeeded") {
+            finishAnimation();
+            return;
+          }
+          if (status === "failed" || status === "canceled") {
+            finishAnimation();
+            setError("Scene animation failed.");
+            return;
+          }
+          sceneAnimationPollRef.current[sceneId] = setTimeout(
+            () => pollAnimation(predictionId),
+            5000
+          );
+        } catch (err) {
+          finishAnimation();
+          setError(err?.message || "Failed to animate scene.");
+        }
+      };
+
+      try {
+        const data = await startStorySceneAnimation(
+          resolvedApiBaseUrl,
+          sessionId,
+          sceneId,
+          { prompt: resolvedPrompt }
+        );
+        applyAnimationData(data);
+        const status = data?.status || "";
+        if (status === "succeeded") {
+          finishAnimation();
+          return;
+        }
+        if (status === "failed" || status === "canceled") {
+          finishAnimation();
+          setError("Scene animation failed.");
+          return;
+        }
+        if (!data?.predictionId) {
+          finishAnimation();
+          return;
+        }
+        sceneAnimationPollRef.current[sceneId] = setTimeout(
+          () => pollAnimation(data.predictionId),
+          5000
+        );
+      } catch (err) {
+        finishAnimation();
+        setError(err?.message || "Failed to animate scene.");
+      }
+    },
+    [
+      animationPrompt,
+      clearSceneAnimationPoll,
+      resolvedApiBaseUrl,
+      sceneAnimationLoadingMap,
+      setScenes,
     ]
   );
   const handleDeleteSession = useCallback(
@@ -243,6 +420,7 @@ function useStoryStudio(apiBaseUrl = "") {
         {
           forceCurrent: true,
           contextMode: illustrationContextMode,
+          model: illustrationModel,
         },
         { debug: illustrationDebugEnabled }
       );
@@ -272,6 +450,11 @@ function useStoryStudio(apiBaseUrl = "") {
           sceneEnvironment:
             illustration.context?.sceneEnvironment || scene.sceneEnvironment,
           sceneAction: illustration.context?.sceneAction || scene.sceneAction,
+          videoKey: scene.videoKey ?? illustration.videoKey ?? "",
+          videoUrl: scene.videoUrl ?? illustration.videoUrl ?? "",
+          videoStatus: scene.videoStatus || "",
+          videoPredictionId: scene.videoPredictionId || "",
+          videoPrompt: scene.videoPrompt || "",
           debug: debugData || scene.debug,
         };
         if (exists) {
@@ -291,6 +474,7 @@ function useStoryStudio(apiBaseUrl = "") {
   }, [
     activeSessionId,
     illustrationContextMode,
+    illustrationModel,
     illustrationDebugEnabled,
     isForcingIllustration,
     refreshActiveSessionDetail,
@@ -391,6 +575,11 @@ function useStoryStudio(apiBaseUrl = "") {
         const pendingScene = {
           ...data.scene,
           status: "pending",
+          videoKey: data.scene?.videoKey || "",
+          videoUrl: data.scene?.videoUrl || "",
+          videoStatus: data.scene?.videoStatus || "",
+          videoPredictionId: data.scene?.videoPredictionId || "",
+          videoPrompt: data.scene?.videoPrompt || "",
           createdAt: new Date().toISOString(),
         };
         setScenes((prev) => [...prev, pendingScene]);
@@ -441,6 +630,8 @@ function useStoryStudio(apiBaseUrl = "") {
     selectedPresetId,
     isLoadingSession,
     illustrationContextMode,
+    illustrationModel,
+    animationPrompt,
     illustrationDebugEnabled,
     activeSessionDetail,
     storyDebugEnabled,
@@ -455,6 +646,8 @@ function useStoryStudio(apiBaseUrl = "") {
     setInput,
     setSelectedPresetId,
     setIllustrationContextMode,
+    setIllustrationModel,
+    setAnimationPrompt,
     setIllustrationDebugEnabled,
     setStoryDebugEnabled,
     setStoryDebugView,
@@ -466,7 +659,9 @@ function useStoryStudio(apiBaseUrl = "") {
     handleSendMessage,
     handleForceIllustration,
     triggerIllustration,
+    triggerSceneAnimation,
     isSceneGenerating,
+    isSceneAnimating,
   };
 }
 export default useStoryStudio;

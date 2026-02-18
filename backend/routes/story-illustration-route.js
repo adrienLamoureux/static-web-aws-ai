@@ -21,15 +21,97 @@ module.exports = (app, deps) => {
     buildStoryCharacterSk,
     clampPromptTokens,
     replicateModelConfig,
+    replicateVideoConfig,
+    replicateClient,
     buildSeedList,
     runReplicateWithRetry,
     getReplicateOutputUrl,
     fetchImageBuffer,
+    fetchS3ImageBuffer,
     buildUserPrefix,
     PutObjectCommand,
     MAX_REPLICATE_PROMPT_TOKENS,
     aiCraftIllustrationPrompts,
   } = deps;
+
+  const DEFAULT_STORY_ILLUSTRATION_MODEL = "wai-nsfw-illustrious-v11";
+  const STORY_ILLUSTRATION_MODEL_KEYS = new Set([
+    "animagine",
+    "wai-nsfw-illustrious-v11",
+  ]);
+  const STORY_ANIMATION_MODEL_KEY = "wan-2.2-i2v-fast";
+  const DEFAULT_STORY_ANIMATION_PROMPT = "A lot of movements";
+
+  const signSceneVideoUrl = async (bucket, sceneItem = {}) => {
+    if (!sceneItem.videoKey) return "";
+    try {
+      return await getSignedUrl(
+        s3Client,
+        new GetObjectCommand({
+          Bucket: bucket,
+          Key: sceneItem.videoKey,
+        }),
+        { expiresIn: 900 }
+      );
+    } catch (error) {
+      return "";
+    }
+  };
+
+  const buildStorySceneVideoKey = (userId = "", sessionId = "", sceneId = "") =>
+    `${buildUserPrefix(userId)}stories/${sessionId}/scenes/${sceneId}.mp4`;
+
+  const buildDataUrl = ({ buffer, contentType }) =>
+    `data:${contentType || "image/png"};base64,${buffer.toString("base64")}`;
+
+  const persistStorySceneVideo = async ({
+    bucket,
+    userId,
+    sessionId,
+    sceneId,
+    sceneItem,
+    prediction,
+    prompt,
+  }) => {
+    const outputUrl = getReplicateOutputUrl(prediction?.output);
+    if (!outputUrl) {
+      throw new Error("No video returned from Replicate");
+    }
+    const { buffer, contentType } = await fetchImageBuffer(outputUrl);
+    const videoKey = buildStorySceneVideoKey(userId, sessionId, sceneId);
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: videoKey,
+        Body: buffer,
+        ContentType: contentType || "video/mp4",
+      })
+    );
+    const updatedScene = {
+      ...sceneItem,
+      videoKey,
+      videoStatus: "succeeded",
+      videoPredictionId: prediction?.id || sceneItem.videoPredictionId || "",
+      videoPrompt: prompt || sceneItem.videoPrompt || "",
+      videoUpdatedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await dynamoClient.send(
+      new PutCommand({
+        TableName: mediaTable,
+        Item: updatedScene,
+      })
+    );
+    const videoUrl = await getSignedUrl(
+      s3Client,
+      new GetObjectCommand({
+        Bucket: bucket,
+        Key: videoKey,
+      }),
+      { expiresIn: 900 }
+    );
+    return { updatedScene, videoKey, videoUrl };
+  };
 
 app.post("/story/sessions/:id/illustrations", async (req, res) => {
   const userId = req.user?.sub;
@@ -38,6 +120,7 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
   const forceCurrent = Boolean(req.body?.forceCurrent);
   const regenerate = Boolean(req.body?.regenerate);
   const contextMode = req.body?.contextMode || "summary+scene";
+  const requestedModelKey = req.body?.model || DEFAULT_STORY_ILLUSTRATION_MODEL;
   const bucket = process.env.MEDIA_BUCKET;
   const apiToken = process.env.REPLICATE_API_TOKEN;
   const debug = req.query?.debug === "true";
@@ -59,6 +142,12 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
     return res
       .status(400)
       .json({ message: "sessionId and sceneId are required unless forceCurrent is true" });
+  }
+  if (!STORY_ILLUSTRATION_MODEL_KEYS.has(requestedModelKey)) {
+    return res.status(400).json({
+      message: `Unsupported model selection: ${requestedModelKey}`,
+      allowed: Array.from(STORY_ILLUSTRATION_MODEL_KEYS),
+    });
   }
 
   try {
@@ -150,10 +239,13 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
         }),
         { expiresIn: 900 }
       );
+      const videoUrl = await signSceneVideoUrl(bucket, sceneItem);
       return res.json({
         sceneId,
         imageKey: sceneItem.imageKey,
         imageUrl: url,
+        videoKey: sceneItem.videoKey || "",
+        videoUrl,
         scene: {
           sceneId: sceneItem.sceneId,
           title: sceneItem.title,
@@ -162,6 +254,11 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
           sceneEnvironment: sceneItem.sceneEnvironment,
           sceneAction: sceneItem.sceneAction,
           status: sceneItem.status,
+          videoKey: sceneItem.videoKey || "",
+          videoUrl,
+          videoStatus: sceneItem.videoStatus || "",
+          videoPredictionId: sceneItem.videoPredictionId || "",
+          videoPrompt: sceneItem.videoPrompt || "",
           createdAt: sceneItem.createdAt,
         },
       });
@@ -287,7 +384,21 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
     const negativeWasTrimmed =
       trimmedNegativePrompt.trim() !== negativePrompt.trim();
 
-    const modelConfig = replicateModelConfig.animagine;
+    const modelConfig = replicateModelConfig[requestedModelKey];
+    if (!modelConfig?.modelId) {
+      return res.status(500).json({
+        message: `Replicate modelId is not configured for ${requestedModelKey}`,
+      });
+    }
+    const sizeAllowed = modelConfig.sizes?.some(
+      (size) => size.width === 1024 && size.height === 1024
+    );
+    if (!sizeAllowed) {
+      return res.status(500).json({
+        message: `${requestedModelKey} does not support 1024x1024 for story illustrations`,
+      });
+    }
+    const defaultScheduler = modelConfig.schedulers?.[0];
     const [seed] = buildSeedList(1);
     const input = modelConfig.buildInput({
       prompt: trimmedPositivePrompt,
@@ -296,7 +407,7 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
       height: 1024,
       numOutputs: 1,
       seed,
-      scheduler: "Euler a",
+      scheduler: defaultScheduler,
     });
     const output = await runReplicateWithRetry(modelConfig.modelId, input, 3);
     const outputItems = Array.isArray(output) ? output : [output];
@@ -328,6 +439,11 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
       status: "completed",
       promptPositive: trimmedPositivePrompt,
       promptNegative: trimmedNegativePrompt,
+      videoKey: "",
+      videoStatus: "",
+      videoPredictionId: "",
+      videoPrompt: "",
+      videoUpdatedAt: "",
       updatedAt: new Date().toISOString(),
     };
     await dynamoClient.send(
@@ -358,6 +474,11 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
         sceneEnvironment: updatedScene.sceneEnvironment,
         sceneAction: updatedScene.sceneAction,
         status: updatedScene.status,
+        videoKey: updatedScene.videoKey || "",
+        videoUrl: "",
+        videoStatus: updatedScene.videoStatus || "",
+        videoPredictionId: updatedScene.videoPredictionId || "",
+        videoPrompt: updatedScene.videoPrompt || "",
         createdAt: updatedScene.createdAt,
       },
       ...(debug
@@ -385,6 +506,7 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
               "visual/style",
             ],
             replicate: {
+              modelKey: requestedModelKey,
               modelId: modelConfig.modelId,
               input,
               ...(promptWasTrimmed || negativeWasTrimmed
@@ -411,6 +533,258 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
     });
     res.status(500).json({
       message: "Failed to generate illustration",
+      error: error?.message || String(error),
+    });
+  }
+});
+
+app.post("/story/sessions/:id/scenes/:sceneId/animation", async (req, res) => {
+  const userId = req.user?.sub;
+  const sessionId = req.params.id;
+  const sceneId = req.params.sceneId;
+  const bucket = process.env.MEDIA_BUCKET;
+  const apiToken = process.env.REPLICATE_API_TOKEN;
+  const prompt =
+    req.body?.prompt?.trim() || DEFAULT_STORY_ANIMATION_PROMPT;
+
+  if (!mediaTable) {
+    return res.status(500).json({ message: "MEDIA_TABLE is not set" });
+  }
+  if (!bucket) {
+    return res.status(500).json({ message: "MEDIA_BUCKET is not set" });
+  }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (!apiToken) {
+    return res
+      .status(500)
+      .json({ message: "REPLICATE_API_TOKEN must be set" });
+  }
+  if (!sessionId || !sceneId) {
+    return res
+      .status(400)
+      .json({ message: "sessionId and sceneId are required" });
+  }
+
+  const videoModelConfig = replicateVideoConfig[STORY_ANIMATION_MODEL_KEY];
+  if (!videoModelConfig?.modelId) {
+    return res.status(500).json({
+      message: `Replicate modelId is not configured for ${STORY_ANIMATION_MODEL_KEY}`,
+    });
+  }
+
+  try {
+    const sessionItem = await getItem({
+      pk: buildMediaPk(userId),
+      sk: buildStorySessionSk(sessionId),
+    });
+    if (!sessionItem) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+    const sceneItem = await getItem({
+      pk: buildMediaPk(userId),
+      sk: buildStorySceneSk(sessionId, sceneId),
+    });
+    if (!sceneItem) {
+      return res.status(404).json({ message: "Scene not found" });
+    }
+    if (!sceneItem.imageKey) {
+      return res.status(400).json({
+        message: "Scene illustration is required before animation",
+      });
+    }
+
+    const sourceImage = await fetchS3ImageBuffer(bucket, sceneItem.imageKey);
+    const prediction = await replicateClient.predictions.create(
+      {
+        model: videoModelConfig.modelId,
+        input: videoModelConfig.buildInput({
+          imageUrl: buildDataUrl(sourceImage),
+          prompt,
+        }),
+      },
+      {
+        headers: {
+          Prefer: "wait=60",
+          "Cancel-After": "15m",
+        },
+      }
+    );
+    if (!prediction) {
+      return res.status(500).json({
+        message: "No prediction returned from Replicate",
+      });
+    }
+
+    if (prediction.status === "succeeded") {
+      const { videoKey, videoUrl } = await persistStorySceneVideo({
+        bucket,
+        userId,
+        sessionId,
+        sceneId,
+        sceneItem,
+        prediction,
+        prompt,
+      });
+      return res.json({
+        sceneId,
+        modelId: videoModelConfig.modelId,
+        predictionId: prediction.id,
+        status: "succeeded",
+        prompt,
+        videoKey,
+        videoUrl,
+      });
+    }
+
+    const updatedScene = {
+      ...sceneItem,
+      videoKey: "",
+      videoStatus: prediction.status || "starting",
+      videoPredictionId: prediction.id || "",
+      videoPrompt: prompt,
+      videoUpdatedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await dynamoClient.send(
+      new PutCommand({
+        TableName: mediaTable,
+        Item: updatedScene,
+      })
+    );
+
+    return res.json({
+      sceneId,
+      modelId: videoModelConfig.modelId,
+      predictionId: prediction.id,
+      status: prediction.status || "starting",
+      prompt,
+    });
+  } catch (error) {
+    console.error("Story animation start error:", {
+      message: error?.message || String(error),
+    });
+    return res.status(500).json({
+      message: "Failed to start scene animation",
+      error: error?.message || String(error),
+    });
+  }
+});
+
+app.get("/story/sessions/:id/scenes/:sceneId/animation", async (req, res) => {
+  const userId = req.user?.sub;
+  const sessionId = req.params.id;
+  const sceneId = req.params.sceneId;
+  const predictionId = req.query?.predictionId;
+  const bucket = process.env.MEDIA_BUCKET;
+  const apiToken = process.env.REPLICATE_API_TOKEN;
+
+  if (!mediaTable) {
+    return res.status(500).json({ message: "MEDIA_TABLE is not set" });
+  }
+  if (!bucket) {
+    return res.status(500).json({ message: "MEDIA_BUCKET is not set" });
+  }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (!apiToken) {
+    return res
+      .status(500)
+      .json({ message: "REPLICATE_API_TOKEN must be set" });
+  }
+  if (!sessionId || !sceneId) {
+    return res
+      .status(400)
+      .json({ message: "sessionId and sceneId are required" });
+  }
+
+  try {
+    const sessionItem = await getItem({
+      pk: buildMediaPk(userId),
+      sk: buildStorySessionSk(sessionId),
+    });
+    if (!sessionItem) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+    const sceneItem = await getItem({
+      pk: buildMediaPk(userId),
+      sk: buildStorySceneSk(sessionId, sceneId),
+    });
+    if (!sceneItem) {
+      return res.status(404).json({ message: "Scene not found" });
+    }
+    const resolvedPredictionId = predictionId || sceneItem.videoPredictionId;
+    if (!resolvedPredictionId) {
+      const existingVideoUrl = await signSceneVideoUrl(bucket, sceneItem);
+      return res.json({
+        sceneId,
+        status: sceneItem.videoStatus || "",
+        predictionId: "",
+        prompt: sceneItem.videoPrompt || "",
+        videoKey: sceneItem.videoKey || "",
+        videoUrl: existingVideoUrl,
+      });
+    }
+    const prediction = await replicateClient.predictions.get(
+      resolvedPredictionId
+    );
+    if (!prediction) {
+      return res.status(500).json({
+        message: "Prediction not found",
+      });
+    }
+
+    if (prediction.status !== "succeeded") {
+      const updatedScene = {
+        ...sceneItem,
+        videoStatus: prediction.status || sceneItem.videoStatus || "",
+        videoPredictionId:
+          resolvedPredictionId || sceneItem.videoPredictionId || "",
+        videoUpdatedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      await dynamoClient.send(
+        new PutCommand({
+          TableName: mediaTable,
+          Item: updatedScene,
+        })
+      );
+      return res.json({
+        sceneId,
+        status: prediction.status || "",
+        predictionId: resolvedPredictionId,
+        prompt: sceneItem.videoPrompt || "",
+        videoKey: sceneItem.videoKey || "",
+        videoUrl: "",
+      });
+    }
+
+    const { videoKey, videoUrl } = await persistStorySceneVideo({
+      bucket,
+      userId,
+      sessionId,
+      sceneId,
+      sceneItem,
+      prediction,
+      prompt: sceneItem.videoPrompt || DEFAULT_STORY_ANIMATION_PROMPT,
+    });
+
+    return res.json({
+      sceneId,
+      status: "succeeded",
+      predictionId: resolvedPredictionId,
+      prompt: sceneItem.videoPrompt || DEFAULT_STORY_ANIMATION_PROMPT,
+      videoKey,
+      videoUrl,
+    });
+  } catch (error) {
+    console.error("Story animation status error:", {
+      message: error?.message || String(error),
+    });
+    return res.status(500).json({
+      message: "Failed to get scene animation status",
       error: error?.message || String(error),
     });
   }

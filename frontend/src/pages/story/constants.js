@@ -31,3 +31,14 @@ export const ILLUSTRATION_CONTEXT_OPTIONS = [
   { value: "summary+recent", label: "Summary + recent turns" },
   { value: "recent", label: "Recent turns only" },
 ];
+
+export const STORY_ILLUSTRATION_MODEL_OPTIONS = [
+  {
+    value: "wai-nsfw-illustrious-v11",
+    label: "WAI NSFW Illustrious v11",
+  },
+  {
+    value: "animagine",
+    label: "Animagine XL v4 Opt",
+  },
+];

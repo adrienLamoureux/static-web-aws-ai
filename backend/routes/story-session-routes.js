@@ -377,20 +377,37 @@ app.post("/story/sessions", async (req, res) => {
       });
       const signedScenes = await Promise.all(
         scenes.map(async (scene) => {
-          if (!scene.imageKey || !mediaBucket) return scene;
-          try {
-            const imageUrl = await getSignedUrl(
-              s3Client,
-              new GetObjectCommand({
-                Bucket: mediaBucket,
-                Key: scene.imageKey,
-              }),
-              { expiresIn: 900 }
-            );
-            return { ...scene, imageUrl };
-          } catch {
-            return scene;
+          if (!mediaBucket) return scene;
+          const signedScene = { ...scene };
+          if (scene.imageKey) {
+            try {
+              signedScene.imageUrl = await getSignedUrl(
+                s3Client,
+                new GetObjectCommand({
+                  Bucket: mediaBucket,
+                  Key: scene.imageKey,
+                }),
+                { expiresIn: 900 }
+              );
+            } catch {
+              signedScene.imageUrl = "";
+            }
           }
+          if (scene.videoKey) {
+            try {
+              signedScene.videoUrl = await getSignedUrl(
+                s3Client,
+                new GetObjectCommand({
+                  Bucket: mediaBucket,
+                  Key: scene.videoKey,
+                }),
+                { expiresIn: 900 }
+              );
+            } catch {
+              signedScene.videoUrl = "";
+            }
+          }
+          return signedScene;
         })
       );
 
@@ -423,6 +440,11 @@ app.post("/story/sessions", async (req, res) => {
           status: scene.status,
           imageKey: scene.imageKey,
           imageUrl: scene.imageUrl,
+          videoKey: scene.videoKey,
+          videoUrl: scene.videoUrl,
+          videoStatus: scene.videoStatus,
+          videoPredictionId: scene.videoPredictionId,
+          videoPrompt: scene.videoPrompt,
           promptPositive: scene.promptPositive,
           promptNegative: scene.promptNegative,
           createdAt: scene.createdAt,
@@ -595,16 +617,36 @@ app.get("/story/sessions/:id", async (req, res) => {
 
     const signedScenes = await Promise.all(
       scenes.map(async (scene) => {
-        if (!scene.imageKey) return scene;
-        const url = await getSignedUrl(
-          s3Client,
-          new GetObjectCommand({
-            Bucket: bucket,
-            Key: scene.imageKey,
-          }),
-          { expiresIn: 900 }
-        );
-        return { ...scene, imageUrl: url };
+        const signedScene = { ...scene };
+        if (scene.imageKey) {
+          try {
+            signedScene.imageUrl = await getSignedUrl(
+              s3Client,
+              new GetObjectCommand({
+                Bucket: bucket,
+                Key: scene.imageKey,
+              }),
+              { expiresIn: 900 }
+            );
+          } catch {
+            signedScene.imageUrl = "";
+          }
+        }
+        if (scene.videoKey) {
+          try {
+            signedScene.videoUrl = await getSignedUrl(
+              s3Client,
+              new GetObjectCommand({
+                Bucket: bucket,
+                Key: scene.videoKey,
+              }),
+              { expiresIn: 900 }
+            );
+          } catch {
+            signedScene.videoUrl = "";
+          }
+        }
+        return signedScene;
       })
     );
 
@@ -637,6 +679,11 @@ app.get("/story/sessions/:id", async (req, res) => {
         status: scene.status,
         imageKey: scene.imageKey,
         imageUrl: scene.imageUrl,
+        videoKey: scene.videoKey,
+        videoUrl: scene.videoUrl,
+        videoStatus: scene.videoStatus,
+        videoPredictionId: scene.videoPredictionId,
+        videoPrompt: scene.videoPrompt,
         promptPositive: scene.promptPositive,
         promptNegative: scene.promptNegative,
         createdAt: scene.createdAt,
