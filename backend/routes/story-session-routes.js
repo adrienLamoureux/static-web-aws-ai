@@ -25,6 +25,10 @@ module.exports = (app, deps) => {
     deleteS3ObjectsByPrefix,
   } = deps;
 
+  const ACTIVE_STORY_PRESET_IDS = new Set(["frieren-road"]);
+  const filterActiveStoryPresets = (presets = []) =>
+    presets.filter((preset) => ACTIVE_STORY_PRESET_IDS.has(preset?.id));
+
   const toTimestamp = (value = "") => {
     const parsed = Date.parse(value || "");
     return Number.isNaN(parsed) ? 0 : parsed;
@@ -121,7 +125,10 @@ app.get("/story/presets", async (req, res) => {
     return res.status(500).json({ message: "MEDIA_TABLE is not set" });
   }
   try {
-    const presets = await ensureStoryPresets();
+    const ensuredPresets = await ensureStoryPresets();
+    const presets = filterActiveStoryPresets(
+      ensuredPresets.length ? ensuredPresets : storyPresets
+    );
     const characters = await ensureStoryCharacters();
     const characterMap = new Map(
       characters.map((character) => [character.id, character])
@@ -310,16 +317,20 @@ app.post("/story/sessions", async (req, res) => {
 
   try {
     const mediaBucket = process.env.MEDIA_BUCKET;
-    const presets = await ensureStoryPresets();
+    const ensuredPresets = await ensureStoryPresets();
+    const presets = filterActiveStoryPresets(
+      ensuredPresets.length ? ensuredPresets : storyPresets
+    );
     const characters = await ensureStoryCharacters();
     const characterMap = new Map(
       characters.map((character) => [character.id, character])
     );
-    const preset =
-      presets.find((item) => item.id === presetId) ||
-      storyPresets.find((item) => item.id === presetId);
+    const preset = presets.find((item) => item.id === presetId);
     if (!preset) {
-      return res.status(400).json({ message: "Invalid presetId" });
+      return res.status(400).json({
+        message: "Invalid presetId",
+        allowedPresetIds: Array.from(ACTIVE_STORY_PRESET_IDS),
+      });
     }
     const resolvedProtagonistId =
       preset.protagonistId ||

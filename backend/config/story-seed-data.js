@@ -108,34 +108,6 @@ const storyPresets = [
     opening:
       "The road opens into a quiet valley, the wind carrying distant bells. Frieren walks ahead in thoughtful silence, then glances back with a small smile. “We can rest in the next village—or take the ridge and see the lakes at sunset. What feels right to you?”",
   },
-  {
-    id: "moonlit-tavern",
-    name: "Moonlit Tavern",
-    synopsis:
-      "A cozy tavern at the edge of the kingdom. Warm lantern light, mysterious travelers, and a slowly unfolding quest.",
-    protagonistId: "frieren",
-    worldPrompt:
-      "cozy tavern interior, candlelight glow, wooden beams, rain outside windows, warm ambience",
-    stylePrompt:
-      "anime cinematic illustration, warm amber lighting, soft grain, detailed textures, gentle bokeh",
-    negativePrompt: DEFAULT_NEGATIVE_PROMPT,
-    opening:
-      "The tavern door creaks and the scent of rain drifts in. Frieren takes a seat by the hearth, brushing droplets from her cloak. “There’s a traveler here who knows the old ruins,” she says, eyes glinting in the firelight. “Do we listen, or keep moving?”",
-  },
-  {
-    id: "celestial-ruins",
-    name: "Celestial Ruins",
-    synopsis:
-      "Ancient sky-temples and starlit relics. The world feels older here, and the air hums with quiet magic.",
-    protagonistId: "frieren",
-    worldPrompt:
-      "ancient ruins above the clouds, floating stone, starlit sky, glowing runes, ethereal atmosphere",
-    stylePrompt:
-      "anime cinematic illustration, high contrast moonlight, cool blue palette, ethereal glow, ultra-detailed",
-    negativePrompt: DEFAULT_NEGATIVE_PROMPT,
-    opening:
-      "The staircase ends above the clouds, where ancient stones hum with starlight. Frieren pauses, listening to the wind. “These ruins are alive with memory,” she whispers. “Do we trace the runes, or search for the relic first?”",
-  },
 ];
 
 const promptHelperDefaults = {
