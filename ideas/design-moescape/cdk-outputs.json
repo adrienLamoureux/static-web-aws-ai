@@ -1,0 +1,15 @@
+{
+  "StaticWebAWSAIStack-design-moescape": {
+    "MediaBucketName": "staticwebawsaistack-design-moe-mediabucketbcbb02ba-hy0yw9ye5wol",
+    "UserPoolClientId": "6h0sr1n3o5j9ii2ofha2b1kmpa",
+    "CloudFrontURL": "d1raqt5min66lv.cloudfront.net",
+    "UserPoolId": "us-east-1_suRxWJhiL",
+    "StageName": "design-moescape",
+    "APIEndpoint": "https://bcy62oi00d.execute-api.us-east-1.amazonaws.com/prod/",
+    "SecondaryAdminUserEmail": "not-configured",
+    "AdminUserEmail": "not-configured",
+    "ApiGatewayEndpoint5AA8EC3A": "https://bcy62oi00d.execute-api.us-east-1.amazonaws.com/prod/",
+    "CognitoDomainPrefix": "whiskstudio-alx-design-moescape-761593662432",
+    "CognitoDomain": "https://whiskstudio-alx-design-moescape-761593662432.auth.us-east-1.amazoncognito.com"
+  }
+}

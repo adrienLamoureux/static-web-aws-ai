@@ -1,0 +1,15 @@
+{
+  "StaticWebAWSAIStack-design-endfield": {
+    "MediaBucketName": "staticwebawsaistack-design-end-mediabucketbcbb02ba-np09rn26uktn",
+    "UserPoolClientId": "5h0bh45lssr9mcj0bpc41440qg",
+    "CloudFrontURL": "d3vbqp2fb0oc5m.cloudfront.net",
+    "UserPoolId": "us-east-1_8Io9GMgHg",
+    "StageName": "design-endfield",
+    "APIEndpoint": "https://z4jv3sqt5g.execute-api.us-east-1.amazonaws.com/prod/",
+    "SecondaryAdminUserEmail": "not-configured",
+    "AdminUserEmail": "not-configured",
+    "ApiGatewayEndpoint5AA8EC3A": "https://z4jv3sqt5g.execute-api.us-east-1.amazonaws.com/prod/",
+    "CognitoDomainPrefix": "whiskstudio-alx-design-endfield-761593662432",
+    "CognitoDomain": "https://whiskstudio-alx-design-endfield-761593662432.auth.us-east-1.amazoncognito.com"
+  }
+}

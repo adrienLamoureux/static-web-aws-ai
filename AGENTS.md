@@ -22,8 +22,64 @@
 - Use single-thread execution for small changes that touch one area.
 - Use `planner -> workers -> integrator` for medium/large tasks.
 - Run each worker in a separate Git worktree and branch.
-- Branch naming: `codex/<ticket>-<slice>`.
+- Branch naming: `codex/<idea-id>-<slice>`.
 - Freeze contracts before workers start.
+- Default long-lived working branch: `codex/dev`.
+- Agents may edit `codex/dev` directly.
+- Human workflow: open PR from `codex/dev` to `main` and merge manually.
+- When creating worktrees, branch from `codex/dev` unless a task explicitly requires another base.
+- Standard worktree layout:
+  - `../wt/<idea-id>/plan`
+  - `../wt/<idea-id>/code`
+  - `../wt/<idea-id>/integrate`
+- Standard branch layout:
+  - `codex/<idea-id>/plan`
+  - `codex/<idea-id>/code`
+  - `codex/<idea-id>/integrate`
+- Bootstrap commands:
+`git worktree add ../wt/<idea-id>/plan -b codex/<idea-id>/plan`
+`git worktree add ../wt/<idea-id>/code -b codex/<idea-id>/code`
+`git worktree add ../wt/<idea-id>/integrate -b codex/<idea-id>/integrate`
+- Worktree responsibilities:
+  - `plan`: freeze contracts, split slices, update `ideas/<idea-id>/README.md` + `DECISIONS.md`.
+  - `code`: implement isolated slices only, no cross-slice refactors.
+  - `integrate`: merge validated slices, run gates, deploy/seed, update `STATUS.md`.
+- Merge order:
+`codex/<idea-id>/plan -> codex/<idea-id>/code -> codex/<idea-id>/integrate -> main`
+- Cleanup command after merge:
+`git worktree remove ../wt/<idea-id>/plan && git worktree remove ../wt/<idea-id>/code && git worktree remove ../wt/<idea-id>/integrate`
+
+## Idea Environment Policy
+- Every parallel prototype must have a unique idea ID (`<idea-id>`).
+- Every idea ID maps to one isolated full stack (`StaticWebAWSAIStack-<idea-id>`).
+- Use one folder per idea under `ideas/<idea-id>/` with:
+  - `README.md` (functional scope and behavior)
+  - `DECISIONS.md` (architecture decisions)
+  - `RUNBOOK.md` (deploy/destroy operations)
+  - `STATUS.md` (latest URLs, blockers, activity log)
+  - `IMPROVEMENTS.md` (shared improvement rollouts applied to this idea)
+- Keep `/IDEAS.md` updated as the top-level registry.
+- Keep `/IMPROVEMENTS.md` updated for cross-idea rollouts.
+- Use CDK helper commands so docs and registry are updated consistently:
+`npm --prefix cdk run idea:init -- --stage=<idea-id> --title="<title>"`
+`npm --prefix cdk run idea:deploy -- --stage=<idea-id> [--owner="<owner>"] [--ttl-days=<days>]`
+`npm --prefix cdk run idea:seed -- --target-stage=<idea-id> [--source-stage=<source-stage>] [--source-stack=<stack-name>] [--seed-user-email=<email>] [--seed-user-password=<password>]`
+`npm --prefix cdk run idea:destroy -- --stage=<idea-id>`
+`npm --prefix cdk run idea:diff -- --stage=<idea-id>`
+`npm --prefix cdk run idea:synth -- --stage=<idea-id>`
+- Batch operations for “same improvement, selected ideas”:
+`npm --prefix cdk run idea:list`
+`npm --prefix cdk run idea:rollout -- --improvement="<name>" [--exclude=idea-x] [--owner="<owner>"] [--ttl-days=<days>]`
+`npm --prefix cdk run idea:deploy-many -- --all --improvement="<name>" [--owner="<owner>"] [--ttl-days=<days>]`
+`npm --prefix cdk run idea:deploy-many -- --stages=idea-a,idea-b --improvement="<name>" [--owner="<owner>"] [--ttl-days=<days>]`
+`npm --prefix cdk run idea:deploy-many -- --all --exclude=idea-legacy --improvement="<name>" [--owner="<owner>"] [--ttl-days=<days>]`
+`npm --prefix cdk run idea:diff-many -- --all`
+`npm --prefix cdk run idea:synth-many -- --all`
+`npm --prefix cdk run idea:seed-many -- --all [--exclude=idea-x] [--source-stage=<source-stage>] [--source-stack=<stack-name>]`
+- For autonomous rollouts across all ideas, prefer `idea:rollout` (build once + deploy all + write logs).
+- After every deploy/destroy, update `README.md` and `DECISIONS.md` if scope or architecture changed.
+- For deploy-many commands, always provide `--improvement`, and prefer `--dry-run` first when targeting many stacks.
+- For seeded demo content, seed from one source stage (default `sandbox`) into target idea stacks after deploy.
 
 ## Planner Required Output
 1. Problem statement and non-goals.

@@ -2,7 +2,23 @@
   "name": "cdk",
   "version": "1.0.0",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "idea:list": "node scripts/idea-env.js list",
+    "idea:init": "node scripts/idea-env.js init",
+    "idea:deploy": "node scripts/idea-env.js deploy",
+    "idea:rollout": "node scripts/idea-env.js rollout",
+    "idea:deploy-all": "node scripts/idea-env.js deploy-many --all",
+    "idea:seed": "node scripts/seed-idea-content.js seed",
+    "idea:seed-many": "node scripts/seed-idea-content.js seed-many",
+    "idea:seed-all": "node scripts/seed-idea-content.js seed-many --all",
+    "idea:destroy": "node scripts/idea-env.js destroy",
+    "idea:diff": "node scripts/idea-env.js diff",
+    "idea:diff-all": "node scripts/idea-env.js diff-many --all",
+    "idea:synth": "node scripts/idea-env.js synth",
+    "idea:synth-all": "node scripts/idea-env.js synth-many --all",
+    "idea:deploy-many": "node scripts/idea-env.js deploy-many",
+    "idea:diff-many": "node scripts/idea-env.js diff-many",
+    "idea:synth-many": "node scripts/idea-env.js synth-many"
   },
   "devDependencies": {
     "@types/node": "^22.13.17",
