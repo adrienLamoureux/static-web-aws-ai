@@ -20,6 +20,17 @@ const formatAnimationStatus = (value = "") => {
   return `Animation ${normalized}`;
 };
 
+const formatMusicStatus = (value = "", hasAudio = false) => {
+  if (hasAudio) return "Soundtrack ready";
+  const normalized = (value || "").toLowerCase();
+  if (!normalized) return "";
+  if (normalized === "starting") return "Soundtrack queued...";
+  if (normalized === "processing") return "Soundtrack rendering...";
+  if (normalized === "failed") return "Soundtrack failed";
+  if (normalized === "canceled") return "Soundtrack canceled";
+  return `Soundtrack ${normalized}`;
+};
+
 function StoryDirectorIllustrations({
   scenes,
   messages,
@@ -33,12 +44,20 @@ function StoryDirectorIllustrations({
   setIllustrationModel,
   animationPrompt,
   setAnimationPrompt,
+  musicPrompt,
+  setMusicPrompt,
   illustrationDebugEnabled,
   setIllustrationDebugEnabled,
   triggerIllustration,
   triggerSceneAnimation,
+  triggerSceneMusic,
+  applyLibraryTrackToScene,
+  setSceneLibraryTrackSelection,
+  musicLibrary,
+  sceneLibrarySelectionMap,
   isSceneGenerating,
   isSceneAnimating,
+  isSceneGeneratingMusic,
 }) {
   const {
     groupType,
@@ -189,6 +208,17 @@ function StoryDirectorIllustrations({
           placeholder="A lot of movements"
           maxLength={240}
         />
+        <label className="story-scenes-label" htmlFor="story-music-prompt">
+          Music prompt override
+        </label>
+        <input
+          id="story-music-prompt"
+          className="field-input story-scenes-text"
+          value={musicPrompt}
+          onChange={(event) => setMusicPrompt(event.target.value)}
+          placeholder="Leave empty for Haiku auto-direction"
+          maxLength={240}
+        />
         <label className="story-scenes-toggle">
           <input
             type="checkbox"
@@ -211,8 +241,29 @@ function StoryDirectorIllustrations({
         {visibleScenes.map((scene) => {
           const generating = isSceneGenerating(scene.sceneId);
           const animating = isSceneAnimating(scene.sceneId);
+          const generatingMusic = isSceneGeneratingMusic(scene.sceneId);
           const animationStatusLabel = formatAnimationStatus(scene.videoStatus);
+          const soundtrackReady = Boolean(scene.musicUrl);
+          const musicStatusLabel = formatMusicStatus(
+            scene.musicStatus,
+            soundtrackReady
+          );
           const assignedGroupId = currentBoard.assignments[scene.sceneId] || "";
+          const selectedTrackId = sceneLibrarySelectionMap?.[scene.sceneId] || "";
+          const canApplyTrack = Boolean(selectedTrackId);
+          const recommendedTrackId = scene.recommendedTrackId || "";
+          const recommendedTrack = musicLibrary.find(
+            (track) => track.trackId === recommendedTrackId
+          );
+          const hasRecommendation = Boolean(recommendedTrackId);
+          const hasRecommendationScore =
+            scene.recommendationScore !== null &&
+            scene.recommendationScore !== "" &&
+            typeof scene.recommendationScore !== "undefined";
+          const recommendationPercent =
+            hasRecommendationScore && Number.isFinite(Number(scene.recommendationScore))
+              ? Math.round(Number(scene.recommendationScore) * 100)
+              : null;
 
           return (
             <div
@@ -254,6 +305,18 @@ function StoryDirectorIllustrations({
                       >
                         {animating ? "Animating..." : "Animate"}
                       </button>
+                      <button
+                        type="button"
+                        className="story-scene-music-trigger"
+                        onClick={() =>
+                          triggerSceneMusic(activeSessionId, scene.sceneId, {
+                            prompt: musicPrompt,
+                          })
+                        }
+                        disabled={generatingMusic || status === "sending"}
+                      >
+                        {generatingMusic ? "Scoring..." : "Music"}
+                      </button>
                     </div>
                   </>
                 ) : (
@@ -287,6 +350,68 @@ function StoryDirectorIllustrations({
                   )}
                   {scene.videoUrl && animationStatusLabel && (
                     <p className="story-scene-video-status">{animationStatusLabel}</p>
+                  )}
+                </div>
+              )}
+
+              {musicStatusLabel && (
+                <div className="story-scene-music">
+                  <p className="story-scene-music-status">{musicStatusLabel}</p>
+                </div>
+              )}
+
+              {musicLibrary.length > 0 && !soundtrackReady && (
+                <div className="story-scene-row">
+                  <label
+                    className="story-scenes-label"
+                    htmlFor={`scene-music-library-${scene.sceneId}`}
+                  >
+                    Soundtrack library
+                  </label>
+                  <div className="story-scene-library-row">
+                    <select
+                      id={`scene-music-library-${scene.sceneId}`}
+                      className="field-select story-scene-folder-select"
+                      value={selectedTrackId}
+                      onChange={(event) =>
+                        setSceneLibraryTrackSelection(
+                          scene.sceneId,
+                          event.target.value
+                        )
+                      }
+                    >
+                      <option value="">Select soundtrack</option>
+                      {musicLibrary.map((track) => {
+                        const isRecommendedTrack = track.trackId === recommendedTrackId;
+                        return (
+                          <option key={track.trackId} value={track.trackId}>
+                            {track.title}
+                            {track.mood ? ` · ${track.mood}` : ""}
+                            {isRecommendedTrack ? " (recommended)" : ""}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <button
+                      type="button"
+                      className="story-scene-apply-track"
+                      onClick={() =>
+                        applyLibraryTrackToScene(
+                          activeSessionId,
+                          scene.sceneId,
+                          selectedTrackId
+                        )
+                      }
+                      disabled={!canApplyTrack || status === "sending"}
+                    >
+                      Apply
+                    </button>
+                  </div>
+                  {hasRecommendation && (
+                    <p className="story-scene-library-note">
+                      Recommended: {recommendedTrack?.title || "Soundtrack"}
+                      {recommendationPercent !== null ? ` (${recommendationPercent}%)` : ""}
+                    </p>
                   )}
                 </div>
               )}

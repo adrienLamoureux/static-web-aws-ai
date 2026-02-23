@@ -14,6 +14,7 @@ module.exports = (app, deps) => {
     putMediaItem,
     getSignedUrl,
     GetObjectCommand,
+    buildReplicatePredictionRequest,
   } = deps;
 
 app.post("/replicate/video/generate", async (req, res) => {
@@ -107,11 +108,12 @@ app.post("/replicate/video/generate", async (req, res) => {
       modelId: modelConfig.modelId,
       inputKey,
     });
+    const predictionRequest = buildReplicatePredictionRequest({
+      modelId: modelConfig.modelId,
+      input,
+    });
     const prediction = await replicateClient.predictions.create(
-      {
-        model: modelConfig.modelId,
-        input,
-      },
+      predictionRequest,
       {
         headers: {
           Prefer: "wait=60",

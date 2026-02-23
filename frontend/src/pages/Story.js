@@ -22,6 +22,7 @@ function Story({ apiBaseUrl = "" }) {
     illustrationContextMode,
     illustrationModel,
     animationPrompt,
+    musicPrompt,
     illustrationDebugEnabled,
     activeSessionDetail,
     storyDebugEnabled,
@@ -32,11 +33,17 @@ function Story({ apiBaseUrl = "" }) {
     activeTurnCount,
     readerScenes,
     featuredScene,
+    musicLibrary,
+    sceneLibrarySelectionMap,
+    activeMusicTrackKey,
+    musicAutoPlayRequest,
     setInput,
     setSelectedPresetId,
     setIllustrationContextMode,
     setIllustrationModel,
     setAnimationPrompt,
+    setMusicPrompt,
+    setActiveMusicTrackKey,
     setIllustrationDebugEnabled,
     setStoryDebugEnabled,
     setStoryDebugView,
@@ -49,8 +56,13 @@ function Story({ apiBaseUrl = "" }) {
     handleForceIllustration,
     triggerIllustration,
     triggerSceneAnimation,
+    triggerSceneMusic,
+    saveSceneMusic,
+    applyLibraryTrackToScene,
+    setSceneLibraryTrackSelection,
     isSceneGenerating,
     isSceneAnimating,
+    isSceneGeneratingMusic,
   } = useStoryStudio(apiBaseUrl);
 
   return (
@@ -115,12 +127,24 @@ function Story({ apiBaseUrl = "" }) {
           setIllustrationModel={setIllustrationModel}
           animationPrompt={animationPrompt}
           setAnimationPrompt={setAnimationPrompt}
+          musicPrompt={musicPrompt}
+          setMusicPrompt={setMusicPrompt}
           illustrationDebugEnabled={illustrationDebugEnabled}
           setIllustrationDebugEnabled={setIllustrationDebugEnabled}
           triggerIllustration={triggerIllustration}
           triggerSceneAnimation={triggerSceneAnimation}
+          triggerSceneMusic={triggerSceneMusic}
+          saveSceneMusic={saveSceneMusic}
+          applyLibraryTrackToScene={applyLibraryTrackToScene}
+          setSceneLibraryTrackSelection={setSceneLibraryTrackSelection}
+          musicLibrary={musicLibrary}
+          sceneLibrarySelectionMap={sceneLibrarySelectionMap}
+          activeMusicTrackKey={activeMusicTrackKey}
+          musicAutoPlayRequest={musicAutoPlayRequest}
+          setActiveMusicTrackKey={setActiveMusicTrackKey}
           isSceneGenerating={isSceneGenerating}
           isSceneAnimating={isSceneAnimating}
+          isSceneGeneratingMusic={isSceneGeneratingMusic}
           featuredScene={featuredScene}
           readerScenes={readerScenes}
         />

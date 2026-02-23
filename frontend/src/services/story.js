@@ -88,6 +88,95 @@ export const getStorySceneAnimationStatus = (
     "Failed to fetch scene animation status."
   );
 
+export const startStorySceneMusic = (
+  baseUrl,
+  sessionId,
+  sceneId,
+  payload
+) =>
+  postJson(
+    buildApiUrl(baseUrl, `/story/sessions/${sessionId}/scenes/${sceneId}/music`),
+    payload,
+    "Failed to start scene music generation."
+  );
+
+export const getStorySceneMusicStatus = (
+  baseUrl,
+  sessionId,
+  sceneId,
+  params = {}
+) =>
+  fetchJson(
+    buildUrlWithQuery(
+      baseUrl,
+      `/story/sessions/${sessionId}/scenes/${sceneId}/music`,
+      params
+    ),
+    {},
+    "Failed to fetch scene music status."
+  );
+
+export const saveStorySceneMusicToLibrary = (
+  baseUrl,
+  sessionId,
+  sceneId,
+  payload = {}
+) =>
+  postJson(
+    buildApiUrl(
+      baseUrl,
+      `/story/sessions/${sessionId}/scenes/${sceneId}/music/favorite`
+    ),
+    payload,
+    "Failed to save soundtrack to library."
+  );
+
+export const recommendStorySceneMusic = (baseUrl, sessionId, sceneId) =>
+  postJson(
+    buildApiUrl(
+      baseUrl,
+      `/story/sessions/${sessionId}/scenes/${sceneId}/music/recommend`
+    ),
+    {},
+    "Failed to recommend soundtrack for scene."
+  );
+
+export const listStoryMusicLibrary = (baseUrl, params = {}) =>
+  fetchJson(
+    buildUrlWithQuery(baseUrl, "/story/music-library", params),
+    {},
+    "Failed to load soundtrack library."
+  );
+
+export const requestStoryMusicUploadUrl = (baseUrl, payload) =>
+  postJson(
+    buildApiUrl(baseUrl, "/story/music-library/upload-url"),
+    payload,
+    "Failed to request music upload URL."
+  );
+
+export const saveUploadedStoryMusicTrack = (baseUrl, payload) =>
+  postJson(
+    buildApiUrl(baseUrl, "/story/music-library/upload"),
+    payload,
+    "Failed to save uploaded music track."
+  );
+
+export const selectStorySceneLibraryTrack = (
+  baseUrl,
+  sessionId,
+  sceneId,
+  payload
+) =>
+  postJson(
+    buildApiUrl(
+      baseUrl,
+      `/story/sessions/${sessionId}/scenes/${sceneId}/music/select`
+    ),
+    payload,
+    "Failed to apply soundtrack from library."
+  );
+
 export const deleteStorySession = (baseUrl, sessionId) =>
   deleteJson(
     buildApiUrl(baseUrl, `/story/sessions/${sessionId}`),

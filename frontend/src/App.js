@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Route, Routes, Link, Navigate } from "react-ro
 import About from "./pages/About";
 import Whisk from "./pages/Whisk";
 import Story from "./pages/Story";
+import StoryMusicLibrary from "./pages/StoryMusicLibrary";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
 import RequireAuth from "./components/auth/RequireAuth";
@@ -36,6 +37,9 @@ const AppShell = ({ apiBaseUrl }) => {
             </Link>
             <Link to="/story" className="nav-link">
               Story
+            </Link>
+            <Link to="/music-library" className="nav-link">
+              Music
             </Link>
             <Link to="/about" className="nav-link">
               About
@@ -74,6 +78,14 @@ const AppShell = ({ apiBaseUrl }) => {
             element={
               <RequireAuth>
                 <Story apiBaseUrl={apiBaseUrl} />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/music-library"
+            element={
+              <RequireAuth>
+                <StoryMusicLibrary apiBaseUrl={apiBaseUrl} />
               </RequireAuth>
             }
           />

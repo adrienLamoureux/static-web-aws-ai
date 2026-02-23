@@ -82,6 +82,11 @@ const normalizePromptFragment = (value = "") =>
     .replace(/\s{2,}/g, " ")
     .trim();
 
+const DEFAULT_SCENE_MAX_ENVIRONMENT_FRAGMENTS = 6;
+const DEFAULT_SCENE_MAX_ACTION_FRAGMENTS = 1;
+const MAX_SCENE_ENVIRONMENT_FRAGMENT_LENGTH = 90;
+const MAX_SCENE_ACTION_FRAGMENT_LENGTH = 70;
+
 const splitPromptFragments = (value = "") =>
   String(value || "")
     .replace(/[\r\n]+/g, ",")
@@ -133,17 +138,17 @@ const buildSceneFragmentsFromStoryState = (storyState = {}, worldPrompt = "") =>
 const buildCompactSceneContext = ({
   environment = [],
   action = [],
-  maxEnvironment = 6,
-  maxAction = 1,
+  maxEnvironment = DEFAULT_SCENE_MAX_ENVIRONMENT_FRAGMENTS,
+  maxAction = DEFAULT_SCENE_MAX_ACTION_FRAGMENTS,
 }) => {
   const env = dedupeFragments(environment)
     .map((fragment) => normalizePromptFragment(fragment))
     .filter(Boolean)
-    .filter((fragment) => fragment.length <= 90);
+    .filter((fragment) => fragment.length <= MAX_SCENE_ENVIRONMENT_FRAGMENT_LENGTH);
   const act = dedupeFragments(action)
     .map((fragment) => normalizePromptFragment(fragment))
     .filter(Boolean)
-    .filter((fragment) => fragment.length <= 70);
+    .filter((fragment) => fragment.length <= MAX_SCENE_ACTION_FRAGMENT_LENGTH);
 
   const compactEnvironment = env.slice(0, maxEnvironment);
   const compactAction = act.slice(0, maxAction);
@@ -158,6 +163,8 @@ const compactScenePayload = ({
   scenePrompt = "",
   sceneEnvironment = "",
   sceneAction = "",
+  maxEnvironment = DEFAULT_SCENE_MAX_ENVIRONMENT_FRAGMENTS,
+  maxAction = DEFAULT_SCENE_MAX_ACTION_FRAGMENTS,
 }) => {
   const promptContext = extractSceneContextFragments(scenePrompt || "");
   const rawMergedEnvironment = dedupeFragments([
@@ -177,6 +184,8 @@ const compactScenePayload = ({
   const compact = buildCompactSceneContext({
     environment: mergedEnvironment,
     action: mergedAction,
+    maxEnvironment,
+    maxAction,
   });
   return {
     scenePrompt: compact.prompt,
@@ -232,6 +241,10 @@ module.exports = {
   splitPromptFragments,
   extractSceneContextFragments,
   dedupeFragments,
+  DEFAULT_SCENE_MAX_ENVIRONMENT_FRAGMENTS,
+  DEFAULT_SCENE_MAX_ACTION_FRAGMENTS,
+  MAX_SCENE_ENVIRONMENT_FRAGMENT_LENGTH,
+  MAX_SCENE_ACTION_FRAGMENT_LENGTH,
   buildSceneFragmentsFromStoryState,
   buildCompactSceneContext,
   compactScenePayload,

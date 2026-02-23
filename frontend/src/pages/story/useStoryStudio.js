@@ -4,16 +4,23 @@ import {
   deleteStorySession,
   generateStoryIllustration,
   getStorySceneAnimationStatus,
+  getStorySceneMusicStatus,
   getStorySession,
+  listStoryMusicLibrary,
   listStoryPresets,
   listStorySessions,
+  recommendStorySceneMusic,
+  saveStorySceneMusicToLibrary,
+  selectStorySceneLibraryTrack,
   sendStoryMessage,
   startStorySceneAnimation,
+  startStorySceneMusic,
 } from "../../services/story";
 import { STORY_VIEW_MODE } from "./constants";
 const DEFAULT_CONTEXT_MODE = "summary+scene";
 const DEFAULT_ILLUSTRATION_MODEL = "wai-nsfw-illustrious-v11";
 const DEFAULT_ANIMATION_PROMPT = "A lot of movements";
+const DEFAULT_MUSIC_PROMPT = "";
 function useStoryStudio(apiBaseUrl = "") {
   const [presets, setPresets] = useState([]);
   const [sessions, setSessions] = useState([]);
@@ -33,6 +40,7 @@ function useStoryStudio(apiBaseUrl = "") {
   const [animationPrompt, setAnimationPrompt] = useState(
     DEFAULT_ANIMATION_PROMPT
   );
+  const [musicPrompt, setMusicPrompt] = useState(DEFAULT_MUSIC_PROMPT);
   const [illustrationDebugEnabled, setIllustrationDebugEnabled] = useState(true);
   const [activeSessionDetail, setActiveSessionDetail] = useState(null);
   const [storyDebugEnabled, setStoryDebugEnabled] = useState(false);
@@ -41,7 +49,15 @@ function useStoryStudio(apiBaseUrl = "") {
   const [storyViewMode, setStoryViewMode] = useState(STORY_VIEW_MODE.READER);
   const [sceneLoadingMap, setSceneLoadingMap] = useState({});
   const [sceneAnimationLoadingMap, setSceneAnimationLoadingMap] = useState({});
+  const [sceneMusicLoadingMap, setSceneMusicLoadingMap] = useState({});
+  const [musicLibrary, setMusicLibrary] = useState([]);
+  const [sceneLibrarySelectionMap, setSceneLibrarySelectionMap] = useState({});
+  const [sceneManualSelectionMap, setSceneManualSelectionMap] = useState({});
+  const [activeMusicTrackKey, setActiveMusicTrackKey] = useState("");
+  const [musicAutoPlayRequest, setMusicAutoPlayRequest] = useState(null);
   const sceneAnimationPollRef = useRef({});
+  const sceneMusicPollRef = useRef({});
+  const sceneManualSelectionRef = useRef({});
   const resolvedApiBaseUrl = apiBaseUrl || process.env.REACT_APP_API_URL || "";
   const isDirectorMode = storyViewMode === STORY_VIEW_MODE.DIRECTOR;
   const activeSession = useMemo(
@@ -55,6 +71,42 @@ function useStoryStudio(apiBaseUrl = "") {
     0;
   const readerScenes = useMemo(() => [...scenes].reverse(), [scenes]);
   const featuredScene = readerScenes[0] || null;
+  const normalizeScene = useCallback(
+    (scene = {}) => {
+      const parsedTempo = Number(scene.musicTempoBpm);
+      const hasRecommendationScore =
+        scene.recommendationScore !== null &&
+        scene.recommendationScore !== "" &&
+        typeof scene.recommendationScore !== "undefined";
+      const parsedRecommendationScore = Number(scene.recommendationScore);
+      return {
+        ...scene,
+        videoKey: scene.videoKey || "",
+        videoUrl: scene.videoUrl || "",
+        videoStatus: scene.videoStatus || "",
+        videoPredictionId: scene.videoPredictionId || "",
+        videoPrompt: scene.videoPrompt || "",
+        musicKey: scene.musicKey || "",
+        musicUrl: scene.musicUrl || "",
+        musicStatus: scene.musicStatus || "",
+        musicPredictionId: scene.musicPredictionId || "",
+        musicPrompt: scene.musicPrompt || "",
+        musicModelId: scene.musicModelId || "",
+        musicMood: scene.musicMood || "",
+        musicEnergy: scene.musicEnergy || "",
+        musicTempoBpm: Number.isFinite(parsedTempo) ? Math.round(parsedTempo) : null,
+        musicTags: Array.isArray(scene.musicTags) ? scene.musicTags : [],
+        musicLibraryTrackId: scene.musicLibraryTrackId || "",
+        recommendedTrackId: scene.recommendedTrackId || "",
+        recommendationMethod: scene.recommendationMethod || "",
+        recommendationScore:
+          hasRecommendationScore && Number.isFinite(parsedRecommendationScore)
+          ? parsedRecommendationScore
+          : null,
+      };
+    },
+    []
+  );
   const clearSceneAnimationPoll = useCallback((sceneId) => {
     if (!sceneId) return;
     const timerId = sceneAnimationPollRef.current[sceneId];
@@ -63,19 +115,41 @@ function useStoryStudio(apiBaseUrl = "") {
       delete sceneAnimationPollRef.current[sceneId];
     }
   }, []);
+  const clearSceneMusicPoll = useCallback((sceneId) => {
+    if (!sceneId) return;
+    const timerId = sceneMusicPollRef.current[sceneId];
+    if (timerId) {
+      clearTimeout(timerId);
+      delete sceneMusicPollRef.current[sceneId];
+    }
+  }, []);
   const clearAllSceneAnimationPolls = useCallback(() => {
     Object.keys(sceneAnimationPollRef.current).forEach((sceneId) => {
       clearSceneAnimationPoll(sceneId);
     });
   }, [clearSceneAnimationPoll]);
+  const clearAllSceneMusicPolls = useCallback(() => {
+    Object.keys(sceneMusicPollRef.current).forEach((sceneId) => {
+      clearSceneMusicPoll(sceneId);
+    });
+  }, [clearSceneMusicPoll]);
   const clearActiveSession = useCallback(() => {
     clearAllSceneAnimationPolls();
+    clearAllSceneMusicPolls();
     setSceneAnimationLoadingMap({});
+    setSceneMusicLoadingMap({});
+    setSceneLibrarySelectionMap({});
+    setSceneManualSelectionMap({});
+    setActiveMusicTrackKey("");
+    setMusicAutoPlayRequest(null);
     setActiveSessionId("");
     setMessages([]);
     setScenes([]);
     setActiveSessionDetail(null);
-  }, [clearAllSceneAnimationPolls]);
+  }, [clearAllSceneAnimationPolls, clearAllSceneMusicPolls]);
+  useEffect(() => {
+    sceneManualSelectionRef.current = sceneManualSelectionMap;
+  }, [sceneManualSelectionMap]);
   const refreshSessions = useCallback(() => {
     if (!resolvedApiBaseUrl) return;
     listStorySessions(resolvedApiBaseUrl)
@@ -89,8 +163,9 @@ function useStoryStudio(apiBaseUrl = "") {
   useEffect(
     () => () => {
       clearAllSceneAnimationPolls();
+      clearAllSceneMusicPolls();
     },
-    [clearAllSceneAnimationPolls]
+    [clearAllSceneAnimationPolls, clearAllSceneMusicPolls]
   );
   const refreshActiveSessionDetail = useCallback(
     async (sessionId) => {
@@ -111,9 +186,24 @@ function useStoryStudio(apiBaseUrl = "") {
       setError("");
       try {
         const data = await getStorySession(resolvedApiBaseUrl, sessionId);
+        const nextScenes = (data.scenes || []).map((scene) => normalizeScene(scene));
+        const initialSelection = nextScenes.reduce((acc, scene) => {
+          if (scene.sceneId) {
+            acc[scene.sceneId] = scene.musicLibraryTrackId || "";
+          }
+          return acc;
+        }, {});
+        const initialManualSelection = nextScenes.reduce((acc, scene) => {
+          if (scene.sceneId) {
+            acc[scene.sceneId] = Boolean(scene.musicLibraryTrackId);
+          }
+          return acc;
+        }, {});
         setActiveSessionId(sessionId);
         setMessages(data.messages || []);
-        setScenes(data.scenes || []);
+        setScenes(nextScenes);
+        setSceneLibrarySelectionMap(initialSelection);
+        setSceneManualSelectionMap(initialManualSelection);
         setActiveSessionDetail(data.session || null);
       } catch (err) {
         setError(err?.message || "Failed to load session.");
@@ -121,19 +211,21 @@ function useStoryStudio(apiBaseUrl = "") {
         setIsLoadingSession(false);
       }
     },
-    [resolvedApiBaseUrl]
+    [normalizeScene, resolvedApiBaseUrl]
   );
   const handleSelectSession = useCallback(
     async (sessionId) => {
       clearAllSceneAnimationPolls();
+      clearAllSceneMusicPolls();
       setSceneAnimationLoadingMap({});
+      setSceneMusicLoadingMap({});
       if (!sessionId) {
         clearActiveSession();
         return;
       }
       await loadSession(sessionId);
     },
-    [clearActiveSession, clearAllSceneAnimationPolls, loadSession]
+    [clearActiveSession, clearAllSceneAnimationPolls, clearAllSceneMusicPolls, loadSession]
   );
   const isSceneGenerating = useCallback(
     (sceneId) => Boolean(sceneLoadingMap[sceneId]),
@@ -142,6 +234,83 @@ function useStoryStudio(apiBaseUrl = "") {
   const isSceneAnimating = useCallback(
     (sceneId) => Boolean(sceneAnimationLoadingMap[sceneId]),
     [sceneAnimationLoadingMap]
+  );
+  const isSceneGeneratingMusic = useCallback(
+    (sceneId) => Boolean(sceneMusicLoadingMap[sceneId]),
+    [sceneMusicLoadingMap]
+  );
+  const recommendLibraryTrackForScene = useCallback(
+    async (sessionId, sceneId) => {
+      if (!resolvedApiBaseUrl || !sessionId || !sceneId) return;
+      try {
+        const data = await recommendStorySceneMusic(
+          resolvedApiBaseUrl,
+          sessionId,
+          sceneId
+        );
+        const recommendedTrackId = String(data?.recommendedTrackId || "");
+        const recommendationMethod = String(data?.recommendationMethod || "");
+        const recommendationScore = Number(data?.recommendationScore);
+        const normalizedRecommendationScore = Number.isFinite(recommendationScore)
+          ? recommendationScore
+          : null;
+        const isManualSelection = Boolean(sceneManualSelectionRef.current?.[sceneId]);
+        setScenes((prev) =>
+          prev.map((scene) =>
+            scene.sceneId === sceneId
+              ? normalizeScene({
+                  ...scene,
+                  recommendedTrackId,
+                  recommendationMethod,
+                  recommendationScore: normalizedRecommendationScore,
+                })
+              : scene
+          )
+        );
+        if (!isManualSelection && recommendedTrackId) {
+          setSceneLibrarySelectionMap((prev) => ({
+            ...prev,
+            [sceneId]: recommendedTrackId,
+          }));
+
+          let recommendedTrack = musicLibrary.find(
+            (track) => track.trackId === recommendedTrackId
+          );
+          if (!recommendedTrack?.key) {
+            try {
+              const libraryData = await listStoryMusicLibrary(resolvedApiBaseUrl, {
+                limit: 500,
+              });
+              const refreshedTracks = Array.isArray(libraryData?.tracks)
+                ? libraryData.tracks
+                : [];
+              if (refreshedTracks.length > 0) {
+                setMusicLibrary(refreshedTracks);
+              }
+              recommendedTrack =
+                refreshedTracks.find((track) => track.trackId === recommendedTrackId) ||
+                recommendedTrack;
+            } catch (refreshError) {
+              console.warn(
+                "Story music recommendation library refresh warning:",
+                refreshError?.message || refreshError
+              );
+            }
+          }
+
+          if (recommendedTrack?.key) {
+            setActiveMusicTrackKey(recommendedTrack.key);
+            setMusicAutoPlayRequest({
+              requestId: `${sceneId}:${Date.now()}:recommend`,
+              trackKey: recommendedTrack.key,
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("Scene music recommendation warning:", err?.message || err);
+      }
+    },
+    [musicLibrary, normalizeScene, resolvedApiBaseUrl]
   );
   const triggerIllustration = useCallback(
     async (sessionId, sceneId, options = {}) => {
@@ -207,11 +376,48 @@ function useStoryStudio(apiBaseUrl = "") {
                     videoPredictionId:
                       illustration.scene?.videoPredictionId || "",
                     videoPrompt: illustration.scene?.videoPrompt || "",
+                    musicKey:
+                      illustration.scene?.musicKey ?? illustration.musicKey ?? "",
+                    musicUrl:
+                      illustration.scene?.musicUrl ?? illustration.musicUrl ?? "",
+                    musicStatus: illustration.scene?.musicStatus || "",
+                    musicPredictionId:
+                      illustration.scene?.musicPredictionId || "",
+                    musicPrompt: illustration.scene?.musicPrompt || "",
+                    musicModelId: illustration.scene?.musicModelId || "",
+                    musicMood: illustration.scene?.musicMood || "",
+                    musicEnergy: illustration.scene?.musicEnergy || "",
+                    musicTempoBpm:
+                      typeof illustration.scene?.musicTempoBpm === "number"
+                        ? illustration.scene.musicTempoBpm
+                        : scene.musicTempoBpm || null,
+                    musicTags: Array.isArray(illustration.scene?.musicTags)
+                      ? illustration.scene.musicTags
+                      : scene.musicTags || [],
+                    musicLibraryTrackId:
+                      illustration.scene?.musicLibraryTrackId || "",
                     debug: debugData || scene.debug,
                   }
                 : scene
             )
           );
+          if (illustration.scene?.musicKey) {
+            setActiveMusicTrackKey(illustration.scene.musicKey);
+          }
+          if (typeof illustration.scene?.musicLibraryTrackId === "string") {
+            const selectedTrackId = illustration.scene.musicLibraryTrackId || "";
+            setSceneLibrarySelectionMap((prev) => ({
+              ...prev,
+              [sceneId]: selectedTrackId,
+            }));
+            if (selectedTrackId) {
+              setSceneManualSelectionMap((prev) => ({
+                ...prev,
+                [sceneId]: true,
+              }));
+            }
+          }
+          void recommendLibraryTrackForScene(sessionId, sceneId);
         } else {
           setScenes((prev) =>
             prev.map((scene) =>
@@ -248,6 +454,7 @@ function useStoryStudio(apiBaseUrl = "") {
       illustrationContextMode,
       illustrationModel,
       illustrationDebugEnabled,
+      recommendLibraryTrackForScene,
       resolvedApiBaseUrl,
       setScenes,
       setSceneLoadingMap,
@@ -381,6 +588,298 @@ function useStoryStudio(apiBaseUrl = "") {
       setScenes,
     ]
   );
+  const triggerSceneMusic = useCallback(
+    async (sessionId, sceneId, options = {}) => {
+      if (!resolvedApiBaseUrl || !sessionId || !sceneId) return;
+      if (sceneMusicLoadingMap[sceneId]) return;
+      const resolvedPrompt =
+        typeof options.prompt === "string"
+          ? options.prompt.trim()
+          : (musicPrompt || "").trim();
+
+      const applyMusicData = (data) => {
+        if (!data) return;
+        setScenes((prev) =>
+          prev.map((scene) =>
+            scene.sceneId === sceneId
+              ? normalizeScene({
+                  ...scene,
+                  musicStatus: data.status || scene.musicStatus || "",
+                  musicPredictionId:
+                    data.predictionId || scene.musicPredictionId || "",
+                  musicPrompt: data.prompt || scene.musicPrompt || resolvedPrompt,
+                  musicKey:
+                    data.status === "succeeded"
+                      ? data.musicKey || scene.musicKey || ""
+                      : data.musicKey || scene.musicKey || "",
+                  musicUrl:
+                    data.status === "succeeded"
+                      ? data.musicUrl || scene.musicUrl || ""
+                      : data.musicUrl || scene.musicUrl || "",
+                  musicModelId: data.musicModelId || data.modelId || scene.musicModelId || "",
+                  musicMood: data.musicMood || data.direction?.mood || scene.musicMood || "",
+                  musicEnergy:
+                    data.musicEnergy || data.direction?.energy || scene.musicEnergy || "",
+                  musicTempoBpm:
+                    typeof data.musicTempoBpm === "number"
+                      ? data.musicTempoBpm
+                      : typeof data.direction?.tempoBpm === "number"
+                        ? data.direction.tempoBpm
+                        : scene.musicTempoBpm || null,
+                  musicTags: Array.isArray(data.musicTags)
+                    ? data.musicTags
+                    : Array.isArray(data.direction?.tags)
+                      ? data.direction.tags
+                      : scene.musicTags || [],
+                  musicLibraryTrackId:
+                    data.musicLibraryTrackId || scene.musicLibraryTrackId || "",
+                })
+                : scene
+          )
+        );
+        if (data.status === "succeeded" && data.musicKey) {
+          setActiveMusicTrackKey(data.musicKey);
+          setMusicAutoPlayRequest({
+            requestId: `${sceneId}:${Date.now()}`,
+            trackKey: data.musicKey,
+          });
+        }
+        if (typeof data.musicLibraryTrackId === "string") {
+          const selectedTrackId = data.musicLibraryTrackId || "";
+          setSceneLibrarySelectionMap((prev) => ({
+            ...prev,
+            [sceneId]: selectedTrackId,
+          }));
+          if (selectedTrackId) {
+            setSceneManualSelectionMap((prev) => ({
+              ...prev,
+              [sceneId]: true,
+            }));
+          }
+        }
+        if (data?.track?.trackId) {
+          setMusicLibrary((prev) => {
+            const filtered = prev.filter((item) => item.trackId !== data.track.trackId);
+            return [data.track, ...filtered];
+          });
+        }
+      };
+
+      const finishMusic = () => {
+        clearSceneMusicPoll(sceneId);
+        setSceneMusicLoadingMap((prev) => {
+          const next = { ...prev };
+          delete next[sceneId];
+          return next;
+        });
+      };
+
+      clearSceneMusicPoll(sceneId);
+      setError("");
+      setSceneMusicLoadingMap((prev) => ({ ...prev, [sceneId]: true }));
+      setScenes((prev) =>
+        prev.map((scene) =>
+          scene.sceneId === sceneId
+            ? normalizeScene({
+                ...scene,
+                musicStatus: "starting",
+                musicPredictionId: "",
+                musicPrompt: resolvedPrompt || scene.musicPrompt || "",
+              })
+            : scene
+        )
+      );
+
+      const pollMusic = async (predictionId) => {
+        try {
+          const statusData = await getStorySceneMusicStatus(
+            resolvedApiBaseUrl,
+            sessionId,
+            sceneId,
+            { predictionId }
+          );
+          applyMusicData(statusData);
+          const status = statusData?.status || "";
+          if (status === "succeeded") {
+            finishMusic();
+            return;
+          }
+          if (status === "failed" || status === "canceled") {
+            finishMusic();
+            setError("Scene soundtrack generation failed.");
+            return;
+          }
+          sceneMusicPollRef.current[sceneId] = setTimeout(
+            () => pollMusic(predictionId),
+            5000
+          );
+        } catch (err) {
+          finishMusic();
+          setError(err?.message || "Failed to generate scene soundtrack.");
+        }
+      };
+
+      try {
+        const data = await startStorySceneMusic(
+          resolvedApiBaseUrl,
+          sessionId,
+          sceneId,
+          resolvedPrompt ? { prompt: resolvedPrompt } : {}
+        );
+        applyMusicData(data);
+        const status = data?.status || "";
+        if (status === "succeeded") {
+          finishMusic();
+          return;
+        }
+        if (status === "failed" || status === "canceled") {
+          finishMusic();
+          setError("Scene soundtrack generation failed.");
+          return;
+        }
+        if (!data?.predictionId) {
+          finishMusic();
+          return;
+        }
+        sceneMusicPollRef.current[sceneId] = setTimeout(
+          () => pollMusic(data.predictionId),
+          5000
+        );
+      } catch (err) {
+        finishMusic();
+        setError(err?.message || "Failed to generate scene soundtrack.");
+      }
+    },
+    [
+      clearSceneMusicPoll,
+      musicPrompt,
+      normalizeScene,
+      resolvedApiBaseUrl,
+      sceneMusicLoadingMap,
+      setScenes,
+    ]
+  );
+  const refreshMusicLibrary = useCallback(async () => {
+    if (!resolvedApiBaseUrl) return;
+    try {
+      const data = await listStoryMusicLibrary(resolvedApiBaseUrl);
+      setMusicLibrary(data.tracks || []);
+    } catch (err) {
+      setError(err?.message || "Failed to load soundtrack library.");
+    }
+  }, [resolvedApiBaseUrl]);
+  const saveSceneMusic = useCallback(
+    async (sessionId, sceneId, options = {}) => {
+      if (!resolvedApiBaseUrl || !sessionId || !sceneId) return;
+      try {
+        const data = await saveStorySceneMusicToLibrary(
+          resolvedApiBaseUrl,
+          sessionId,
+          sceneId,
+          options
+        );
+        const savedTrackId = data?.musicLibraryTrackId || data?.track?.trackId || "";
+        if (savedTrackId) {
+          setScenes((prev) =>
+            prev.map((scene) =>
+              scene.sceneId === sceneId
+                ? normalizeScene({
+                    ...scene,
+                    musicLibraryTrackId: savedTrackId,
+                  })
+                : scene
+            )
+          );
+          setSceneLibrarySelectionMap((prev) => ({
+            ...prev,
+            [sceneId]: savedTrackId,
+          }));
+          setSceneManualSelectionMap((prev) => ({
+            ...prev,
+            [sceneId]: true,
+          }));
+        }
+        if (data?.track?.trackId) {
+          setMusicLibrary((prev) => {
+            const filtered = prev.filter((item) => item.trackId !== data.track.trackId);
+            return [data.track, ...filtered];
+          });
+          return;
+        }
+        await refreshMusicLibrary();
+      } catch (err) {
+        setError(err?.message || "Failed to save soundtrack to library.");
+      }
+    },
+    [normalizeScene, refreshMusicLibrary, resolvedApiBaseUrl]
+  );
+  const setSceneLibraryTrackSelection = useCallback((sceneId, trackId) => {
+    if (!sceneId) return;
+    setSceneLibrarySelectionMap((prev) => ({
+      ...prev,
+      [sceneId]: trackId || "",
+    }));
+    setSceneManualSelectionMap((prev) => ({
+      ...prev,
+      [sceneId]: true,
+    }));
+  }, []);
+  const applyLibraryTrackToScene = useCallback(
+    async (sessionId, sceneId, trackId) => {
+      if (!resolvedApiBaseUrl || !sessionId || !sceneId || !trackId) return;
+      try {
+        const data = await selectStorySceneLibraryTrack(
+          resolvedApiBaseUrl,
+          sessionId,
+          sceneId,
+          { trackId }
+        );
+        setScenes((prev) =>
+          prev.map((scene) =>
+            scene.sceneId === sceneId
+              ? normalizeScene({
+                  ...scene,
+                  musicKey: data.musicKey || scene.musicKey || "",
+                  musicUrl: data.musicUrl || scene.musicUrl || "",
+                  musicStatus: data.musicStatus || "succeeded",
+                  musicPredictionId: data.musicPredictionId || "",
+                  musicPrompt: data.musicPrompt || scene.musicPrompt || "",
+                  musicModelId: data.musicModelId || scene.musicModelId || "",
+                  musicMood: data.musicMood || scene.musicMood || "",
+                  musicEnergy: data.musicEnergy || scene.musicEnergy || "",
+                  musicTempoBpm:
+                    typeof data.musicTempoBpm === "number"
+                      ? data.musicTempoBpm
+                      : scene.musicTempoBpm || null,
+                  musicTags: Array.isArray(data.musicTags)
+                    ? data.musicTags
+                    : scene.musicTags || [],
+                  musicLibraryTrackId: data.musicLibraryTrackId || trackId,
+                })
+              : scene
+          )
+        );
+        setSceneLibrarySelectionMap((prev) => ({
+          ...prev,
+          [sceneId]: trackId,
+        }));
+        setSceneManualSelectionMap((prev) => ({
+          ...prev,
+          [sceneId]: true,
+        }));
+        if (data.musicKey) {
+          setActiveMusicTrackKey(data.musicKey);
+          setMusicAutoPlayRequest({
+            requestId: `${sceneId}:${Date.now()}`,
+            trackKey: data.musicKey,
+          });
+        }
+      } catch (err) {
+        setError(err?.message || "Failed to apply soundtrack from library.");
+      }
+    },
+    [normalizeScene, resolvedApiBaseUrl]
+  );
   const handleDeleteSession = useCallback(
     async (session) => {
       if (!session?.id) return;
@@ -455,6 +954,18 @@ function useStoryStudio(apiBaseUrl = "") {
           videoStatus: scene.videoStatus || "",
           videoPredictionId: scene.videoPredictionId || "",
           videoPrompt: scene.videoPrompt || "",
+          musicKey: scene.musicKey ?? illustration.musicKey ?? "",
+          musicUrl: scene.musicUrl ?? illustration.musicUrl ?? "",
+          musicStatus: scene.musicStatus || "",
+          musicPredictionId: scene.musicPredictionId || "",
+          musicPrompt: scene.musicPrompt || "",
+          musicModelId: scene.musicModelId || "",
+          musicMood: scene.musicMood || "",
+          musicEnergy: scene.musicEnergy || "",
+          musicTempoBpm:
+            typeof scene.musicTempoBpm === "number" ? scene.musicTempoBpm : null,
+          musicTags: Array.isArray(scene.musicTags) ? scene.musicTags : [],
+          musicLibraryTrackId: scene.musicLibraryTrackId || "",
           debug: debugData || scene.debug,
         };
         if (exists) {
@@ -464,6 +975,15 @@ function useStoryStudio(apiBaseUrl = "") {
         }
         return [...prev, nextScene];
       });
+      setSceneLibrarySelectionMap((prev) => ({
+        ...prev,
+        [scene.sceneId]: scene.musicLibraryTrackId || "",
+      }));
+      setSceneManualSelectionMap((prev) => ({
+        ...prev,
+        [scene.sceneId]: Boolean(scene.musicLibraryTrackId),
+      }));
+      void recommendLibraryTrackForScene(activeSessionId, scene.sceneId);
       await refreshActiveSessionDetail(activeSessionId);
       refreshSessions();
     } catch (err) {
@@ -479,6 +999,7 @@ function useStoryStudio(apiBaseUrl = "") {
     isForcingIllustration,
     refreshActiveSessionDetail,
     refreshSessions,
+    recommendLibraryTrackForScene,
     resolvedApiBaseUrl,
   ]);
   const handleCreateSession = useCallback(async () => {
@@ -497,14 +1018,31 @@ function useStoryStudio(apiBaseUrl = "") {
         presetId: selectedPresetId,
       });
       if (data?.session) {
+        const nextScenes = (data.scenes || []).map((scene) => normalizeScene(scene));
+        const initialSelection = nextScenes.reduce((acc, scene) => {
+          if (scene.sceneId) {
+            acc[scene.sceneId] = scene.musicLibraryTrackId || "";
+          }
+          return acc;
+        }, {});
+        const initialManualSelection = nextScenes.reduce((acc, scene) => {
+          if (scene.sceneId) {
+            acc[scene.sceneId] = Boolean(scene.musicLibraryTrackId);
+          }
+          return acc;
+        }, {});
         setSessions((prev) => [data.session, ...prev]);
         setActiveSessionId(data.session.id);
         setMessages(data.messages || []);
-        setScenes(data.scenes || []);
+        setScenes(nextScenes);
+        setSceneLibrarySelectionMap(initialSelection);
+        setSceneManualSelectionMap(initialManualSelection);
         setActiveSessionDetail(data.session || null);
         const openingScene = data.scenes?.[0];
         if (openingScene?.sceneId) {
-          await triggerIllustration(data.session.id, openingScene.sceneId);
+          await triggerIllustration(data.session.id, openingScene.sceneId, {
+            contextMode: "scene",
+          });
         }
       }
     } catch (err) {
@@ -512,7 +1050,7 @@ function useStoryStudio(apiBaseUrl = "") {
     } finally {
       setStatus("idle");
     }
-  }, [resolvedApiBaseUrl, selectedPresetId, triggerIllustration]);
+  }, [normalizeScene, resolvedApiBaseUrl, selectedPresetId, triggerIllustration]);
   const handleSendMessage = useCallback(async () => {
     const messageText = input.trim();
     if (!messageText) return;
@@ -580,9 +1118,31 @@ function useStoryStudio(apiBaseUrl = "") {
           videoStatus: data.scene?.videoStatus || "",
           videoPredictionId: data.scene?.videoPredictionId || "",
           videoPrompt: data.scene?.videoPrompt || "",
+          musicKey: data.scene?.musicKey || "",
+          musicUrl: data.scene?.musicUrl || "",
+          musicStatus: data.scene?.musicStatus || "",
+          musicPredictionId: data.scene?.musicPredictionId || "",
+          musicPrompt: data.scene?.musicPrompt || "",
+          musicModelId: data.scene?.musicModelId || "",
+          musicMood: data.scene?.musicMood || "",
+          musicEnergy: data.scene?.musicEnergy || "",
+          musicTempoBpm:
+            typeof data.scene?.musicTempoBpm === "number"
+              ? data.scene.musicTempoBpm
+              : null,
+          musicTags: Array.isArray(data.scene?.musicTags) ? data.scene.musicTags : [],
+          musicLibraryTrackId: data.scene?.musicLibraryTrackId || "",
           createdAt: new Date().toISOString(),
         };
-        setScenes((prev) => [...prev, pendingScene]);
+        setScenes((prev) => [...prev, normalizeScene(pendingScene)]);
+        setSceneLibrarySelectionMap((prev) => ({
+          ...prev,
+          [data.scene.sceneId]: data.scene?.musicLibraryTrackId || "",
+        }));
+        setSceneManualSelectionMap((prev) => ({
+          ...prev,
+          [data.scene.sceneId]: Boolean(data.scene?.musicLibraryTrackId),
+        }));
         await triggerIllustration(activeSessionId, data.scene.sceneId, {
           contextMode: illustrationContextMode,
         });
@@ -601,6 +1161,7 @@ function useStoryStudio(apiBaseUrl = "") {
     refreshActiveSessionDetail,
     refreshSessions,
     resolvedApiBaseUrl,
+    normalizeScene,
     triggerIllustration,
   ]);
   useEffect(() => {
@@ -618,6 +1179,10 @@ function useStoryStudio(apiBaseUrl = "") {
     if (!resolvedApiBaseUrl) return;
     refreshSessions();
   }, [resolvedApiBaseUrl, refreshSessions]);
+  useEffect(() => {
+    if (!resolvedApiBaseUrl) return;
+    refreshMusicLibrary();
+  }, [refreshMusicLibrary, resolvedApiBaseUrl]);
   return {
     presets,
     sessions,
@@ -632,6 +1197,7 @@ function useStoryStudio(apiBaseUrl = "") {
     illustrationContextMode,
     illustrationModel,
     animationPrompt,
+    musicPrompt,
     illustrationDebugEnabled,
     activeSessionDetail,
     storyDebugEnabled,
@@ -643,11 +1209,17 @@ function useStoryStudio(apiBaseUrl = "") {
     activeTurnCount,
     readerScenes,
     featuredScene,
+    musicLibrary,
+    sceneLibrarySelectionMap,
+    activeMusicTrackKey,
+    musicAutoPlayRequest,
     setInput,
     setSelectedPresetId,
     setIllustrationContextMode,
     setIllustrationModel,
     setAnimationPrompt,
+    setMusicPrompt,
+    setActiveMusicTrackKey,
     setIllustrationDebugEnabled,
     setStoryDebugEnabled,
     setStoryDebugView,
@@ -660,8 +1232,13 @@ function useStoryStudio(apiBaseUrl = "") {
     handleForceIllustration,
     triggerIllustration,
     triggerSceneAnimation,
+    triggerSceneMusic,
+    saveSceneMusic,
+    applyLibraryTrackToScene,
+    setSceneLibraryTrackSelection,
     isSceneGenerating,
     isSceneAnimating,
+    isSceneGeneratingMusic,
   };
 }
 export default useStoryStudio;

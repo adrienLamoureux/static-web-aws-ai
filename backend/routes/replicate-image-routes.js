@@ -17,6 +17,7 @@ module.exports = (app, deps) => {
     delay,
     runReplicateWithRetry,
     getReplicateOutputUrl,
+    buildReplicatePredictionRequest,
   } = deps;
 
 app.post("/replicate/image/generate", async (req, res) => {
@@ -152,11 +153,12 @@ app.post("/replicate/image/generate", async (req, res) => {
         modelId: modelConfig.modelId,
         batchId,
       });
+      const predictionRequest = buildReplicatePredictionRequest({
+        modelId: modelConfig.modelId,
+        input,
+      });
       const prediction = await replicateClient.predictions.create(
-        {
-          model: modelConfig.modelId,
-          input,
-        },
+        predictionRequest,
         {
           headers: {
             Prefer: "wait=5",

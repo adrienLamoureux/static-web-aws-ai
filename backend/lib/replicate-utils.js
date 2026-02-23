@@ -1,4 +1,5 @@
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const REPLICATE_VERSION_ID_REGEX = /^[0-9a-f]{64}$/i;
 
 const extractRetryAfterSeconds = (errorMessage = "") => {
   const match = errorMessage.match(/retry_after\":\s*(\d+)/i);
@@ -32,6 +33,32 @@ const runReplicateWithRetry = async (
   return null;
 };
 
+const resolveReplicatePredictionTarget = (modelId = "") => {
+  const normalizedModelId = String(modelId || "").trim();
+  if (!normalizedModelId) {
+    return {};
+  }
+
+  if (REPLICATE_VERSION_ID_REGEX.test(normalizedModelId)) {
+    return { version: normalizedModelId };
+  }
+
+  const versionSeparatorIndex = normalizedModelId.lastIndexOf(":");
+  if (versionSeparatorIndex > 0) {
+    const versionCandidate = normalizedModelId.slice(versionSeparatorIndex + 1);
+    if (REPLICATE_VERSION_ID_REGEX.test(versionCandidate)) {
+      return { version: versionCandidate };
+    }
+  }
+
+  return { model: normalizedModelId };
+};
+
+const buildReplicatePredictionRequest = ({ modelId = "", input = {} } = {}) => ({
+  ...resolveReplicatePredictionTarget(modelId),
+  input,
+});
+
 const collectReplicateOutputUrls = (output, urls) => {
   if (!output) return;
   if (Array.isArray(output)) {
@@ -64,6 +91,8 @@ module.exports = {
   delay,
   extractRetryAfterSeconds,
   runReplicateWithRetry,
+  resolveReplicatePredictionTarget,
+  buildReplicatePredictionRequest,
   collectReplicateOutputUrls,
   getReplicateOutputUrls,
   getReplicateOutputUrl,

@@ -34,6 +34,14 @@ module.exports = (app, deps) => {
     return Number.isNaN(parsed) ? 0 : parsed;
   };
 
+  const parseOptionalNumber = (value) => {
+    if (value === null || value === "" || typeof value === "undefined") {
+      return null;
+    }
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
   const sortSessionsByRecent = (items = []) =>
     [...items].sort(
       (left, right) =>
@@ -354,115 +362,20 @@ app.post("/story/sessions", async (req, res) => {
     const existingSessions = rawExistingSessions
       .map(normalizeSessionItem)
       .filter((item) => item.sessionId);
-    const samePresetSessions = sortSessionsByRecent(
-      existingSessions.filter((item) => item.presetId === preset.id)
+    const samePresetSessions = existingSessions.filter(
+      (item) => item.presetId === preset.id
     );
     if (samePresetSessions.length > 0) {
-      const primarySession = samePresetSessions[0];
-      const duplicateSessions = samePresetSessions.slice(1);
-
-      if (duplicateSessions.length > 0) {
-        await Promise.all(
-          duplicateSessions.map((item) =>
-            deleteSessionCascade({
-              userId,
-              sessionId: item.sessionId,
-              mediaTableName: mediaTable,
-              mediaBucket,
-            })
-          )
-        );
-      }
-
-      const messages = await queryBySkPrefix({
-        pk: buildMediaPk(userId),
-        skPrefix: storyMessagePrefix(primarySession.sessionId),
-        limit: 200,
-        scanForward: true,
-      });
-      const scenes = await queryBySkPrefix({
-        pk: buildMediaPk(userId),
-        skPrefix: storyScenePrefix(primarySession.sessionId),
-        limit: 50,
-        scanForward: true,
-      });
-      const signedScenes = await Promise.all(
-        scenes.map(async (scene) => {
-          if (!mediaBucket) return scene;
-          const signedScene = { ...scene };
-          if (scene.imageKey) {
-            try {
-              signedScene.imageUrl = await getSignedUrl(
-                s3Client,
-                new GetObjectCommand({
-                  Bucket: mediaBucket,
-                  Key: scene.imageKey,
-                }),
-                { expiresIn: 900 }
-              );
-            } catch {
-              signedScene.imageUrl = "";
-            }
-          }
-          if (scene.videoKey) {
-            try {
-              signedScene.videoUrl = await getSignedUrl(
-                s3Client,
-                new GetObjectCommand({
-                  Bucket: mediaBucket,
-                  Key: scene.videoKey,
-                }),
-                { expiresIn: 900 }
-              );
-            } catch {
-              signedScene.videoUrl = "";
-            }
-          }
-          return signedScene;
-        })
+      await Promise.all(
+        samePresetSessions.map((item) =>
+          deleteSessionCascade({
+            userId,
+            sessionId: item.sessionId,
+            mediaTableName: mediaTable,
+            mediaBucket,
+          })
+        )
       );
-
-      return res.json({
-        session: {
-          id: primarySession.sessionId,
-          title: primarySession.title,
-          presetId: primarySession.presetId,
-          protagonistName: primarySession.protagonistName,
-          synopsis: primarySession.synopsis,
-          lorebook: primarySession.lorebook,
-          storyState: primarySession.storyState,
-          createdAt: primarySession.createdAt,
-          updatedAt: primarySession.updatedAt,
-          turnCount: primarySession.turnCount || 0,
-          sceneCount: primarySession.sceneCount || 0,
-        },
-        messages: messages.map((message) => ({
-          role: message.role,
-          content: message.content,
-          createdAt: message.createdAt,
-        })),
-        scenes: signedScenes.map((scene) => ({
-          sceneId: scene.sceneId,
-          title: scene.title,
-          description: scene.description,
-          prompt: scene.prompt,
-          sceneEnvironment: scene.sceneEnvironment,
-          sceneAction: scene.sceneAction,
-          status: scene.status,
-          imageKey: scene.imageKey,
-          imageUrl: scene.imageUrl,
-          videoKey: scene.videoKey,
-          videoUrl: scene.videoUrl,
-          videoStatus: scene.videoStatus,
-          videoPredictionId: scene.videoPredictionId,
-          videoPrompt: scene.videoPrompt,
-          promptPositive: scene.promptPositive,
-          promptNegative: scene.promptNegative,
-          createdAt: scene.createdAt,
-        })),
-        reused: true,
-        cleanedDuplicateSessions: duplicateSessions.length,
-      });
     }
 
     const sessionId = `story-${Date.now()}-${Math.random()
@@ -657,6 +570,20 @@ app.get("/story/sessions/:id", async (req, res) => {
             signedScene.videoUrl = "";
           }
         }
+        if (scene.musicKey) {
+          try {
+            signedScene.musicUrl = await getSignedUrl(
+              s3Client,
+              new GetObjectCommand({
+                Bucket: bucket,
+                Key: scene.musicKey,
+              }),
+              { expiresIn: 900 }
+            );
+          } catch {
+            signedScene.musicUrl = "";
+          }
+        }
         return signedScene;
       })
     );
@@ -695,6 +622,20 @@ app.get("/story/sessions/:id", async (req, res) => {
         videoStatus: scene.videoStatus,
         videoPredictionId: scene.videoPredictionId,
         videoPrompt: scene.videoPrompt,
+        musicKey: scene.musicKey,
+        musicUrl: scene.musicUrl,
+        musicStatus: scene.musicStatus,
+        musicPredictionId: scene.musicPredictionId,
+        musicPrompt: scene.musicPrompt,
+        musicModelId: scene.musicModelId,
+        musicMood: scene.musicMood,
+        musicEnergy: scene.musicEnergy,
+        musicTempoBpm: scene.musicTempoBpm,
+        musicTags: scene.musicTags,
+        musicLibraryTrackId: scene.musicLibraryTrackId,
+        recommendedTrackId: scene.recommendedTrackId,
+        recommendationMethod: scene.recommendationMethod,
+        recommendationScore: parseOptionalNumber(scene.recommendationScore),
         promptPositive: scene.promptPositive,
         promptNegative: scene.promptNegative,
         createdAt: scene.createdAt,

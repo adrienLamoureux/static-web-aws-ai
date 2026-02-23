@@ -8,6 +8,7 @@ const {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   ListObjectsV2Command,
   CopyObjectCommand,
   DeleteObjectCommand,
@@ -82,6 +83,7 @@ const { getGradioSpaceClient } = require("./gradio-client");
 const {
   delay,
   runReplicateWithRetry,
+  buildReplicatePredictionRequest,
   collectReplicateOutputUrls,
   getReplicateOutputUrls,
   getReplicateOutputUrl,
@@ -114,6 +116,7 @@ const {
 const {
   createAiCraftSceneContext,
   createAiCraftIllustrationPrompts,
+  createAiCraftMusicDirection,
 } = require("./scene-context");
 
 const createDeps = () => {
@@ -168,6 +171,14 @@ const createDeps = () => {
     clipText,
   });
 
+  const aiCraftMusicDirection = createAiCraftMusicDirection({
+    bedrockClient,
+    promptHelperModelId,
+    safeJsonParse,
+    normalizePromptFragment,
+    clipText,
+  });
+
   const runReplicateWithRetryBound = async (...args) =>
     runReplicateWithRetry(replicateClient, ...args);
 
@@ -195,6 +206,7 @@ const createDeps = () => {
     GetAsyncInvokeCommand,
     PutObjectCommand,
     GetObjectCommand,
+    HeadObjectCommand,
     ListObjectsV2Command,
     CopyObjectCommand,
     DeleteObjectCommand,
@@ -254,8 +266,10 @@ const createDeps = () => {
     getGradioSpaceClient,
     aiCraftSceneContext,
     aiCraftIllustrationPrompts,
+    aiCraftMusicDirection,
     delay,
     runReplicateWithRetry: runReplicateWithRetryBound,
+    buildReplicatePredictionRequest,
     collectReplicateOutputUrls,
     getReplicateOutputUrls,
     getReplicateOutputUrl,
