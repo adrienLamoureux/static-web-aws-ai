@@ -30,6 +30,10 @@ This repo is also set up for parallel product experimentation:
 6. Express backend handles route logic, stores metadata in DynamoDB, and media in S3.
 7. Backend calls AI providers where needed (Bedrock, Replicate, Gradio).
 
+Architecture diagram artifacts:
+- Mermaid source: `docs/architecture-current.mmd`
+- Rendered image: `docs/architecture-current.png`
+
 ## Repository Layout
 
 - `frontend/`: React app (routes: Whisk, Story, Music Library, About, Login).
