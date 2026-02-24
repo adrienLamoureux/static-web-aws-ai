@@ -15,7 +15,7 @@ import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
 import RequireAuth from "./components/auth/RequireAuth";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import "./themes/moescape.css";
+import "./themes/pixnovel.css";
 
 const mergeCognitoConfig = (base = {}, override = {}) => ({
   domain: override.domain || base.domain || "",
@@ -24,30 +24,210 @@ const mergeCognitoConfig = (base = {}, override = {}) => ({
   region: override.region || base.region || "",
 });
 
-const MOESCAPE_PANE_META = {
+const PIXNOVEL_PANE_META = {
   whisk: {
-    label: "Image Dock",
+    label: "Generator",
     route: "/",
-    subtitle: "Visual generation cockpit",
+    subtitle: "Realtime visual prompt studio",
   },
   story: {
-    label: "Story Tavern",
+    label: "Director",
     route: "/story",
-    subtitle: "Narrative and scene direction",
+    subtitle: "Scene composition and story rhythm",
   },
   music: {
-    label: "Sound Mixer",
+    label: "Sound Lab",
     route: "/music-library",
-    subtitle: "Music library and curation",
+    subtitle: "Track curation and atmosphere cues",
   },
   about: {
-    label: "Project Profile",
+    label: "Core",
     route: "/about",
-    subtitle: "Platform overview and intent",
+    subtitle: "Project profile and architecture brief",
   },
 };
 
-const MoescapeHubPage = ({ apiBaseUrl, activePane }) => {
+const PIXNOVEL_MODEL_OPTIONS = [
+  "NOVA Anime XL",
+  "MoeFlux V3",
+  "Cinematic Mix",
+];
+
+const PIXNOVEL_SAMPLER_OPTIONS = ["Euler a", "DPM++ 2M", "Heun"];
+
+const PIXNOVEL_STYLE_TAGS = [
+  "#dreamwave",
+  "#portrait",
+  "#lighting",
+  "#storyframe",
+];
+
+const PIXNOVEL_REFERENCE_MODES = [
+  "Character reference",
+  "Style reference",
+  "Vibe transfer",
+];
+
+const PIXNOVEL_GUIDANCE_METERS = [
+  {
+    label: "Steps",
+    value: "32",
+    progress: "64%",
+  },
+  {
+    label: "CFG",
+    value: "7.5",
+    progress: "58%",
+  },
+];
+
+const PIXNOVEL_QUEUE_ITEMS = [
+  {
+    title: "Hero close-up",
+    detail: "Queued by director",
+  },
+  {
+    title: "Rainy alley frame",
+    detail: "Seed locked",
+  },
+  {
+    title: "Band promo splash",
+    detail: "Upscale pending",
+  },
+];
+
+const resolveActivePane = (pathname) => {
+  if (pathname === "/" || pathname === "/whisk") {
+    return "whisk";
+  }
+  if (pathname === "/story") {
+    return "story";
+  }
+  if (pathname === "/music-library") {
+    return "music";
+  }
+  if (pathname === "/about") {
+    return "about";
+  }
+  return "whisk";
+};
+
+const PixnovelGenerationMenu = () => {
+  return (
+    <aside className="pixnovel-generator-panel" aria-label="Generation controls">
+      <header className="pixnovel-generator-head">
+        <p className="pixnovel-generator-kicker">Generation Menu</p>
+        <h3>Compose Render Settings</h3>
+      </header>
+
+      <section className="pixnovel-control-group">
+        <p className="pixnovel-control-label">Model</p>
+        <div className="pixnovel-option-grid">
+          {PIXNOVEL_MODEL_OPTIONS.map((model, index) => (
+            <button
+              key={model}
+              type="button"
+              className={`pixnovel-option-pill${index === 0 ? " is-active" : ""}`}
+            >
+              {model}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="pixnovel-control-group">
+        <p className="pixnovel-control-label">Sampler</p>
+        <div className="pixnovel-option-grid pixnovel-option-grid--compact">
+          {PIXNOVEL_SAMPLER_OPTIONS.map((sampler, index) => (
+            <button
+              key={sampler}
+              type="button"
+              className={`pixnovel-option-pill${index === 0 ? " is-active" : ""}`}
+            >
+              {sampler}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="pixnovel-control-group">
+        <p className="pixnovel-control-label">Guidance</p>
+        {PIXNOVEL_GUIDANCE_METERS.map((meter) => (
+          <div key={meter.label} className="pixnovel-meter-block">
+            <div className="pixnovel-meter-row">
+              <span>{meter.label}</span>
+              <span>{meter.value}</span>
+            </div>
+            <div className="pixnovel-meter-track">
+              <span style={{ width: meter.progress }} />
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <section className="pixnovel-control-group">
+        <p className="pixnovel-control-label">Reference modes</p>
+        <div className="pixnovel-reference-list">
+          {PIXNOVEL_REFERENCE_MODES.map((item, index) => (
+            <label key={item} className="pixnovel-reference-item">
+              <input type="checkbox" defaultChecked={index === 0} />
+              <span>{item}</span>
+            </label>
+          ))}
+        </div>
+      </section>
+
+      <button type="button" className="pixnovel-generate-button">
+        Generate 1 Image
+      </button>
+    </aside>
+  );
+};
+
+const PixnovelHero = ({ activePane }) => {
+  return (
+    <section className="pixnovel-hero" aria-label="Creative hero section">
+      <div className="pixnovel-hero-copy">
+        <p className="pixnovel-hero-kicker">PixNovel Studio</p>
+        <h1 className="pixnovel-hero-title">
+          Anime-first creation cockpit with cinematic flow controls
+        </h1>
+        <p className="pixnovel-hero-subtitle">
+          Blend PixAI-style visual impact with NovelAI-style generation depth while
+          keeping your existing Whisk, Story, and Music workflows in one place.
+        </p>
+        <div className="pixnovel-hero-links">
+          {Object.entries(PIXNOVEL_PANE_META).map(([key, item]) => (
+            <Link
+              key={key}
+              to={item.route}
+              className={`pixnovel-hero-link${activePane === key ? " is-active" : ""}`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+        <div className="pixnovel-tag-row">
+          {PIXNOVEL_STYLE_TAGS.map((tag) => (
+            <span key={tag} className="pixnovel-tag-chip">
+              {tag}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="pixnovel-hero-visual" aria-hidden="true">
+        <div className="pixnovel-hero-portrait">
+          <span className="pixnovel-hero-spark pixnovel-hero-spark--one" />
+          <span className="pixnovel-hero-spark pixnovel-hero-spark--two" />
+          <span className="pixnovel-hero-spark pixnovel-hero-spark--three" />
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const PixnovelWorkspace = ({ apiBaseUrl, activePane }) => {
   const paneByKey = {
     whisk: <Whisk apiBaseUrl={apiBaseUrl} />,
     story: <Story apiBaseUrl={apiBaseUrl} />,
@@ -56,54 +236,43 @@ const MoescapeHubPage = ({ apiBaseUrl, activePane }) => {
   };
 
   return (
-    <div className="moescape-hub-layout">
-      <aside className="moescape-hub-nav">
-        <p className="moescape-hub-eyebrow">Creative Routes</p>
-        <div className="moescape-hub-links">
-          {Object.entries(MOESCAPE_PANE_META).map(([key, item]) => (
-            <Link
-              key={key}
-              to={item.route}
-              className={`moescape-hub-link${activePane === key ? " is-active" : ""}`}
-            >
-              <span className="moescape-hub-link-title">{item.label}</span>
-              <span className="moescape-hub-link-copy">{item.subtitle}</span>
-            </Link>
-          ))}
-        </div>
-        <div className="moescape-hub-chip-grid">
-          <span className="moescape-hub-chip">Moechan Beta</span>
-          <span className="moescape-hub-chip">Live Reactions</span>
-          <span className="moescape-hub-chip">Prompt Remix</span>
-        </div>
-      </aside>
+    <div className="pixnovel-workspace">
+      <PixnovelHero activePane={activePane} />
 
-      <section className="moescape-hub-stage" key={activePane}>
-        <div className="moescape-hub-stage-head">
-          <p className="moescape-hub-stage-tag">
-            {MOESCAPE_PANE_META[activePane].label}
-          </p>
-          <h2>{MOESCAPE_PANE_META[activePane].subtitle}</h2>
-        </div>
-        <div className="moescape-hub-stage-body">{paneByKey[activePane]}</div>
-      </section>
+      <div className="pixnovel-grid">
+        <PixnovelGenerationMenu />
 
-      <aside className="moescape-hub-side">
-        <div className="moescape-side-card">
-          <p className="moescape-side-card-title">Daily Mochi</p>
-          <p className="moescape-side-card-value">50</p>
-          <p className="moescape-side-card-copy">Refreshes in 06:22:19</p>
-        </div>
-        <div className="moescape-side-card">
-          <p className="moescape-side-card-title">Trending Tags</p>
-          <div className="moescape-side-tags">
-            <span>#neon-city</span>
-            <span>#hero-poster</span>
-            <span>#slice-of-life</span>
-            <span>#cyber-yokai</span>
-          </div>
-        </div>
-      </aside>
+        <section className="pixnovel-stage" key={activePane}>
+          <header className="pixnovel-stage-head">
+            <p className="pixnovel-stage-kicker">{PIXNOVEL_PANE_META[activePane].label}</p>
+            <h2>{PIXNOVEL_PANE_META[activePane].subtitle}</h2>
+          </header>
+          <div className="pixnovel-stage-body">{paneByKey[activePane]}</div>
+        </section>
+
+        <aside className="pixnovel-feed-panel">
+          <section className="pixnovel-feed-card">
+            <p className="pixnovel-feed-title">Render Queue</p>
+            <div className="pixnovel-queue-list">
+              {PIXNOVEL_QUEUE_ITEMS.map((item) => (
+                <div key={item.title} className="pixnovel-queue-item">
+                  <p>{item.title}</p>
+                  <span>{item.detail}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="pixnovel-feed-card">
+            <p className="pixnovel-feed-title">Creation Signals</p>
+            <div className="pixnovel-signal-list">
+              <span>Realtime: online</span>
+              <span>Character memory: synced</span>
+              <span>Audio cues: attached</span>
+            </div>
+          </section>
+        </aside>
+      </div>
     </div>
   );
 };
@@ -111,59 +280,42 @@ const MoescapeHubPage = ({ apiBaseUrl, activePane }) => {
 const AppShell = ({ apiBaseUrl }) => {
   const { isAuthenticated, logout, user } = useAuth();
   const location = useLocation();
-  const activePath = location.pathname;
-  const isWhiskPath = activePath === "/" || activePath === "/whisk";
+  const activePane = resolveActivePane(location.pathname);
 
   return (
-    <div className="app-shell relative min-h-screen overflow-hidden">
-      <div className="moescape-atmosphere" aria-hidden="true">
-        <span className="moescape-bloom moescape-bloom--one" />
-        <span className="moescape-bloom moescape-bloom--two" />
-        <span className="moescape-bloom moescape-bloom--three" />
-        <span className="moescape-stars" />
+    <div className="pixnovel-shell relative min-h-screen overflow-hidden">
+      <div className="pixnovel-atmosphere" aria-hidden="true">
+        <span className="pixnovel-orb pixnovel-orb--one" />
+        <span className="pixnovel-orb pixnovel-orb--two" />
+        <span className="pixnovel-grid-shimmer" />
       </div>
-      <div className="pointer-events-none absolute inset-0 noise-layer opacity-60" />
-      <div className="absolute inset-x-0 top-0 h-80 bg-[radial-gradient(circle_at_center,_rgba(196,178,141,0.24),_transparent_70%)] blur-3xl" />
+
       {isAuthenticated && (
-        <header className="app-shell-header relative z-10 mx-auto flex w-full max-w-[1240px] items-center justify-between px-6 py-6 md:px-10">
-          <Link
-            to="/"
-            className="app-shell-brand text-lg font-semibold tracking-tight text-ink font-display"
-          >
+        <header className="pixnovel-app-header relative z-20 mx-auto flex w-full max-w-[1320px] items-center justify-between px-5 py-6 md:px-8">
+          <Link to="/" className="pixnovel-brand">
             Whisk Studio
           </Link>
-          <nav className="app-shell-nav flex items-center gap-5 text-sm font-medium">
-            <Link to="/" className={`nav-link${isWhiskPath ? " is-active" : ""}`}>
-              Whisk
-            </Link>
-            <Link
-              to="/story"
-              className={`nav-link${activePath === "/story" ? " is-active" : ""}`}
-            >
-              Story
-            </Link>
-            <Link
-              to="/music-library"
-              className={`nav-link${activePath === "/music-library" ? " is-active" : ""}`}
-            >
-              Music
-            </Link>
-            <Link
-              to="/about"
-              className={`nav-link${activePath === "/about" ? " is-active" : ""}`}
-            >
-              About
-            </Link>
+          <nav className="pixnovel-top-nav">
+            {Object.entries(PIXNOVEL_PANE_META).map(([key, item]) => (
+              <Link
+                key={key}
+                to={item.route}
+                className={`pixnovel-top-link${activePane === key ? " is-active" : ""}`}
+              >
+                {item.label}
+              </Link>
+            ))}
           </nav>
-          <div className="app-shell-user nav-user">
-            <span className="nav-user-email">{user?.email || "Signed in"}</span>
+          <div className="pixnovel-user-chip">
+            <span>{user?.email || "Signed in"}</span>
             <button type="button" className="btn-ghost px-4 py-1 text-xs" onClick={logout}>
               Sign out
             </button>
           </div>
         </header>
       )}
-      <main className="app-shell-main relative z-10">
+
+      <main className="pixnovel-main relative z-10">
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
@@ -171,7 +323,7 @@ const AppShell = ({ apiBaseUrl }) => {
             path="/"
             element={
               <RequireAuth>
-                <MoescapeHubPage apiBaseUrl={apiBaseUrl} activePane="whisk" />
+                <PixnovelWorkspace apiBaseUrl={apiBaseUrl} activePane="whisk" />
               </RequireAuth>
             }
           />
@@ -179,7 +331,7 @@ const AppShell = ({ apiBaseUrl }) => {
             path="/whisk"
             element={
               <RequireAuth>
-                <MoescapeHubPage apiBaseUrl={apiBaseUrl} activePane="whisk" />
+                <PixnovelWorkspace apiBaseUrl={apiBaseUrl} activePane="whisk" />
               </RequireAuth>
             }
           />
@@ -187,7 +339,7 @@ const AppShell = ({ apiBaseUrl }) => {
             path="/story"
             element={
               <RequireAuth>
-                <MoescapeHubPage apiBaseUrl={apiBaseUrl} activePane="story" />
+                <PixnovelWorkspace apiBaseUrl={apiBaseUrl} activePane="story" />
               </RequireAuth>
             }
           />
@@ -195,7 +347,7 @@ const AppShell = ({ apiBaseUrl }) => {
             path="/music-library"
             element={
               <RequireAuth>
-                <MoescapeHubPage apiBaseUrl={apiBaseUrl} activePane="music" />
+                <PixnovelWorkspace apiBaseUrl={apiBaseUrl} activePane="music" />
               </RequireAuth>
             }
           />
@@ -203,7 +355,7 @@ const AppShell = ({ apiBaseUrl }) => {
             path="/about"
             element={
               <RequireAuth>
-                <MoescapeHubPage apiBaseUrl={apiBaseUrl} activePane="about" />
+                <PixnovelWorkspace apiBaseUrl={apiBaseUrl} activePane="about" />
               </RequireAuth>
             }
           />
