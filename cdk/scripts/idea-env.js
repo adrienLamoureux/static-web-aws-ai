@@ -18,6 +18,7 @@ const STATUS_FILE_NAME = "STATUS.md";
 const IMPROVEMENTS_FILE_NAME = "IMPROVEMENTS.md";
 const STACK_PREFIX = "StaticWebAWSAIStack";
 const SANITY_SCRIPT_RELATIVE_PATH = path.join("scripts", "sanity-check.mjs");
+const UI_SMOKE_SCRIPT_RELATIVE_PATH = path.join("scripts", "ui-smoke.mjs");
 const INDEX_START_MARKER = "<!-- IDEA_REGISTRY_START -->";
 const INDEX_END_MARKER = "<!-- IDEA_REGISTRY_END -->";
 const LOG_VALUE_SPACE_PATTERN = /\s+/g;
@@ -43,6 +44,7 @@ const SUPPORTED_COMMANDS = new Set([
   "rollout",
   "deploy-many",
   "sanity",
+  "ui-smoke",
   "diff-many",
   "synth-many",
 ]);
@@ -53,13 +55,14 @@ const usage = `
 Usage:
   npm --prefix cdk run idea:list
   npm --prefix cdk run idea:init -- --stage=<idea-id> [--title="<idea title>"]
-  npm --prefix cdk run idea:deploy -- --stage=<idea-id> [--improvement="<name>"] [--owner="<owner>"] [--ttl-days=<days>] [--skip-build] [--skip-sanity] [--dry-run]
+  npm --prefix cdk run idea:deploy -- --stage=<idea-id> [--improvement="<name>"] [--owner="<owner>"] [--ttl-days=<days>] [--skip-build] [--skip-sanity] [--skip-ui-smoke] [--dry-run]
   npm --prefix cdk run idea:sanity -- --stage=<idea-id>
+  npm --prefix cdk run idea:ui-smoke -- --stage=<idea-id>
   npm --prefix cdk run idea:destroy -- --stage=<idea-id> [--dry-run]
   npm --prefix cdk run idea:diff -- --stage=<idea-id> [--owner="<owner>"] [--ttl-days=<days>] [--dry-run]
   npm --prefix cdk run idea:synth -- --stage=<idea-id> [--owner="<owner>"] [--ttl-days=<days>] [--dry-run]
-  npm --prefix cdk run idea:rollout -- --improvement="<name>" [--exclude=x,y] [--owner="<owner>"] [--ttl-days=<days>] [--skip-build] [--skip-sanity] [--dry-run]
-  npm --prefix cdk run idea:deploy-many -- (--all | --stages=a,b,c) [--exclude=x,y] --improvement="<name>" [--owner="<owner>"] [--ttl-days=<days>] [--skip-build] [--skip-sanity] [--continue-on-error] [--dry-run]
+  npm --prefix cdk run idea:rollout -- --improvement="<name>" [--exclude=x,y] [--owner="<owner>"] [--ttl-days=<days>] [--skip-build] [--skip-sanity] [--skip-ui-smoke] [--dry-run]
+  npm --prefix cdk run idea:deploy-many -- (--all | --stages=a,b,c) [--exclude=x,y] --improvement="<name>" [--owner="<owner>"] [--ttl-days=<days>] [--skip-build] [--skip-sanity] [--skip-ui-smoke] [--continue-on-error] [--dry-run]
   npm --prefix cdk run idea:diff-many -- (--all | --stages=a,b,c) [--exclude=x,y] [--owner="<owner>"] [--ttl-days=<days>] [--dry-run]
   npm --prefix cdk run idea:synth-many -- (--all | --stages=a,b,c) [--exclude=x,y] [--owner="<owner>"] [--ttl-days=<days>] [--dry-run]
 `;
@@ -116,6 +119,7 @@ if (command === "deploy") {
       improvement,
       skipBuild: options.skipBuild,
       skipSanity: options.skipSanity,
+      skipUiSmoke: options.skipUiSmoke,
       owner,
       ttlDays,
     });
@@ -133,6 +137,7 @@ if (command === "deploy") {
       event: "deploy",
       contextArgs,
       skipSanity: options.skipSanity,
+      skipUiSmoke: options.skipUiSmoke,
     });
     if (improvement) {
       appendGlobalImprovementLog({
@@ -159,6 +164,8 @@ if (command === "destroy") {
       stages: [stage],
       improvement: "",
       skipBuild: false,
+      skipSanity: false,
+      skipUiSmoke: false,
       owner,
       ttlDays,
     });
@@ -201,6 +208,7 @@ if (command === "sanity") {
       improvement: "",
       skipBuild: false,
       skipSanity: false,
+      skipUiSmoke: false,
       owner: "",
       ttlDays: "",
     });
@@ -234,6 +242,8 @@ if (command === "diff" || command === "synth") {
       stages: [stage],
       improvement: "",
       skipBuild: false,
+      skipSanity: false,
+      skipUiSmoke: false,
       owner,
       ttlDays,
     });
@@ -256,6 +266,37 @@ if (command === "diff" || command === "synth") {
   process.exit(0);
 }
 
+if (command === "ui-smoke") {
+  const stage = resolveRequiredStage(options.stage);
+  if (options.dryRun) {
+    printDryRun({
+      action: "ui-smoke",
+      stages: [stage],
+      improvement: "",
+      skipBuild: false,
+      skipSanity: false,
+      skipUiSmoke: false,
+      owner: "",
+      ttlDays: "",
+    });
+    process.exit(0);
+  }
+  withLock(() => {
+    runUiSmokeChecks({ stage, stackId: buildStackId(stage) });
+    appendStatusLog({
+      statusPath: ensureIdeaContext({
+        stage,
+        title: stage,
+        stackId: buildStackId(stage),
+      }).statusPath,
+      event: "ui-smoke",
+      detail: `stage=${stage} | result=passed`,
+    });
+    info(`ui-smoke completed for "${stage}"`);
+  });
+  process.exit(0);
+}
+
 if (command === "rollout") {
   const stages = resolveTargetStages({
     ...options,
@@ -274,6 +315,7 @@ if (command === "rollout") {
     ttlDays,
     skipBuild: options.skipBuild,
     skipSanity: options.skipSanity,
+    skipUiSmoke: options.skipUiSmoke,
     continueOnError: true,
     dryRun: options.dryRun,
     action: "rollout",
@@ -296,6 +338,7 @@ if (command === "deploy-many") {
     ttlDays,
     skipBuild: options.skipBuild,
     skipSanity: options.skipSanity,
+    skipUiSmoke: options.skipUiSmoke,
     continueOnError: options.continueOnError,
     dryRun: options.dryRun,
     action: "deploy-many",
@@ -314,6 +357,8 @@ if (command === "diff-many" || command === "synth-many") {
       stages,
       improvement: "",
       skipBuild: false,
+      skipSanity: false,
+      skipUiSmoke: false,
       owner,
       ttlDays,
     });
@@ -353,6 +398,7 @@ function parseArgs(args) {
     ttlDays: "",
     skipBuild: false,
     skipSanity: false,
+    skipUiSmoke: false,
     all: false,
     continueOnError: false,
     dryRun: false,
@@ -366,6 +412,10 @@ function parseArgs(args) {
     }
     if (arg === "--skip-sanity") {
       parsed.skipSanity = true;
+      continue;
+    }
+    if (arg === "--skip-ui-smoke") {
+      parsed.skipUiSmoke = true;
       continue;
     }
     if (arg === "--all") {
@@ -627,7 +677,14 @@ Track rollouts of the same improvement across multiple idea stacks.
   fs.writeFileSync(GLOBAL_IMPROVEMENTS_PATH, content, "utf8");
 }
 
-function deployStage({ stage, improvement, event, contextArgs, skipSanity }) {
+function deployStage({
+  stage,
+  improvement,
+  event,
+  contextArgs,
+  skipSanity,
+  skipUiSmoke,
+}) {
   const stackId = buildStackId(stage);
   const ideaContext = ensureIdeaContext({
     stage,
@@ -658,6 +715,13 @@ function deployStage({ stage, improvement, event, contextArgs, skipSanity }) {
       apiEndpoint: outputs.apiEndpoint,
     });
   }
+  if (!skipUiSmoke) {
+    runUiSmokeChecks({
+      stage,
+      stackId,
+      cloudfrontUrl: outputs.cloudfrontUrl,
+    });
+  }
   const commit = resolveGitCommit();
   const improvementSuffix = improvement ? ` (${improvement})` : "";
 
@@ -678,6 +742,7 @@ function deployStage({ stage, improvement, event, contextArgs, skipSanity }) {
       `api=${outputs.apiEndpoint}`,
       `commit=${commit}`,
       `sanity=${skipSanity ? "skipped" : "passed"}`,
+      `ui_smoke=${skipUiSmoke ? "skipped" : "passed"}`,
       improvement ? `improvement=${improvement}` : "",
     ]
       .filter(Boolean)
@@ -708,6 +773,7 @@ function executeDeployMany({
   ttlDays,
   skipBuild,
   skipSanity,
+  skipUiSmoke,
   continueOnError,
   dryRun,
   action,
@@ -719,6 +785,7 @@ function executeDeployMany({
       improvement,
       skipBuild,
       skipSanity,
+      skipUiSmoke,
       owner,
       ttlDays,
     });
@@ -743,6 +810,7 @@ function executeDeployMany({
           event: action,
           contextArgs: buildCdkContextArgs({ stage, owner, ttlDays }),
           skipSanity,
+          skipUiSmoke,
         });
         succeeded.push(stage);
         if (result.commit && result.commit !== "-") {
@@ -987,6 +1055,14 @@ function runSanityChecks({ stage, stackId, cloudfrontUrl, apiEndpoint }) {
   runOrFail("node", sanityArgs, CDK_DIR);
 }
 
+function runUiSmokeChecks({ stage, stackId, cloudfrontUrl }) {
+  const uiSmokeArgs = [UI_SMOKE_SCRIPT_RELATIVE_PATH, "--stage", stage, "--stack-id", stackId];
+  if (cloudfrontUrl && cloudfrontUrl !== "-") {
+    uiSmokeArgs.push("--cloudfront", cloudfrontUrl);
+  }
+  runOrFail("node", uiSmokeArgs, CDK_DIR);
+}
+
 function resolveGitCommit() {
   const result = spawnSync("git", ["rev-parse", "--short", "HEAD"], {
     cwd: ROOT_DIR,
@@ -1133,6 +1209,7 @@ function printDryRun({
   improvement,
   skipBuild,
   skipSanity,
+  skipUiSmoke,
   owner,
   ttlDays,
 }) {
@@ -1141,6 +1218,7 @@ function printDryRun({
     `targets=${stages.join(",")}`,
     `skip_build=${skipBuild ? "true" : "false"}`,
     `skip_sanity=${skipSanity ? "true" : "false"}`,
+    `skip_ui_smoke=${skipUiSmoke ? "true" : "false"}`,
     improvement ? `improvement=${improvement}` : "",
     owner ? `owner=${owner}` : "",
     ttlDays ? `ttl_days=${ttlDays}` : "",
