@@ -28,3 +28,4 @@
 - 2026-02-24T09:19:34.900Z | event=deploy | stack=StaticWebAWSAIStack-design-moescape / cloudfront=https://d1raqt5min66lv.cloudfront.net / api=https://bcy62oi00d.execute-api.us-east-1.amazonaws.com/prod/ / commit=3201f8f / improvement=ui-theme-moescape-v2
 - 2026-02-24T09:29:09.114Z | event=sanity | stage=design-moescape / result=passed
 - 2026-02-24T09:38:23.727Z | event=ui-smoke | stage=design-moescape / result=passed
+- 2026-02-24T17:21:40.196Z | event=deploy | stack=StaticWebAWSAIStack-design-moescape / cloudfront=https://d1raqt5min66lv.cloudfront.net / api=https://bcy62oi00d.execute-api.us-east-1.amazonaws.com/prod/ / commit=3a25f10 / sanity=passed / ui_smoke=passed / improvement=radical ui motion pass

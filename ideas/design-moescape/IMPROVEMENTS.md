@@ -8,3 +8,4 @@
 - 2026-02-23T17:15:52.788Z | improvement=fix-api-config-mismatch | result=deployed | commit=50f84fb | detail=stack=StaticWebAWSAIStack-design-moescape
 - 2026-02-23T23:18:08.673Z | improvement=ui-theme-moescape-v1 | result=deployed | commit=da58a51 | detail=stack=StaticWebAWSAIStack-design-moescape
 - 2026-02-24T09:19:34.901Z | improvement=ui-theme-moescape-v2 | result=deployed | commit=3201f8f | detail=stack=StaticWebAWSAIStack-design-moescape
+- 2026-02-24T17:21:40.197Z | improvement=radical ui motion pass | result=deployed | commit=3a25f10 | detail=stack=StaticWebAWSAIStack-design-moescape

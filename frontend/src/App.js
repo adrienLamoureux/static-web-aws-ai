@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { BrowserRouter as Router, Route, Routes, Link, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  Link,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 import About from "./pages/About";
 import Whisk from "./pages/Whisk";
 import Story from "./pages/Story";
@@ -17,8 +24,95 @@ const mergeCognitoConfig = (base = {}, override = {}) => ({
   region: override.region || base.region || "",
 });
 
+const MOESCAPE_PANE_META = {
+  whisk: {
+    label: "Image Dock",
+    route: "/",
+    subtitle: "Visual generation cockpit",
+  },
+  story: {
+    label: "Story Tavern",
+    route: "/story",
+    subtitle: "Narrative and scene direction",
+  },
+  music: {
+    label: "Sound Mixer",
+    route: "/music-library",
+    subtitle: "Music library and curation",
+  },
+  about: {
+    label: "Project Profile",
+    route: "/about",
+    subtitle: "Platform overview and intent",
+  },
+};
+
+const MoescapeHubPage = ({ apiBaseUrl, activePane }) => {
+  const paneByKey = {
+    whisk: <Whisk apiBaseUrl={apiBaseUrl} />,
+    story: <Story apiBaseUrl={apiBaseUrl} />,
+    music: <StoryMusicLibrary apiBaseUrl={apiBaseUrl} />,
+    about: <About />,
+  };
+
+  return (
+    <div className="moescape-hub-layout">
+      <aside className="moescape-hub-nav">
+        <p className="moescape-hub-eyebrow">Creative Routes</p>
+        <div className="moescape-hub-links">
+          {Object.entries(MOESCAPE_PANE_META).map(([key, item]) => (
+            <Link
+              key={key}
+              to={item.route}
+              className={`moescape-hub-link${activePane === key ? " is-active" : ""}`}
+            >
+              <span className="moescape-hub-link-title">{item.label}</span>
+              <span className="moescape-hub-link-copy">{item.subtitle}</span>
+            </Link>
+          ))}
+        </div>
+        <div className="moescape-hub-chip-grid">
+          <span className="moescape-hub-chip">Moechan Beta</span>
+          <span className="moescape-hub-chip">Live Reactions</span>
+          <span className="moescape-hub-chip">Prompt Remix</span>
+        </div>
+      </aside>
+
+      <section className="moescape-hub-stage" key={activePane}>
+        <div className="moescape-hub-stage-head">
+          <p className="moescape-hub-stage-tag">
+            {MOESCAPE_PANE_META[activePane].label}
+          </p>
+          <h2>{MOESCAPE_PANE_META[activePane].subtitle}</h2>
+        </div>
+        <div className="moescape-hub-stage-body">{paneByKey[activePane]}</div>
+      </section>
+
+      <aside className="moescape-hub-side">
+        <div className="moescape-side-card">
+          <p className="moescape-side-card-title">Daily Mochi</p>
+          <p className="moescape-side-card-value">50</p>
+          <p className="moescape-side-card-copy">Refreshes in 06:22:19</p>
+        </div>
+        <div className="moescape-side-card">
+          <p className="moescape-side-card-title">Trending Tags</p>
+          <div className="moescape-side-tags">
+            <span>#neon-city</span>
+            <span>#hero-poster</span>
+            <span>#slice-of-life</span>
+            <span>#cyber-yokai</span>
+          </div>
+        </div>
+      </aside>
+    </div>
+  );
+};
+
 const AppShell = ({ apiBaseUrl }) => {
   const { isAuthenticated, logout, user } = useAuth();
+  const location = useLocation();
+  const activePath = location.pathname;
+  const isWhiskPath = activePath === "/" || activePath === "/whisk";
 
   return (
     <div className="app-shell relative min-h-screen overflow-hidden">
@@ -39,16 +133,25 @@ const AppShell = ({ apiBaseUrl }) => {
             Whisk Studio
           </Link>
           <nav className="app-shell-nav flex items-center gap-5 text-sm font-medium">
-            <Link to="/" className="nav-link">
+            <Link to="/" className={`nav-link${isWhiskPath ? " is-active" : ""}`}>
               Whisk
             </Link>
-            <Link to="/story" className="nav-link">
+            <Link
+              to="/story"
+              className={`nav-link${activePath === "/story" ? " is-active" : ""}`}
+            >
               Story
             </Link>
-            <Link to="/music-library" className="nav-link">
+            <Link
+              to="/music-library"
+              className={`nav-link${activePath === "/music-library" ? " is-active" : ""}`}
+            >
               Music
             </Link>
-            <Link to="/about" className="nav-link">
+            <Link
+              to="/about"
+              className={`nav-link${activePath === "/about" ? " is-active" : ""}`}
+            >
               About
             </Link>
           </nav>
@@ -68,7 +171,7 @@ const AppShell = ({ apiBaseUrl }) => {
             path="/"
             element={
               <RequireAuth>
-                <Whisk apiBaseUrl={apiBaseUrl} />
+                <MoescapeHubPage apiBaseUrl={apiBaseUrl} activePane="whisk" />
               </RequireAuth>
             }
           />
@@ -76,7 +179,7 @@ const AppShell = ({ apiBaseUrl }) => {
             path="/whisk"
             element={
               <RequireAuth>
-                <Whisk apiBaseUrl={apiBaseUrl} />
+                <MoescapeHubPage apiBaseUrl={apiBaseUrl} activePane="whisk" />
               </RequireAuth>
             }
           />
@@ -84,7 +187,7 @@ const AppShell = ({ apiBaseUrl }) => {
             path="/story"
             element={
               <RequireAuth>
-                <Story apiBaseUrl={apiBaseUrl} />
+                <MoescapeHubPage apiBaseUrl={apiBaseUrl} activePane="story" />
               </RequireAuth>
             }
           />
@@ -92,7 +195,7 @@ const AppShell = ({ apiBaseUrl }) => {
             path="/music-library"
             element={
               <RequireAuth>
-                <StoryMusicLibrary apiBaseUrl={apiBaseUrl} />
+                <MoescapeHubPage apiBaseUrl={apiBaseUrl} activePane="music" />
               </RequireAuth>
             }
           />
@@ -100,7 +203,7 @@ const AppShell = ({ apiBaseUrl }) => {
             path="/about"
             element={
               <RequireAuth>
-                <About />
+                <MoescapeHubPage apiBaseUrl={apiBaseUrl} activePane="about" />
               </RequireAuth>
             }
           />

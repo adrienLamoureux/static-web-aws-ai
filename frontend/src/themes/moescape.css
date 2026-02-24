@@ -712,6 +712,193 @@ body::after {
   animation: moeReveal 620ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
+.nav-link.is-active {
+  color: #ffffff;
+  border-color: rgba(114, 226, 255, 0.64);
+  box-shadow: 0 14px 24px -20px rgba(114, 226, 255, 0.82);
+}
+
+.moescape-hub-layout {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 18px 18px 88px;
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr) 220px;
+  gap: 16px;
+}
+
+.moescape-hub-nav,
+.moescape-hub-side {
+  position: sticky;
+  top: 116px;
+  align-self: start;
+}
+
+.moescape-hub-nav {
+  border-radius: 18px;
+  border: 1px solid rgba(173, 197, 241, 0.3);
+  background: linear-gradient(150deg, rgba(14, 19, 38, 0.86), rgba(20, 27, 50, 0.76));
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+  box-shadow: 0 24px 34px -30px rgba(0, 0, 0, 0.9);
+}
+
+.moescape-hub-eyebrow {
+  margin: 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(215, 240, 101, 0.9);
+}
+
+.moescape-hub-links {
+  display: grid;
+  gap: 8px;
+}
+
+.moescape-hub-link {
+  border: 1px solid rgba(173, 197, 241, 0.2);
+  border-radius: 12px;
+  padding: 10px 11px;
+  text-decoration: none;
+  background: rgba(10, 14, 29, 0.56);
+  transition:
+    transform 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.moescape-hub-link:hover {
+  transform: translateX(2px);
+  border-color: rgba(114, 226, 255, 0.56);
+  box-shadow: 0 14px 24px -20px rgba(114, 226, 255, 0.72);
+}
+
+.moescape-hub-link.is-active {
+  border-color: rgba(255, 140, 242, 0.62);
+  background: linear-gradient(130deg, rgba(255, 140, 242, 0.2), rgba(114, 226, 255, 0.13));
+  box-shadow: 0 14px 24px -18px rgba(255, 140, 242, 0.42);
+}
+
+.moescape-hub-link-title {
+  display: block;
+  color: #f8faff;
+  font-family: "Baloo 2", "Lexend", sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.moescape-hub-link-copy {
+  display: block;
+  margin-top: 2px;
+  color: #aeb9dd;
+  font-size: 0.74rem;
+}
+
+.moescape-hub-chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.moescape-hub-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.3rem 0.62rem;
+  border: 1px solid rgba(177, 203, 246, 0.34);
+  background: rgba(12, 17, 34, 0.56);
+  color: #c8d5f8;
+  font-size: 0.68rem;
+}
+
+.moescape-hub-stage {
+  min-height: 76vh;
+  border-radius: 20px;
+  border: 1px solid rgba(173, 197, 241, 0.34);
+  background: linear-gradient(150deg, rgba(14, 19, 38, 0.84), rgba(21, 28, 52, 0.76));
+  box-shadow:
+    inset 0 1px 0 rgba(228, 239, 255, 0.16),
+    0 28px 44px -34px rgba(0, 0, 0, 0.88);
+  animation: moeReveal 620ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.moescape-hub-stage-head {
+  padding: 16px 18px 0;
+}
+
+.moescape-hub-stage-tag {
+  margin: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.17em;
+  color: rgba(215, 240, 101, 0.9);
+}
+
+.moescape-hub-stage-head h2 {
+  margin: 6px 0 0;
+  font-family: "Baloo 2", "Lexend", sans-serif;
+  font-size: 1.4rem;
+  color: #f7f9ff;
+}
+
+.moescape-hub-stage-body {
+  padding: 4px 2px 0;
+}
+
+.moescape-hub-side {
+  display: grid;
+  gap: 10px;
+}
+
+.moescape-side-card {
+  border-radius: 16px;
+  border: 1px solid rgba(173, 197, 241, 0.32);
+  background: linear-gradient(145deg, rgba(14, 19, 37, 0.86), rgba(20, 27, 50, 0.72));
+  padding: 14px;
+  box-shadow: 0 20px 30px -28px rgba(0, 0, 0, 0.9);
+}
+
+.moescape-side-card-title {
+  margin: 0;
+  color: #cad6f5;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.moescape-side-card-value {
+  margin: 8px 0 4px;
+  font-family: "Baloo 2", "Lexend", sans-serif;
+  color: #f8faff;
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.moescape-side-card-copy {
+  margin: 0;
+  color: #aeb9dd;
+  font-size: 0.74rem;
+}
+
+.moescape-side-tags {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.moescape-side-tags span {
+  border-radius: 999px;
+  border: 1px solid rgba(173, 197, 241, 0.38);
+  background: rgba(10, 14, 28, 0.62);
+  color: #d2def9;
+  padding: 0.24rem 0.5rem;
+  font-size: 0.66rem;
+}
+
 .app-shell-header {
   margin-top: 14px;
   border-radius: 22px;
@@ -1080,6 +1267,22 @@ body::after {
   .app-shell-nav,
   .app-shell-user {
     border-radius: 14px;
+  }
+
+  .moescape-hub-layout {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 14px 10px 72px;
+  }
+
+  .moescape-hub-nav,
+  .moescape-hub-side {
+    position: relative;
+    top: 0;
+  }
+
+  .moescape-hub-stage {
+    min-height: 0;
   }
 }
 
