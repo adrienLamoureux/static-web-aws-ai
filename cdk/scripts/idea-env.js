@@ -55,14 +55,14 @@ const usage = `
 Usage:
   npm --prefix cdk run idea:list
   npm --prefix cdk run idea:init -- --stage=<idea-id> [--title="<idea title>"]
-  npm --prefix cdk run idea:deploy -- --stage=<idea-id> [--improvement="<name>"] [--owner="<owner>"] [--ttl-days=<days>] [--skip-build] [--skip-sanity] [--skip-ui-smoke] [--dry-run]
+  npm --prefix cdk run idea:deploy -- --stage=<idea-id> [--improvement="<name>"] [--owner="<owner>"] [--ttl-days=<days>] [--skip-build] [--skip-sanity] [--dry-run]
   npm --prefix cdk run idea:sanity -- --stage=<idea-id>
   npm --prefix cdk run idea:ui-smoke -- --stage=<idea-id>
   npm --prefix cdk run idea:destroy -- --stage=<idea-id> [--dry-run]
   npm --prefix cdk run idea:diff -- --stage=<idea-id> [--owner="<owner>"] [--ttl-days=<days>] [--dry-run]
   npm --prefix cdk run idea:synth -- --stage=<idea-id> [--owner="<owner>"] [--ttl-days=<days>] [--dry-run]
-  npm --prefix cdk run idea:rollout -- --improvement="<name>" [--exclude=x,y] [--owner="<owner>"] [--ttl-days=<days>] [--skip-build] [--skip-sanity] [--skip-ui-smoke] [--dry-run]
-  npm --prefix cdk run idea:deploy-many -- (--all | --stages=a,b,c) [--exclude=x,y] --improvement="<name>" [--owner="<owner>"] [--ttl-days=<days>] [--skip-build] [--skip-sanity] [--skip-ui-smoke] [--continue-on-error] [--dry-run]
+  npm --prefix cdk run idea:rollout -- --improvement="<name>" [--exclude=x,y] [--owner="<owner>"] [--ttl-days=<days>] [--skip-build] [--skip-sanity] [--dry-run]
+  npm --prefix cdk run idea:deploy-many -- (--all | --stages=a,b,c) [--exclude=x,y] --improvement="<name>" [--owner="<owner>"] [--ttl-days=<days>] [--skip-build] [--skip-sanity] [--continue-on-error] [--dry-run]
   npm --prefix cdk run idea:diff-many -- (--all | --stages=a,b,c) [--exclude=x,y] [--owner="<owner>"] [--ttl-days=<days>] [--dry-run]
   npm --prefix cdk run idea:synth-many -- (--all | --stages=a,b,c) [--exclude=x,y] [--owner="<owner>"] [--ttl-days=<days>] [--dry-run]
 `;
@@ -104,6 +104,7 @@ if (command === "init") {
 }
 
 if (command === "deploy") {
+  ensureUiSmokeNotSkipped({ commandName: "deploy", skipUiSmoke: options.skipUiSmoke });
   const stage = resolveRequiredStage(options.stage);
   const improvement = resolveImprovementLabel({
     raw: options.improvement,
@@ -298,6 +299,7 @@ if (command === "ui-smoke") {
 }
 
 if (command === "rollout") {
+  ensureUiSmokeNotSkipped({ commandName: "rollout", skipUiSmoke: options.skipUiSmoke });
   const stages = resolveTargetStages({
     ...options,
     all: true,
@@ -324,6 +326,10 @@ if (command === "rollout") {
 }
 
 if (command === "deploy-many") {
+  ensureUiSmokeNotSkipped({
+    commandName: "deploy-many",
+    skipUiSmoke: options.skipUiSmoke,
+  });
   const stages = resolveTargetStages(options);
   const improvement = resolveImprovementLabel({
     raw: options.improvement,
@@ -554,6 +560,17 @@ function resolveOptionalTtlDays(rawTtlDays) {
     fail(`--ttl-days must be a non-negative integer, received "${value}".`);
   }
   return value;
+}
+
+function ensureUiSmokeNotSkipped({ commandName, skipUiSmoke }) {
+  if (!skipUiSmoke) return;
+  fail(
+    [
+      `--skip-ui-smoke is not allowed for "${commandName}".`,
+      "UI smoke is mandatory after successful deploy commands.",
+      "Use `npm --prefix cdk run idea:sanity` and `npm --prefix cdk run idea:ui-smoke` for standalone reruns.",
+    ].join(" ")
+  );
 }
 
 function buildCdkContextArgs({ stage, owner, ttlDays }) {
