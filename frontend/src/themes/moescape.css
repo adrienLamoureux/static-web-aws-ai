@@ -10,8 +10,8 @@ body {
   background:
     radial-gradient(circle at 12% 14%, rgba(255, 170, 200, 0.45), transparent 40%),
     radial-gradient(circle at 85% 14%, rgba(113, 224, 255, 0.42), transparent 38%),
-    radial-gradient(circle at 70% 80%, rgba(255, 221, 165, 0.34), transparent 45%),
-    linear-gradient(180deg, #fdf8ff 0%, #fffef6 48%, #f6f8ff 100%);
+    radial-gradient(circle at 70% 80%, rgba(145, 162, 255, 0.24), transparent 45%),
+    linear-gradient(180deg, #f7f4ff 0%, #f4f8ff 48%, #eef4ff 100%);
 }
 
 body::before {
@@ -111,13 +111,13 @@ body::before {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #ff6cae 0%, #ff9f93 55%, #ffc173 100%);
+  background: linear-gradient(135deg, #ff6cae 0%, #b88bff 55%, #77dfff 100%);
   color: #fff;
   box-shadow: 0 20px 34px -24px rgba(255, 108, 174, 0.58);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #f95c9f 0%, #fb8e84 55%, #fcb465 100%);
+  background: linear-gradient(135deg, #f95c9f 0%, #a87cf4 55%, #66d1f1 100%);
 }
 
 .btn-accent {
@@ -330,7 +330,7 @@ body::before {
 }
 
 .story-scene-animate {
-  background: rgba(255, 157, 109, 0.72);
+  background: rgba(101, 136, 255, 0.72);
 }
 
 .story-scene-music-trigger {
@@ -384,7 +384,7 @@ body::before {
   background:
     radial-gradient(circle at 20% 20%, rgba(255, 157, 209, 0.24), transparent 46%),
     radial-gradient(circle at 80% 16%, rgba(126, 228, 255, 0.3), transparent 44%),
-    linear-gradient(140deg, #fff7ff 0%, #fefbf4 52%, #f4f9ff 100%);
+    linear-gradient(140deg, #f7f4ff 0%, #f2f7ff 52%, #ecf3ff 100%);
 }
 
 .auth-card {
@@ -611,10 +611,11 @@ body::before {
   --moe-surface-1: rgba(20, 27, 51, 0.84);
   --moe-border: rgba(178, 206, 255, 0.28);
   --moe-text: #eff3ff;
-  --moe-muted: #a8b2d5;
-  --moe-lime: #d7f065;
+  --moe-muted: #bcc7e8;
   --moe-pink: #ff8cf2;
   --moe-cyan: #72e2ff;
+  --moe-violet: #8f97ff;
+  color-scheme: dark;
 }
 
 body {
@@ -623,7 +624,7 @@ body {
   background:
     radial-gradient(circle at 15% 14%, rgba(255, 140, 242, 0.24), transparent 38%),
     radial-gradient(circle at 86% 6%, rgba(114, 226, 255, 0.22), transparent 36%),
-    radial-gradient(circle at 72% 82%, rgba(215, 240, 101, 0.16), transparent 44%),
+    radial-gradient(circle at 72% 82%, rgba(143, 151, 255, 0.2), transparent 44%),
     linear-gradient(150deg, var(--moe-bg-0) 0%, var(--moe-bg-1) 48%, var(--moe-bg-2) 100%);
   overflow-x: hidden;
 }
@@ -690,7 +691,7 @@ body::after {
   top: 32vh;
   right: 44vw;
   animation-duration: 9s;
-  background: radial-gradient(circle, rgba(215, 240, 101, 0.34), rgba(215, 240, 101, 0));
+  background: radial-gradient(circle, rgba(143, 151, 255, 0.38), rgba(143, 151, 255, 0));
 }
 
 .moescape-stars {
@@ -749,7 +750,7 @@ body::after {
   font-size: 0.68rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(215, 240, 101, 0.9);
+  color: rgba(114, 226, 255, 0.94);
 }
 
 .moescape-hub-links {
@@ -834,7 +835,7 @@ body::after {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.17em;
-  color: rgba(215, 240, 101, 0.9);
+  color: rgba(114, 226, 255, 0.92);
 }
 
 .moescape-hub-stage-head h2 {
@@ -958,7 +959,7 @@ body::after {
   height: 6px;
   border-radius: 999px;
   transform: translateY(-50%);
-  background: rgba(215, 240, 101, 0.76);
+  background: rgba(255, 140, 242, 0.82);
   opacity: 0;
   transition: opacity 220ms ease;
 }
@@ -1004,9 +1005,9 @@ body::after {
 }
 
 .btn-accent {
-  background: linear-gradient(130deg, #d7f065 0%, #97e778 45%, #72e2ff 100%);
-  color: #0d1527;
-  box-shadow: 0 22px 34px -24px rgba(215, 240, 101, 0.76);
+  background: linear-gradient(130deg, #79d7ff 0%, #72e2ff 45%, #8f97ff 100%);
+  color: #0b1631;
+  box-shadow: 0 22px 34px -24px rgba(114, 226, 255, 0.68);
 }
 
 .btn-ghost {
@@ -1178,6 +1179,18 @@ body::after {
 .story-memory-list::-webkit-scrollbar-thumb,
 .music-library-list::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, rgba(255, 140, 242, 0.88), rgba(114, 226, 255, 0.86));
+}
+
+.auth-shell {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 157, 209, 0.18), transparent 46%),
+    radial-gradient(circle at 80% 16%, rgba(126, 228, 255, 0.2), transparent 44%),
+    radial-gradient(circle at 72% 82%, rgba(143, 151, 255, 0.18), transparent 44%),
+    linear-gradient(145deg, #090d1d 0%, #111936 52%, #1a2448 100%);
+}
+
+.story-scene-animate {
+  background: rgba(101, 136, 255, 0.72);
 }
 
 @keyframes moeReveal {
