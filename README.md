@@ -177,6 +177,9 @@ git worktree add ../wt/<idea-id>/code -b codex/<idea-id>/code codex/dev
 git worktree add ../wt/<idea-id>/integrate -b codex/<idea-id>/integrate codex/dev
 ```
 
+Current branch/worktree topology diagram:
+- `docs/branches-worktrees-diagram.md`
+
 ## Configuration Notes
 
 Common env vars used by stack/runtime:
