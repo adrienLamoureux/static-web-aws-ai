@@ -22,6 +22,12 @@ const AppShell = ({ apiBaseUrl }) => {
 
   return (
     <div className="app-shell relative min-h-screen overflow-hidden">
+      <div className="moescape-atmosphere" aria-hidden="true">
+        <span className="moescape-bloom moescape-bloom--one" />
+        <span className="moescape-bloom moescape-bloom--two" />
+        <span className="moescape-bloom moescape-bloom--three" />
+        <span className="moescape-stars" />
+      </div>
       <div className="pointer-events-none absolute inset-0 noise-layer opacity-60" />
       <div className="absolute inset-x-0 top-0 h-80 bg-[radial-gradient(circle_at_center,_rgba(196,178,141,0.24),_transparent_70%)] blur-3xl" />
       {isAuthenticated && (
@@ -54,7 +60,7 @@ const AppShell = ({ apiBaseUrl }) => {
           </div>
         </header>
       )}
-      <main className="relative z-10">
+      <main className="app-shell-main relative z-10">
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
