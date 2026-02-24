@@ -21,6 +21,7 @@ if (!stage) {
 
 const stackId = normalizeValue(args.stackId) || `${STACK_PREFIX}-${stage}`;
 const timeoutMs = resolveTimeoutMs(args.timeoutMs);
+const inputAuthToken = resolveAuthToken(args.authToken);
 
 const outputUrls = readStageOutputs({ stage, stackId });
 const cloudfrontUrl = normalizeUrl(args.cloudfront || outputUrls.cloudfrontUrl);
@@ -38,9 +39,7 @@ if (!cloudfrontUrl) {
 
 const { chromium } = await loadPlaywright();
 const browser = await chromium.launch({ headless: true });
-const context = await browser.newContext();
-
-const checks = [
+const unauthenticatedChecks = [
   { id: "login-page", path: "/login", expectLogin: true, expectPath: "/login" },
   { id: "home-redirect", path: "/", expectLogin: true, expectPath: "/login" },
   { id: "story-redirect", path: "/story", expectLogin: true, expectPath: "/login" },
@@ -50,29 +49,66 @@ const checks = [
     expectLogin: true,
     expectPath: "/login",
   },
+  { id: "about-redirect", path: "/about", expectLogin: true, expectPath: "/login" },
 ];
 
-const failures = [];
-for (const check of checks) {
-  const startedAt = Date.now();
-  try {
-    await runPageCheck({
-      context,
-      baseUrl: cloudfrontUrl,
-      path: check.path,
-      timeoutMs,
-      expectLogin: check.expectLogin,
-      expectPath: check.expectPath,
-    });
-    const elapsedMs = Date.now() - startedAt;
-    info(`PASS ${check.id} (${elapsedMs}ms)`);
-  } catch (error) {
-    const elapsedMs = Date.now() - startedAt;
-    const message = error instanceof Error ? error.message : String(error);
-    failures.push({ id: check.id, message, elapsedMs });
-    errorLog(`FAIL ${check.id} (${elapsedMs}ms) ${message}`);
-  }
+const authenticatedChecks = [
+  {
+    id: "home-page",
+    path: "/",
+    expectPath: "/",
+    expectedTexts: ["Intuitive studio for image-led motion"],
+  },
+  {
+    id: "story-page",
+    path: "/story",
+    expectPath: "/story",
+    expectedTexts: ["Storytelling Studio"],
+  },
+  {
+    id: "music-library-page",
+    path: "/music-library",
+    expectPath: "/music-library",
+    expectedTexts: ["Upload and categorize soundtracks"],
+  },
+  {
+    id: "about-page",
+    path: "/about",
+    expectPath: "/about",
+    expectedTexts: ["Whisk Studio — static web app"],
+  },
+];
+
+const authToken = inputAuthToken || createSyntheticJwtToken(stage);
+if (inputAuthToken) {
+  info("Using provided auth token for authenticated UI checks.");
+} else {
+  info("Using synthetic auth token for authenticated UI checks.");
 }
+
+const failures = [];
+const unauthenticatedContext = await browser.newContext();
+await runCheckGroup({
+  context: unauthenticatedContext,
+  baseUrl: cloudfrontUrl,
+  timeoutMs,
+  checks: unauthenticatedChecks,
+  failures,
+});
+await unauthenticatedContext.close();
+
+const authenticatedContext = await createAuthenticatedContext({
+  browser,
+  authToken,
+});
+await runCheckGroup({
+  context: authenticatedContext,
+  baseUrl: cloudfrontUrl,
+  timeoutMs,
+  checks: authenticatedChecks,
+  failures,
+});
+await authenticatedContext.close();
 
 await browser.close();
 
@@ -90,6 +126,7 @@ async function runPageCheck({
   timeoutMs,
   expectLogin,
   expectPath,
+  expectedTexts = [],
 }) {
   const page = await context.newPage();
   const pageErrors = [];
@@ -113,12 +150,78 @@ async function runPageCheck({
     await waitForVisibleText(page, "Sign in to continue", timeoutMs);
     await waitForVisibleText(page, "Continue to login", timeoutMs);
   }
+  for (const text of expectedTexts) {
+    await waitForVisibleText(page, text, timeoutMs);
+  }
 
   if (pageErrors.length > 0) {
     throw new Error(`Browser page errors detected: ${pageErrors.join(" | ")}`);
   }
 
   await page.close();
+}
+
+async function runCheckGroup({ context, baseUrl, timeoutMs, checks, failures }) {
+  for (const check of checks) {
+    const startedAt = Date.now();
+    try {
+      await runPageCheck({
+        context,
+        baseUrl,
+        path: check.path,
+        timeoutMs,
+        expectLogin: check.expectLogin,
+        expectPath: check.expectPath,
+        expectedTexts: check.expectedTexts || [],
+      });
+      const elapsedMs = Date.now() - startedAt;
+      info(`PASS ${check.id} (${elapsedMs}ms)`);
+    } catch (error) {
+      const elapsedMs = Date.now() - startedAt;
+      const message = error instanceof Error ? error.message : String(error);
+      failures.push({ id: check.id, message, elapsedMs });
+      errorLog(`FAIL ${check.id} (${elapsedMs}ms) ${message}`);
+    }
+  }
+}
+
+async function createAuthenticatedContext({ browser, authToken }) {
+  const tokenPayload = {
+    accessToken: authToken,
+    idToken: authToken,
+    refreshToken: "",
+    tokenType: "Bearer",
+    expiresIn: 3600,
+    savedAt: Date.now(),
+  };
+  const context = await browser.newContext();
+  await context.addInitScript((payload) => {
+    window.sessionStorage.setItem("whisk_auth_tokens", JSON.stringify(payload));
+  }, tokenPayload);
+  return context;
+}
+
+function createSyntheticJwtToken(stageValue) {
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  const payload = {
+    sub: `ui-smoke-${stageValue}`,
+    email: `ui-smoke+${stageValue}@example.com`,
+    iat: nowSeconds,
+    exp: nowSeconds + 60 * 60,
+  };
+  return [
+    encodeBase64Url(JSON.stringify({ alg: "none", typ: "JWT" })),
+    encodeBase64Url(JSON.stringify(payload)),
+    "sig",
+  ].join(".");
+}
+
+function encodeBase64Url(value) {
+  return Buffer.from(value, "utf8")
+    .toString("base64")
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
 }
 
 async function waitForVisibleText(page, text, timeoutMs) {
@@ -142,6 +245,7 @@ function parseArgs(rawArgs) {
     stackId: "",
     cloudfront: "",
     timeoutMs: "",
+    authToken: "",
   };
   for (let index = 0; index < rawArgs.length; index += 1) {
     const arg = rawArgs[index];
@@ -181,6 +285,15 @@ function parseArgs(rawArgs) {
       index += 1;
       continue;
     }
+    if (arg.startsWith("--auth-token=")) {
+      parsed.authToken = arg.slice("--auth-token=".length);
+      continue;
+    }
+    if (arg === "--auth-token") {
+      parsed.authToken = String(rawArgs[index + 1] || "");
+      index += 1;
+      continue;
+    }
     fail(`Unknown argument "${arg}".`);
   }
   return parsed;
@@ -216,6 +329,12 @@ function resolveTimeoutMs(rawValue) {
     fail(`Invalid --timeout-ms value "${rawValue}".`);
   }
   return Math.round(parsed);
+}
+
+function resolveAuthToken(rawValue) {
+  const directValue = normalizeValue(rawValue);
+  if (directValue) return directValue;
+  return normalizeValue(process.env.IDEA_UI_SMOKE_AUTH_TOKEN || "");
 }
 
 function readStageOutputs({ stage, stackId }) {
