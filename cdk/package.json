@@ -13,6 +13,7 @@
     "idea:seed-all": "node scripts/seed-idea-content.js seed-many --all",
     "idea:destroy": "node scripts/idea-env.js destroy",
     "idea:sanity": "node scripts/idea-env.js sanity",
+    "idea:ui-smoke": "node scripts/idea-env.js ui-smoke",
     "idea:diff": "node scripts/idea-env.js diff",
     "idea:diff-all": "node scripts/idea-env.js diff-many --all",
     "idea:synth": "node scripts/idea-env.js synth",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.13.17",
+    "playwright": "^1.58.2",
     "typescript": "^5.8.2"
   },
   "dependencies": {
