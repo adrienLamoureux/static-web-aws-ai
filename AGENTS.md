@@ -48,6 +48,10 @@
 `codex/<idea-id>/plan -> codex/<idea-id>/code -> codex/<idea-id>/integrate -> main`
 - Cleanup command after merge:
 `git worktree remove ../wt/<idea-id>/plan && git worktree remove ../wt/<idea-id>/code && git worktree remove ../wt/<idea-id>/integrate`
+- Active code worktrees for current design variants:
+`/Users/adrienlamoureux/Documents/code/wt/design-main/code` -> `codex/design-main/code`
+`/Users/adrienlamoureux/Documents/code/wt/design-endfield/code` -> `codex/design-endfield/code`
+`/Users/adrienlamoureux/Documents/code/wt/design-moescape/code` -> `codex/design-moescape/code`
 
 ## Idea Environment Policy
 - Every parallel prototype must have a unique idea ID (`<idea-id>`).
@@ -77,6 +81,7 @@
 `npm --prefix cdk run idea:synth-many -- --all`
 `npm --prefix cdk run idea:seed-many -- --all [--exclude=idea-x] [--source-stage=<source-stage>] [--source-stack=<stack-name>]`
 - For autonomous rollouts across all ideas, prefer `idea:rollout` (build once + deploy all + write logs).
+- Post-deploy UI smoke is mandatory for `idea:deploy`, `idea:deploy-many`, and `idea:rollout` (the runner enforces this and rejects `--skip-ui-smoke`).
 - After every deploy/destroy, update `README.md` and `DECISIONS.md` if scope or architecture changed.
 - For deploy-many commands, always provide `--improvement`, and prefer `--dry-run` first when targeting many stacks.
 - For seeded demo content, seed from one source stage (default `sandbox`) into target idea stacks after deploy.
