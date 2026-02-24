@@ -26,3 +26,4 @@
 - 2026-02-23T17:15:52.788Z | event=deploy-many | stack=StaticWebAWSAIStack-design-moescape / cloudfront=https://d1raqt5min66lv.cloudfront.net / api=https://bcy62oi00d.execute-api.us-east-1.amazonaws.com/prod/ / commit=50f84fb / improvement=fix-api-config-mismatch
 - 2026-02-23T23:18:08.673Z | event=deploy | stack=StaticWebAWSAIStack-design-moescape / cloudfront=https://d1raqt5min66lv.cloudfront.net / api=https://bcy62oi00d.execute-api.us-east-1.amazonaws.com/prod/ / commit=da58a51 / improvement=ui-theme-moescape-v1
 - 2026-02-24T09:19:34.900Z | event=deploy | stack=StaticWebAWSAIStack-design-moescape / cloudfront=https://d1raqt5min66lv.cloudfront.net / api=https://bcy62oi00d.execute-api.us-east-1.amazonaws.com/prod/ / commit=3201f8f / improvement=ui-theme-moescape-v2
+- 2026-02-24T09:29:09.114Z | event=sanity | stage=design-moescape / result=passed

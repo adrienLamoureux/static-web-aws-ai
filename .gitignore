@@ -131,6 +131,7 @@ dist
 
 build/
 cdk/*/*.js
+!cdk/scripts/*.js
 cdk.out/
 
 # AI environment
