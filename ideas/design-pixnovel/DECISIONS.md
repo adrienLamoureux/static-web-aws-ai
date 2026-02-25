@@ -74,3 +74,9 @@ Use short ADR-style entries.
 - Context: Key landing texts (`Whisk Studio`, subtitle, library status, counts, videos-empty state) were still perceived as low-contrast.
 - Alternatives considered: Only increase font size/weight; selectively brighten individual JSX nodes inline.
 - Consequences: Readability is improved globally through theme rules, keeping components clean and avoiding scattered inline color overrides.
+
+- Date: 2026-02-25T14:16:00Z
+- Decision: Add dedicated high-contrast styles for `.whisk-wall-more` and `.whisk-tile-plus`.
+- Context: CTA labels/icons remained hard to read because they still inherited translucent/light defaults from base styles.
+- Alternatives considered: Keep base CTA styles and only brighten text color.
+- Consequences: Action affordances now remain readable even over mixed background tones and image noise.
