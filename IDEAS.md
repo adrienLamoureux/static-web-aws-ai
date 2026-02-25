@@ -7,7 +7,7 @@ Use this file as the top-level overview for all parallel full-stack idea environ
 - idea=design-endfield | stack=StaticWebAWSAIStack-design-endfield | status=LIVE | last_action=2026-02-23T17:03:29.696Z | cloudfront=https://d3vbqp2fb0oc5m.cloudfront.net | api=https://z4jv3sqt5g.execute-api.us-east-1.amazonaws.com/prod/ | folder=ideas/design-endfield | note=Deployed 50f84fb (fix-api-config-mismatch)
 - idea=design-main | stack=StaticWebAWSAIStack-design-main | status=LIVE | last_action=2026-02-23T17:10:25.513Z | cloudfront=https://dxniixk2a4dur.cloudfront.net | api=https://oa2kzhs1l3.execute-api.us-east-1.amazonaws.com/prod/ | folder=ideas/design-main | note=Deployed 50f84fb (fix-api-config-mismatch)
 - idea=design-moescape | stack=StaticWebAWSAIStack-design-moescape | status=LIVE | last_action=2026-02-24T21:42:32.037Z | cloudfront=https://d1raqt5min66lv.cloudfront.net | api=https://bcy62oi00d.execute-api.us-east-1.amazonaws.com/prod/ | folder=ideas/design-moescape | note=Deployed 4012857 (palette readability pass)
-- idea=design-pixnovel | stack=StaticWebAWSAIStack-design-pixnovel | status=LIVE | last_action=2026-02-25T15:59:11.412Z | cloudfront=https://d31s9yo6pacgac.cloudfront.net | api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ | folder=ideas/design-pixnovel | note=Deployed 887fe46 (pixnovel-oblique-touching-portrait-wall)
+- idea=design-pixnovel | stack=StaticWebAWSAIStack-design-pixnovel | status=LIVE | last_action=2026-02-25T16:24:02.953Z | cloudfront=https://d31s9yo6pacgac.cloudfront.net | api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ | folder=ideas/design-pixnovel | note=Deployed 66cd013 (pixnovel-stronger-oblique-touching-wall)
 <!-- IDEA_REGISTRY_END -->
 
 ## Operating Rules

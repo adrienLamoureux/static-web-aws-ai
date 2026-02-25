@@ -1074,8 +1074,8 @@ body.theme-pixnovel .whisk-wall {
   grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
   gap: 0;
   overflow: hidden;
-  border: 1px solid rgba(148, 176, 238, 0.2);
-  background: rgba(6, 10, 23, 0.56);
+  border: 0;
+  background: transparent;
 }
 
 body.theme-pixnovel .whisk-tile,
@@ -1088,35 +1088,35 @@ body.theme-pixnovel .whisk-tile.is-feature {
   grid-column: auto;
   grid-row: auto;
   isolation: isolate;
-  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 100%, 0 100%);
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 100%, 0 100%);
 }
 
 body.theme-pixnovel .whisk-tile::after {
   content: "";
   position: absolute;
   top: 0;
-  right: -8px;
-  width: 16px;
+  right: -11px;
+  width: 22px;
   height: 100%;
   background: linear-gradient(
     180deg,
-    rgba(168, 196, 249, 0.74),
-    rgba(115, 216, 255, 0.56) 36%,
-    rgba(143, 157, 255, 0.46) 64%,
-    rgba(137, 169, 248, 0.62)
+    rgba(188, 211, 255, 0.92),
+    rgba(115, 216, 255, 0.82) 34%,
+    rgba(143, 157, 255, 0.72) 66%,
+    rgba(151, 183, 255, 0.9)
   );
-  clip-path: polygon(48% 0, 100% 0, 52% 100%, 0 100%);
-  opacity: 0.56;
+  clip-path: polygon(34% 0, 100% 0, 66% 100%, 0 100%);
+  opacity: 0.84;
   z-index: 5;
   pointer-events: none;
 }
 
 body.theme-pixnovel .whisk-tile:nth-child(2n)::after {
-  opacity: 0.44;
+  opacity: 0.76;
 }
 
 body.theme-pixnovel .whisk-tile:nth-child(3n)::after {
-  opacity: 0.34;
+  opacity: 0.66;
 }
 
 body.theme-pixnovel .whisk-tile-media {
