@@ -44,3 +44,9 @@ Use short ADR-style entries.
 - Context: Previous unification pass still looked too boxy in practice.
 - Alternatives considered: Incremental border alpha tweaks only.
 - Consequences: Hero, generator rail, stage, and feed now appear as a contiguous layout with separator lines, improving visual continuity.
+
+- Date: 2026-02-25T10:25:00Z
+- Decision: Remove width-constrained canvas and make main shell full-screen/full-width.
+- Context: Remaining visual mismatch came from centered width constraints and separate workspace background.
+- Alternatives considered: Keep centered shell and only adjust colors.
+- Consequences: Header/main/workspace now read as one continuous page surface and the background mismatch is eliminated.

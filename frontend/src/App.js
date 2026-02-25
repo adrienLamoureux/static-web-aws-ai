@@ -375,7 +375,7 @@ const AppShell = ({ apiBaseUrl }) => {
       </div>
 
       {isAuthenticated && (
-        <header className="pixnovel-app-header relative z-20 mx-auto flex w-full max-w-[1320px] items-center justify-between px-5 py-6 md:px-8">
+        <header className="pixnovel-app-header relative z-20 flex w-full items-center justify-between px-5 py-6 md:px-8">
           <Link to="/" className="pixnovel-brand">
             Whisk Studio
           </Link>
