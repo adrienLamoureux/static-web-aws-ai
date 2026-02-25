@@ -22,7 +22,7 @@ function WhiskWall({
             key={image.key || `${image.url}-${index}`}
             role="button"
             tabIndex={0}
-            className={`whisk-tile ${index === 0 ? "is-feature" : ""}`}
+            className="whisk-tile"
             onClick={() => {
               onOpenLightbox?.(image);
             }}
@@ -33,7 +33,20 @@ function WhiskWall({
               }
             }}
           >
-            <img src={image.url} alt={image.key || "Generated image"} />
+            <span className="whisk-tile-media">
+              <img
+                className="whisk-tile-image whisk-tile-image--backdrop"
+                src={image.url}
+                alt=""
+                aria-hidden="true"
+              />
+              <span className="whisk-tile-backdrop" />
+              <img
+                className="whisk-tile-image whisk-tile-image--main"
+                src={image.url}
+                alt={image.key || "Generated image"}
+              />
+            </span>
             <div className="whisk-tile-overlay" />
             <span className="whisk-tile-actions">
               <button

@@ -98,3 +98,9 @@ Use short ADR-style entries.
 - Context: A stricter no-motion policy was requested after earlier override-based suppression, requiring code-level removal rather than runtime neutralization.
 - Alternatives considered: Keep global `animation: none`/`transition: none` overrides; keep Tailwind animation utilities unused.
 - Consequences: Pixnovel behavior now has a single intentional motion source (masonry), with less CSS/utility ambiguity and fewer accidental motion regressions.
+
+- Date: 2026-02-25T15:44:00Z
+- Decision: Redesign Whisk image wall as a portrait-first gallery with blurred underlay cards and uniform side-by-side tiles.
+- Context: The previous mixed tile wall looked less aligned with NovelAI gallery references and lacked portrait density.
+- Alternatives considered: Keep landscape-dominant wall with one featured tile; only tweak spacing/borders without structural markup changes.
+- Consequences: The wall now presents consistent portrait cards with stronger visual rhythm, while preserving existing image actions and no additional animations.
