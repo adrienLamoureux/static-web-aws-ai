@@ -104,3 +104,9 @@ Use short ADR-style entries.
 - Context: The previous mixed tile wall looked less aligned with NovelAI gallery references and lacked portrait density.
 - Alternatives considered: Keep landscape-dominant wall with one featured tile; only tweak spacing/borders without structural markup changes.
 - Consequences: The wall now presents consistent portrait cards with stronger visual rhythm, while preserving existing image actions and no additional animations.
+
+- Date: 2026-02-25T15:59:00Z
+- Decision: Convert the portrait wall to a zero-gap oblique-slice layout with diagonal separators and inline captions.
+- Context: A closer match was requested to game-style roster strips where portrait cards touch and separators are angled rather than vertical.
+- Alternatives considered: Keep rectangular portrait cards with standard borders; introduce a carousel/swiper implementation.
+- Consequences: The wall now has stronger “character strip” identity without adding new JS dependencies or reintroducing non-masonry animations.

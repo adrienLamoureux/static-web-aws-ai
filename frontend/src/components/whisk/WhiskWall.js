@@ -1,5 +1,14 @@
 import React from "react";
 
+const toDisplayLabel = (image, index) => {
+  const raw = image?.key || image?.url || "";
+  const base = raw.split("/").pop() || `image-${index + 1}`;
+  const withoutExt = base.replace(/\.[^/.]+$/, "");
+  const normalized = withoutExt.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
+  if (!normalized) return `Image ${index + 1}`;
+  return normalized;
+};
+
 function WhiskWall({
   images,
   status,
@@ -48,6 +57,7 @@ function WhiskWall({
               />
             </span>
             <div className="whisk-tile-overlay" />
+            <span className="whisk-tile-caption">{toDisplayLabel(image, index)}</span>
             <span className="whisk-tile-actions">
               <button
                 type="button"

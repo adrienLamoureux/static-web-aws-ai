@@ -44,6 +44,7 @@
 - Masonry image pipeline is color-calibrated to reduce purple shifts and preserve source hues.
 - Motion policy for Pixnovel is now strict: all animation/transition behavior is removed from active Pixnovel paths, except masonry vertical image scrolling.
 - Whisk image wall now uses portrait-first side-by-side cards with a blurred underlay + sharp foreground frame to match NovelAI-style gallery density.
+- Whisk image wall now supports an oblique-slice variant: zero-gap portrait cards touching edge-to-edge with diagonal separators and compact caption strips.
 
 ## Architecture Touchpoints
 - Backend: no runtime behavior change.
