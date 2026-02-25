@@ -80,3 +80,9 @@ Use short ADR-style entries.
 - Context: CTA labels/icons remained hard to read because they still inherited translucent/light defaults from base styles.
 - Alternatives considered: Keep base CTA styles and only brighten text color.
 - Consequences: Action affordances now remain readable even over mixed background tones and image noise.
+
+- Date: 2026-02-25T14:31:00Z
+- Decision: Remove aggressive masonry hue rotation and soften violet overlay tint.
+- Context: Animated masonry images showed visible color drift (blue tones skewing purple) versus source assets.
+- Alternatives considered: Keep hue-rotate and tune only opacity; remove all hero color overlays.
+- Consequences: Visual tone remains cool, but underlying asset hues are preserved more faithfully.

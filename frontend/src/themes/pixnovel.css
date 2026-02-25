@@ -216,7 +216,6 @@ body.theme-pixnovel::after {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.5;
 }
 
 .pixnovel-hero-masonry::after {
@@ -226,7 +225,7 @@ body.theme-pixnovel::after {
   background:
     linear-gradient(180deg, rgba(7, 11, 25, 0.9) 0%, rgba(7, 11, 25, 0.42) 36%, rgba(7, 11, 25, 0.82) 100%),
     radial-gradient(circle at 40% 20%, rgba(115, 216, 255, 0.18), transparent 42%),
-    linear-gradient(120deg, rgba(111, 136, 255, 0.22), rgba(115, 216, 255, 0.18));
+    linear-gradient(120deg, rgba(106, 188, 255, 0.14), rgba(115, 216, 255, 0.12));
 }
 
 .pixnovel-masonry-grid {
@@ -261,7 +260,7 @@ body.theme-pixnovel::after {
   height: 100%;
   object-fit: cover;
   display: block;
-  filter: hue-rotate(120deg) saturate(0.45) contrast(1.03) brightness(0.74);
+  filter: saturate(0.86) contrast(1.02) brightness(0.8);
 }
 
 .pixnovel-hero::after {
