@@ -20,9 +20,10 @@
   color-scheme: dark;
 }
 
-body {
+body.theme-pixnovel {
   font-family: "Plus Jakarta Sans", "Zen Kaku Gothic New", "Segoe UI", sans-serif;
   color: var(--pix-text);
+  color-scheme: dark;
   background:
     radial-gradient(circle at 14% 11%, rgba(108, 193, 255, 0.2), transparent 34%),
     radial-gradient(circle at 82% 10%, rgba(123, 149, 255, 0.2), transparent 32%),
@@ -30,7 +31,7 @@ body {
     linear-gradient(158deg, #040713 0%, #0a1230 52%, #121f46 100%);
 }
 
-body::before {
+body.theme-pixnovel::before {
   opacity: 0.36;
   background-image:
     linear-gradient(rgba(116, 160, 255, 0.12) 1px, transparent 1px),
@@ -39,7 +40,7 @@ body::before {
   animation: pixGridMove 28s linear infinite;
 }
 
-body::after {
+body.theme-pixnovel::after {
   opacity: 0.34;
   background:
     radial-gradient(circle at 45% -20%, rgba(115, 216, 255, 0.18), transparent 40%),

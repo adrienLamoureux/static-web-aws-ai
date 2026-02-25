@@ -462,6 +462,13 @@ function App() {
   const [configReady, setConfigReady] = useState(false);
 
   useEffect(() => {
+    document.body.classList.add("theme-pixnovel");
+    return () => {
+      document.body.classList.remove("theme-pixnovel");
+    };
+  }, []);
+
+  useEffect(() => {
     let isMounted = true;
     fetch("/config.json")
       .then((res) => (res.ok ? res.json() : null))
