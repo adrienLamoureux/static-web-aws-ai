@@ -11,7 +11,7 @@
 ## Scope
 - In scope:
   - New hybrid shell layout for authenticated pages.
-  - PixAI-style hero with anime-inspired portrait treatment.
+  - PixAI-style hero with animated masonry atmosphere and integrated top navigation/auth controls.
   - PixAI-style animated masonry stream with bottom-to-top image motion.
   - NovelAI-style generation control menu and render queue side rail.
   - Responsive behavior for desktop/tablet/mobile.
@@ -36,6 +36,7 @@
 - Major shell containers (hero, generator rail, main stage, feed rail) now share one canvas with separator lines instead of standalone card boxes.
 - Main workspace is now full-width/full-height and visually merged with page background to avoid disconnected “floating pad” effect.
 - Standalone app header is removed; navigation and sign-out controls now live in the top row of the PixNovel hero panel.
+- Detached hero portrait panel is removed to keep one continuous full-width hero surface.
 - Ambient gradients and masonry tinting are shifted to cooler blue/violet tones to avoid warm/yellow cast.
 
 ## Architecture Touchpoints

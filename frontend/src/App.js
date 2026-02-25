@@ -311,14 +311,6 @@ const PixnovelHero = ({ activePane, userEmail, onLogout }) => {
           ))}
         </div>
       </div>
-
-      <div className="pixnovel-hero-visual" aria-hidden="true">
-        <div className="pixnovel-hero-portrait">
-          <span className="pixnovel-hero-spark pixnovel-hero-spark--one" />
-          <span className="pixnovel-hero-spark pixnovel-hero-spark--two" />
-          <span className="pixnovel-hero-spark pixnovel-hero-spark--three" />
-        </div>
-      </div>
     </section>
   );
 };

@@ -56,3 +56,9 @@ Use short ADR-style entries.
 - Context: Layout still felt disconnected and background was perceived as warm.
 - Alternatives considered: Keep external header and only tweak panel borders/colors.
 - Consequences: First-screen composition is consolidated into a single PixNovel panel and the background now stays in blue/violet range.
+
+- Date: 2026-02-25T11:40:00Z
+- Decision: Remove detached hero portrait block and enforce Pixnovel-scoped overrides for warm Story/Music legacy surfaces.
+- Context: Even after palette updates, the UI still showed yellow/beige cast because route-level Story/Music CSS retained warm colors and panel states.
+- Alternatives considered: Keep portrait and only tune root gradients; rewrite Story/Music component CSS directly.
+- Consequences: Hero is visually unified, warm tint is removed at the shell level, and route contracts remain unchanged while keeping overrides isolated to the Pixnovel stage.
