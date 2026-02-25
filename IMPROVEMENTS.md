@@ -13,3 +13,4 @@ Track rollouts of the same improvement across multiple idea stacks.
 - 2026-02-24T23:00:07.058Z | action=deploy | improvement=pixnovel-hybrid-ui | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=7201f1a
 - 2026-02-25T09:34:50.145Z | action=deploy | improvement=pixnovel-masonry-image-stream | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6a09f97
 - 2026-02-25T09:45:18.142Z | action=deploy | improvement=pixnovel-surface-unification | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=5c65c89
+- 2026-02-25T10:09:59.059Z | action=deploy | improvement=pixnovel-hard-unify-shell | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=3f6aedf

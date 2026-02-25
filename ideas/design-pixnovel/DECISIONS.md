@@ -38,3 +38,9 @@ Use short ADR-style entries.
 - Context: Current visual hierarchy felt fragmented due to repeated bordered cards in every subsection.
 - Alternatives considered: Keep existing panel/card density; remove all visual separators.
 - Consequences: UI reads as one cohesive canvas while preserving structure via subtle separators and lightweight surfaces.
+
+- Date: 2026-02-25T10:07:00Z
+- Decision: Apply hard shell unification so top-level sections are no longer independent panels.
+- Context: Previous unification pass still looked too boxy in practice.
+- Alternatives considered: Incremental border alpha tweaks only.
+- Consequences: Hero, generator rail, stage, and feed now appear as a contiguous layout with separator lines, improving visual continuity.

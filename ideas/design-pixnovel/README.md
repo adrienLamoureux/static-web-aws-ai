@@ -33,6 +33,7 @@
 - Hero now includes an animated three-column image stream with independent scroll speeds and offsets.
 - Masonry stream is hidden on small mobile viewports to preserve readability and performance.
 - Nested panels are intentionally de-boxed to a more unified surface style with subtle dividers.
+- Major shell containers (hero, generator rail, main stage, feed rail) now share one canvas with separator lines instead of standalone card boxes.
 
 ## Architecture Touchpoints
 - Backend: no runtime behavior change.
