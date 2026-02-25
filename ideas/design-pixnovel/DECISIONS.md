@@ -50,3 +50,9 @@ Use short ADR-style entries.
 - Context: Remaining visual mismatch came from centered width constraints and separate workspace background.
 - Alternatives considered: Keep centered shell and only adjust colors.
 - Consequences: Header/main/workspace now read as one continuous page surface and the background mismatch is eliminated.
+
+- Date: 2026-02-25T11:18:00Z
+- Decision: Remove standalone app header and embed nav/auth controls in hero top bar; cool down page background palette.
+- Context: Layout still felt disconnected and background was perceived as warm.
+- Alternatives considered: Keep external header and only tweak panel borders/colors.
+- Consequences: First-screen composition is consolidated into a single PixNovel panel and the background now stays in blue/violet range.

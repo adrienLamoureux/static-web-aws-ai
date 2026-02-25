@@ -267,11 +267,34 @@ const PixnovelHeroMasonry = () => {
   );
 };
 
-const PixnovelHero = ({ activePane }) => {
+const PixnovelHero = ({ activePane, userEmail, onLogout }) => {
   return (
     <section className="pixnovel-hero" aria-label="Creative hero section">
       <PixnovelHeroMasonry />
       <div className="pixnovel-hero-copy">
+        <div className="pixnovel-hero-topbar">
+          <Link to="/" className="pixnovel-brand">
+            Whisk Studio
+          </Link>
+          <nav className="pixnovel-top-nav">
+            {Object.entries(PIXNOVEL_PANE_META).map(([key, item]) => (
+              <Link
+                key={key}
+                to={item.route}
+                className={`pixnovel-top-link${activePane === key ? " is-active" : ""}`}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+          <div className="pixnovel-user-chip">
+            <span>{userEmail || "Signed in"}</span>
+            <button type="button" className="btn-ghost px-4 py-1 text-xs" onClick={onLogout}>
+              Sign out
+            </button>
+          </div>
+        </div>
+
         <p className="pixnovel-hero-kicker">PixNovel Studio</p>
         <h1 className="pixnovel-hero-title">
           Anime-first creation cockpit with cinematic flow controls
@@ -280,17 +303,6 @@ const PixnovelHero = ({ activePane }) => {
           Blend PixAI-style visual impact with NovelAI-style generation depth while
           keeping your existing Whisk, Story, and Music workflows in one place.
         </p>
-        <div className="pixnovel-hero-links">
-          {Object.entries(PIXNOVEL_PANE_META).map(([key, item]) => (
-            <Link
-              key={key}
-              to={item.route}
-              className={`pixnovel-hero-link${activePane === key ? " is-active" : ""}`}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
         <div className="pixnovel-tag-row">
           {PIXNOVEL_STYLE_TAGS.map((tag) => (
             <span key={tag} className="pixnovel-tag-chip">
@@ -311,7 +323,7 @@ const PixnovelHero = ({ activePane }) => {
   );
 };
 
-const PixnovelWorkspace = ({ apiBaseUrl, activePane }) => {
+const PixnovelWorkspace = ({ apiBaseUrl, activePane, userEmail, onLogout }) => {
   const paneByKey = {
     whisk: <Whisk apiBaseUrl={apiBaseUrl} />,
     story: <Story apiBaseUrl={apiBaseUrl} />,
@@ -321,7 +333,7 @@ const PixnovelWorkspace = ({ apiBaseUrl, activePane }) => {
 
   return (
     <div className="pixnovel-workspace">
-      <PixnovelHero activePane={activePane} />
+      <PixnovelHero activePane={activePane} userEmail={userEmail} onLogout={onLogout} />
 
       <div className="pixnovel-grid">
         <PixnovelGenerationMenu />
@@ -362,7 +374,7 @@ const PixnovelWorkspace = ({ apiBaseUrl, activePane }) => {
 };
 
 const AppShell = ({ apiBaseUrl }) => {
-  const { isAuthenticated, logout, user } = useAuth();
+  const { logout, user } = useAuth();
   const location = useLocation();
   const activePane = resolveActivePane(location.pathname);
 
@@ -374,31 +386,6 @@ const AppShell = ({ apiBaseUrl }) => {
         <span className="pixnovel-grid-shimmer" />
       </div>
 
-      {isAuthenticated && (
-        <header className="pixnovel-app-header relative z-20 flex w-full items-center justify-between px-5 py-6 md:px-8">
-          <Link to="/" className="pixnovel-brand">
-            Whisk Studio
-          </Link>
-          <nav className="pixnovel-top-nav">
-            {Object.entries(PIXNOVEL_PANE_META).map(([key, item]) => (
-              <Link
-                key={key}
-                to={item.route}
-                className={`pixnovel-top-link${activePane === key ? " is-active" : ""}`}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-          <div className="pixnovel-user-chip">
-            <span>{user?.email || "Signed in"}</span>
-            <button type="button" className="btn-ghost px-4 py-1 text-xs" onClick={logout}>
-              Sign out
-            </button>
-          </div>
-        </header>
-      )}
-
       <main className="pixnovel-main relative z-10">
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -407,7 +394,12 @@ const AppShell = ({ apiBaseUrl }) => {
             path="/"
             element={
               <RequireAuth>
-                <PixnovelWorkspace apiBaseUrl={apiBaseUrl} activePane="whisk" />
+                <PixnovelWorkspace
+                  apiBaseUrl={apiBaseUrl}
+                  activePane="whisk"
+                  userEmail={user?.email}
+                  onLogout={logout}
+                />
               </RequireAuth>
             }
           />
@@ -415,7 +407,12 @@ const AppShell = ({ apiBaseUrl }) => {
             path="/whisk"
             element={
               <RequireAuth>
-                <PixnovelWorkspace apiBaseUrl={apiBaseUrl} activePane="whisk" />
+                <PixnovelWorkspace
+                  apiBaseUrl={apiBaseUrl}
+                  activePane="whisk"
+                  userEmail={user?.email}
+                  onLogout={logout}
+                />
               </RequireAuth>
             }
           />
@@ -423,7 +420,12 @@ const AppShell = ({ apiBaseUrl }) => {
             path="/story"
             element={
               <RequireAuth>
-                <PixnovelWorkspace apiBaseUrl={apiBaseUrl} activePane="story" />
+                <PixnovelWorkspace
+                  apiBaseUrl={apiBaseUrl}
+                  activePane="story"
+                  userEmail={user?.email}
+                  onLogout={logout}
+                />
               </RequireAuth>
             }
           />
@@ -431,7 +433,12 @@ const AppShell = ({ apiBaseUrl }) => {
             path="/music-library"
             element={
               <RequireAuth>
-                <PixnovelWorkspace apiBaseUrl={apiBaseUrl} activePane="music" />
+                <PixnovelWorkspace
+                  apiBaseUrl={apiBaseUrl}
+                  activePane="music"
+                  userEmail={user?.email}
+                  onLogout={logout}
+                />
               </RequireAuth>
             }
           />
@@ -439,7 +446,12 @@ const AppShell = ({ apiBaseUrl }) => {
             path="/about"
             element={
               <RequireAuth>
-                <PixnovelWorkspace apiBaseUrl={apiBaseUrl} activePane="about" />
+                <PixnovelWorkspace
+                  apiBaseUrl={apiBaseUrl}
+                  activePane="about"
+                  userEmail={user?.email}
+                  onLogout={logout}
+                />
               </RequireAuth>
             }
           />

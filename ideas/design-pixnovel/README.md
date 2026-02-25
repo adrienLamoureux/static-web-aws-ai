@@ -35,6 +35,8 @@
 - Nested panels are intentionally de-boxed to a more unified surface style with subtle dividers.
 - Major shell containers (hero, generator rail, main stage, feed rail) now share one canvas with separator lines instead of standalone card boxes.
 - Main workspace is now full-width/full-height and visually merged with page background to avoid disconnected “floating pad” effect.
+- Standalone app header is removed; navigation and sign-out controls now live in the top row of the PixNovel hero panel.
+- Ambient gradients and masonry tinting are shifted to cooler blue/violet tones to avoid warm/yellow cast.
 
 ## Architecture Touchpoints
 - Backend: no runtime behavior change.

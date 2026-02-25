@@ -25,7 +25,7 @@ body {
   color: var(--pix-text);
   background:
     radial-gradient(circle at 14% 11%, rgba(115, 216, 255, 0.22), transparent 36%),
-    radial-gradient(circle at 82% 10%, rgba(255, 158, 207, 0.22), transparent 34%),
+    radial-gradient(circle at 82% 10%, rgba(132, 148, 255, 0.24), transparent 34%),
     radial-gradient(circle at 74% 84%, rgba(143, 157, 255, 0.2), transparent 40%),
     linear-gradient(158deg, var(--pix-bg-0) 0%, var(--pix-bg-1) 52%, var(--pix-bg-2) 100%);
 }
@@ -43,7 +43,7 @@ body::after {
   opacity: 0.42;
   background:
     radial-gradient(circle at 45% -20%, rgba(115, 216, 255, 0.24), transparent 42%),
-    radial-gradient(circle at 82% 18%, rgba(255, 158, 207, 0.2), transparent 36%);
+    radial-gradient(circle at 82% 18%, rgba(132, 148, 255, 0.2), transparent 36%);
 }
 
 .pixnovel-shell {
@@ -87,7 +87,7 @@ body::after {
   height: 28vw;
   left: -8vw;
   bottom: -13vw;
-  background: radial-gradient(circle, rgba(255, 158, 207, 0.38), rgba(255, 158, 207, 0));
+  background: radial-gradient(circle, rgba(132, 148, 255, 0.38), rgba(132, 148, 255, 0));
   animation: pixOrbFloat 17s ease-in-out infinite reverse;
 }
 
@@ -200,7 +200,7 @@ body::after {
   border-radius: 0;
   background:
     radial-gradient(circle at 10% 12%, rgba(115, 216, 255, 0.16), transparent 32%),
-    radial-gradient(circle at 88% 18%, rgba(255, 158, 207, 0.19), transparent 34%),
+    radial-gradient(circle at 88% 18%, rgba(132, 148, 255, 0.2), transparent 34%),
     linear-gradient(138deg, rgba(13, 18, 39, 0.58), rgba(24, 33, 65, 0.36));
   padding: 20px;
   display: grid;
@@ -259,7 +259,7 @@ body::after {
   height: 100%;
   object-fit: cover;
   display: block;
-  filter: saturate(1.1) contrast(1.06);
+  filter: hue-rotate(12deg) saturate(0.96) contrast(1.04) brightness(0.9);
 }
 
 .pixnovel-hero::after {
@@ -275,6 +275,14 @@ body::after {
 .pixnovel-hero-copy {
   position: relative;
   z-index: 2;
+}
+
+.pixnovel-hero-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
 }
 
 .pixnovel-hero-kicker {
@@ -946,21 +954,19 @@ body::after {
 }
 
 @media (max-width: 920px) {
-  .pixnovel-app-header {
+  .pixnovel-hero-topbar {
     flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
-    padding: 14px;
+  }
+
+  .pixnovel-hero {
+    grid-template-columns: 1fr;
   }
 
   .pixnovel-top-nav,
   .pixnovel-user-chip {
     width: 100%;
     justify-content: center;
-  }
-
-  .pixnovel-hero {
-    grid-template-columns: 1fr;
   }
 
   .pixnovel-hero-masonry {
