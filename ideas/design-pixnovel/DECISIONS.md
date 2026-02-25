@@ -32,3 +32,9 @@ Use short ADR-style entries.
 - Context: The design objective shifted to stronger visual density and obvious bottom-to-top image motion.
 - Alternatives considered: Keep CSS-only hero art; wait for internal media API integration first.
 - Consequences: Visual impact is improved immediately, but there is dependency/risk on third-party image hosting until replaced with first-party media assets.
+
+- Date: 2026-02-25T09:43:00Z
+- Decision: Unify nested UI surfaces by replacing many boxed sub-panels with divider-based grouping.
+- Context: Current visual hierarchy felt fragmented due to repeated bordered cards in every subsection.
+- Alternatives considered: Keep existing panel/card density; remove all visual separators.
+- Consequences: UI reads as one cohesive canvas while preserving structure via subtle separators and lightweight surfaces.
