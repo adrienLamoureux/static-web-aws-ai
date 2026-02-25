@@ -51,12 +51,10 @@
   font-size: 0.75rem;
   font-weight: 600;
   padding: 0.4rem 0.95rem;
-  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
 .story-mode-button:hover {
   color: #1b1a17;
-  transform: translateY(-1px);
 }
 
 .story-mode-button.is-active {
@@ -126,7 +124,6 @@
   background: rgba(255, 255, 255, 0.7);
   display: grid;
   gap: 4px;
-  transition: border 0.2s ease, transform 0.2s ease;
 }
 
 .story-preset-card {
@@ -136,7 +133,6 @@
 
 .story-session-item:hover,
 .story-preset-card:hover {
-  transform: translateY(-1px);
   border-color: rgba(176, 141, 87, 0.6);
 }
 
@@ -180,13 +176,11 @@
   color: #8f2a2a;
   font-size: 0.72rem;
   padding: 6px 10px;
-  transition: border 0.2s ease, transform 0.2s ease;
   white-space: nowrap;
 }
 
 .story-session-delete:hover {
   border-color: rgba(176, 141, 87, 0.6);
-  transform: translateY(-1px);
 }
 
 .story-config-divider {
@@ -329,7 +323,6 @@
   color: #7a5d22;
   font-size: 0.75rem;
   font-weight: 600;
-  transition: transform 0.15s ease, background 0.15s ease, border 0.15s ease;
 }
 
 .story-chat-force-illustration {
@@ -339,7 +332,6 @@
 
 .story-chat-force-illustration:hover:not(:disabled),
 .story-scene-generate:hover:not(:disabled) {
-  transform: translateY(-1px);
   background: rgba(255, 248, 233, 0.95);
   border-color: rgba(176, 141, 87, 0.75);
 }

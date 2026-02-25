@@ -92,3 +92,9 @@ Use short ADR-style entries.
 - Context: Remaining motion effects were not desired and key Whisk labels/CTAs still appeared low-contrast due downstream style overrides.
 - Alternatives considered: Remove animations one-by-one; increase font weight only without forced color overrides.
 - Consequences: Motion is simplified to masonry only, and specified selectors stay readable regardless of stylesheet load order/specificity conflicts.
+
+- Date: 2026-02-25T15:06:00Z
+- Decision: Remove transition/animation code from active Pixnovel paths and utility classes; keep only masonry scroll keyframes/rule.
+- Context: A stricter no-motion policy was requested after earlier override-based suppression, requiring code-level removal rather than runtime neutralization.
+- Alternatives considered: Keep global `animation: none`/`transition: none` overrides; keep Tailwind animation utilities unused.
+- Consequences: Pixnovel behavior now has a single intentional motion source (masonry), with less CSS/utility ambiguity and fewer accidental motion regressions.

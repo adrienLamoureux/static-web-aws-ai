@@ -24,3 +24,4 @@ Track rollouts of the same improvement across multiple idea stacks.
 - 2026-02-25T14:29:18.808Z | action=deploy | improvement=pixnovel-masonry-color-calibration | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=d90f6d3
 - 2026-02-25T14:37:30.619Z | action=deploy | improvement=pixnovel-only-masonry-animation-white-text-force | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=5fc4036
 - 2026-02-25T14:42:00.510Z | action=deploy | improvement=pixnovel-masonry-only-white-text-hard-override | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=5fc4036
+- 2026-02-25T15:03:21.056Z | action=deploy | improvement=pixnovel-remove-all-motion-keep-masonry-only | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=1680cc6

@@ -172,7 +172,7 @@ function ImageGenerationPanel({
 
           {isGeneratingImage && (
             <div className="mt-4 flex items-center gap-3 text-xs pix-text-muted">
-              <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+              <span className="h-2.5 w-2.5 rounded-full border-2 border-accent border-t-transparent" />
               {imageGenerationNotice ||
                 "Rendering the image. This can take a bit..."}
             </div>

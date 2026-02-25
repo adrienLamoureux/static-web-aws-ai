@@ -1,5 +1,4 @@
 @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap");
-@import "./moescape.css";
 
 :root {
   --pix-bg-0: #070a1a;
@@ -37,7 +36,6 @@ body.theme-pixnovel::before {
     linear-gradient(rgba(116, 160, 255, 0.12) 1px, transparent 1px),
     linear-gradient(90deg, rgba(116, 160, 255, 0.12) 1px, transparent 1px);
   background-size: 30px 30px;
-  animation: pixGridMove 28s linear infinite;
 }
 
 body.theme-pixnovel::after {
@@ -58,7 +56,6 @@ body.theme-pixnovel::after {
   flex: 1 1 auto;
   width: 100%;
   padding-bottom: 0;
-  animation: pixFadeUp 620ms cubic-bezier(0.18, 0.72, 0.24, 1) both;
 }
 
 .pixnovel-atmosphere {
@@ -80,7 +77,6 @@ body.theme-pixnovel::after {
   right: -7vw;
   top: -11vw;
   background: radial-gradient(circle, rgba(115, 216, 255, 0.45), rgba(115, 216, 255, 0));
-  animation: pixOrbFloat 14s ease-in-out infinite;
 }
 
 .pixnovel-orb--two {
@@ -89,7 +85,6 @@ body.theme-pixnovel::after {
   left: -8vw;
   bottom: -13vw;
   background: radial-gradient(circle, rgba(132, 148, 255, 0.38), rgba(132, 148, 255, 0));
-  animation: pixOrbFloat 17s ease-in-out infinite reverse;
 }
 
 .pixnovel-grid-shimmer {
@@ -97,7 +92,6 @@ body.theme-pixnovel::after {
   inset: 0;
   background: linear-gradient(120deg, transparent 0%, rgba(115, 216, 255, 0.08) 42%, transparent 100%);
   transform: translateX(-34%);
-  animation: pixSweep 8.8s ease-in-out infinite;
 }
 
 .pixnovel-app-header {
@@ -142,16 +136,10 @@ body.theme-pixnovel::after {
   text-transform: uppercase;
   padding: 0.36rem 0.76rem;
   text-decoration: none;
-  transition:
-    color 180ms ease,
-    border-color 180ms ease,
-    background-color 180ms ease,
-    transform 180ms ease;
 }
 
 .pixnovel-top-link:hover {
   color: #ecf4ff;
-  transform: translateY(-1px);
 }
 
 .pixnovel-top-link.is-active {
@@ -270,7 +258,6 @@ body.theme-pixnovel::after {
   pointer-events: none;
   background: linear-gradient(120deg, transparent 20%, rgba(112, 195, 255, 0.14), transparent 82%);
   transform: translateX(-34%);
-  animation: pixSweep 7.8s ease-in-out infinite;
 }
 
 .pixnovel-hero-copy {
@@ -332,16 +319,11 @@ body.theme-pixnovel::after {
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  transition:
-    border-color 180ms ease,
-    color 180ms ease,
-    transform 180ms ease;
 }
 
 .pixnovel-hero-link:hover {
   border-color: rgba(115, 216, 255, 0.64);
   color: #f2f9ff;
-  transform: translateY(-1px);
 }
 
 .pixnovel-hero-link.is-active {
@@ -454,16 +436,11 @@ body.theme-pixnovel::after {
   line-height: 1.3;
   padding: 0.42rem 0.5rem;
   text-align: left;
-  transition:
-    border-color 180ms ease,
-    transform 180ms ease,
-    color 180ms ease;
 }
 
 .pixnovel-option-pill:hover {
   border-color: rgba(115, 216, 255, 0.58);
   color: #eef7ff;
-  transform: translateY(-1px);
 }
 
 .pixnovel-option-pill.is-active {
@@ -528,13 +505,9 @@ body.theme-pixnovel::after {
   letter-spacing: 0.05em;
   text-transform: uppercase;
   padding: 0.58rem 0.8rem;
-  transition:
-    transform 180ms ease,
-    box-shadow 180ms ease;
 }
 
 .pixnovel-generate-button:hover {
-  transform: translateY(-1px);
   box-shadow: 0 14px 24px -18px rgba(115, 216, 255, 0.82);
 }
 
@@ -546,7 +519,6 @@ body.theme-pixnovel::after {
   background: transparent;
   box-shadow: none;
   min-height: 78vh;
-  animation: pixFadeUp 520ms cubic-bezier(0.2, 0.72, 0.22, 1) both;
 }
 
 .pixnovel-stage-head {
@@ -750,7 +722,6 @@ body.theme-pixnovel::after {
   border-color: rgba(115, 216, 255, 0.74);
   background: rgba(16, 25, 56, 0.94);
   color: #ffffff;
-  transform: translateY(-1px);
 }
 
 .whisk-tile-plus {
@@ -1098,18 +1069,6 @@ body.theme-pixnovel .whisk-tile-cta:hover .whisk-tile-plus {
   color: #ffffff !important;
 }
 
-/* Keep only masonry image vertical scroll animation */
-body.theme-pixnovel *,
-body.theme-pixnovel *::before,
-body.theme-pixnovel *::after {
-  animation: none !important;
-  transition: none !important;
-}
-
-body.theme-pixnovel .pixnovel-masonry-column {
-  animation: pixMasonryUp var(--pix-masonry-duration) linear infinite !important;
-}
-
 /* Hard override for legacy warm story/music layers inside Pixnovel */
 .pixnovel-stage-body .story-page,
 .pixnovel-stage-body .music-library-page {
@@ -1302,53 +1261,11 @@ body.theme-pixnovel .pixnovel-masonry-column {
   }
 }
 
-@keyframes pixGridMove {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(30px);
-  }
-}
-
-@keyframes pixOrbFloat {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(0, 18px, 0) scale(1.05);
-  }
-}
-
-@keyframes pixSweep {
-  0%,
-  100% {
-    transform: translateX(-34%);
-    opacity: 0.16;
-  }
-  50% {
-    transform: translateX(34%);
-    opacity: 0.38;
-  }
-}
-
 @keyframes pixMasonryUp {
   from {
     transform: translateY(calc(var(--pix-masonry-start-offset) + 0%));
   }
   to {
     transform: translateY(calc(var(--pix-masonry-start-offset) - 50%));
-  }
-}
-
-@keyframes pixFadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }

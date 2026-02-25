@@ -8,7 +8,7 @@ function WhiskHero({
   isUploading,
 }) {
   return (
-    <header className="whisk-hero-block animate-fade-up">
+    <header className="whisk-hero-block">
       <p className="whisk-eyebrow">Whisk Studio</p>
       <h1 className="whisk-title-main">Intuitive studio for image-led motion</h1>
       <p className="whisk-subtitle-main">

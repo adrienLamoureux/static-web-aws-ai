@@ -3,7 +3,7 @@ import React from "react";
 function About() {
   return (
     <section className="gallery-shell">
-      <div className="gallery-hero animate-fade-up">
+      <div className="gallery-hero">
         <p className="gallery-kicker">About</p>
         <h1 className="gallery-title">
           Whisk Studio — static web app

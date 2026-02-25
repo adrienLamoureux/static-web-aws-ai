@@ -440,7 +440,7 @@ function PromptHelperForm({
 
       {isLoading && (
         <div className="mt-3 flex items-center gap-2 text-xs pix-text-muted">
-          <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+          <span className="h-2.5 w-2.5 rounded-full border-2 border-accent border-t-transparent" />
           Drafting a prompt with Haiku...
         </div>
       )}
