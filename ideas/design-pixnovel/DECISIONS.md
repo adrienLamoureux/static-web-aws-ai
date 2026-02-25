@@ -86,3 +86,9 @@ Use short ADR-style entries.
 - Context: Animated masonry images showed visible color drift (blue tones skewing purple) versus source assets.
 - Alternatives considered: Keep hue-rotate and tune only opacity; remove all hero color overlays.
 - Consequences: Visual tone remains cool, but underlying asset hues are preserved more faithfully.
+
+- Date: 2026-02-25T14:39:00Z
+- Decision: Disable all Pixnovel animations except masonry vertical scroll, and force high-contrast white for key Whisk selectors via theme-scoped overrides.
+- Context: Remaining motion effects were not desired and key Whisk labels/CTAs still appeared low-contrast due downstream style overrides.
+- Alternatives considered: Remove animations one-by-one; increase font weight only without forced color overrides.
+- Consequences: Motion is simplified to masonry only, and specified selectors stay readable regardless of stylesheet load order/specificity conflicts.

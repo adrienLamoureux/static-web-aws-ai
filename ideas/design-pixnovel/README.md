@@ -42,6 +42,7 @@
 - Whisk hero/status/video copy uses brighter near-white text and darker status pills for stronger readability on the dark shell.
 - Core Whisk CTA/status elements (`.whisk-wall-more`, `.whisk-tile-plus`) are now explicitly high-contrast for readability on image-heavy backgrounds.
 - Masonry image pipeline is color-calibrated to reduce purple shifts and preserve source hues.
+- Animation policy for Pixnovel is now restricted to masonry vertical image scrolling only; other theme animations are disabled.
 
 ## Architecture Touchpoints
 - Backend: no runtime behavior change.

@@ -1059,6 +1059,57 @@ body.theme-pixnovel::after {
   color: #eef6ff;
 }
 
+/* Force high-contrast Whisk headline/status/call-to-action text */
+body.theme-pixnovel .whisk-title-main,
+body.theme-pixnovel .whisk-subtitle-main,
+body.theme-pixnovel .whisk-pill,
+body.theme-pixnovel .whisk-wall-count,
+body.theme-pixnovel .whisk-wall-more,
+body.theme-pixnovel .whisk-panel-copy,
+body.theme-pixnovel .whisk-tile-plus {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  text-shadow: 0 1px 8px rgba(4, 10, 28, 0.72) !important;
+}
+
+body.theme-pixnovel .whisk-pill {
+  border-color: rgba(151, 179, 241, 0.7) !important;
+  background: rgba(7, 12, 30, 0.96) !important;
+}
+
+body.theme-pixnovel .whisk-wall-more {
+  border-color: rgba(151, 179, 241, 0.7) !important;
+  background: rgba(8, 13, 32, 0.95) !important;
+}
+
+body.theme-pixnovel .whisk-wall-more:hover {
+  border-color: rgba(115, 216, 255, 0.8) !important;
+  background: rgba(16, 25, 56, 0.96) !important;
+  color: #ffffff !important;
+}
+
+body.theme-pixnovel .whisk-tile-plus {
+  border-color: rgba(151, 179, 241, 0.72) !important;
+  background: radial-gradient(circle at 35% 30%, rgba(137, 181, 255, 0.38), rgba(9, 15, 35, 0.96)) !important;
+}
+
+body.theme-pixnovel .whisk-tile-cta:hover .whisk-tile-plus {
+  border-color: rgba(115, 216, 255, 0.82) !important;
+  color: #ffffff !important;
+}
+
+/* Keep only masonry image vertical scroll animation */
+body.theme-pixnovel *,
+body.theme-pixnovel *::before,
+body.theme-pixnovel *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+body.theme-pixnovel .pixnovel-masonry-column {
+  animation: pixMasonryUp var(--pix-masonry-duration) linear infinite !important;
+}
+
 /* Hard override for legacy warm story/music layers inside Pixnovel */
 .pixnovel-stage-body .story-page,
 .pixnovel-stage-body .music-library-page {

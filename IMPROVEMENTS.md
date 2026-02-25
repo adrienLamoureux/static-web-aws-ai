@@ -22,3 +22,5 @@ Track rollouts of the same improvement across multiple idea stacks.
 - 2026-02-25T13:54:41.018Z | action=deploy | improvement=pixnovel-whisk-text-contrast-boost | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=af4e7de
 - 2026-02-25T14:15:31.637Z | action=deploy | improvement=pixnovel-whisk-key-text-contrast-v2 | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=d809a8c
 - 2026-02-25T14:29:18.808Z | action=deploy | improvement=pixnovel-masonry-color-calibration | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=d90f6d3
+- 2026-02-25T14:37:30.619Z | action=deploy | improvement=pixnovel-only-masonry-animation-white-text-force | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=5fc4036
+- 2026-02-25T14:42:00.510Z | action=deploy | improvement=pixnovel-masonry-only-white-text-hard-override | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=5fc4036
