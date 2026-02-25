@@ -850,6 +850,162 @@ body.theme-pixnovel::after {
   color: #ff9ebf;
 }
 
+/* Popup/dialog and high-contrast text utilities */
+.pix-text-strong {
+  color: #eef6ff;
+}
+
+.pix-text-muted {
+  color: #c2cfea;
+}
+
+.pix-border-soft {
+  border-color: rgba(151, 179, 241, 0.46);
+}
+
+.theme-pixnovel .pix-dialog-backdrop,
+.theme-pixnovel .whisk-modal-backdrop {
+  background: rgba(2, 6, 18, 0.8);
+  backdrop-filter: blur(8px);
+}
+
+.theme-pixnovel .pix-dialog,
+.theme-pixnovel .whisk-modal {
+  border-color: rgba(159, 185, 243, 0.44);
+  background: linear-gradient(160deg, rgba(7, 11, 27, 0.95), rgba(13, 20, 43, 0.9));
+  box-shadow:
+    0 34px 80px -46px rgba(0, 0, 0, 0.96),
+    inset 0 1px 0 rgba(169, 198, 248, 0.14);
+  color: #eaf3ff;
+}
+
+.theme-pixnovel .pix-dialog .whisk-heading,
+.theme-pixnovel .pix-auth-dialog .auth-title {
+  color: #f5f9ff;
+}
+
+.theme-pixnovel .pix-dialog .whisk-label,
+.theme-pixnovel .pix-dialog .field-label,
+.theme-pixnovel .pix-auth-dialog .auth-eyebrow {
+  color: #93dcff;
+}
+
+.theme-pixnovel .pix-dialog .gallery-section {
+  border-color: rgba(151, 179, 241, 0.34);
+  background: rgba(9, 14, 34, 0.74);
+}
+
+.theme-pixnovel .pix-dialog .gallery-divider {
+  background: linear-gradient(
+    90deg,
+    rgba(115, 216, 255, 0.22),
+    rgba(143, 157, 255, 0.48),
+    rgba(115, 216, 255, 0.22)
+  );
+}
+
+.theme-pixnovel .pix-dialog .choice-tile {
+  border-color: rgba(151, 179, 241, 0.4);
+  background: rgba(11, 17, 39, 0.78);
+  color: #e8f2ff;
+}
+
+.theme-pixnovel .pix-dialog .choice-tile:hover {
+  box-shadow: 0 24px 50px -34px rgba(68, 138, 246, 0.4);
+}
+
+.theme-pixnovel .pix-dialog .choice-tile--active {
+  border-color: rgba(143, 157, 255, 0.72);
+  background: linear-gradient(145deg, rgba(13, 20, 44, 0.86), rgba(47, 72, 156, 0.46));
+}
+
+.theme-pixnovel .pix-dialog .field-input,
+.theme-pixnovel .pix-dialog .field-select,
+.theme-pixnovel .pix-dialog .field-textarea {
+  border-color: rgba(151, 179, 241, 0.42);
+  background: rgba(7, 12, 27, 0.92);
+  color: #eef6ff;
+}
+
+.theme-pixnovel .pix-dialog .field-input::placeholder,
+.theme-pixnovel .pix-dialog .field-textarea::placeholder {
+  color: rgba(182, 199, 233, 0.78);
+}
+
+.theme-pixnovel .pix-dialog .whisk-modal-close {
+  border-color: rgba(151, 179, 241, 0.56);
+  background: rgba(9, 15, 35, 0.84);
+  color: #e9f2ff;
+}
+
+.theme-pixnovel .pix-dialog .whisk-modal-close:hover {
+  border-color: rgba(115, 216, 255, 0.7);
+  background: rgba(16, 25, 57, 0.9);
+}
+
+.theme-pixnovel .pix-dialog .whisk-selected-preview {
+  border-color: rgba(151, 179, 241, 0.38);
+  background: rgba(8, 13, 32, 0.72);
+}
+
+.theme-pixnovel .pix-dialog .whisk-selected-preview img {
+  border-color: rgba(151, 179, 241, 0.44);
+}
+
+.theme-pixnovel .pix-dialog .whisk-selecting {
+  color: #c2cfea;
+}
+
+.theme-pixnovel .pix-dialog .whisk-selecting--error,
+.theme-pixnovel .pix-auth-dialog .auth-error {
+  color: #ff9fbe;
+}
+
+.theme-pixnovel .pix-dialog .btn-primary,
+.theme-pixnovel .pix-dialog .btn-accent,
+.theme-pixnovel .pix-auth-dialog .btn-primary {
+  color: #eef6ff;
+}
+
+.theme-pixnovel .auth-shell {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(115, 216, 255, 0.18), transparent 38%),
+    radial-gradient(circle at 82% 16%, rgba(143, 157, 255, 0.2), transparent 36%),
+    linear-gradient(150deg, #040713 0%, #0b1230 52%, #132049 100%);
+}
+
+.theme-pixnovel .pix-auth-dialog {
+  border-color: rgba(159, 185, 243, 0.5);
+  background: linear-gradient(160deg, rgba(8, 12, 29, 0.94), rgba(13, 21, 47, 0.9));
+  box-shadow:
+    0 34px 80px -44px rgba(0, 0, 0, 0.94),
+    inset 0 1px 0 rgba(172, 198, 246, 0.14);
+}
+
+.theme-pixnovel .pix-auth-dialog::before {
+  background: radial-gradient(circle, rgba(115, 216, 255, 0.24), rgba(115, 216, 255, 0));
+}
+
+.theme-pixnovel .pix-auth-dialog::after {
+  background: radial-gradient(circle, rgba(143, 157, 255, 0.24), rgba(143, 157, 255, 0));
+}
+
+.theme-pixnovel .pix-auth-dialog .auth-copy,
+.theme-pixnovel .pix-auth-dialog .auth-meta,
+.theme-pixnovel .pix-auth-dialog .auth-loading {
+  color: #c2cfea;
+}
+
+.theme-pixnovel .whisk-lightbox {
+  background: rgba(2, 6, 17, 0.9);
+}
+
+.theme-pixnovel .whisk-lightbox-close {
+  border-color: rgba(151, 179, 241, 0.56);
+  background: rgba(7, 12, 30, 0.84);
+  color: #eef6ff;
+}
+
 /* Hard override for legacy warm story/music layers inside Pixnovel */
 .pixnovel-stage-body .story-page,
 .pixnovel-stage-body .music-library-page {

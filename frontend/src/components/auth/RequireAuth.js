@@ -9,7 +9,7 @@ function RequireAuth({ children }) {
   if (isLoading) {
     return (
       <div className="auth-shell">
-        <div className="auth-card glass-panel">
+        <div className="auth-card pix-auth-dialog glass-panel">
           <p className="auth-loading">Checking session…</p>
         </div>
       </div>

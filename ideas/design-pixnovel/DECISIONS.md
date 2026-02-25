@@ -62,3 +62,9 @@ Use short ADR-style entries.
 - Context: Even after palette updates, the UI still showed yellow/beige cast because route-level Story/Music CSS retained warm colors and panel states.
 - Alternatives considered: Keep portrait and only tune root gradients; rewrite Story/Music component CSS directly.
 - Consequences: Hero is visually unified, warm tint is removed at the shell level, and route contracts remain unchanged while keeping overrides isolated to the Pixnovel stage.
+
+- Date: 2026-02-25T12:08:00Z
+- Decision: Introduce dedicated dialog/auth contrast classes and replace hardcoded warm utility text colors in modal form components.
+- Context: Popup/dialog readability remained inconsistent against the dark Pixnovel background due inherited warm text classes and translucent light modal surfaces.
+- Alternatives considered: Only darken modal container background; keep existing inline utility colors.
+- Consequences: Dialogs/auth views now have coherent dark surfaces and mostly white text, with semantic utility classes (`pix-text-*`) simplifying future contrast tuning.

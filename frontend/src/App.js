@@ -517,7 +517,7 @@ function App() {
   if (!isReady) {
     return (
       <div className="auth-shell">
-        <div className="auth-card glass-panel">
+        <div className="auth-card pix-auth-dialog glass-panel">
           <p className="auth-loading">Loading configuration...</p>
         </div>
       </div>

@@ -38,6 +38,7 @@
 - Standalone app header is removed; navigation and sign-out controls now live in the top row of the PixNovel hero panel.
 - Detached hero portrait panel is removed to keep one continuous full-width hero surface.
 - Ambient gradients and masonry tinting are shifted to cooler blue/violet tones to avoid warm/yellow cast.
+- Modal/dialog surfaces (Whisk generation modal and auth cards) now use dedicated high-contrast styling with dark backdrops and mostly white text for readability.
 
 ## Architecture Touchpoints
 - Backend: no runtime behavior change.

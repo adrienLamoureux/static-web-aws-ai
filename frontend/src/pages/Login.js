@@ -19,7 +19,7 @@ function Login() {
 
   return (
     <section className="auth-shell">
-      <div className="auth-card glass-panel">
+      <div className="auth-card pix-auth-dialog glass-panel">
         <p className="auth-eyebrow">Whisk Studio</p>
         <h1 className="auth-title">Sign in to continue</h1>
         <p className="auth-copy">

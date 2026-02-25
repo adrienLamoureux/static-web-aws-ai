@@ -50,10 +50,10 @@ function ImageGenerationPanel({
                     isSelected ? "choice-tile--active" : ""
                   }`}
                 >
-                  <p className="text-sm font-semibold text-ink">
+                  <p className="text-sm font-semibold pix-text-strong">
                     {option.name}
                   </p>
-                  <p className="mt-1 text-xs text-[#7a6a51]">
+                  <p className="mt-1 text-xs pix-text-muted">
                     {option.description}
                   </p>
                 </button>
@@ -70,7 +70,7 @@ function ImageGenerationPanel({
             onChange={(event) => onImageNameChange(event.target.value)}
             placeholder="frieren"
           />
-          <p className="mt-2 text-xs text-[#7a6a51]">
+          <p className="mt-2 text-xs pix-text-muted">
             Used for generated image and video filenames.
           </p>
         </div>
@@ -130,7 +130,7 @@ function ImageGenerationPanel({
               ))}
             </select>
             {imageScheduler === "diff" && (
-              <p className="mt-2 text-xs text-[#7a6a51]">
+              <p className="mt-2 text-xs pix-text-muted">
                 Both schedulers selected. Generating two images.
               </p>
             )}
@@ -171,7 +171,7 @@ function ImageGenerationPanel({
           </div>
 
           {isGeneratingImage && (
-            <div className="mt-4 flex items-center gap-3 text-xs text-[#7a6a51]">
+            <div className="mt-4 flex items-center gap-3 text-xs pix-text-muted">
               <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
               {imageGenerationNotice ||
                 "Rendering the image. This can take a bit..."}
