@@ -37,6 +37,7 @@ const TEMPLATE_FILES = [
 const SUPPORTED_COMMANDS = new Set([
   "init",
   "deploy",
+  "ui-local",
   "destroy",
   "diff",
   "synth",
@@ -56,6 +57,7 @@ Usage:
   npm --prefix cdk run idea:list
   npm --prefix cdk run idea:init -- --stage=<idea-id> [--title="<idea title>"]
   npm --prefix cdk run idea:deploy -- --stage=<idea-id> [--improvement="<name>"] [--owner="<owner>"] [--ttl-days=<days>] [--skip-build] [--skip-sanity] [--dry-run]
+  npm --prefix cdk run idea:ui-local -- --stage=<idea-id> [--port=<port>] [--open] [--print-env] [--dry-run]
   npm --prefix cdk run idea:sanity -- --stage=<idea-id>
   npm --prefix cdk run idea:ui-smoke -- --stage=<idea-id>
   npm --prefix cdk run idea:destroy -- --stage=<idea-id> [--dry-run]
@@ -150,6 +152,19 @@ if (command === "deploy") {
         commit: deployResult.commit,
       });
     }
+  });
+  process.exit(0);
+}
+
+if (command === "ui-local") {
+  const stage = resolveRequiredStage(options.stage);
+  const port = resolveOptionalPort(options.port);
+  runUiLocal({
+    stage,
+    port,
+    openBrowser: options.open,
+    printEnv: options.printEnv,
+    dryRun: options.dryRun,
   });
   process.exit(0);
 }
@@ -402,9 +417,12 @@ function parseArgs(args) {
     improvement: "",
     owner: "",
     ttlDays: "",
+    port: "",
     skipBuild: false,
     skipSanity: false,
     skipUiSmoke: false,
+    open: false,
+    printEnv: false,
     all: false,
     continueOnError: false,
     dryRun: false,
@@ -426,6 +444,14 @@ function parseArgs(args) {
     }
     if (arg === "--all") {
       parsed.all = true;
+      continue;
+    }
+    if (arg === "--open") {
+      parsed.open = true;
+      continue;
+    }
+    if (arg === "--print-env") {
+      parsed.printEnv = true;
       continue;
     }
     if (arg === "--continue-on-error") {
@@ -499,6 +525,15 @@ function parseArgs(args) {
       index += 1;
       continue;
     }
+    if (arg.startsWith("--port=")) {
+      parsed.port = arg.slice("--port=".length);
+      continue;
+    }
+    if (arg === "--port") {
+      parsed.port = String(args[index + 1] || "");
+      index += 1;
+      continue;
+    }
     fail(`Unknown argument "${arg}".\n${usage}`);
   }
 
@@ -558,6 +593,19 @@ function resolveOptionalTtlDays(rawTtlDays) {
   if (!value) return "";
   if (!TTL_DAYS_PATTERN.test(value)) {
     fail(`--ttl-days must be a non-negative integer, received "${value}".`);
+  }
+  return value;
+}
+
+function resolveOptionalPort(rawPort) {
+  const value = String(rawPort || "").trim();
+  if (!value) return "";
+  if (!/^[0-9]+$/.test(value)) {
+    fail(`--port must be a numeric TCP port, received "${value}".`);
+  }
+  const asNumber = Number(value);
+  if (!Number.isInteger(asNumber) || asNumber < 1 || asNumber > 65535) {
+    fail(`--port must be within 1-65535, received "${value}".`);
   }
   return value;
 }
@@ -1031,24 +1079,8 @@ ${line}
 }
 
 function readCdkOutputs({ outputsPath, stackId }) {
-  if (!fs.existsSync(outputsPath)) {
-    return {
-      cloudfrontUrl: "-",
-      apiEndpoint: "-",
-    };
-  }
-  const raw = fs.readFileSync(outputsPath, "utf8");
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch (error) {
-    return {
-      cloudfrontUrl: "-",
-      apiEndpoint: "-",
-    };
-  }
-  const stackOutputs = parsed[stackId] || parsed[Object.keys(parsed)[0] || ""];
-  const cloudfrontDomain = stackOutputs?.CloudFrontURL || "-";
+  const stackOutputs = readStackOutputsFile({ outputsPath, stackId });
+  const cloudfrontDomain = stackOutputs.CloudFrontURL || "-";
   const cloudfrontUrl =
     cloudfrontDomain && cloudfrontDomain !== "-"
       ? cloudfrontDomain.startsWith("http")
@@ -1057,8 +1089,190 @@ function readCdkOutputs({ outputsPath, stackId }) {
       : "-";
   return {
     cloudfrontUrl,
-    apiEndpoint: stackOutputs?.APIEndpoint || "-",
+    apiEndpoint: stackOutputs.APIEndpoint || "-",
   };
+}
+
+function readStackOutputsFile({ outputsPath, stackId }) {
+  if (!fs.existsSync(outputsPath)) return {};
+  const raw = fs.readFileSync(outputsPath, "utf8");
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (error) {
+    return {};
+  }
+  if (!parsed || typeof parsed !== "object") return {};
+  const stackOutputs = parsed[stackId] || parsed[Object.keys(parsed)[0] || ""];
+  if (!stackOutputs || typeof stackOutputs !== "object") return {};
+  return stackOutputs;
+}
+
+function readStackOutputsFromAws({ stackId }) {
+  const result = spawnSync(
+    "aws",
+    [
+      "cloudformation",
+      "describe-stacks",
+      "--stack-name",
+      stackId,
+      "--output",
+      "json",
+    ],
+    {
+      cwd: ROOT_DIR,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      env: process.env,
+    }
+  );
+  if (result.error || result.status !== 0) {
+    return {};
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(result.stdout || "{}");
+  } catch (error) {
+    return {};
+  }
+  const outputsList = parsed?.Stacks?.[0]?.Outputs;
+  if (!Array.isArray(outputsList)) return {};
+
+  return outputsList.reduce((accumulator, output) => {
+    if (!output?.OutputKey) return accumulator;
+    accumulator[String(output.OutputKey)] = String(output.OutputValue || "");
+    return accumulator;
+  }, {});
+}
+
+function normalizeCloudfrontUrl(rawValue) {
+  const value = String(rawValue || "").trim();
+  if (!value || value === "-") return "";
+  return value.startsWith("http") ? value : `https://${value}`;
+}
+
+function normalizeCognitoDomain(rawValue) {
+  const value = String(rawValue || "").trim().replace(/\/+$/, "");
+  if (!value || value === "-") return "";
+  return value.startsWith("http") ? value : `https://${value}`;
+}
+
+function resolveUiRuntimeConfig({ stage, stackId, outputsPath }) {
+  const fileOutputs = readStackOutputsFile({ outputsPath, stackId });
+  const awsOutputs = readStackOutputsFromAws({ stackId });
+  const combined = {
+    ...fileOutputs,
+    ...awsOutputs,
+  };
+
+  const apiEndpoint = String(
+    combined.APIEndpoint ||
+      combined.ApiGatewayEndpoint5AA8EC3A ||
+      combined.ApiGatewayEndpoint ||
+      ""
+  ).trim();
+  const cognitoDomain = normalizeCognitoDomain(combined.CognitoDomain);
+  const clientId = String(combined.UserPoolClientId || "").trim();
+  const userPoolId = String(combined.UserPoolId || "").trim();
+  const region = String(combined.Region || combined.AWS_REGION || "").trim() ||
+    (userPoolId.includes("_") ? userPoolId.split("_")[0] : "");
+  const cloudfrontUrl = normalizeCloudfrontUrl(combined.CloudFrontURL);
+  const source = Object.keys(awsOutputs).length > 0 ? "aws-cloudformation" : "local-outputs";
+
+  const missing = [
+    apiEndpoint ? "" : "APIEndpoint",
+    cognitoDomain ? "" : "CognitoDomain",
+    clientId ? "" : "UserPoolClientId",
+    userPoolId ? "" : "UserPoolId",
+    region ? "" : "Region",
+  ].filter(Boolean);
+
+  if (missing.length > 0) {
+    fail(
+      [
+        `Cannot start local UI for stage "${stage}" because runtime outputs are incomplete.`,
+        `Missing: ${missing.join(", ")}.`,
+        `Deploy or refresh stack outputs first: npm --prefix cdk run idea:deploy -- --stage=${stage} --improvement="refresh-runtime-outputs"`,
+      ].join(" ")
+    );
+  }
+
+  return {
+    source,
+    apiEndpoint,
+    cognitoDomain,
+    clientId,
+    userPoolId,
+    region,
+    cloudfrontUrl,
+  };
+}
+
+function runUiLocal({ stage, port, openBrowser, printEnv, dryRun }) {
+  const stackId = buildStackId(stage);
+  const ideaDir = path.join(IDEAS_DIR, stage);
+  if (!fs.existsSync(ideaDir)) {
+    fail(
+      [
+        `Unknown idea stage "${stage}".`,
+        `Initialize and deploy first: npm --prefix cdk run idea:init -- --stage=${stage} --title="${stage}"`,
+      ].join(" ")
+    );
+  }
+  const runtime = resolveUiRuntimeConfig({
+    stage,
+    stackId,
+    outputsPath: path.join(ideaDir, OUTPUTS_FILE_NAME),
+  });
+  const resolvedPort = port || String(process.env.PORT || "3000");
+  const envForFrontend = {
+    ...process.env,
+    REACT_APP_API_URL: runtime.apiEndpoint,
+    REACT_APP_COGNITO_DOMAIN: runtime.cognitoDomain,
+    REACT_APP_COGNITO_CLIENT_ID: runtime.clientId,
+    REACT_APP_COGNITO_USER_POOL_ID: runtime.userPoolId,
+    REACT_APP_COGNITO_REGION: runtime.region,
+    PORT: resolvedPort,
+    BROWSER: openBrowser ? String(process.env.BROWSER || "") : "none",
+  };
+
+  const envLines = [
+    `REACT_APP_API_URL=${runtime.apiEndpoint}`,
+    `REACT_APP_COGNITO_DOMAIN=${runtime.cognitoDomain}`,
+    `REACT_APP_COGNITO_CLIENT_ID=${runtime.clientId}`,
+    `REACT_APP_COGNITO_USER_POOL_ID=${runtime.userPoolId}`,
+    `REACT_APP_COGNITO_REGION=${runtime.region}`,
+    `PORT=${resolvedPort}`,
+    `BROWSER=${envForFrontend.BROWSER || "(default)"}`,
+  ];
+
+  info(
+    `ui-local stage=${stage} | stack=${stackId} | source=${runtime.source} | cloudfront=${
+      runtime.cloudfrontUrl || "-"
+    }`
+  );
+  envLines.forEach((line) => info(line));
+
+  if (dryRun || printEnv) {
+    return;
+  }
+
+  info(`Starting local frontend at http://localhost:${resolvedPort}`);
+  const result = spawnSync("npm", ["--prefix", "frontend", "run", "start"], {
+    cwd: ROOT_DIR,
+    stdio: "inherit",
+    env: envForFrontend,
+  });
+  if (result.error) {
+    throw new Error(`Failed to start local frontend: ${result.error.message}`);
+  }
+  if (result.signal && (result.signal === "SIGINT" || result.signal === "SIGTERM")) {
+    return;
+  }
+  if (result.status !== 0) {
+    throw new Error(`Local frontend exited with code ${String(result.status || 1)}`);
+  }
 }
 
 function runSanityChecks({ stage, stackId, cloudfrontUrl, apiEndpoint }) {
