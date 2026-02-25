@@ -199,6 +199,58 @@ body::after {
   overflow: hidden;
 }
 
+.pixnovel-hero-masonry {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.pixnovel-hero-masonry::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(7, 11, 25, 0.8) 0%, rgba(7, 11, 25, 0.18) 36%, rgba(7, 11, 25, 0.64) 100%),
+    radial-gradient(circle at 40% 20%, rgba(115, 216, 255, 0.12), transparent 44%);
+}
+
+.pixnovel-masonry-grid {
+  position: absolute;
+  inset: 0;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pixnovel-masonry-column {
+  display: grid;
+  gap: 12px;
+  transform: translateY(var(--pix-masonry-start-offset));
+  animation: pixMasonryUp var(--pix-masonry-duration) linear infinite;
+  will-change: transform;
+}
+
+.pixnovel-masonry-card {
+  margin: 0;
+  position: relative;
+  aspect-ratio: 588 / 980;
+  border-radius: 14px;
+  border: 1px solid rgba(161, 185, 242, 0.32);
+  overflow: hidden;
+  box-shadow: 0 22px 32px -26px rgba(6, 10, 26, 0.94);
+}
+
+.pixnovel-masonry-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: saturate(1.1) contrast(1.06);
+}
+
 .pixnovel-hero::after {
   content: "";
   position: absolute;
@@ -211,7 +263,7 @@ body::after {
 
 .pixnovel-hero-copy {
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .pixnovel-hero-kicker {
@@ -302,7 +354,7 @@ body::after {
 
 .pixnovel-hero-visual {
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .pixnovel-hero-portrait {
@@ -878,6 +930,18 @@ body::after {
     grid-template-columns: 1fr;
   }
 
+  .pixnovel-hero-masonry {
+    opacity: 0.42;
+  }
+
+  .pixnovel-masonry-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pixnovel-masonry-column:nth-child(3) {
+    display: none;
+  }
+
   .pixnovel-hero-portrait {
     min-height: 212px;
   }
@@ -894,6 +958,10 @@ body::after {
 
   .pixnovel-hero {
     padding: 14px;
+  }
+
+  .pixnovel-hero-masonry {
+    display: none;
   }
 
   .pixnovel-stage-head {
@@ -929,6 +997,15 @@ body::after {
   50% {
     transform: translateX(34%);
     opacity: 0.38;
+  }
+}
+
+@keyframes pixMasonryUp {
+  from {
+    transform: translateY(calc(var(--pix-masonry-start-offset) + 0%));
+  }
+  to {
+    transform: translateY(calc(var(--pix-masonry-start-offset) - 50%));
   }
 }
 

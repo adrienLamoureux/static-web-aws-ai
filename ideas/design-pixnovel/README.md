@@ -12,6 +12,7 @@
 - In scope:
   - New hybrid shell layout for authenticated pages.
   - PixAI-style hero with anime-inspired portrait treatment.
+  - PixAI-style animated masonry stream with bottom-to-top image motion.
   - NovelAI-style generation control menu and render queue side rail.
   - Responsive behavior for desktop/tablet/mobile.
 - Out of scope:
@@ -29,6 +30,8 @@
 - Existing Whisk/Story/Music/About features remain intact in the center stage panel.
 - New generator menu mirrors advanced image-generation UX patterns.
 - New hero/nav/feed surfaces provide visual differentiation for this idea branch.
+- Hero now includes an animated three-column image stream with independent scroll speeds and offsets.
+- Masonry stream is hidden on small mobile viewports to preserve readability and performance.
 
 ## Architecture Touchpoints
 - Backend: no runtime behavior change.
@@ -43,5 +46,5 @@
 
 ## Handoff Notes For Sub-Agents
 - Current priority: evaluate UX quality and readability on live stack.
-- Known blockers: generation controls are currently visual-only (not wired to generation settings).
-- Next smallest shippable increment: bind control menu values to existing image-generation request payload fields.
+- Known blockers: generation controls are currently visual-only (not wired to generation settings); masonry images are external prototype URLs.
+- Next smallest shippable increment: replace external masonry sources with first-party media from seeded stack assets and bind control panel values to generation payload fields.

@@ -26,3 +26,9 @@ Use short ADR-style entries.
 - Context: Project policy requires runtime changes to be validated post-deploy.
 - Alternatives considered: Local build-only validation.
 - Consequences: Live stack has automated verification and a reproducible deployment record.
+
+- Date: 2026-02-25T09:32:00Z
+- Decision: Add PixAI-inspired animated masonry stream in hero with external prototype image URLs.
+- Context: The design objective shifted to stronger visual density and obvious bottom-to-top image motion.
+- Alternatives considered: Keep CSS-only hero art; wait for internal media API integration first.
+- Consequences: Visual impact is improved immediately, but there is dependency/risk on third-party image hosting until replaced with first-party media assets.

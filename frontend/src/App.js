@@ -62,6 +62,59 @@ const PIXNOVEL_STYLE_TAGS = [
   "#storyframe",
 ];
 
+const PIXNOVEL_MASONRY_BASE_IMAGES = [
+  {
+    id: "ea7018c3",
+    src: "https://images-ng.pixai.art/images/orig/ea7018c3-eb73-41f7-aae6-0080cc2ef6b3",
+  },
+  {
+    id: "9067cc18",
+    src: "https://images-ng.pixai.art/images/orig/9067cc18-7378-4499-9da2-38c30d1ee560",
+  },
+  {
+    id: "2c9d0346",
+    src: "https://images-ng.pixai.art/images/orig/2c9d0346-8b5b-4486-94b7-f862c9ceb74d",
+  },
+  {
+    id: "c47362e0",
+    src: "https://images-ng.pixai.art/images/orig/c47362e0-18ff-4703-9352-95b2164154d4",
+  },
+];
+
+const PIXNOVEL_MASONRY_COLUMNS = [
+  {
+    id: "column-a",
+    durationSeconds: 54,
+    startOffset: "0%",
+  },
+  {
+    id: "column-b",
+    durationSeconds: 58,
+    startOffset: "-11%",
+  },
+  {
+    id: "column-c",
+    durationSeconds: 63,
+    startOffset: "-22%",
+  },
+];
+
+const PIXNOVEL_MASONRY_REPEAT_COUNT = 3;
+
+const buildLoopedMasonryImages = (images, repeatCount) => {
+  const safeRepeatCount = Math.max(1, repeatCount);
+  return Array.from({ length: safeRepeatCount }, (_, repeatIndex) => repeatIndex).reduce(
+    (accumulator, repeatIndex) =>
+      accumulator.concat(
+        images.map((image) => ({
+          ...image,
+          loopId: `${image.id}-${repeatIndex}`,
+        }))
+      ),
+    []
+  );
+};
+
 const PIXNOVEL_REFERENCE_MODES = [
   "Character reference",
   "Style reference",
@@ -95,6 +148,11 @@ const PIXNOVEL_QUEUE_ITEMS = [
     detail: "Upscale pending",
   },
 ];
+
+const PIXNOVEL_MASONRY_IMAGES = buildLoopedMasonryImages(
+  PIXNOVEL_MASONRY_BASE_IMAGES,
+  PIXNOVEL_MASONRY_REPEAT_COUNT
+);
 
 const resolveActivePane = (pathname) => {
   if (pathname === "/" || pathname === "/whisk") {
@@ -184,9 +242,35 @@ const PixnovelGenerationMenu = () => {
   );
 };
 
+const PixnovelHeroMasonry = () => {
+  return (
+    <div className="pixnovel-hero-masonry" aria-hidden="true">
+      <div className="pixnovel-masonry-grid">
+        {PIXNOVEL_MASONRY_COLUMNS.map((column) => (
+          <div
+            key={column.id}
+            className="pixnovel-masonry-column"
+            style={{
+              "--pix-masonry-duration": `${column.durationSeconds}s`,
+              "--pix-masonry-start-offset": column.startOffset,
+            }}
+          >
+            {PIXNOVEL_MASONRY_IMAGES.map((image) => (
+              <figure key={`${column.id}-${image.loopId}`} className="pixnovel-masonry-card">
+                <img src={image.src} alt="" loading="lazy" decoding="async" />
+              </figure>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const PixnovelHero = ({ activePane }) => {
   return (
     <section className="pixnovel-hero" aria-label="Creative hero section">
+      <PixnovelHeroMasonry />
       <div className="pixnovel-hero-copy">
         <p className="pixnovel-hero-kicker">PixNovel Studio</p>
         <h1 className="pixnovel-hero-title">
