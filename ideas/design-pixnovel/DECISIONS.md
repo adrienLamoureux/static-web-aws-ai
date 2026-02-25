@@ -68,3 +68,9 @@ Use short ADR-style entries.
 - Context: Popup/dialog readability remained inconsistent against the dark Pixnovel background due inherited warm text classes and translucent light modal surfaces.
 - Alternatives considered: Only darken modal container background; keep existing inline utility colors.
 - Consequences: Dialogs/auth views now have coherent dark surfaces and mostly white text, with semantic utility classes (`pix-text-*`) simplifying future contrast tuning.
+
+- Date: 2026-02-25T13:56:00Z
+- Decision: Increase contrast for Whisk hero/status/video copy and force darker status-pill surfaces on the Pixnovel theme.
+- Context: Key landing texts (`Whisk Studio`, subtitle, library status, counts, videos-empty state) were still perceived as low-contrast.
+- Alternatives considered: Only increase font size/weight; selectively brighten individual JSX nodes inline.
+- Consequences: Readability is improved globally through theme rules, keeping components clean and avoiding scattered inline color overrides.

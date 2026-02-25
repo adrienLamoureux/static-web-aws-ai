@@ -39,6 +39,7 @@
 - Detached hero portrait panel is removed to keep one continuous full-width hero surface.
 - Ambient gradients and masonry tinting are shifted to cooler blue/violet tones to avoid warm/yellow cast.
 - Modal/dialog surfaces (Whisk generation modal and auth cards) now use dedicated high-contrast styling with dark backdrops and mostly white text for readability.
+- Whisk hero/status/video copy uses brighter near-white text and darker status pills for stronger readability on the dark shell.
 
 ## Architecture Touchpoints
 - Backend: no runtime behavior change.

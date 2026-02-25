@@ -654,7 +654,7 @@ body.theme-pixnovel::after {
 .music-library-item-title,
 .whisk-action-title,
 .whisk-video-title {
-  color: #f2f7ff;
+  color: #f9fcff;
 }
 
 .whisk-subtitle,
@@ -699,7 +699,7 @@ body.theme-pixnovel::after {
 .auth-meta,
 .auth-loading,
 .nav-user-email {
-  color: #b4c0e3;
+  color: #dce7ff;
 }
 
 .whisk-eyebrow,
@@ -712,6 +712,28 @@ body.theme-pixnovel::after {
 .music-library-eyebrow,
 .auth-eyebrow {
   color: #84d8ff;
+}
+
+.whisk-eyebrow {
+  color: #e7f1ff;
+  text-shadow: 0 0 14px rgba(125, 169, 255, 0.26);
+}
+
+.whisk-pill {
+  border-color: rgba(151, 179, 241, 0.56);
+  background: rgba(11, 18, 40, 0.86);
+  color: #f1f7ff;
+}
+
+.whisk-subtitle-main,
+.whisk-panel-copy,
+.whisk-wall-count {
+  color: #e6efff;
+}
+
+.whisk-title,
+.whisk-title-main {
+  color: #fcfdff;
 }
 
 .gallery-panel,
