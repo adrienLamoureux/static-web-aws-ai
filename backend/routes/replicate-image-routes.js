@@ -1,6 +1,9 @@
+const { buildDirectorFallbackConfig } = require("../lib/director-config");
+
 module.exports = (app, deps) => {
   const {
     replicateModelConfig,
+    replicateVideoConfig,
     replicateClient,
     buildSeedList,
     buildImageBatchId,
@@ -18,22 +21,57 @@ module.exports = (app, deps) => {
     runReplicateWithRetry,
     getReplicateOutputUrl,
     buildReplicatePredictionRequest,
+    DEFAULT_NEGATIVE_PROMPT,
   } = deps;
+
+const buildImageJobKey = (predictionId = "") =>
+  `render/replicate/image/${predictionId || Date.now()}`;
+
+const parseOptionalInteger = (value, fallback) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.round(parsed) : fallback;
+};
+
+const resolveModelDefault = (requestedModel, fallbackModel) => {
+  const candidate = String(requestedModel || "").trim();
+  if (!candidate) return fallbackModel;
+  return candidate;
+};
+
+const hasBodyField = (body, key) =>
+  Boolean(body && Object.prototype.hasOwnProperty.call(body, key));
+
+const directorFallbackConfig = buildDirectorFallbackConfig({
+  replicateModelConfig,
+  replicateVideoConfig,
+  defaultNegativePrompt: DEFAULT_NEGATIVE_PROMPT,
+});
 
 app.post("/replicate/image/generate", async (req, res) => {
   const mediaBucket = process.env.MEDIA_BUCKET;
   const userId = req.user?.sub;
   const apiToken = process.env.REPLICATE_API_TOKEN;
-  const modelKey = req.body?.model || "animagine";
+  const modelKey = resolveModelDefault(
+    req.body?.model,
+    directorFallbackConfig.generation.imageModel
+  );
   const imageName = req.body?.imageName?.trim();
   const prompt = req.body?.prompt?.trim();
-  const negativePrompt = req.body?.negativePrompt?.trim();
+  const negativePrompt = hasBodyField(req.body, "negativePrompt")
+    ? req.body?.negativePrompt?.trim()
+    : directorFallbackConfig.generation.negativePrompt;
   const maxPromptLength = 900;
-  const width = Number(req.body?.width) || 1024;
-  const height = Number(req.body?.height) || 1024;
-  const scheduler = req.body?.scheduler;
+  const width = parseOptionalInteger(
+    req.body?.width,
+    directorFallbackConfig.generation.imageWidth
+  );
+  const height = parseOptionalInteger(
+    req.body?.height,
+    directorFallbackConfig.generation.imageHeight
+  );
+  const requestedScheduler = String(req.body?.scheduler || "").trim();
   const requestedImages = Number(req.body?.numImages) || 1;
-  const isDiffScheduler = scheduler === "diff";
+  const isDiffScheduler = requestedScheduler === "diff";
   const numImages = Math.min(
     Math.max(isDiffScheduler ? 2 : requestedImages, 1),
     2
@@ -116,6 +154,7 @@ app.post("/replicate/image/generate", async (req, res) => {
       message: `Replicate modelId is not configured for ${modelKey}`,
     });
   }
+  const scheduler = requestedScheduler || modelConfig.schedulers?.[0];
   const sizeAllowed = modelConfig.sizes?.some(
     (size) => size.width === width && size.height === height
   );
@@ -137,6 +176,7 @@ app.post("/replicate/image/generate", async (req, res) => {
 
   try {
     if (modelConfig.usePredictions) {
+      let prediction = null;
       const resolvedSeed = Number.isFinite(Number(seed))
         ? Number(seed)
         : undefined;
@@ -157,7 +197,7 @@ app.post("/replicate/image/generate", async (req, res) => {
         modelId: modelConfig.modelId,
         input,
       });
-      const prediction = await replicateClient.predictions.create(
+      prediction = await replicateClient.predictions.create(
         predictionRequest,
         {
           headers: {
@@ -171,7 +211,25 @@ app.post("/replicate/image/generate", async (req, res) => {
           message: "No prediction returned from Replicate",
         });
       }
+      const jobKey = buildImageJobKey(prediction.id);
       if (prediction.status !== "succeeded") {
+        await putMediaItem({
+          userId,
+          type: "JOB",
+          key: jobKey,
+          extra: {
+            provider: "replicate",
+            entityType: "image",
+            predictionId: prediction.id,
+            imageName,
+            batchId,
+            status: prediction.status,
+            progressPct: prediction.status === "starting" ? 18 : 42,
+            etaSeconds: 75,
+            startedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+        });
         return res.json({
           modelId: modelConfig.modelId,
           provider: "replicate",
@@ -223,6 +281,24 @@ app.post("/replicate/image/generate", async (req, res) => {
           return { key, url: signedUrl };
         })
       );
+      await putMediaItem({
+        userId,
+        type: "JOB",
+        key: jobKey,
+        extra: {
+          provider: "replicate",
+          entityType: "image",
+          predictionId: prediction.id,
+          imageName,
+          batchId,
+          status: "completed",
+          progressPct: 100,
+          etaSeconds: 0,
+          startedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      });
       return res.json({
         modelId: modelConfig.modelId,
         provider: "replicate",

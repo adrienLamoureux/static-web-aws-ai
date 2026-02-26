@@ -1,6 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap");
 
 :root {
+  --pix-font-body: "Plus Jakarta Sans", "Zen Kaku Gothic New", "Segoe UI", sans-serif;
+  --pix-font-display: "Orbitron", "Plus Jakarta Sans", sans-serif;
   --pix-bg-0: #070a1a;
   --pix-bg-1: #10152d;
   --pix-bg-2: #1a2242;
@@ -20,7 +22,7 @@
 }
 
 body.theme-pixnovel {
-  font-family: "Plus Jakarta Sans", "Zen Kaku Gothic New", "Segoe UI", sans-serif;
+  font-family: var(--pix-font-body);
   color: var(--pix-text);
   color-scheme: dark;
   background:
@@ -45,6 +47,20 @@ body.theme-pixnovel::after {
     radial-gradient(circle at 82% 18%, rgba(132, 148, 255, 0.15), transparent 34%);
 }
 
+body.theme-pixnovel .glass-panel {
+  background: linear-gradient(160deg, rgba(8, 12, 29, 0.94), rgba(13, 21, 47, 0.9));
+  border: 1px solid rgba(151, 179, 241, 0.34);
+  box-shadow: inset 0 1px 0 rgba(191, 213, 255, 0.14);
+}
+
+body.theme-pixnovel .director-hero.glass-panel {
+  background:
+    radial-gradient(circle at 16% 14%, rgba(115, 216, 255, 0.14), transparent 42%),
+    radial-gradient(circle at 84% 12%, rgba(143, 157, 255, 0.16), transparent 40%),
+    linear-gradient(160deg, rgba(8, 12, 29, 0.95), rgba(13, 21, 47, 0.9));
+  border-color: rgba(151, 179, 241, 0.42);
+}
+
 .pixnovel-shell {
   isolation: isolate;
   display: flex;
@@ -60,7 +76,6 @@ body.theme-pixnovel::after {
 
 .pixnovel-atmosphere {
   position: absolute;
-  inset: 0;
   pointer-events: none;
   overflow: hidden;
 }
@@ -361,6 +376,30 @@ body.theme-pixnovel::after {
   min-height: var(--pix-grid-min-height);
 }
 
+.pixnovel-grid--expanded {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  padding: 0 14px 16px;
+}
+
+.pixnovel-focus-rails {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.pixnovel-focus-rail .pixnovel-generator-panel,
+.pixnovel-focus-rail .pixnovel-feed-panel {
+  position: static;
+  top: auto;
+  align-self: stretch;
+  border: 1px solid rgba(165, 190, 248, 0.24);
+  border-radius: 16px;
+  background: rgba(8, 13, 30, 0.62);
+  backdrop-filter: blur(6px);
+  padding: 14px;
+}
+
 .pixnovel-generator-panel,
 .pixnovel-feed-panel {
   position: sticky;
@@ -417,6 +456,65 @@ body.theme-pixnovel::after {
   letter-spacing: 0.16em;
 }
 
+.pixnovel-control-label em {
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: 0.04em;
+  color: #90a4d3;
+}
+
+.pixnovel-quick-form {
+  display: grid;
+  gap: 8px;
+}
+
+.pixnovel-form-field {
+  display: grid;
+  gap: 5px;
+}
+
+.pixnovel-form-input {
+  width: 100%;
+  border: 1px solid rgba(156, 182, 243, 0.24);
+  border-radius: 10px;
+  background: rgba(11, 17, 37, 0.44);
+  color: #eef6ff;
+  font-size: 0.74rem;
+  line-height: 1.35;
+  padding: 0.5rem 0.55rem;
+}
+
+.pixnovel-form-select {
+  width: 100%;
+  border: 1px solid rgba(156, 182, 243, 0.24);
+  border-radius: 10px;
+  background: rgba(11, 17, 37, 0.44);
+  color: #eef6ff;
+  font-size: 0.74rem;
+  line-height: 1.35;
+  padding: 0.5rem 0.55rem;
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #a8bceb 50%),
+    linear-gradient(135deg, #a8bceb 50%, transparent 50%);
+  background-position:
+    calc(100% - 15px) calc(50% - 2px),
+    calc(100% - 9px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.pixnovel-form-input::placeholder {
+  color: #8a9cc8;
+}
+
+.pixnovel-form-select:focus,
+.pixnovel-form-input:focus {
+  outline: none;
+  border-color: rgba(115, 216, 255, 0.64);
+  box-shadow: 0 0 0 3px rgba(115, 216, 255, 0.16);
+}
+
 .pixnovel-option-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -436,6 +534,7 @@ body.theme-pixnovel::after {
   line-height: 1.3;
   padding: 0.42rem 0.5rem;
   text-align: left;
+  cursor: pointer;
 }
 
 .pixnovel-option-pill:hover {
@@ -511,6 +610,54 @@ body.theme-pixnovel::after {
   box-shadow: 0 14px 24px -18px rgba(115, 216, 255, 0.82);
 }
 
+.pixnovel-generate-button:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+.pixnovel-generator-note {
+  margin: -4px 0 0;
+  color: #95a9d6;
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.pixnovel-generator-note--subtle {
+  margin-top: -8px;
+  opacity: 0.86;
+}
+
+.pixnovel-generator-note--error {
+  color: #ffb5c8;
+}
+
+.pixnovel-generator-note--success {
+  color: #b7ffe2;
+}
+
+.pixnovel-shortcut-list {
+  display: grid;
+  gap: 8px;
+}
+
+.pixnovel-shortcut-item {
+  border-left: 2px solid rgba(115, 216, 255, 0.34);
+  padding: 2px 0 2px 10px;
+  display: grid;
+  gap: 2px;
+}
+
+.pixnovel-shortcut-item span {
+  color: #ebf4ff;
+  font-size: 0.76rem;
+}
+
+.pixnovel-shortcut-item small {
+  color: #aebde3;
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
 .pixnovel-stage {
   border: 0;
   border-left: 1px solid rgba(165, 190, 248, 0.22);
@@ -521,8 +668,20 @@ body.theme-pixnovel::after {
   min-height: 78vh;
 }
 
+.pixnovel-stage--expanded {
+  border-left: 0;
+  border-right: 0;
+  border-top: 1px solid rgba(165, 190, 248, 0.22);
+  border-bottom: 1px solid rgba(165, 190, 248, 0.22);
+  min-height: auto;
+}
+
 .pixnovel-stage-head {
   padding: 14px 16px 0;
+}
+
+.pixnovel-stage--expanded .pixnovel-stage-head {
+  padding: 18px 22px 0;
 }
 
 .pixnovel-stage-kicker {
@@ -544,11 +703,22 @@ body.theme-pixnovel::after {
   padding: 0 10px 14px;
 }
 
+.pixnovel-stage--expanded .pixnovel-stage-body {
+  padding: 0 14px 18px;
+}
+
 .pixnovel-stage-body .whisk-page,
 .pixnovel-stage-body .story-page,
 .pixnovel-stage-body .music-library-page,
 .pixnovel-stage-body .gallery-shell {
   padding-top: 8px;
+}
+
+.pixnovel-stage--expanded .pixnovel-stage-body .story-page,
+.pixnovel-stage--expanded .pixnovel-stage-body .music-library-page {
+  max-width: none;
+  margin: 0;
+  padding: 12px 12px 34px;
 }
 
 .pixnovel-feed-panel {
@@ -581,6 +751,16 @@ body.theme-pixnovel::after {
   text-transform: uppercase;
 }
 
+.pixnovel-feed-copy {
+  margin: 10px 0 0;
+  color: #a9bce6;
+  font-size: 0.72rem;
+}
+
+.pixnovel-feed-copy--error {
+  color: #ffb3c1;
+}
+
 .pixnovel-queue-list,
 .pixnovel-signal-list {
   margin-top: 10px;
@@ -594,6 +774,15 @@ body.theme-pixnovel::after {
   border-radius: 0;
   background: transparent;
   padding: 2px 0 2px 10px;
+  display: grid;
+  gap: 3px;
+}
+
+.pixnovel-queue-item-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .pixnovel-queue-item p {
@@ -602,10 +791,87 @@ body.theme-pixnovel::after {
   font-size: 0.79rem;
 }
 
-.pixnovel-queue-item span,
-.pixnovel-signal-list span {
+.pixnovel-queue-item span {
   color: #b5c2e7;
   font-size: 0.7rem;
+}
+
+.pixnovel-queue-metrics {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pixnovel-status-badge {
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid rgba(171, 196, 248, 0.42);
+  background: rgba(11, 18, 40, 0.68);
+  color: #d8e6ff;
+  font-size: 0.58rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pixnovel-status-badge.is-good {
+  border-color: rgba(104, 238, 195, 0.54);
+  color: #ffffff;
+}
+
+.pixnovel-status-badge.is-warn {
+  border-color: rgba(115, 216, 255, 0.64);
+  color: #ffffff;
+}
+
+.pixnovel-status-badge.is-bad {
+  border-color: rgba(255, 143, 175, 0.6);
+  color: #ffffff;
+}
+
+.pixnovel-signal-item {
+  border: 0;
+  border-left: 2px solid rgba(141, 169, 240, 0.4);
+  padding: 2px 0 2px 10px;
+  display: grid;
+  gap: 2px;
+}
+
+.pixnovel-signal-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+.pixnovel-signal-row span {
+  color: #dce8ff;
+  font-size: 0.74rem;
+}
+
+.pixnovel-signal-value {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pixnovel-signal-value.is-good {
+  color: #ffffff;
+}
+
+.pixnovel-signal-value.is-warn {
+  color: #ffffff;
+}
+
+.pixnovel-signal-value.is-bad {
+  color: #ffffff;
+}
+
+.pixnovel-signal-hint {
+  color: #a9bce6;
+  font-size: 0.68rem;
 }
 
 /* Cross-page color coherence */
@@ -1036,6 +1302,7 @@ body.theme-pixnovel .whisk-subtitle-main,
 body.theme-pixnovel .whisk-pill,
 body.theme-pixnovel .whisk-wall-count,
 body.theme-pixnovel .whisk-wall-more,
+body.theme-pixnovel .whisk-wall-create-label,
 body.theme-pixnovel .whisk-panel-copy,
 body.theme-pixnovel .whisk-tile-plus {
   color: #ffffff !important;
@@ -1069,54 +1336,98 @@ body.theme-pixnovel .whisk-tile-cta:hover .whisk-tile-plus {
   color: #ffffff !important;
 }
 
+body.theme-pixnovel .whisk-wall-head {
+  justify-content: flex-end;
+  margin-bottom: 2px;
+}
+
+body.theme-pixnovel .whisk-wall-create {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 4px 4px;
+  border-radius: 999px;
+  border: 1px solid rgba(151, 179, 241, 0.58);
+  background: rgba(8, 13, 32, 0.86);
+  backdrop-filter: blur(6px);
+}
+
+body.theme-pixnovel .whisk-wall-create:hover {
+  border-color: rgba(115, 216, 255, 0.78);
+  background: rgba(11, 19, 45, 0.9);
+}
+
+body.theme-pixnovel .whisk-wall-create .whisk-tile-plus {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "IBM Plex Mono", "Plus Jakarta Sans", monospace;
+  font-size: 1.28rem;
+  line-height: 1;
+  font-weight: 600;
+  padding: 0 0 1px;
+}
+
+body.theme-pixnovel .whisk-wall-create-label {
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 /* Portrait-first image wall (NovelAI-inspired) */
 body.theme-pixnovel .whisk-wall {
-  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  --pix-wall-cut: 24px;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
   gap: 0;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   border: 0;
   background: transparent;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+body.theme-pixnovel .whisk-wall::-webkit-scrollbar {
+  display: none;
 }
 
 body.theme-pixnovel .whisk-tile,
 body.theme-pixnovel .whisk-tile.is-feature {
+  flex: 0 0 clamp(176px, 22vw, 252px);
   aspect-ratio: 5 / 8;
   border-radius: 0;
   border: 0;
-  background: rgba(4, 8, 19, 0.74);
+  background: transparent;
   box-shadow: none;
-  grid-column: auto;
-  grid-row: auto;
   isolation: isolate;
-  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 100%, 0 100%);
-}
-
-body.theme-pixnovel .whisk-tile::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: -11px;
-  width: 22px;
-  height: 100%;
-  background: linear-gradient(
-    180deg,
-    rgba(188, 211, 255, 0.92),
-    rgba(115, 216, 255, 0.82) 34%,
-    rgba(143, 157, 255, 0.72) 66%,
-    rgba(151, 183, 255, 0.9)
+  clip-path: polygon(
+    var(--pix-wall-cut) 0,
+    100% 0,
+    calc(100% - var(--pix-wall-cut)) 100%,
+    0 100%
   );
-  clip-path: polygon(34% 0, 100% 0, 66% 100%, 0 100%);
-  opacity: 0.84;
-  z-index: 5;
-  pointer-events: none;
+  margin-left: 0;
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    filter 220ms ease;
 }
 
-body.theme-pixnovel .whisk-tile:nth-child(2n)::after {
-  opacity: 0.76;
+body.theme-pixnovel .whisk-tile + .whisk-tile {
+  margin-left: calc(var(--pix-wall-cut) * -1);
 }
 
-body.theme-pixnovel .whisk-tile:nth-child(3n)::after {
-  opacity: 0.66;
+body.theme-pixnovel .whisk-wall > .whisk-tile:first-child {
+  margin-left: 0;
+}
+
+body.theme-pixnovel .whisk-tile-cta {
+  margin-left: calc(var(--pix-wall-cut) * -1);
 }
 
 body.theme-pixnovel .whisk-tile-media {
@@ -1132,19 +1443,11 @@ body.theme-pixnovel .whisk-tile-image {
 }
 
 body.theme-pixnovel .whisk-tile-image--backdrop {
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  filter: blur(7px) saturate(0.82) brightness(0.5);
-  transform: scale(1.1);
+  display: none;
 }
 
 body.theme-pixnovel .whisk-tile-backdrop {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 50% 12%, rgba(174, 205, 255, 0.18), transparent 42%),
-    linear-gradient(180deg, rgba(5, 8, 19, 0.14), rgba(5, 8, 19, 0.62));
+  display: none;
 }
 
 body.theme-pixnovel .whisk-tile-image--main {
@@ -1153,22 +1456,27 @@ body.theme-pixnovel .whisk-tile-image--main {
   height: 100%;
   border-radius: 0;
   border: 0;
-  box-shadow:
-    inset 0 0 0 1px rgba(168, 193, 247, 0.2),
-    inset 0 -56px 90px -64px rgba(0, 0, 0, 0.84);
+  box-shadow: none;
+  transform: scale(1);
+  filter: saturate(0.95);
+  transition: transform 260ms ease, filter 260ms ease;
 }
 
 body.theme-pixnovel .whisk-tile-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(3, 6, 16, 0.02), rgba(3, 6, 16, 0.52)),
-    linear-gradient(135deg, rgba(124, 157, 243, 0.14), transparent 44%);
-  opacity: 1;
+    linear-gradient(180deg, rgba(4, 8, 19, 0.06), rgba(4, 8, 19, 0.4)),
+    radial-gradient(circle at 20% 12%, rgba(142, 180, 255, 0.16), transparent 55%);
+  opacity: 0.28;
+  transition: opacity 240ms ease;
 }
 
 body.theme-pixnovel .whisk-tile-caption {
   position: absolute;
   left: 10px;
-  right: 16px;
+  right: 18px;
   bottom: 10px;
   z-index: 6;
   font-size: 0.62rem;
@@ -1186,17 +1494,18 @@ body.theme-pixnovel .whisk-tile-actions {
   top: auto;
   right: auto;
   left: 50%;
-  bottom: 30px;
+  bottom: 28px;
   transform: translateX(-50%);
   display: inline-flex;
   gap: 4px;
   opacity: 1;
   padding: 3px 5px;
   border-radius: 999px;
-  border: 1px solid rgba(156, 183, 244, 0.46);
+  border: 1px solid rgba(200, 214, 243, 0.44);
   background: rgba(5, 9, 23, 0.72);
   backdrop-filter: blur(6px);
   z-index: 6;
+  transition: transform 220ms ease, opacity 220ms ease;
 }
 
 body.theme-pixnovel .whisk-icon-button {
@@ -1210,7 +1519,7 @@ body.theme-pixnovel .whisk-icon-button {
 body.theme-pixnovel .whisk-tile-cta {
   border: 0;
   background:
-    radial-gradient(circle at 50% 28%, rgba(116, 209, 255, 0.22), transparent 56%),
+    radial-gradient(circle at 50% 28%, rgba(243, 247, 255, 0.2), transparent 56%),
     linear-gradient(160deg, rgba(9, 14, 31, 0.82), rgba(20, 29, 57, 0.74));
 }
 
@@ -1219,10 +1528,50 @@ body.theme-pixnovel .whisk-tile-cta .whisk-tile-plus {
   height: 52px;
 }
 
+body.theme-pixnovel .whisk-tile:not(.whisk-tile-cta):hover,
+body.theme-pixnovel .whisk-tile:not(.whisk-tile-cta):focus-within {
+  z-index: 7;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(3, 7, 18, 0.34);
+}
+
+body.theme-pixnovel .whisk-tile:not(.whisk-tile-cta):hover .whisk-tile-image--main,
+body.theme-pixnovel .whisk-tile:not(.whisk-tile-cta):focus-within .whisk-tile-image--main {
+  transform: scale(1.07);
+  filter: saturate(1.08) contrast(1.05);
+}
+
+body.theme-pixnovel .whisk-tile:not(.whisk-tile-cta):hover .whisk-tile-overlay,
+body.theme-pixnovel .whisk-tile:not(.whisk-tile-cta):focus-within .whisk-tile-overlay {
+  opacity: 0.12;
+}
+
+body.theme-pixnovel .whisk-tile:not(.whisk-tile-cta):hover .whisk-tile-actions,
+body.theme-pixnovel .whisk-tile:not(.whisk-tile-cta):focus-within .whisk-tile-actions {
+  transform: translateX(-50%) scale(1.02);
+}
+
 @media (max-width: 700px) {
   body.theme-pixnovel .whisk-wall {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0;
+    --pix-wall-cut: 18px;
+    padding-bottom: 2px;
+  }
+
+  body.theme-pixnovel .whisk-tile,
+  body.theme-pixnovel .whisk-tile.is-feature {
+    flex-basis: clamp(132px, 42vw, 188px);
+  }
+
+  body.theme-pixnovel .whisk-tile + .whisk-tile {
+    margin-left: calc(var(--pix-wall-cut) * -1);
+  }
+
+  body.theme-pixnovel .whisk-wall > .whisk-tile:first-child {
+    margin-left: 0;
+  }
+
+  body.theme-pixnovel .whisk-tile-cta {
+    margin-left: calc(var(--pix-wall-cut) * -1);
   }
 }
 
@@ -1232,6 +1581,7 @@ body.theme-pixnovel .whisk-tile-cta .whisk-tile-plus {
   max-width: none;
   margin: 0;
   padding: 10px 12px 28px;
+  color: #ffffff;
 }
 
 .pixnovel-stage-body .story-mode-switch,
@@ -1347,6 +1697,158 @@ body.theme-pixnovel .whisk-tile-cta .whisk-tile-plus {
   color: #d5e4ff;
 }
 
+.pixnovel-stage-body .story-mode-toolbar,
+.pixnovel-stage-body .story-context-card,
+.pixnovel-stage-body .story-why-card,
+.pixnovel-stage-body .story-memory-card,
+.pixnovel-stage-body .story-production-board,
+.pixnovel-stage-body .story-scene-card,
+.pixnovel-stage-body .story-reader-strip-frame,
+.pixnovel-stage-body .music-library-panel {
+  border-color: rgba(151, 179, 241, 0.38);
+  background: rgba(9, 14, 31, 0.66);
+}
+
+.pixnovel-stage-body .story-mode-button,
+.pixnovel-stage-body .story-tab,
+.pixnovel-stage-body .story-group-type,
+.pixnovel-stage-body .story-folder-chip,
+.pixnovel-stage-body .story-session-delete,
+.pixnovel-stage-body .story-disclosure-toggle,
+.pixnovel-stage-body .music-library-pill,
+.pixnovel-stage-body .music-library-tag {
+  border-color: rgba(151, 179, 241, 0.46);
+  background: rgba(11, 16, 36, 0.78);
+  color: #dce8ff;
+}
+
+.pixnovel-stage-body .story-mode-button.is-active,
+.pixnovel-stage-body .story-tab.is-active,
+.pixnovel-stage-body .story-group-type.is-active,
+.pixnovel-stage-body .story-folder-chip.is-active,
+.pixnovel-stage-body .music-library-item--selected {
+  border-color: rgba(143, 157, 255, 0.74);
+  background: rgba(143, 157, 255, 0.22);
+  color: #eef6ff;
+}
+
+.pixnovel-stage-body .story-context-eyebrow,
+.pixnovel-stage-body .story-context-line span,
+.pixnovel-stage-body .story-budget-row,
+.pixnovel-stage-body .story-context-hint,
+.pixnovel-stage-body .story-timeline-step,
+.pixnovel-stage-body .story-debug-label,
+.pixnovel-stage-body .music-library-eyebrow,
+.pixnovel-stage-body .music-library-notice {
+  color: #afc1e8;
+}
+
+.pixnovel-stage-body .story-debug-code {
+  background: rgba(7, 12, 27, 0.78);
+  color: #d7e4ff;
+}
+
+.pixnovel-stage-body .story-scene-overlay {
+  background: linear-gradient(
+    180deg,
+    rgba(8, 12, 28, 0) 0%,
+    rgba(8, 12, 28, 0.84) 100%
+  );
+  color: #f4f9ff;
+}
+
+.pixnovel-stage-body .story-scene-description,
+.pixnovel-stage-body .story-music-track-mode,
+.pixnovel-stage-body .story-music-track-search-meta,
+.pixnovel-stage-body .story-music-track-loop,
+.pixnovel-stage-body .story-music-track-loop-note {
+  color: #c7d7f8;
+}
+
+/* Ensure legacy warm/yellow text is fully neutralized in Story + Sound Lab */
+body.theme-pixnovel .pixnovel-stage-body .story-page :is(
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  p,
+  span,
+  small,
+  label,
+  legend,
+  strong,
+  button
+),
+body.theme-pixnovel .pixnovel-stage-body .music-library-page :is(
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  p,
+  span,
+  small,
+  label,
+  legend,
+  strong,
+  button
+) {
+  color: #ffffff !important;
+}
+
+body.theme-pixnovel .pixnovel-stage-body :is(
+  .story-chat-force-illustration,
+  .story-scene-generate,
+  .story-scene-regenerate,
+  .story-scene-animate,
+  .story-scene-music-trigger,
+  .music-library-tag,
+  .music-library-pill,
+  .music-library-notice,
+  .music-library-count
+) {
+  color: #ffffff !important;
+}
+
+/* Typography coherence for all pages in Pixnovel theme */
+body.theme-pixnovel .pixnovel-shell,
+body.theme-pixnovel .pixnovel-shell :is(
+  p,
+  span,
+  small,
+  label,
+  legend,
+  button,
+  input,
+  select,
+  textarea,
+  li,
+  a,
+  div
+) {
+  font-family: var(--pix-font-body);
+}
+
+body.theme-pixnovel .pixnovel-shell :is(
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .pixnovel-brand,
+  .pixnovel-hero-kicker,
+  .pixnovel-hero-title,
+  .whisk-title,
+  .whisk-title-main,
+  .story-title,
+  .music-library-title,
+  .director-title
+) {
+  font-family: var(--pix-font-display) !important;
+}
+
 @media (max-width: 1180px) {
   .pixnovel-grid {
     grid-template-columns: 1fr;
@@ -1368,6 +1870,14 @@ body.theme-pixnovel .whisk-tile-cta .whisk-tile-plus {
 
   .pixnovel-feed-panel {
     border-top: 1px solid rgba(165, 190, 248, 0.22);
+  }
+
+  .pixnovel-grid--expanded {
+    padding-inline: 0;
+  }
+
+  .pixnovel-focus-rails {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -382,3 +382,210 @@
     min-height: 460px;
   }
 }
+
+/* Option 1 redesign: Story + Director split with wide cinematic workspace */
+.story-page {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 24px 16px 40px;
+  gap: 18px;
+}
+
+.story-page .glass-panel {
+  border: 1px solid rgba(137, 170, 255, 0.34);
+  background: linear-gradient(155deg, rgba(9, 14, 34, 0.92), rgba(14, 22, 48, 0.88));
+  box-shadow: none;
+}
+
+.story-hero {
+  padding: 18px 20px;
+  border-radius: 18px;
+  border: 1px solid rgba(137, 170, 255, 0.34);
+  background: linear-gradient(150deg, rgba(7, 12, 30, 0.9), rgba(16, 25, 55, 0.86));
+}
+
+.story-hero-kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.story-title {
+  color: #ffffff;
+  font-family: "Orbitron", "Plus Jakarta Sans", sans-serif;
+  font-size: clamp(1.5rem, 2.4vw, 2.2rem);
+  letter-spacing: 0.02em;
+}
+
+.story-subtitle {
+  color: #ffffff;
+  max-width: 920px;
+}
+
+.story-mode-toolbar {
+  max-width: none;
+  border-radius: 14px;
+}
+
+.story-mode-switch {
+  border-color: rgba(157, 185, 255, 0.54);
+  background: rgba(8, 13, 31, 0.72);
+}
+
+.story-mode-button {
+  color: #ffffff;
+}
+
+.story-mode-button.is-active {
+  background: linear-gradient(135deg, rgba(112, 198, 255, 0.54), rgba(145, 159, 255, 0.62));
+  color: #ffffff;
+}
+
+.story-mode-copy {
+  color: #ffffff;
+}
+
+.story-config,
+.story-reader-controls,
+.story-book {
+  border-radius: 18px;
+}
+
+.story-config {
+  grid-template-columns: minmax(300px, 0.9fr) 1px minmax(520px, 1.3fr);
+}
+
+.story-config-divider,
+.story-book-spine {
+  background: linear-gradient(180deg, rgba(124, 214, 255, 0.22), rgba(139, 157, 255, 0.4), rgba(124, 214, 255, 0.22));
+}
+
+.story-session-item,
+.story-preset-card,
+.story-session-delete {
+  border-color: rgba(151, 179, 241, 0.54);
+  background: rgba(8, 14, 33, 0.76);
+  color: #ffffff;
+}
+
+.story-session-item.is-active,
+.story-preset-card.is-selected {
+  border-color: rgba(112, 198, 255, 0.76);
+  background: rgba(27, 40, 84, 0.72);
+}
+
+.story-session-title,
+.story-preset-title,
+.story-section-title,
+.story-chat-mode,
+.story-chat-meta,
+.story-session-meta,
+.story-preset-copy,
+.story-chat-subtitle,
+.story-scenes-meta,
+.story-chat-hint,
+.story-scenes-label,
+.story-scenes-toggle,
+.story-reader-strip-title,
+.story-empty {
+  color: #ffffff;
+}
+
+.story-book {
+  grid-template-columns: minmax(0, 1.1fr) 1px minmax(0, 1fr);
+  border-color: rgba(137, 170, 255, 0.44);
+  background: rgba(8, 13, 32, 0.62);
+}
+
+.story-book--reader {
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+}
+
+.story-book-column {
+  min-height: 620px;
+  padding: 18px;
+}
+
+.story-book-text,
+.story-book-images {
+  background: rgba(9, 14, 33, 0.8);
+  border-radius: 14px;
+  border: 1px solid rgba(146, 176, 243, 0.3);
+}
+
+.story-chat-thread {
+  max-height: 420px;
+}
+
+.story-chat-thread--reader {
+  max-height: min(620px, 72vh);
+}
+
+.story-message-bubble {
+  background: rgba(7, 12, 29, 0.88);
+  border-color: rgba(151, 179, 241, 0.52);
+  color: #ffffff;
+}
+
+.story-message--user .story-message-bubble {
+  background: rgba(128, 147, 255, 0.24);
+  border-color: rgba(128, 147, 255, 0.56);
+}
+
+.story-chat-force-illustration,
+.story-scene-generate {
+  border-color: rgba(151, 179, 241, 0.62);
+  background: rgba(11, 18, 41, 0.86);
+  color: #ffffff;
+}
+
+.story-chat-force-illustration:hover:not(:disabled),
+.story-scene-generate:hover:not(:disabled) {
+  border-color: rgba(112, 198, 255, 0.78);
+  background: rgba(16, 27, 58, 0.94);
+}
+
+.story-page--director .story-book {
+  border-color: rgba(112, 198, 255, 0.52);
+}
+
+.story-page--story .story-book {
+  border-color: rgba(145, 159, 255, 0.48);
+}
+
+.story-page :is(
+  .field-input,
+  .field-select,
+  .field-textarea,
+  .story-scenes-select,
+  .story-scene-folder-select,
+  .story-session-debug-select,
+  .story-music-track-picker,
+  .story-music-track-search
+) {
+  border-color: rgba(151, 179, 241, 0.42);
+  background: rgba(8, 13, 31, 0.82);
+  color: #ffffff;
+}
+
+.story-page :is(
+  .field-input::placeholder,
+  .field-textarea::placeholder
+) {
+  color: rgba(225, 235, 255, 0.78);
+}
+
+@media (max-width: 1280px) {
+  .story-config {
+    grid-template-columns: 1fr;
+  }
+
+  .story-config-divider,
+  .story-book-spine {
+    width: 100%;
+    height: 1px;
+  }
+}

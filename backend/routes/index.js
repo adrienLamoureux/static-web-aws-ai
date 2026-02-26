@@ -9,6 +9,7 @@ const registerBedrockImageVideoRoute = require("./bedrock-image-video-route");
 const registerStorySessionRoutes = require("./story-session-routes");
 const registerStoryMessageRoute = require("./story-message-route");
 const registerStoryIllustrationRoute = require("./story-illustration-route");
+const registerOperationsRoutes = require("./operations-routes");
 
 const registerRoutes = (app, deps) => {
   registerCorePromptRoutes(app, deps);
@@ -22,6 +23,7 @@ const registerRoutes = (app, deps) => {
   registerStorySessionRoutes(app, deps);
   registerStoryMessageRoute(app, deps);
   registerStoryIllustrationRoute(app, deps);
+  registerOperationsRoutes(app, deps);
 };
 
 module.exports = {

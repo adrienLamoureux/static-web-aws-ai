@@ -3,10 +3,10 @@ import WhiskHero from "../components/whisk/WhiskHero";
 import WhiskWall from "../components/whisk/WhiskWall";
 import WhiskModal from "../components/whisk/WhiskModal";
 import { selectGeneratedImage } from "../services/images";
+import { removeSessionCache } from "../utils/sessionCache";
 import { useImageStudio } from "./whisk/hooks/useImageStudio";
 import { useVideoGeneration } from "./whisk/hooks/useVideoGeneration";
 import { useWhiskImages } from "./whisk/hooks/useWhiskImages";
-import { useWhiskVideos } from "./whisk/hooks/useWhiskVideos";
 
 const CACHE_MAX_AGE_MS = 5 * 60 * 1000;
 const IMAGE_CACHE_KEY = "whisk_images_cache";
@@ -39,19 +39,9 @@ function Whisk({ apiBaseUrl = "" }) {
     onError: setError,
   });
 
-  const {
-    videos,
-    videoUrls,
-    loadingVideoKey,
-    refreshVideos,
-    removeVideo,
-    toggleVideoPreview,
-  } = useWhiskVideos({
-    apiBaseUrl: resolvedApiBaseUrl,
-    cacheKey: VIDEO_CACHE_KEY,
-    cacheMaxAge: CACHE_MAX_AGE_MS,
-    onError: setError,
-  });
+  const invalidateVideoCache = () => {
+    removeSessionCache(VIDEO_CACHE_KEY);
+  };
 
   const handleVideoReady = ({ key, url, sourceKey }) => {
     if (key) {
@@ -80,13 +70,9 @@ function Whisk({ apiBaseUrl = "" }) {
     });
   };
 
-  const closeModal = ({ refreshVideos: shouldRefreshVideos = false } = {}) => {
-    const wasVideoModal = activeModal === "video";
+  const closeModal = () => {
     setActiveModal("");
     refreshImages(true);
-    if (shouldRefreshVideos || !wasVideoModal) {
-      refreshVideos(true);
-    }
   };
 
   const {
@@ -107,7 +93,6 @@ function Whisk({ apiBaseUrl = "" }) {
     onCloseImageModal: closeModal,
     onGenerationComplete: () => {
       refreshImages(true);
-      refreshVideos(true);
     },
   });
 
@@ -132,8 +117,11 @@ function Whisk({ apiBaseUrl = "" }) {
     selectedSourceImageKey,
     selectedImageUrl,
     onError: setError,
-    onSubmitted: () => closeModal({ refreshVideos: true }),
-    onCompleted: () => refreshVideos(true),
+    onSubmitted: () => {
+      invalidateVideoCache();
+      closeModal();
+    },
+    onCompleted: invalidateVideoCache,
   });
 
   const handleSelectImageForVideo = async (image) => {
@@ -185,8 +173,6 @@ function Whisk({ apiBaseUrl = "" }) {
   return (
     <section className="whisk-page">
       <WhiskHero
-        apiBaseUrl={resolvedApiBaseUrl}
-        status={status}
         error={error}
         isGeneratingImage={isGeneratingImage}
         isUploading={isUploading}
@@ -210,70 +196,6 @@ function Whisk({ apiBaseUrl = "" }) {
       </div>
 
       {error && <div className="whisk-error-panel">{error}</div>}
-
-      <div className="whisk-videos">
-        <div className="whisk-panel-header">
-          <h2 className="whisk-title">Videos</h2>
-        </div>
-        {videos.length === 0 ? (
-          <p className="whisk-panel-copy">No videos available yet.</p>
-        ) : (
-          <div className="whisk-video-grid">
-            {videos.map((video) => {
-              const url = videoUrls[video.key];
-              const isLoading = loadingVideoKey === video.key;
-              const posterUrl = video.posterUrl;
-              return (
-                <div key={video.key} className="whisk-video-card">
-                  <div className="whisk-video-frame">
-                    {url ? (
-                      <video
-                        className="whisk-video-player"
-                        controls
-                        preload="metadata"
-                        src={url}
-                      />
-                    ) : posterUrl ? (
-                      <img
-                        className="whisk-video-poster"
-                        src={posterUrl}
-                        alt=""
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="whisk-video-placeholder">
-                        <span className="whisk-video-label">Preview</span>
-                      </div>
-                    )}
-                    <div className="whisk-video-overlay">
-                      <button
-                        type="button"
-                        className="whisk-icon-button"
-                        onClick={() => toggleVideoPreview(video)}
-                        disabled={isLoading}
-                        aria-label={
-                          url ? "Hide video preview" : "Load video preview"
-                        }
-                      >
-                        {isLoading ? "…" : url ? "⏸" : "▶"}
-                      </button>
-                      <button
-                        type="button"
-                        className="whisk-icon-button whisk-icon-button--danger"
-                        onClick={() => removeVideo(video)}
-                        aria-label="Delete video"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-                  <div className="whisk-video-meta-row" />
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
 
       {lightboxImage && (
         <div

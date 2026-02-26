@@ -151,6 +151,33 @@ body {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
+  .whisk-wall-shell {
+    display: grid;
+    gap: 10px;
+  }
+
+  .whisk-wall-head {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .whisk-wall-create {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .whisk-wall-create-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6b5c45;
+  }
+
   .whisk-tile {
     position: relative;
     border-radius: 18px;

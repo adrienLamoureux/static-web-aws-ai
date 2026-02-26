@@ -210,3 +210,19 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Pixnovel cleanup: keep Sound Lab inputs in cool dark tones */
+.music-library-page :is(.field-input, .field-select, .field-textarea) {
+  border-color: rgba(151, 179, 241, 0.44);
+  background: rgba(8, 13, 31, 0.86);
+  color: #ffffff;
+}
+
+.music-library-page :is(.field-input::placeholder, .field-textarea::placeholder) {
+  color: rgba(224, 234, 255, 0.78);
+}
+
+.music-library-page :is(.field-input:focus, .field-select:focus, .field-textarea:focus) {
+  border-color: rgba(112, 198, 255, 0.78);
+  box-shadow: 0 0 0 3px rgba(112, 198, 255, 0.2);
+}

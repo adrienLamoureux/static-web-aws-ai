@@ -5,22 +5,27 @@
 - Stage: `design-pixnovel`
 - Created at: `2026-02-24T22:49:34.686Z`
 - Current status: `LIVE`
+- Active worktree: `/Users/adrienlamoureux/Documents/code/wt/design-pixnovel/code`
+- Active branch: `codex/design-pixnovel/code`
 - CloudFront URL: `https://d31s9yo6pacgac.cloudfront.net`
 - API Endpoint: `https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/`
 - Seed user email: `seed+design-pixnovel@example.com`
 - Seed status: `COMPLETED (8 images, 6 music tracks from design-main, explicit demo password set)`
+- Current UX split:
+  - `/` Generator: image wall + quick generate panel + image-to-video launch modal
+  - `/videos`: dedicated video preview/delete library
+  - `/story`, `/music-library`, `/about`: unchanged feature domains in Pixnovel shell
 
 ## Open Risks
 - Hero portrait is CSS-rendered and may still need a final art asset direction.
-- Generation panel is currently a UX shell and not yet bound to generation request parameters.
 - No visual regression screenshot baseline exists yet for this new variant.
 - Hero masonry currently uses external prototype image URLs and should migrate to first-party media hosting.
 
 ## Next Actions
-- Bind generation panel controls to image-generation payload fields.
 - Replace masonry URLs with seeded first-party media sources from the target stack.
 - Add screenshot diff checks to complement existing UI smoke.
-- Run targeted UX pass on spacing/scroll behavior for the story page in this shell.
+- Add video library controls (search/filter/sort) on `/videos` for larger collections.
+- Run targeted UX pass on spacing/scroll behavior for Story and Videos pages in this shell.
 
 ## Activity Log
 - 2026-02-24T22:49:34.693Z | event=init | Idea workspace initialized
@@ -46,3 +51,18 @@
 - 2026-02-25T15:42:43.469Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=a9ceb12 / sanity=passed / ui_smoke=passed / improvement=pixnovel-portrait-fancy-image-wall
 - 2026-02-25T15:59:11.419Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=887fe46 / sanity=passed / ui_smoke=passed / improvement=pixnovel-oblique-touching-portrait-wall
 - 2026-02-25T16:24:02.960Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=66cd013 / sanity=passed / ui_smoke=passed / improvement=pixnovel-stronger-oblique-touching-wall
+- 2026-02-26T09:24:34.821Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=6639653 / sanity=passed / ui_smoke=passed / improvement=ops-dashboard-quick-generate-panel
+- 2026-02-26T09:28:30.001Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=6639653 / sanity=passed / ui_smoke=passed / improvement=ops-dashboard-dropdown-shortcuts
+- 2026-02-26T09:33:14.565Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=6639653 / sanity=passed / ui_smoke=passed / improvement=quick-panel-js-prompt-payload
+- 2026-02-26T09:34:44.393Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=6639653 / sanity=passed / ui_smoke=passed / improvement=quick-panel-hidden-prompts
+- 2026-02-26T09:37:36.845Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=6639653 / sanity=passed / ui_smoke=passed / improvement=remove-redundant-whisk-hero-copy
+- 2026-02-26T09:44:08.412Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=6639653 / sanity=passed / ui_smoke=passed / improvement=separate-videos-page
+- 2026-02-26T09:47:05.500Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=6639653 / sanity=passed / ui_smoke=passed / improvement=separate-videos-page-finalize
+- 2026-02-26T10:04:51.771Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=6639653 / sanity=passed / ui_smoke=passed / improvement=pane-aware-side-rails-and-cool-tone-story-music
+- 2026-02-26T11:00:38.826Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=6639653 / sanity=passed / ui_smoke=passed / improvement=story-soundlab-no-side-panels
+- 2026-02-26T11:03:52.145Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=6639653 / sanity=passed / ui_smoke=passed / improvement=story-soundlab-no-side-panels
+- 2026-02-26T11:15:13.660Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=6639653 / sanity=passed / ui_smoke=passed / improvement=add-global-director-page-and-video-title-cleanup
+- 2026-02-26T11:42:58.174Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=6639653 / sanity=passed / ui_smoke=passed / improvement=director-scope-1-4
+- 2026-02-26T11:47:48.065Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=6639653 / sanity=passed / ui_smoke=passed / improvement=director-remove-yellow-warn
+- 2026-02-26T17:21:19.668Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=6639653 / sanity=passed / ui_smoke=passed / improvement=director-hero-remove-yellow-glass
+- 2026-02-26T21:37:51.287Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=6639653 / sanity=passed / ui_smoke=passed / improvement=whisk-create-plus-alignment

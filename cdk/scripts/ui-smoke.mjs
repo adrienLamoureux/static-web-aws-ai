@@ -42,6 +42,8 @@ const browser = await chromium.launch({ headless: true });
 const unauthenticatedChecks = [
   { id: "login-page", path: "/login", expectLogin: true, expectPath: "/login" },
   { id: "home-redirect", path: "/", expectLogin: true, expectPath: "/login" },
+  { id: "videos-redirect", path: "/videos", expectLogin: true, expectPath: "/login" },
+  { id: "director-redirect", path: "/director", expectLogin: true, expectPath: "/login" },
   { id: "story-redirect", path: "/story", expectLogin: true, expectPath: "/login" },
   {
     id: "music-library-redirect",
@@ -57,13 +59,25 @@ const authenticatedChecks = [
     id: "home-page",
     path: "/",
     expectPath: "/",
-    expectedTexts: ["Intuitive studio for image-led motion"],
+    expectedTexts: ["Compose Render Settings"],
+  },
+  {
+    id: "videos-page",
+    path: "/videos",
+    expectPath: "/videos",
+    expectedTexts: ["Videos"],
+  },
+  {
+    id: "director-page",
+    path: "/director",
+    expectPath: "/director",
+    expectedTexts: ["Global Command Center"],
   },
   {
     id: "story-page",
     path: "/story",
     expectPath: "/story",
-    expectedTexts: ["Storytelling Studio"],
+    expectedAnyTexts: ["Storytelling Studio", "Story Teller", "Storybook Canvas"],
   },
   {
     id: "music-library-page",
@@ -127,6 +141,7 @@ async function runPageCheck({
   expectLogin,
   expectPath,
   expectedTexts = [],
+  expectedAnyTexts = [],
 }) {
   const page = await context.newPage();
   const pageErrors = [];
@@ -153,6 +168,9 @@ async function runPageCheck({
   for (const text of expectedTexts) {
     await waitForVisibleText(page, text, timeoutMs);
   }
+  if (expectedAnyTexts.length > 0) {
+    await waitForAnyVisibleText(page, expectedAnyTexts, timeoutMs);
+  }
 
   if (pageErrors.length > 0) {
     throw new Error(`Browser page errors detected: ${pageErrors.join(" | ")}`);
@@ -173,6 +191,7 @@ async function runCheckGroup({ context, baseUrl, timeoutMs, checks, failures }) 
         expectLogin: check.expectLogin,
         expectPath: check.expectPath,
         expectedTexts: check.expectedTexts || [],
+        expectedAnyTexts: check.expectedAnyTexts || [],
       });
       const elapsedMs = Date.now() - startedAt;
       info(`PASS ${check.id} (${elapsedMs}ms)`);
@@ -227,6 +246,21 @@ function encodeBase64Url(value) {
 async function waitForVisibleText(page, text, timeoutMs) {
   const locator = page.getByText(text, { exact: false });
   await locator.first().waitFor({ state: "visible", timeout: timeoutMs });
+}
+
+async function waitForAnyVisibleText(page, texts, timeoutMs) {
+  const timeoutAt = Date.now() + timeoutMs;
+  const checks = texts.filter(Boolean);
+  while (Date.now() < timeoutAt) {
+    for (const text of checks) {
+      const locator = page.getByText(text, { exact: false }).first();
+      if (await locator.isVisible().catch(() => false)) {
+        return;
+      }
+    }
+    await page.waitForTimeout(250);
+  }
+  throw new Error(`Expected one of texts to be visible: ${checks.join(" | ")}`);
 }
 
 async function loadPlaywright() {

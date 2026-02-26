@@ -110,3 +110,21 @@ Use short ADR-style entries.
 - Context: A closer match was requested to game-style roster strips where portrait cards touch and separators are angled rather than vertical.
 - Alternatives considered: Keep rectangular portrait cards with standard borders; introduce a carousel/swiper implementation.
 - Consequences: The wall now has stronger “character strip” identity without adding new JS dependencies or reintroducing non-masonry animations.
+
+- Date: 2026-02-26T09:47:00Z
+- Decision: Split video browsing into a dedicated `/videos` route and keep Generator (`/`) focused on images + quick generation controls.
+- Context: The combined Generator page was becoming overloaded, and videos needed their own surface for preview/delete workflows.
+- Alternatives considered: Keep videos embedded at the bottom of `/`; create modal-only video management.
+- Consequences: Information architecture is cleaner, top navigation includes a dedicated Videos entry, and smoke checks now validate `/videos` redirects/loads.
+
+- Date: 2026-02-26T11:15:00Z
+- Decision: Introduce a dedicated `/director` route as a global orchestration surface beyond story-only operations.
+- Context: A central command page was requested to manage cross-domain workflows (generation, videos, story, sound lab, and release/QA) from one place.
+- Alternatives considered: Keep Director as story-mode only (`/story` forced director view); embed orchestration widgets into existing side rails.
+- Consequences: Navigation now includes a first-class Director page, responsibilities are clearer across routes, and smoke checks validate `/director` redirects/loads.
+
+- Date: 2026-02-26T11:43:13Z
+- Decision: Implement Director scopes 1-4 with live control-plane APIs and centralize API defaults via `director-config`.
+- Context: Director needed actionable operations (not static cards), and hardcoded defaults in API routes risked drift across image/video workflows.
+- Alternatives considered: Keep Director as read-only dashboard; keep route-level hardcoded defaults.
+- Consequences: Director now supports save/prioritize/pin/normalize actions across generation/video/story/sound, and defaults are env-aware/shared in backend config helpers.
