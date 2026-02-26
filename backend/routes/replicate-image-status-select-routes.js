@@ -20,6 +20,9 @@ module.exports = (app, deps) => {
     deleteMediaItem,
   } = deps;
 
+const buildImageJobKey = (predictionId = "") =>
+  `render/replicate/image/${predictionId || Date.now()}`;
+
 app.get("/replicate/image/status", async (req, res) => {
   const mediaBucket = process.env.MEDIA_BUCKET;
   const userId = req.user?.sub;
@@ -56,7 +59,24 @@ app.get("/replicate/image/status", async (req, res) => {
         message: "Prediction not found",
       });
     }
+    const jobKey = buildImageJobKey(predictionId);
     if (prediction.status !== "succeeded") {
+      await putMediaItem({
+        userId,
+        type: "JOB",
+        key: jobKey,
+        extra: {
+          provider: "replicate",
+          entityType: "image",
+          predictionId,
+          imageName,
+          batchId,
+          status: prediction.status,
+          progressPct: prediction.status === "starting" ? 20 : 58,
+          etaSeconds: 45,
+          updatedAt: new Date().toISOString(),
+        },
+      });
       return res.json({
         predictionId,
         status: prediction.status,
@@ -100,6 +120,23 @@ app.get("/replicate/image/status", async (req, res) => {
         return { key, url: signedUrl };
       })
     );
+    await putMediaItem({
+      userId,
+      type: "JOB",
+      key: jobKey,
+      extra: {
+        provider: "replicate",
+        entityType: "image",
+        predictionId,
+        imageName,
+        batchId,
+        status: "completed",
+        progressPct: 100,
+        etaSeconds: 0,
+        completedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    });
 
     res.json({
       predictionId,
@@ -108,6 +145,28 @@ app.get("/replicate/image/status", async (req, res) => {
       images,
     });
   } catch (error) {
+    if (predictionId) {
+      try {
+        await putMediaItem({
+          userId,
+          type: "JOB",
+          key: buildImageJobKey(predictionId),
+          extra: {
+            provider: "replicate",
+            entityType: "image",
+            predictionId,
+            imageName,
+            batchId,
+            status: "failed",
+            progressPct: 100,
+            etaSeconds: 0,
+            completedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            errorMessage: error?.message || String(error),
+          },
+        });
+      } catch (_ignored) {}
+    }
     console.error("Replicate image status error details:", {
       name: error?.name,
       message: error?.message,

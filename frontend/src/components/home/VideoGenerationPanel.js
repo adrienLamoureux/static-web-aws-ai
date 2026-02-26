@@ -33,8 +33,8 @@ function VideoGenerationPanel({
                   isSelected ? "choice-tile--active" : ""
                 }`}
               >
-                <p className="font-semibold text-ink">{option.name}</p>
-                <p className="text-xs text-[#7a6a51]">{option.description}</p>
+                <p className="font-semibold pix-text-strong">{option.name}</p>
+                <p className="text-xs pix-text-muted">{option.description}</p>
               </button>
             );
           })}
@@ -55,8 +55,8 @@ function VideoGenerationPanel({
                   isSelected ? "choice-tile--active" : ""
                 }`}
               >
-                <p className="font-semibold text-ink">{option.name}</p>
-                <p className="text-xs text-[#7a6a51]">{option.description}</p>
+                <p className="font-semibold pix-text-strong">{option.name}</p>
+                <p className="text-xs pix-text-muted">{option.description}</p>
               </button>
             );
           })}
@@ -73,10 +73,10 @@ function VideoGenerationPanel({
       </div>
 
       {isReplicateAudioOption && (
-        <label className="gallery-section flex items-center gap-3 text-sm text-[#6b5c45]">
+        <label className="gallery-section flex items-center gap-3 text-sm pix-text-muted">
           <input
             type="checkbox"
-            className="h-4 w-4 rounded border-[#d1c3aa] text-accent focus:ring-accent"
+            className="h-4 w-4 rounded pix-border-soft text-accent focus:ring-accent"
             checked={videoGenerateAudio}
             onChange={(event) => onToggleAudio(event.target.checked)}
           />
@@ -96,8 +96,8 @@ function VideoGenerationPanel({
         </div>
 
         {isVideoInProgress && (
-          <div className="mt-3 flex items-center gap-3 text-xs text-[#7a6a51]">
-            <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+          <div className="mt-3 flex items-center gap-3 text-xs pix-text-muted">
+            <span className="h-2.5 w-2.5 rounded-full border-2 border-accent border-t-transparent" />
             {isGenerating
               ? "Submitting video job..."
               : "Rendering video in Bedrock..."}

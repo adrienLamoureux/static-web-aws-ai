@@ -6,6 +6,7 @@
     "idea:list": "node scripts/idea-env.js list",
     "idea:init": "node scripts/idea-env.js init",
     "idea:deploy": "node scripts/idea-env.js deploy",
+    "idea:ui-local": "node scripts/idea-env.js ui-local",
     "idea:rollout": "node scripts/idea-env.js rollout",
     "idea:deploy-all": "node scripts/idea-env.js deploy-many --all",
     "idea:seed": "node scripts/seed-idea-content.js seed",

@@ -21,7 +21,7 @@ function ImageUploadPanel({
             onChange={(event) => onImageNameChange(event.target.value)}
             placeholder="frieren"
           />
-          <p className="mt-2 text-xs text-[#7a6a51]">
+          <p className="mt-2 text-xs pix-text-muted">
             Stored in your private S3 folder under your user profile.
           </p>
         </div>
@@ -47,15 +47,15 @@ function ImageUploadPanel({
           </div>
 
           {isUploading && (
-            <div className="mt-3 flex items-center gap-3 text-xs text-[#7a6a51]">
-              <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+            <div className="mt-3 flex items-center gap-3 text-xs pix-text-muted">
+              <span className="h-2.5 w-2.5 rounded-full border-2 border-accent border-t-transparent" />
               Uploading image to S3...
             </div>
           )}
 
           {uploadKey && (
-            <p className="mt-3 text-sm text-[#7a6a51]">
-              Uploaded as <span className="font-mono text-ink">{uploadKey}</span>
+            <p className="mt-3 text-sm pix-text-muted">
+              Uploaded as <span className="font-mono pix-text-strong">{uploadKey}</span>
             </p>
           )}
         </div>
@@ -65,22 +65,22 @@ function ImageUploadPanel({
         {selectedFile && (
           <div className="gallery-section">
             <p className="field-label">Selected image</p>
-            <p className="mt-2 text-base font-semibold text-ink">
+            <p className="mt-2 text-base font-semibold pix-text-strong">
               {selectedFile.name}
             </p>
-            <p className="text-sm text-[#7a6a51]">
+            <p className="text-sm pix-text-muted">
               {Math.round(selectedFile.size / 1024)} KB
             </p>
             {previewUrl && (
               <img
                 src={previewUrl}
                 alt="Preview"
-                className="mt-4 h-44 w-full rounded-2xl border border-[#e3d8c6] object-cover"
+                className="mt-4 h-44 w-full rounded-2xl border pix-border-soft object-cover"
               />
             )}
           </div>
         )}
-        <p className="text-xs text-[#7a6a51]">JPEG only, 1280x720 recommended.</p>
+        <p className="text-xs pix-text-muted">JPEG only, 1280x720 recommended.</p>
       </div>
     </div>
   );

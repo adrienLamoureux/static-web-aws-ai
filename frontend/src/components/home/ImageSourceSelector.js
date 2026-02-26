@@ -16,8 +16,8 @@ function ImageSourceSelector({ options, value, onChange }) {
                 isSelected ? "choice-tile--active" : ""
               }`}
             >
-              <p className="text-sm font-semibold text-ink">{option.name}</p>
-              <p className="mt-1 text-xs text-[#7a6a51]">
+              <p className="text-sm font-semibold pix-text-strong">{option.name}</p>
+              <p className="mt-1 text-xs pix-text-muted">
                 {option.description}
               </p>
             </button>

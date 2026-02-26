@@ -340,7 +340,6 @@
   font-weight: 600;
   padding: 4px 10px;
   backdrop-filter: blur(6px);
-  transition: transform 0.2s ease, background 0.2s ease;
 }
 .story-scene-animate {
   border-radius: 999px;
@@ -351,7 +350,6 @@
   font-weight: 600;
   padding: 4px 10px;
   backdrop-filter: blur(6px);
-  transition: transform 0.2s ease, background 0.2s ease;
 }
 .story-scene-music-trigger {
   border-radius: 999px;
@@ -362,18 +360,14 @@
   font-weight: 600;
   padding: 4px 10px;
   backdrop-filter: blur(6px);
-  transition: transform 0.2s ease, background 0.2s ease;
 }
 .story-scene-regenerate:hover:not(:disabled) {
-  transform: translateY(-1px);
   background: rgba(27, 26, 23, 0.7);
 }
 .story-scene-animate:hover:not(:disabled) {
-  transform: translateY(-1px);
   background: rgba(123, 68, 20, 0.78);
 }
 .story-scene-music-trigger:hover:not(:disabled) {
-  transform: translateY(-1px);
   background: rgba(34, 94, 69, 0.78);
 }
 .story-scene-row {

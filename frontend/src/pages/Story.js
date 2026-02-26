@@ -1,13 +1,14 @@
-import React from "react";
+import React, { useEffect } from "react";
 import StoryModeHeader from "./story/StoryModeHeader";
 import StoryControls from "./story/StoryControls";
 import StoryChatPanel from "./story/StoryChatPanel";
 import StoryIllustrationsPanel from "./story/StoryIllustrationsPanel";
 import useStoryStudio from "./story/useStoryStudio";
+import { STORY_VIEW_MODE } from "./story/constants";
 import "./story/story-base.css";
 import "./story/story-scenes.css";
 
-function Story({ apiBaseUrl = "" }) {
+function Story({ apiBaseUrl = "", forcedViewMode = "", pageVariant = "story" }) {
   const {
     presets,
     sessions,
@@ -65,15 +66,43 @@ function Story({ apiBaseUrl = "" }) {
     isSceneGeneratingMusic,
   } = useStoryStudio(apiBaseUrl);
 
+  useEffect(() => {
+    if (!forcedViewMode) return;
+    setStoryViewMode(forcedViewMode);
+  }, [forcedViewMode, setStoryViewMode]);
+
+  const modeLocked = Boolean(forcedViewMode);
+  const resolvedDirectorMode =
+    forcedViewMode === STORY_VIEW_MODE.DIRECTOR
+      ? true
+      : forcedViewMode === STORY_VIEW_MODE.READER
+        ? false
+        : isDirectorMode;
+
+  const pageTitle = resolvedDirectorMode ? "Director Console" : "Story Teller";
+  const pageSubtitle = resolvedDirectorMode
+    ? "Drive scene production, regeneration, and music sync from one command surface."
+    : "Write and read your story with a focused narrative workspace and live memory context.";
+
   return (
-    <section className="story-page">
-      <StoryModeHeader
-        isDirectorMode={isDirectorMode}
-        setStoryViewMode={setStoryViewMode}
-      />
+    <section
+      className={`story-page story-page--${resolvedDirectorMode ? "director" : "reader"} story-page--${pageVariant}`}
+    >
+      {modeLocked ? (
+        <header className="story-hero story-hero--locked glass-panel">
+          <p className="story-hero-kicker">{resolvedDirectorMode ? "Director" : "Story"}</p>
+          <h1 className="story-title">{pageTitle}</h1>
+          <p className="story-subtitle">{pageSubtitle}</p>
+        </header>
+      ) : (
+        <StoryModeHeader
+          isDirectorMode={isDirectorMode}
+          setStoryViewMode={setStoryViewMode}
+        />
+      )}
 
       <StoryControls
-        isDirectorMode={isDirectorMode}
+        isDirectorMode={resolvedDirectorMode}
         sessions={sessions}
         activeSessionId={activeSessionId}
         selectedPresetId={selectedPresetId}
@@ -88,11 +117,11 @@ function Story({ apiBaseUrl = "" }) {
 
       <div
         className={`story-book ${
-          isDirectorMode ? "story-book--director" : "story-book--reader"
+          resolvedDirectorMode ? "story-book--director" : "story-book--reader"
         }`}
       >
         <StoryChatPanel
-          isDirectorMode={isDirectorMode}
+          isDirectorMode={resolvedDirectorMode}
           activeSession={activeSession}
           activeTurnCount={activeTurnCount}
           isLoadingSession={isLoadingSession}
@@ -111,10 +140,10 @@ function Story({ apiBaseUrl = "" }) {
           setStoryDebugView={setStoryDebugView}
         />
 
-        {isDirectorMode && <div className="story-book-spine" />}
+        {resolvedDirectorMode && <div className="story-book-spine" />}
 
         <StoryIllustrationsPanel
-          isDirectorMode={isDirectorMode}
+          isDirectorMode={resolvedDirectorMode}
           scenes={scenes}
           messages={messages}
           input={input}

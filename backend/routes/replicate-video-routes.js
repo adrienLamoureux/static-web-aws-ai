@@ -1,6 +1,9 @@
+const { buildDirectorFallbackConfig } = require("../lib/director-config");
+
 module.exports = (app, deps) => {
   const {
     ensureUserKey,
+    replicateModelConfig,
     replicateVideoConfig,
     fetchS3ImageBuffer,
     fetchImageBuffer,
@@ -17,15 +20,38 @@ module.exports = (app, deps) => {
     buildReplicatePredictionRequest,
   } = deps;
 
+const buildVideoJobKey = (predictionId = "") =>
+  `render/replicate/video/${predictionId || Date.now()}`;
+
+const resolveModelDefault = (requestedModel, fallbackModel) => {
+  const candidate = String(requestedModel || "").trim();
+  if (!candidate) return fallbackModel;
+  return candidate;
+};
+
+const hasBodyField = (body, key) =>
+  Boolean(body && Object.prototype.hasOwnProperty.call(body, key));
+
+const directorFallbackConfig = buildDirectorFallbackConfig({
+  replicateModelConfig,
+  replicateVideoConfig,
+  defaultNegativePrompt: "",
+});
+
 app.post("/replicate/video/generate", async (req, res) => {
   const mediaBucket = process.env.MEDIA_BUCKET;
   const userId = req.user?.sub;
   const apiToken = process.env.REPLICATE_API_TOKEN;
-  const modelKey = req.body?.model || "wan-2.2-i2v-fast";
+  const modelKey = resolveModelDefault(
+    req.body?.model,
+    directorFallbackConfig.video.videoModel
+  );
   const inputKey = req.body?.inputKey;
   const imageUrl = req.body?.imageUrl;
   const prompt = req.body?.prompt?.trim();
-  const generateAudio = req.body?.generateAudio;
+  const generateAudio = hasBodyField(req.body, "generateAudio")
+    ? req.body?.generateAudio
+    : directorFallbackConfig.video.generateAudio;
 
   if (!mediaBucket) {
     return res.status(500).json({ message: "MEDIA_BUCKET must be set" });
@@ -126,6 +152,7 @@ app.post("/replicate/video/generate", async (req, res) => {
         message: "No prediction returned from Replicate",
       });
     }
+    const jobKey = buildVideoJobKey(prediction.id);
 
     if (prediction.status === "succeeded") {
       const outputUrl = getReplicateOutputUrl(prediction.output);
@@ -166,6 +193,23 @@ app.post("/replicate/video/generate", async (req, res) => {
         key: outputKey,
         extra: { posterKey: posterKey || "" },
       });
+      await putMediaItem({
+        userId,
+        type: "JOB",
+        key: jobKey,
+        extra: {
+          provider: "replicate",
+          entityType: "video",
+          predictionId: prediction.id,
+          inputKey,
+          status: "completed",
+          progressPct: 100,
+          etaSeconds: 0,
+          startedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      });
 
       return res.json({
         modelId: modelConfig.modelId,
@@ -176,6 +220,22 @@ app.post("/replicate/video/generate", async (req, res) => {
         status: prediction.status,
       });
     }
+    await putMediaItem({
+      userId,
+      type: "JOB",
+      key: jobKey,
+      extra: {
+        provider: "replicate",
+        entityType: "video",
+        predictionId: prediction.id,
+        inputKey,
+        status: prediction.status,
+        progressPct: prediction.status === "starting" ? 24 : 52,
+        etaSeconds: 90,
+        startedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    });
 
     res.json({
       modelId: modelConfig.modelId,
@@ -235,6 +295,21 @@ app.get("/replicate/video/status", async (req, res) => {
       });
     }
     if (prediction.status !== "succeeded") {
+      await putMediaItem({
+        userId,
+        type: "JOB",
+        key: buildVideoJobKey(predictionId),
+        extra: {
+          provider: "replicate",
+          entityType: "video",
+          predictionId,
+          inputKey,
+          status: prediction.status,
+          progressPct: prediction.status === "starting" ? 30 : 68,
+          etaSeconds: 55,
+          updatedAt: new Date().toISOString(),
+        },
+      });
       return res.json({
         predictionId,
         status: prediction.status,
@@ -278,6 +353,22 @@ app.get("/replicate/video/status", async (req, res) => {
       key: outputKey,
       extra: { posterKey: posterKey || "" },
     });
+    await putMediaItem({
+      userId,
+      type: "JOB",
+      key: buildVideoJobKey(predictionId),
+      extra: {
+        provider: "replicate",
+        entityType: "video",
+        predictionId,
+        inputKey,
+        status: "completed",
+        progressPct: 100,
+        etaSeconds: 0,
+        completedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    });
     const signedUrl = await getSignedUrl(
       s3Client,
       new GetObjectCommand({
@@ -294,6 +385,25 @@ app.get("/replicate/video/status", async (req, res) => {
       outputUrl: signedUrl,
     });
   } catch (error) {
+    try {
+      await putMediaItem({
+        userId,
+        type: "JOB",
+        key: buildVideoJobKey(predictionId),
+        extra: {
+          provider: "replicate",
+          entityType: "video",
+          predictionId,
+          inputKey,
+          status: "failed",
+          progressPct: 100,
+          etaSeconds: 0,
+          completedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          errorMessage: error?.message || String(error),
+        },
+      });
+    } catch (_ignored) {}
     console.error("Replicate video status error details:", {
       name: error?.name,
       message: error?.message,

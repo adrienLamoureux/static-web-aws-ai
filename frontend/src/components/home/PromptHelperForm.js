@@ -32,7 +32,7 @@ function PromptHelperForm({
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="field-label">AI prompt helper</p>
-          <p className="mt-1 text-xs text-[#7a6a51]">
+          <p className="mt-1 text-xs pix-text-muted">
             Pick a scenario, then create a prompt draft.
           </p>
         </div>
@@ -111,7 +111,7 @@ function PromptHelperForm({
         <p className="field-label">
           Character aesthetics
         </p>
-        <p className="mt-1 text-xs text-[#7a6a51]">
+        <p className="mt-1 text-xs pix-text-muted">
           Face vibe and styling cues.
         </p>
       </div>
@@ -199,7 +199,7 @@ function PromptHelperForm({
 
         <div className="md:col-span-2 xl:col-span-3">
           <p className="field-label">Furry traits</p>
-          <p className="mt-1 text-xs text-[#7a6a51]">
+          <p className="mt-1 text-xs pix-text-muted">
             Ears, tails, wings, and other body features (comma-separated).
           </p>
         </div>
@@ -371,7 +371,7 @@ function PromptHelperForm({
         <p className="field-label">
           Styling
         </p>
-        <p className="mt-1 text-xs text-[#7a6a51]">
+        <p className="mt-1 text-xs pix-text-muted">
           Keep these independent of character presets.
         </p>
       </div>
@@ -439,13 +439,13 @@ function PromptHelperForm({
       </div>
 
       {isLoading && (
-        <div className="mt-3 flex items-center gap-2 text-xs text-[#7a6a51]">
-          <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+        <div className="mt-3 flex items-center gap-2 text-xs pix-text-muted">
+          <span className="h-2.5 w-2.5 rounded-full border-2 border-accent border-t-transparent" />
           Drafting a prompt with Haiku...
         </div>
       )}
       {status === "success" && (
-        <p className="mt-3 text-xs text-[#7a6a51]">
+        <p className="mt-3 text-xs pix-text-muted">
           Prompt applied to the positive field.
         </p>
       )}

@@ -5,3 +5,41 @@ Track rollouts of the same improvement across multiple idea stacks.
 ## Rollout Log
 - 2026-02-23T16:38:16.769Z | action=deploy-many | improvement=multi-design-bootstrap | targets=design-endfield,design-main,design-moescape | succeeded=design-endfield,design-main,design-moescape | failed=- | commit=50f84fb
 - 2026-02-23T17:15:52.789Z | action=deploy-many | improvement=fix-api-config-mismatch | targets=design-endfield,design-main,design-moescape | succeeded=design-endfield,design-main,design-moescape | failed=- | commit=50f84fb
+- 2026-02-23T23:18:08.674Z | action=deploy | improvement=ui-theme-moescape-v1 | targets=design-moescape | succeeded=design-moescape | failed=- | commit=da58a51
+- 2026-02-24T09:19:34.902Z | action=deploy | improvement=ui-theme-moescape-v2 | targets=design-moescape | succeeded=design-moescape | failed=- | commit=3201f8f
+- 2026-02-24T17:21:40.199Z | action=deploy | improvement=radical ui motion pass | targets=design-moescape | succeeded=design-moescape | failed=- | commit=3a25f10
+- 2026-02-24T17:33:27.280Z | action=deploy | improvement=hub structure pass | targets=design-moescape | succeeded=design-moescape | failed=- | commit=b493487
+- 2026-02-24T21:42:32.046Z | action=deploy | improvement=palette readability pass | targets=design-moescape | succeeded=design-moescape | failed=- | commit=4012857
+- 2026-02-24T23:00:07.058Z | action=deploy | improvement=pixnovel-hybrid-ui | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=7201f1a
+- 2026-02-25T09:34:50.145Z | action=deploy | improvement=pixnovel-masonry-image-stream | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6a09f97
+- 2026-02-25T09:45:18.142Z | action=deploy | improvement=pixnovel-surface-unification | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=5c65c89
+- 2026-02-25T10:09:59.059Z | action=deploy | improvement=pixnovel-hard-unify-shell | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=3f6aedf
+- 2026-02-25T10:28:16.917Z | action=deploy | improvement=pixnovel-fullscreen-main-shell | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=437450d
+- 2026-02-25T11:23:49.382Z | action=deploy | improvement=pixnovel-hero-top-auth-and-cool-bg | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=b6a7c68
+- 2026-02-25T11:36:11.929Z | action=deploy | improvement=pixnovel-remove-hero-visual-cool-bg-v2 | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=8d87a6d
+- 2026-02-25T11:50:26.700Z | action=deploy | improvement=pixnovel-enforce-body-theme-override | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=303067b
+- 2026-02-25T12:06:16.662Z | action=deploy | improvement=pixnovel-dialog-contrast-and-text-pass | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=a59fddd
+- 2026-02-25T13:54:41.018Z | action=deploy | improvement=pixnovel-whisk-text-contrast-boost | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=af4e7de
+- 2026-02-25T14:15:31.637Z | action=deploy | improvement=pixnovel-whisk-key-text-contrast-v2 | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=d809a8c
+- 2026-02-25T14:29:18.808Z | action=deploy | improvement=pixnovel-masonry-color-calibration | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=d90f6d3
+- 2026-02-25T14:37:30.619Z | action=deploy | improvement=pixnovel-only-masonry-animation-white-text-force | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=5fc4036
+- 2026-02-25T14:42:00.510Z | action=deploy | improvement=pixnovel-masonry-only-white-text-hard-override | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=5fc4036
+- 2026-02-25T15:03:21.056Z | action=deploy | improvement=pixnovel-remove-all-motion-keep-masonry-only | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=1680cc6
+- 2026-02-25T15:42:43.470Z | action=deploy | improvement=pixnovel-portrait-fancy-image-wall | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=a9ceb12
+- 2026-02-25T15:59:11.420Z | action=deploy | improvement=pixnovel-oblique-touching-portrait-wall | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=887fe46
+- 2026-02-25T16:24:02.961Z | action=deploy | improvement=pixnovel-stronger-oblique-touching-wall | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=66cd013
+- 2026-02-26T09:24:34.823Z | action=deploy | improvement=ops-dashboard-quick-generate-panel | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653
+- 2026-02-26T09:28:30.003Z | action=deploy | improvement=ops-dashboard-dropdown-shortcuts | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653
+- 2026-02-26T09:33:14.566Z | action=deploy | improvement=quick-panel-js-prompt-payload | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653
+- 2026-02-26T09:34:44.396Z | action=deploy | improvement=quick-panel-hidden-prompts | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653
+- 2026-02-26T09:37:36.846Z | action=deploy | improvement=remove-redundant-whisk-hero-copy | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653
+- 2026-02-26T09:44:08.414Z | action=deploy | improvement=separate-videos-page | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653
+- 2026-02-26T09:47:05.501Z | action=deploy | improvement=separate-videos-page-finalize | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653
+- 2026-02-26T10:04:51.772Z | action=deploy | improvement=pane-aware-side-rails-and-cool-tone-story-music | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653
+- 2026-02-26T11:00:38.828Z | action=deploy | improvement=story-soundlab-no-side-panels | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653
+- 2026-02-26T11:03:52.146Z | action=deploy | improvement=story-soundlab-no-side-panels | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653
+- 2026-02-26T11:15:13.661Z | action=deploy | improvement=add-global-director-page-and-video-title-cleanup | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653
+- 2026-02-26T11:42:58.177Z | action=deploy | improvement=director-scope-1-4 | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653
+- 2026-02-26T11:47:48.066Z | action=deploy | improvement=director-remove-yellow-warn | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653
+- 2026-02-26T17:21:19.670Z | action=deploy | improvement=director-hero-remove-yellow-glass | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653
+- 2026-02-26T21:37:51.289Z | action=deploy | improvement=whisk-create-plus-alignment | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653

@@ -21,8 +21,8 @@ function WhiskModal({
   if (!activeModal) return null;
 
   return (
-    <div className="whisk-modal-backdrop" onClick={onClose}>
-      <div className="whisk-modal" onClick={(event) => event.stopPropagation()}>
+    <div className="whisk-modal-backdrop pix-dialog-backdrop" onClick={onClose}>
+      <div className="whisk-modal pix-dialog" onClick={(event) => event.stopPropagation()}>
         <div className="whisk-modal-header">
           <div>
             <p className="whisk-label">

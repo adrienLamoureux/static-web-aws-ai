@@ -71,6 +71,7 @@
 `npm --prefix cdk run idea:destroy -- --stage=<idea-id>`
 `npm --prefix cdk run idea:diff -- --stage=<idea-id>`
 `npm --prefix cdk run idea:synth -- --stage=<idea-id>`
+`npm --prefix cdk run idea:ui-local -- --stage=<idea-id> [--port=<port>] [--print-env] [--open]`
 - Batch operations for “same improvement, selected ideas”:
 `npm --prefix cdk run idea:list`
 `npm --prefix cdk run idea:rollout -- --improvement="<name>" [--exclude=idea-x] [--owner="<owner>"] [--ttl-days=<days>]`
@@ -82,8 +83,11 @@
 `npm --prefix cdk run idea:seed-many -- --all [--exclude=idea-x] [--source-stage=<source-stage>] [--source-stack=<stack-name>]`
 - For autonomous rollouts across all ideas, prefer `idea:rollout` (build once + deploy all + write logs).
 - Post-deploy UI smoke is mandatory for `idea:deploy`, `idea:deploy-many`, and `idea:rollout` (the runner enforces this and rejects `--skip-ui-smoke`).
-- For any code/config change under `frontend/`, `backend/`, or `cdk/` in an idea worktree, deploy that idea immediately with `npm --prefix cdk run idea:deploy -- --stage=<idea-id> --improvement="<label>"` before considering the task done.
-- A task touching runtime code is only complete when deploy succeeds and both `[idea-sanity]` and `[idea-ui-smoke]` report pass.
+- For frontend-only changes (files only under `frontend/`), do not deploy immediately; run local preview against hosted stack config with `npm --prefix cdk run idea:ui-local -- --stage=<idea-id>` and validate with `npm --prefix frontend run build`.
+- For backend/cdk changes (or any frontend change coupled with backend/cdk contract changes), deploy that idea with `npm --prefix cdk run idea:deploy -- --stage=<idea-id> --improvement="<label>"`.
+- A task is complete when:
+  - frontend-only: local preview started via `idea:ui-local` + frontend build pass.
+  - backend/cdk touched: deploy succeeds and both `[idea-sanity]` and `[idea-ui-smoke]` report pass.
 - If deploy cannot be run, stop and report the blocker instead of marking the change complete.
 - After every deploy/destroy, update `README.md` and `DECISIONS.md` if scope or architecture changed.
 - For deploy-many commands, always provide `--improvement`, and prefer `--dry-run` first when targeting many stacks.
