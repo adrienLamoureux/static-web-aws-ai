@@ -49,9 +49,11 @@
 - Cleanup command after merge:
 `git worktree remove ../wt/<idea-id>/plan && git worktree remove ../wt/<idea-id>/code && git worktree remove ../wt/<idea-id>/integrate`
 - Active code worktrees for current design variants:
-`/Users/adrienlamoureux/Documents/code/wt/design-main/code` -> `codex/design-main/code`
-`/Users/adrienlamoureux/Documents/code/wt/design-endfield/code` -> `codex/design-endfield/code`
-`/Users/adrienlamoureux/Documents/code/wt/design-moescape/code` -> `codex/design-moescape/code`
+`/Users/adrienlamoureux/Documents/code/static-web-aws-ai` -> `codex/dev`
+`/Users/adrienlamoureux/Documents/code/wt/design-pixnovel/code` -> `codex/design-pixnovel/code`
+`/Users/adrienlamoureux/Documents/code/wt/palette-aurora/code` -> `codex/palette-aurora/code`
+`/Users/adrienlamoureux/Documents/code/wt/palette-ember/code` -> `codex/palette-ember/code`
+`/Users/adrienlamoureux/Documents/code/wt/palette-nocturne/code` -> `codex/palette-nocturne/code`
 
 ## Idea Environment Policy
 - Every parallel prototype must have a unique idea ID (`<idea-id>`).
