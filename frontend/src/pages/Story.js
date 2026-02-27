@@ -5,8 +5,6 @@ import StoryChatPanel from "./story/StoryChatPanel";
 import StoryIllustrationsPanel from "./story/StoryIllustrationsPanel";
 import useStoryStudio from "./story/useStoryStudio";
 import { STORY_VIEW_MODE } from "./story/constants";
-import "./story/story-base.css";
-import "./story/story-scenes.css";
 
 function Story({ apiBaseUrl = "", forcedViewMode = "", pageVariant = "story" }) {
   const {

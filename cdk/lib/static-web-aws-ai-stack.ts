@@ -23,6 +23,8 @@ const ADMIN_TEMP_PASSWORD_MIN_LENGTH = 10;
 const AWS_ACCOUNT_ID_PATTERN = /\b\d{12}\b/;
 const LOCAL_COGNITO_PORT_START = 3000;
 const LOCAL_COGNITO_PORT_COUNT = 10;
+const TCP_PORT_MIN = 1;
+const TCP_PORT_MAX = 65535;
 const DEFAULT_LOCAL_COGNITO_PORTS = Array.from(
   { length: LOCAL_COGNITO_PORT_COUNT },
   (_value, index) => String(LOCAL_COGNITO_PORT_START + index)
@@ -46,7 +48,15 @@ const resolveLocalCognitoPorts = (value: string) => {
     return [...DEFAULT_LOCAL_COGNITO_PORTS];
   }
   const deduped = Array.from(
-    new Set(rawPorts.filter((item) => /^\d{2,5}$/.test(item)))
+    new Set(
+      rawPorts
+        .map((item) => Number(item))
+        .filter(
+          (item) =>
+            Number.isInteger(item) && item >= TCP_PORT_MIN && item <= TCP_PORT_MAX
+        )
+        .map((item) => String(item))
+    )
   );
   return deduped.length ? deduped : [...DEFAULT_LOCAL_COGNITO_PORTS];
 };

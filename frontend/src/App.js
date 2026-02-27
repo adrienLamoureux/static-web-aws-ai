@@ -21,7 +21,6 @@ import { fetchOperationalDashboard } from "./services/operations";
 import { generateReplicateImage } from "./services/replicate";
 import { listStoryCharacters } from "./services/story";
 import { listPromptHelperOptions } from "./services/promptHelper";
-import "./themes/pixnovel.css";
 
 const mergeCognitoConfig = (base = {}, override = {}) => ({
   domain: override.domain || base.domain || "",
@@ -1206,13 +1205,6 @@ function App() {
     cognito: {},
   });
   const [configReady, setConfigReady] = useState(false);
-
-  useEffect(() => {
-    document.body.classList.add("theme-pixnovel");
-    return () => {
-      document.body.classList.remove("theme-pixnovel");
-    };
-  }, []);
 
   useEffect(() => {
     let isMounted = true;

@@ -7,7 +7,6 @@ import {
   prioritizeDirectorJob,
   saveDirectorConfig,
 } from "../services/operations";
-import "./director.css";
 
 const EMPTY_SUMMARY = Object.freeze({
   queued: 0,

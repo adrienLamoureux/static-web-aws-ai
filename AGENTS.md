@@ -29,6 +29,7 @@
 - Human workflow: open PR from `codex/dev` to `main` and merge manually.
 - Branch scope contract:
   - `codex/dev` is the full-stack integration branch (backend, frontend, services, cdk, docs, idea registries/status).
+  - `codex/dev` keeps frontend styling minimal and functionality-first; avoid adding rich theme/page CSS here.
   - `codex/design-pixnovel/code` is a UI variant overlay branch, rebased on top of `codex/dev`.
   - `codex/design-pixnovel/code` may change only `frontend/**` and optional TTL-only stack wiring in `cdk/lib/static-web-aws-ai-stack.ts` or `cdk/scripts/idea-env.js`.
   - Do not commit backend route/lib changes, idea docs/registry edits, or generic architecture docs on `codex/design-pixnovel/code`.

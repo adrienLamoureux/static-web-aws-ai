@@ -37,7 +37,6 @@ Track rollouts of the same improvement across multiple idea stacks.
 - 2026-02-26T09:47:05.501Z | action=deploy | improvement=separate-videos-page-finalize | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653
 - 2026-02-26T10:04:51.772Z | action=deploy | improvement=pane-aware-side-rails-and-cool-tone-story-music | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653
 - 2026-02-26T11:00:38.828Z | action=deploy | improvement=story-soundlab-no-side-panels | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653
-- 2026-02-26T11:03:52.146Z | action=deploy | improvement=story-soundlab-no-side-panels | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653
 - 2026-02-26T11:15:13.661Z | action=deploy | improvement=add-global-director-page-and-video-title-cleanup | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653
 - 2026-02-26T11:42:58.177Z | action=deploy | improvement=director-scope-1-4 | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653
 - 2026-02-26T11:47:48.066Z | action=deploy | improvement=director-remove-yellow-warn | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653

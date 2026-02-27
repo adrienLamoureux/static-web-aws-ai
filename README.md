@@ -182,7 +182,9 @@ See current registry and live URLs in:
 
 Current collaboration baseline:
 - Default long-lived branch: `codex/dev`
+- `codex/dev` is full-stack and functionality-first (minimal frontend styling)
 - Ongoing agent edits happen on `codex/dev`
+- Rich UI/theme variants are isolated to design branches (for example `codex/design-pixnovel/code`)
 - Human opens PR from `codex/dev` to `main` and merges manually
 
 Recommended worktree pattern for larger tasks:

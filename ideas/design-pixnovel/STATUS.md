@@ -71,3 +71,4 @@
 - 2026-02-26T22:36:14.975Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=39dab2d / sanity=passed / ui_smoke=passed / improvement=cognito-localhost-multiport-callbacks
 - 2026-02-27T09:23:07.237Z | event=diff | stage=design-pixnovel
 - 2026-02-27T09:33:56.732Z | event=deploy-many | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=39dab2d / sanity=passed / ui_smoke=passed / improvement=cognito-localhost-ports-3000-3009
+- 2026-02-27T17:22:57.205Z | event=ui-smoke | stage=design-pixnovel / result=passed
