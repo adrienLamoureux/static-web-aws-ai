@@ -50,9 +50,12 @@
 `git worktree remove ../wt/<idea-id>/plan && git worktree remove ../wt/<idea-id>/code && git worktree remove ../wt/<idea-id>/integrate`
 - Active code worktrees for current design variants:
 `/Users/adrienlamoureux/Documents/code/static-web-aws-ai` -> `codex/dev`
-`/Users/adrienlamoureux/Documents/code/wt/design-pixnovel/code` -> `codex/design-pixnovel/code`
+`/Users/adrienlamoureux/Documents/code/wt/design-pixnovel/code` -> `codex/design-pixnovel/code` (selected; blush-light)
+`/Users/adrienlamoureux/Documents/code/wt/design-pixnovel-legacy/code` -> `codex/design-pixnovel-legacy/code` (legacy)
 `/Users/adrienlamoureux/Documents/code/wt/palette-aurora/code` -> `codex/palette-aurora/code`
+`/Users/adrienlamoureux/Documents/code/wt/palette-breeze-light/code` -> `codex/palette-breeze-light/code`
 `/Users/adrienlamoureux/Documents/code/wt/palette-ember/code` -> `codex/palette-ember/code`
+`/Users/adrienlamoureux/Documents/code/wt/palette-lilac-light/code` -> `codex/palette-lilac-light/code`
 `/Users/adrienlamoureux/Documents/code/wt/palette-nocturne/code` -> `codex/palette-nocturne/code`
 
 ## Idea Environment Policy

@@ -1,8 +1,8 @@
-@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Sora:wght@400;500;600;700&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap");
 
 :root {
-  --pix-font-body: "Plus Jakarta Sans", "Zen Kaku Gothic New", "Segoe UI", sans-serif;
-  --pix-font-display: "Orbitron", "Plus Jakarta Sans", sans-serif;
+  --pix-font-body: "Sora", "Zen Kaku Gothic New", "Segoe UI", sans-serif;
+  --pix-font-display: "Space Grotesk", "Sora", sans-serif;
   --pix-bg-0: #070a1a;
   --pix-bg-1: #10152d;
   --pix-bg-2: #1a2242;
@@ -120,7 +120,7 @@ body.theme-pixnovel .director-hero.glass-panel {
 }
 
 .pixnovel-brand {
-  font-family: "Orbitron", "Plus Jakarta Sans", sans-serif;
+  font-family: var(--pix-font-display);
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -144,7 +144,7 @@ body.theme-pixnovel .director-hero.glass-panel {
   justify-content: center;
   border-radius: 999px;
   border: 1px solid transparent;
-  color: #b2bee0;
+  color: var(--pix-muted);
   font-size: 0.77rem;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -154,7 +154,7 @@ body.theme-pixnovel .director-hero.glass-panel {
 }
 
 .pixnovel-top-link:hover {
-  color: #ecf4ff;
+  color: var(--pix-text);
 }
 
 .pixnovel-top-link.is-active {
@@ -175,7 +175,7 @@ body.theme-pixnovel .director-hero.glass-panel {
 }
 
 .pixnovel-user-chip span {
-  color: #c7d2f3;
+  color: var(--pix-muted);
   font-size: 0.77rem;
   margin-left: 0.42rem;
 }
@@ -183,7 +183,7 @@ body.theme-pixnovel .director-hero.glass-panel {
 .pixnovel-user-chip .btn-ghost {
   border-color: rgba(162, 188, 246, 0.36);
   background: rgba(14, 20, 40, 0.74);
-  color: #d9e4ff;
+  color: var(--pix-text);
 }
 
 .pixnovel-workspace {
@@ -299,7 +299,7 @@ body.theme-pixnovel .director-hero.glass-panel {
 .pixnovel-hero-title {
   margin: 10px 0 0;
   max-width: 680px;
-  font-family: "Orbitron", "Plus Jakarta Sans", sans-serif;
+  font-family: var(--pix-font-display);
   font-size: clamp(1.45rem, 3vw, 2.3rem);
   line-height: 1.22;
   color: #f8fbff;
@@ -308,7 +308,7 @@ body.theme-pixnovel .director-hero.glass-panel {
 .pixnovel-hero-subtitle {
   margin: 12px 0 0;
   max-width: 690px;
-  color: #bbc8eb;
+  color: color-mix(in srgb, var(--pix-text) 80%, transparent);
   font-size: 0.96rem;
   line-height: 1.7;
 }
@@ -327,7 +327,7 @@ body.theme-pixnovel .director-hero.glass-panel {
   border-radius: 999px;
   border: 1px solid rgba(170, 194, 248, 0.32);
   background: rgba(10, 15, 34, 0.66);
-  color: #cad4f3;
+  color: color-mix(in srgb, var(--pix-text) 84%, transparent);
   text-decoration: none;
   padding: 0.36rem 0.72rem;
   font-size: 0.76rem;
@@ -362,7 +362,7 @@ body.theme-pixnovel .director-hero.glass-panel {
   border-radius: 999px;
   border: 1px solid rgba(160, 186, 246, 0.32);
   background: rgba(9, 13, 29, 0.66);
-  color: #c4d1f2;
+  color: color-mix(in srgb, var(--pix-text) 82%, transparent);
   font-size: 0.68rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -421,7 +421,7 @@ body.theme-pixnovel .director-hero.glass-panel {
   margin: 6px 0 0;
   color: #f3f8ff;
   font-size: 1rem;
-  font-family: "Orbitron", "Plus Jakarta Sans", sans-serif;
+  font-family: var(--pix-font-display);
   letter-spacing: 0.03em;
 }
 
@@ -450,7 +450,7 @@ body.theme-pixnovel .director-hero.glass-panel {
 
 .pixnovel-control-label {
   margin: 0;
-  color: #aebce3;
+  color: color-mix(in srgb, var(--pix-text) 72%, transparent);
   font-size: 0.66rem;
   text-transform: uppercase;
   letter-spacing: 0.16em;
@@ -460,7 +460,7 @@ body.theme-pixnovel .director-hero.glass-panel {
   font-style: normal;
   text-transform: none;
   letter-spacing: 0.04em;
-  color: #90a4d3;
+  color: color-mix(in srgb, var(--pix-text) 62%, transparent);
 }
 
 .pixnovel-quick-form {
@@ -505,7 +505,7 @@ body.theme-pixnovel .director-hero.glass-panel {
 }
 
 .pixnovel-form-input::placeholder {
-  color: #8a9cc8;
+  color: color-mix(in srgb, var(--pix-text) 58%, transparent);
 }
 
 .pixnovel-form-select:focus,
@@ -695,7 +695,7 @@ body.theme-pixnovel .director-hero.glass-panel {
 .pixnovel-stage-head h2 {
   margin: 8px 0 0;
   color: #f6faff;
-  font-family: "Orbitron", "Plus Jakarta Sans", sans-serif;
+  font-family: var(--pix-font-display);
   font-size: 1.1rem;
 }
 
@@ -1935,4 +1935,129 @@ body.theme-pixnovel .pixnovel-shell :is(
   to {
     transform: translateY(calc(var(--pix-masonry-start-offset) - 50%));
   }
+}
+
+/* Pixnovel Palette Cleanup Overrides */
+body.theme-pixnovel {
+  --pix-text-strong: #ffffff;
+  --pix-text-soft: color-mix(in srgb, var(--pix-text) 78%, transparent);
+  --pix-text-faint: color-mix(in srgb, var(--pix-text) 62%, transparent);
+  --pix-border-strong: color-mix(in srgb, var(--pix-cyan) 56%, transparent);
+  --pix-border-soft: color-mix(in srgb, var(--pix-cyan) 34%, transparent);
+  --pix-accent-glow: color-mix(in srgb, var(--pix-cyan) 44%, transparent);
+}
+
+body.theme-pixnovel .pixnovel-shell {
+  color: var(--pix-text);
+}
+
+body.theme-pixnovel .pixnovel-top-nav,
+body.theme-pixnovel .pixnovel-user-chip,
+body.theme-pixnovel .pixnovel-hero-link,
+body.theme-pixnovel .pixnovel-tag-chip,
+body.theme-pixnovel .pixnovel-form-input,
+body.theme-pixnovel .pixnovel-form-select,
+body.theme-pixnovel .pixnovel-option-pill,
+body.theme-pixnovel .pixnovel-meter-track,
+body.theme-pixnovel .pixnovel-status-badge,
+body.theme-pixnovel .whisk-pill,
+body.theme-pixnovel .whisk-wall-more,
+body.theme-pixnovel .whisk-tile-plus {
+  border-color: var(--pix-border-soft) !important;
+  color: var(--pix-text-soft) !important;
+}
+
+body.theme-pixnovel .pixnovel-top-link,
+body.theme-pixnovel .pixnovel-user-chip span,
+body.theme-pixnovel .pixnovel-control-label,
+body.theme-pixnovel .pixnovel-feed-copy,
+body.theme-pixnovel .pixnovel-signal-hint,
+body.theme-pixnovel .whisk-panel-copy,
+body.theme-pixnovel .whisk-wall-count,
+body.theme-pixnovel .music-library-copy,
+body.theme-pixnovel .story-subtitle,
+body.theme-pixnovel .nav-user-email {
+  color: var(--pix-text-soft) !important;
+}
+
+body.theme-pixnovel .pixnovel-hero-kicker,
+body.theme-pixnovel .pixnovel-generator-kicker,
+body.theme-pixnovel .pixnovel-stage-kicker,
+body.theme-pixnovel .whisk-eyebrow,
+body.theme-pixnovel .story-context-eyebrow,
+body.theme-pixnovel .music-library-eyebrow {
+  color: color-mix(in srgb, var(--pix-cyan) 84%, white 16%) !important;
+  text-shadow: none !important;
+}
+
+body.theme-pixnovel .pixnovel-top-link:hover,
+body.theme-pixnovel .pixnovel-hero-link:hover,
+body.theme-pixnovel .pixnovel-option-pill:hover,
+body.theme-pixnovel .whisk-wall-more:hover,
+body.theme-pixnovel .whisk-tile-cta:hover .whisk-tile-plus {
+  border-color: var(--pix-border-strong) !important;
+  color: var(--pix-text-strong) !important;
+}
+
+body.theme-pixnovel .pixnovel-top-link.is-active,
+body.theme-pixnovel .pixnovel-hero-link.is-active,
+body.theme-pixnovel .pixnovel-option-pill.is-active {
+  border-color: var(--pix-border-strong) !important;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--pix-violet) 30%, transparent),
+    color-mix(in srgb, var(--pix-cyan) 24%, transparent)
+  ) !important;
+  box-shadow: 0 12px 24px -20px var(--pix-accent-glow) !important;
+  color: var(--pix-text-strong) !important;
+}
+
+body.theme-pixnovel .pixnovel-generate-button {
+  border-color: var(--pix-border-strong) !important;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--pix-cyan) 84%, #ffffff 16%),
+    color-mix(in srgb, var(--pix-violet) 76%, #ffffff 24%),
+    color-mix(in srgb, var(--pix-rose) 74%, #ffffff 26%)
+  ) !important;
+  color: #0b1226 !important;
+}
+
+body.theme-pixnovel .pixnovel-generate-button:hover {
+  box-shadow: 0 16px 26px -18px var(--pix-accent-glow) !important;
+}
+
+body.theme-pixnovel .pixnovel-meter-track span,
+body.theme-pixnovel .story-progress-fill {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--pix-cyan) 90%, white 10%),
+    color-mix(in srgb, var(--pix-violet) 88%, white 12%)
+  ) !important;
+}
+
+body.theme-pixnovel .pixnovel-reference-item,
+body.theme-pixnovel .pixnovel-queue-item p,
+body.theme-pixnovel .pixnovel-signal-row span,
+body.theme-pixnovel .whisk-title,
+body.theme-pixnovel .whisk-title-main,
+body.theme-pixnovel .story-title,
+body.theme-pixnovel .music-library-title,
+body.theme-pixnovel .director-title {
+  color: var(--pix-text-strong) !important;
+}
+
+body.theme-pixnovel .pixnovel-shortcut-item,
+body.theme-pixnovel .pixnovel-queue-item {
+  border-left-color: var(--pix-border-soft) !important;
+}
+
+body.theme-pixnovel .pixnovel-reference-item input {
+  accent-color: color-mix(in srgb, var(--pix-cyan) 88%, white 12%);
+}
+
+body.theme-pixnovel .pixnovel-form-select {
+  background-image:
+    linear-gradient(45deg, transparent 50%, color-mix(in srgb, var(--pix-cyan) 80%, white 20%) 50%),
+    linear-gradient(135deg, color-mix(in srgb, var(--pix-cyan) 80%, white 20%) 50%, transparent 50%) !important;
 }

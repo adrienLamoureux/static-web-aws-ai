@@ -1146,6 +1146,38 @@ function readStackOutputsFromAws({ stackId }) {
   }, {});
 }
 
+function extractCognitoDomainPrefix(outputs) {
+  const directPrefix = String(outputs?.CognitoDomainPrefix || "").trim();
+  if (directPrefix) return directPrefix;
+  const domain = normalizeCognitoDomain(outputs?.CognitoDomain || "");
+  if (!domain) return "";
+  try {
+    const hostname = new URL(domain).hostname;
+    const marker = ".auth.";
+    const markerIndex = hostname.indexOf(marker);
+    return markerIndex > 0 ? hostname.slice(0, markerIndex) : "";
+  } catch (error) {
+    return "";
+  }
+}
+
+function resolvePersistedCognitoDomainBase({ stage, stackId }) {
+  const outputsPath = path.join(IDEAS_DIR, stage, OUTPUTS_FILE_NAME);
+  const fileOutputs = readStackOutputsFile({ outputsPath, stackId });
+  const awsOutputs = readStackOutputsFromAws({ stackId });
+  const mergedOutputs = {
+    ...fileOutputs,
+    ...awsOutputs,
+  };
+  const fullPrefix = extractCognitoDomainPrefix(mergedOutputs);
+  if (!fullPrefix) return "";
+  const stageMarker = `-${stage}-`;
+  const stageIndex = fullPrefix.lastIndexOf(stageMarker);
+  if (stageIndex <= 0) return "";
+  const basePrefix = fullPrefix.slice(0, stageIndex).trim();
+  return basePrefix;
+}
+
 function normalizeCloudfrontUrl(rawValue) {
   const value = String(rawValue || "").trim();
   if (!value || value === "-") return "";
@@ -1392,15 +1424,62 @@ function resolveCdkInvocation() {
   };
 }
 
-function runCdkOrFail(args, cwd) {
-  runOrFail(cdkInvocation.commandName, [...cdkInvocation.commandArgs, ...args], cwd);
+function extractStageFromCdkArgs(args) {
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = String(args[index] || "");
+    if (arg === "--context") {
+      const contextValue = String(args[index + 1] || "");
+      if (contextValue.startsWith("stage=")) {
+        return resolveStage(contextValue.slice("stage=".length));
+      }
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith("--context=")) {
+      const contextValue = arg.slice("--context=".length);
+      if (contextValue.startsWith("stage=")) {
+        return resolveStage(contextValue.slice("stage=".length));
+      }
+    }
+  }
+  return "";
 }
 
-function runOrFail(commandName, args, cwd) {
+function runCdkOrFail(args, cwd) {
+  const stage = extractStageFromCdkArgs(args);
+  let commandEnv = process.env;
+  if (stage) {
+    const stackId = buildStackId(stage);
+    const persistedBase = resolvePersistedCognitoDomainBase({ stage, stackId });
+    if (persistedBase) {
+      const configuredBase = String(
+        process.env.COGNITO_DOMAIN_PREFIX_BASE || process.env.COGNITO_DOMAIN_PREFIX || ""
+      ).trim();
+      if (configuredBase && configuredBase !== persistedBase) {
+        info(
+          `Using persisted Cognito domain base "${persistedBase}" for stage "${stage}" to avoid domain replacement.`
+        );
+      }
+      commandEnv = {
+        ...process.env,
+        COGNITO_DOMAIN_PREFIX_BASE: persistedBase,
+        COGNITO_DOMAIN_PREFIX: persistedBase,
+      };
+    }
+  }
+  runOrFail(
+    cdkInvocation.commandName,
+    [...cdkInvocation.commandArgs, ...args],
+    cwd,
+    commandEnv
+  );
+}
+
+function runOrFail(commandName, args, cwd, envOverrides) {
   const result = spawnSync(commandName, args, {
     cwd,
     stdio: "inherit",
-    env: process.env,
+    env: envOverrides || process.env,
   });
   if (result.error) {
     throw new Error(`Failed to run ${commandName}: ${result.error.message}`);

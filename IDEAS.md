@@ -4,10 +4,10 @@ Use this file as the top-level overview for all parallel full-stack idea environ
 
 ## Registry
 <!-- IDEA_REGISTRY_START -->
-- idea=design-endfield | stack=StaticWebAWSAIStack-design-endfield | status=LIVE | last_action=2026-02-23T17:03:29.696Z | cloudfront=https://d3vbqp2fb0oc5m.cloudfront.net | api=https://z4jv3sqt5g.execute-api.us-east-1.amazonaws.com/prod/ | folder=ideas/design-endfield | note=Deployed 50f84fb (fix-api-config-mismatch)
-- idea=design-main | stack=StaticWebAWSAIStack-design-main | status=LIVE | last_action=2026-02-23T17:10:25.513Z | cloudfront=https://dxniixk2a4dur.cloudfront.net | api=https://oa2kzhs1l3.execute-api.us-east-1.amazonaws.com/prod/ | folder=ideas/design-main | note=Deployed 50f84fb (fix-api-config-mismatch)
-- idea=design-moescape | stack=StaticWebAWSAIStack-design-moescape | status=LIVE | last_action=2026-02-24T21:42:32.037Z | cloudfront=https://d1raqt5min66lv.cloudfront.net | api=https://bcy62oi00d.execute-api.us-east-1.amazonaws.com/prod/ | folder=ideas/design-moescape | note=Deployed 4012857 (palette readability pass)
-- idea=design-pixnovel | stack=StaticWebAWSAIStack-design-pixnovel | status=LIVE | last_action=2026-02-26T21:37:51.281Z | cloudfront=https://d31s9yo6pacgac.cloudfront.net | api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ | folder=ideas/design-pixnovel | note=Deployed 6639653 (whisk-create-plus-alignment)
+- idea=design-endfield | stack=StaticWebAWSAIStack-design-endfield | status=LIVE | last_action=2026-02-27T09:26:08.698Z | cloudfront=https://d3vbqp2fb0oc5m.cloudfront.net | api=https://z4jv3sqt5g.execute-api.us-east-1.amazonaws.com/prod/ | folder=ideas/design-endfield | note=Deployed 39dab2d (cognito-localhost-ports-3000-3009)
+- idea=design-main | stack=StaticWebAWSAIStack-design-main | status=LIVE | last_action=2026-02-27T09:28:55.610Z | cloudfront=https://dxniixk2a4dur.cloudfront.net | api=https://oa2kzhs1l3.execute-api.us-east-1.amazonaws.com/prod/ | folder=ideas/design-main | note=Deployed 39dab2d (cognito-localhost-ports-3000-3009)
+- idea=design-moescape | stack=StaticWebAWSAIStack-design-moescape | status=LIVE | last_action=2026-02-27T09:31:25.298Z | cloudfront=https://d1raqt5min66lv.cloudfront.net | api=https://bcy62oi00d.execute-api.us-east-1.amazonaws.com/prod/ | folder=ideas/design-moescape | note=Deployed 39dab2d (cognito-localhost-ports-3000-3009)
+- idea=design-pixnovel | stack=StaticWebAWSAIStack-design-pixnovel | status=LIVE | last_action=2026-02-27T09:33:56.732Z | cloudfront=https://d31s9yo6pacgac.cloudfront.net | api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ | folder=ideas/design-pixnovel | note=Deployed 39dab2d (cognito-localhost-ports-3000-3009)
 <!-- IDEA_REGISTRY_END -->
 
 ## Operating Rules

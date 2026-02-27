@@ -21,6 +21,13 @@ const DEFAULT_COGNITO_DOMAIN_BASE = "whisk-studio";
 const ADMIN_OUTPUT_NOT_CONFIGURED = "not-configured";
 const ADMIN_TEMP_PASSWORD_MIN_LENGTH = 10;
 const AWS_ACCOUNT_ID_PATTERN = /\b\d{12}\b/;
+const LOCAL_COGNITO_PORT_START = 3000;
+const LOCAL_COGNITO_PORT_COUNT = 10;
+const DEFAULT_LOCAL_COGNITO_PORTS = Array.from(
+  { length: LOCAL_COGNITO_PORT_COUNT },
+  (_value, index) => String(LOCAL_COGNITO_PORT_START + index)
+);
+const LOCAL_AUTH_HOSTS = ["localhost", "127.0.0.1"] as const;
 
 const sanitizeDomainPrefix = (value: string) =>
   value
@@ -29,6 +36,20 @@ const sanitizeDomainPrefix = (value: string) =>
     .replace(/-+/g, "-")
     .replace(/^-+/, "")
     .replace(/-+$/, "");
+
+const resolveLocalCognitoPorts = (value: string) => {
+  const rawPorts = value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  if (!rawPorts.length) {
+    return [...DEFAULT_LOCAL_COGNITO_PORTS];
+  }
+  const deduped = Array.from(
+    new Set(rawPorts.filter((item) => /^\d{2,5}$/.test(item)))
+  );
+  return deduped.length ? deduped : [...DEFAULT_LOCAL_COGNITO_PORTS];
+};
 
 const trimCognitoDomainSegment = ({
   value,
@@ -388,6 +409,15 @@ export class StaticWebAWSAIStack extends cdk.Stack {
 
     const frontendApiUrl =
       process.env.FRONTEND_API_URL_OVERRIDE || api.url || "";
+    const localCognitoPorts = resolveLocalCognitoPorts(
+      String(process.env.COGNITO_LOCALHOST_PORTS || "")
+    );
+    const localCallbackUrls = localCognitoPorts.flatMap((port) =>
+      LOCAL_AUTH_HOSTS.map((host) => `http://${host}:${port}/auth/callback`)
+    );
+    const localLogoutUrls = localCognitoPorts.flatMap((port) =>
+      LOCAL_AUTH_HOSTS.map((host) => `http://${host}:${port}/login`)
+    );
 
     const userPoolClient = userPool.addClient("UserPoolClient", {
       authFlows: { userPassword: true },
@@ -399,11 +429,11 @@ export class StaticWebAWSAIStack extends cdk.Stack {
           cognito.OAuthScope.PROFILE,
         ],
         callbackUrls: [
-          "http://localhost:3000/auth/callback",
+          ...localCallbackUrls,
           `https://${distribution.domainName}/auth/callback`,
         ],
         logoutUrls: [
-          "http://localhost:3000/login",
+          ...localLogoutUrls,
           `https://${distribution.domainName}/login`,
         ],
       },

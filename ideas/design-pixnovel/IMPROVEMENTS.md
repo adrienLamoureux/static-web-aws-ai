@@ -37,3 +37,5 @@
 - 2026-02-26T11:47:48.065Z | improvement=director-remove-yellow-warn | result=deployed | commit=6639653 | detail=stack=StaticWebAWSAIStack-design-pixnovel
 - 2026-02-26T17:21:19.668Z | improvement=director-hero-remove-yellow-glass | result=deployed | commit=6639653 | detail=stack=StaticWebAWSAIStack-design-pixnovel
 - 2026-02-26T21:37:51.287Z | improvement=whisk-create-plus-alignment | result=deployed | commit=6639653 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-26T22:36:14.975Z | improvement=cognito-localhost-multiport-callbacks | result=deployed | commit=39dab2d | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-27T09:33:56.733Z | improvement=cognito-localhost-ports-3000-3009 | result=deployed | commit=39dab2d | detail=stack=StaticWebAWSAIStack-design-pixnovel

@@ -66,3 +66,8 @@
 - 2026-02-26T11:47:48.065Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=6639653 / sanity=passed / ui_smoke=passed / improvement=director-remove-yellow-warn
 - 2026-02-26T17:21:19.668Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=6639653 / sanity=passed / ui_smoke=passed / improvement=director-hero-remove-yellow-glass
 - 2026-02-26T21:37:51.287Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=6639653 / sanity=passed / ui_smoke=passed / improvement=whisk-create-plus-alignment
+- 2026-02-26T22:32:30.340Z | event=diff | stage=design-pixnovel
+- 2026-02-26T22:34:38.345Z | event=diff | stage=design-pixnovel
+- 2026-02-26T22:36:14.975Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=39dab2d / sanity=passed / ui_smoke=passed / improvement=cognito-localhost-multiport-callbacks
+- 2026-02-27T09:23:07.237Z | event=diff | stage=design-pixnovel
+- 2026-02-27T09:33:56.732Z | event=deploy-many | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=39dab2d / sanity=passed / ui_smoke=passed / improvement=cognito-localhost-ports-3000-3009
