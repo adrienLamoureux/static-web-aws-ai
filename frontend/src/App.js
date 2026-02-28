@@ -1,13 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   BrowserRouter as Router,
   Route,
   Routes,
   Link,
   Navigate,
-  useLocation,
 } from "react-router-dom";
-import About from "./pages/About";
 import Whisk from "./pages/Whisk";
 import Story from "./pages/Story";
 import StoryMusicLibrary from "./pages/StoryMusicLibrary";
@@ -17,10 +15,15 @@ import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
 import RequireAuth from "./components/auth/RequireAuth";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { fetchOperationalDashboard } from "./services/operations";
+import {
+  fetchDirectorAppConfig,
+  fetchOperationalDashboard,
+  listDirectorMasonryImages,
+} from "./services/operations";
 import { generateReplicateImage } from "./services/replicate";
 import { listStoryCharacters } from "./services/story";
 import { listPromptHelperOptions } from "./services/promptHelper";
+import PIXNOVEL_MASONRY_DEFAULTS from "./data/pixnovel-masonry-defaults.json";
 import "./themes/pixnovel.css";
 
 const mergeCognitoConfig = (base = {}, override = {}) => ({
@@ -41,11 +44,6 @@ const PIXNOVEL_PANE_META = {
     route: "/videos",
     subtitle: "Generated clips and playback controls",
   },
-  director: {
-    label: "Director",
-    route: "/director",
-    subtitle: "Global orchestration across all creative workflows",
-  },
   story: {
     label: "Story",
     route: "/story",
@@ -56,10 +54,10 @@ const PIXNOVEL_PANE_META = {
     route: "/music-library",
     subtitle: "Track curation and atmosphere cues",
   },
-  about: {
-    label: "Core",
-    route: "/about",
-    subtitle: "Project profile and architecture brief",
+  director: {
+    label: "Director",
+    route: "/director",
+    subtitle: "Global orchestration across all creative workflows",
   },
 };
 
@@ -82,12 +80,6 @@ const PIXNOVEL_SIZE_DIMENSIONS_MAP = {
 const PIXNOVEL_FALLBACK_NEGATIVE_PROMPT =
   "lowres, bad anatomy, bad hands, text, watermark, blurry";
 
-const PIXNOVEL_STYLE_TAGS = [
-  "#dreamwave",
-  "#portrait",
-  "#lighting",
-  "#storyframe",
-];
 const DEFAULT_OPS_SUMMARY = {
   queueDepth: 0,
   queued: 0,
@@ -168,21 +160,6 @@ const PIXNOVEL_CONTEXT_PANEL_CONFIG = {
     ],
     footer: "Sound Lab keeps your music catalog ready for Director scene assignment.",
   },
-  about: {
-    kicker: "Core",
-    title: "Platform Snapshot",
-    sections: [
-      {
-        label: "System",
-        items: [
-          { title: "Frontend", value: "Pixnovel shell + existing domains" },
-          { title: "Backend", value: "Express API + job tracking" },
-          { title: "Deploy", value: "CDK stage with sanity + UI smoke" },
-        ],
-      },
-    ],
-    footer: "Core view summarizes system surfaces and live stack status.",
-  },
 };
 const PIXNOVEL_FEED_CONFIG = {
   whisk: {
@@ -220,33 +197,14 @@ const PIXNOVEL_FEED_CONFIG = {
     emptyText: "No soundtrack jobs yet. Use Sound Lab uploads and scene sync.",
     signalEmptyText: "No sound signals available yet.",
   },
-  about: {
-    queueTitle: "System Queue",
-    signalTitle: "System Signals",
-    loadingText: "Loading system operations...",
-    emptyText: "No system jobs yet.",
-    signalEmptyText: "No system signals available yet.",
-  },
 };
 
-const PIXNOVEL_MASONRY_BASE_IMAGES = [
-  {
-    id: "ea7018c3",
-    src: "https://images-ng.pixai.art/images/orig/ea7018c3-eb73-41f7-aae6-0080cc2ef6b3",
-  },
-  {
-    id: "9067cc18",
-    src: "https://images-ng.pixai.art/images/orig/9067cc18-7378-4499-9da2-38c30d1ee560",
-  },
-  {
-    id: "2c9d0346",
-    src: "https://images-ng.pixai.art/images/orig/2c9d0346-8b5b-4486-94b7-f862c9ceb74d",
-  },
-  {
-    id: "c47362e0",
-    src: "https://images-ng.pixai.art/images/orig/c47362e0-18ff-4703-9352-95b2164154d4",
-  },
-];
+const PIXNOVEL_MASONRY_BASE_IMAGES = (PIXNOVEL_MASONRY_DEFAULTS || [])
+  .map((item, index) => ({
+    id: item?.id || `default-${index + 1}`,
+    src: item?.src || "",
+  }))
+  .filter((item) => item.src);
 
 const PIXNOVEL_MASONRY_COLUMNS = [
   {
@@ -264,11 +222,32 @@ const PIXNOVEL_MASONRY_COLUMNS = [
     durationSeconds: 63,
     startOffset: "-22%",
   },
+  {
+    id: "column-d",
+    durationSeconds: 69,
+    startOffset: "-33%",
+  },
 ];
 
 const PIXNOVEL_MASONRY_REPEAT_COUNT = 3;
 const PIXNOVEL_OPS_POLL_INTERVAL_MS = 12000;
 const PIXNOVEL_DEFAULT_CHARACTER = "Frieren from Beyond Journey's End";
+const PIXNOVEL_THEME_STORAGE_KEY = "pixnovel_theme";
+const PIXNOVEL_DEFAULT_THEME = "blue";
+const PIXNOVEL_ALLOWED_THEMES = ["blue", "pink", "purple", "yellow"];
+
+const normalizePixnovelTheme = (value, fallback = PIXNOVEL_DEFAULT_THEME) => {
+  const normalized = String(value || "").trim().toLowerCase();
+  return PIXNOVEL_ALLOWED_THEMES.includes(normalized) ? normalized : fallback;
+};
+
+const mapMasonryApiImages = (images = []) =>
+  (Array.isArray(images) ? images : [])
+    .map((item, index) => ({
+      id: item?.key || `global-${index + 1}`,
+      src: item?.url || "",
+    }))
+    .filter((item) => item.src);
 
 const uniqueNonEmpty = (values = []) => {
   const seen = new Set();
@@ -325,33 +304,6 @@ const buildLoopedMasonryImages = (images, repeatCount) => {
       ),
     []
   );
-};
-
-const PIXNOVEL_MASONRY_IMAGES = buildLoopedMasonryImages(
-  PIXNOVEL_MASONRY_BASE_IMAGES,
-  PIXNOVEL_MASONRY_REPEAT_COUNT
-);
-
-const resolveActivePane = (pathname) => {
-  if (pathname === "/" || pathname === "/whisk") {
-    return "whisk";
-  }
-  if (pathname === "/story") {
-    return "story";
-  }
-  if (pathname === "/videos") {
-    return "videos";
-  }
-  if (pathname === "/director") {
-    return "director";
-  }
-  if (pathname === "/music-library") {
-    return "music";
-  }
-  if (pathname === "/about") {
-    return "about";
-  }
-  return "whisk";
 };
 
 const isVideoQueueItem = (item) =>
@@ -726,10 +678,19 @@ const PixnovelGenerationMenu = ({ apiBaseUrl }) => {
   );
 };
 
-const PixnovelHeroMasonry = () => {
+const PixnovelHeroMasonry = ({ masonryBaseImages }) => {
+  const masonryImages = useMemo(
+    () =>
+      buildLoopedMasonryImages(
+        masonryBaseImages?.length ? masonryBaseImages : PIXNOVEL_MASONRY_BASE_IMAGES,
+        PIXNOVEL_MASONRY_REPEAT_COUNT
+      ),
+    [masonryBaseImages]
+  );
+
   return (
-    <div className="pixnovel-hero-masonry" aria-hidden="true">
-      <div className="pixnovel-masonry-grid">
+    <div className="pixnovel-hero-masonry">
+      <div className="pixnovel-masonry-grid" aria-hidden="true">
         {PIXNOVEL_MASONRY_COLUMNS.map((column) => (
           <div
             key={column.id}
@@ -739,7 +700,7 @@ const PixnovelHeroMasonry = () => {
               "--pix-masonry-start-offset": column.startOffset,
             }}
           >
-            {PIXNOVEL_MASONRY_IMAGES.map((image) => (
+            {masonryImages.map((image) => (
               <figure key={`${column.id}-${image.loopId}`} className="pixnovel-masonry-card">
                 <img src={image.src} alt="" loading="lazy" decoding="async" />
               </figure>
@@ -747,59 +708,55 @@ const PixnovelHeroMasonry = () => {
           </div>
         ))}
       </div>
+      <div className="pixnovel-hero-masonry-copy">
+        <p className="pixnovel-hero-masonry-title">Whisk Studio</p>
+        <p className="pixnovel-hero-masonry-subtitle">
+          Anime-first workspace for image generation, story crafting, sound design, and
+          direction in one unified flow.
+        </p>
+      </div>
     </div>
   );
 };
 
-const PixnovelHero = ({ activePane, userEmail, onLogout }) => {
+const PixnovelHero = ({ activePane, userEmail, onLogout, masonryBaseImages }) => {
   return (
     <section className="pixnovel-hero" aria-label="Creative hero section">
-      <PixnovelHeroMasonry />
-      <div className="pixnovel-hero-copy">
-        <div className="pixnovel-hero-topbar">
-          <Link to="/" className="pixnovel-brand">
-            Whisk Studio
-          </Link>
-          <nav className="pixnovel-top-nav">
-            {Object.entries(PIXNOVEL_PANE_META).map(([key, item]) => (
-              <Link
-                key={key}
-                to={item.route}
-                className={`pixnovel-top-link${activePane === key ? " is-active" : ""}`}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-          <div className="pixnovel-user-chip">
-            <span>{userEmail || "Signed in"}</span>
-            <button type="button" className="btn-ghost px-4 py-1 text-xs" onClick={onLogout}>
-              Sign out
-            </button>
-          </div>
-        </div>
-
-        <p className="pixnovel-hero-kicker">PixNovel Studio</p>
-        <h1 className="pixnovel-hero-title">
-          Anime-first creation cockpit with cinematic flow controls
-        </h1>
-        <p className="pixnovel-hero-subtitle">
-          Blend PixAI-style visual impact with NovelAI-style generation depth while
-          keeping your existing Whisk, Story, and Music workflows in one place.
-        </p>
-        <div className="pixnovel-tag-row">
-          {PIXNOVEL_STYLE_TAGS.map((tag) => (
-            <span key={tag} className="pixnovel-tag-chip">
-              {tag}
-            </span>
+      <div className="pixnovel-hero-topbar">
+        <Link to="/" className="pixnovel-brand">
+          Whisk Studio
+        </Link>
+        <nav className="pixnovel-top-nav">
+          {Object.entries(PIXNOVEL_PANE_META).map(([key, item]) => (
+            <Link
+              key={key}
+              to={item.route}
+              className={`pixnovel-top-link${activePane === key ? " is-active" : ""}`}
+            >
+              {item.label}
+            </Link>
           ))}
+        </nav>
+        <div className="pixnovel-user-chip">
+          <span>{userEmail || "Signed in"}</span>
+          <button type="button" className="btn-ghost px-4 py-1 text-xs" onClick={onLogout}>
+            Sign out
+          </button>
         </div>
       </div>
+      <PixnovelHeroMasonry masonryBaseImages={masonryBaseImages} />
     </section>
   );
 };
 
-const PixnovelWorkspace = ({ apiBaseUrl, activePane, userEmail, onLogout }) => {
+const PixnovelWorkspace = ({
+  apiBaseUrl,
+  activePane,
+  userEmail,
+  onLogout,
+  currentTheme,
+  onThemeChange,
+}) => {
   const [opsSnapshot, setOpsSnapshot] = useState({
     queue: [],
     signalCards: [],
@@ -807,6 +764,9 @@ const PixnovelWorkspace = ({ apiBaseUrl, activePane, userEmail, onLogout }) => {
   });
   const [opsLoading, setOpsLoading] = useState(true);
   const [opsError, setOpsError] = useState("");
+  const [masonryBaseImages, setMasonryBaseImages] = useState(
+    PIXNOVEL_MASONRY_BASE_IMAGES
+  );
 
   const paneByKey = {
     whisk: <Whisk apiBaseUrl={apiBaseUrl} />,
@@ -817,12 +777,43 @@ const PixnovelWorkspace = ({ apiBaseUrl, activePane, userEmail, onLogout }) => {
         opsSnapshot={opsSnapshot}
         opsLoading={opsLoading}
         opsError={opsError}
+        currentTheme={currentTheme}
+        onThemeChange={onThemeChange}
       />
     ),
     story: <Story apiBaseUrl={apiBaseUrl} forcedViewMode="reader" pageVariant="story" />,
     music: <StoryMusicLibrary apiBaseUrl={apiBaseUrl} />,
-    about: <About />,
   };
+
+  useEffect(() => {
+    let isCancelled = false;
+    if (!apiBaseUrl) return undefined;
+
+    Promise.all([
+      fetchDirectorAppConfig(apiBaseUrl),
+      listDirectorMasonryImages(apiBaseUrl),
+    ])
+      .then(([appConfigPayload, masonryPayload]) => {
+        if (isCancelled) return;
+        const nextTheme = normalizePixnovelTheme(
+          appConfigPayload?.appConfig?.theme,
+          PIXNOVEL_DEFAULT_THEME
+        );
+        onThemeChange?.(nextTheme, { persist: true });
+
+        const nextMasonryImages = mapMasonryApiImages(masonryPayload?.images);
+        if (nextMasonryImages.length) {
+          setMasonryBaseImages(nextMasonryImages);
+        } else {
+          setMasonryBaseImages(PIXNOVEL_MASONRY_BASE_IMAGES);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [apiBaseUrl, onThemeChange]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -893,7 +884,7 @@ const PixnovelWorkspace = ({ apiBaseUrl, activePane, userEmail, onLogout }) => {
         tone: "good",
       };
 
-    if (activePane === "whisk" || activePane === "about") {
+    if (activePane === "whisk") {
       return opsSnapshot.signalCards;
     }
 
@@ -1063,7 +1054,12 @@ const PixnovelWorkspace = ({ apiBaseUrl, activePane, userEmail, onLogout }) => {
 
   return (
     <div className="pixnovel-workspace">
-      <PixnovelHero activePane={activePane} userEmail={userEmail} onLogout={onLogout} />
+      <PixnovelHero
+        activePane={activePane}
+        userEmail={userEmail}
+        onLogout={onLogout}
+        masonryBaseImages={masonryBaseImages}
+      />
 
       <div className={`pixnovel-grid${isExpandedStudioPane ? " pixnovel-grid--expanded" : ""}`}>
         {isExpandedStudioPane ? null : sidePanel}
@@ -1085,10 +1081,8 @@ const PixnovelWorkspace = ({ apiBaseUrl, activePane, userEmail, onLogout }) => {
   );
 };
 
-const AppShell = ({ apiBaseUrl }) => {
+const AppShell = ({ apiBaseUrl, currentTheme, onThemeChange }) => {
   const { logout, user } = useAuth();
-  const location = useLocation();
-  const activePane = resolveActivePane(location.pathname);
 
   return (
     <div className="pixnovel-shell relative min-h-screen overflow-hidden">
@@ -1111,6 +1105,8 @@ const AppShell = ({ apiBaseUrl }) => {
                   activePane="whisk"
                   userEmail={user?.email}
                   onLogout={logout}
+                  currentTheme={currentTheme}
+                  onThemeChange={onThemeChange}
                 />
               </RequireAuth>
             }
@@ -1124,6 +1120,8 @@ const AppShell = ({ apiBaseUrl }) => {
                   activePane="whisk"
                   userEmail={user?.email}
                   onLogout={logout}
+                  currentTheme={currentTheme}
+                  onThemeChange={onThemeChange}
                 />
               </RequireAuth>
             }
@@ -1137,6 +1135,8 @@ const AppShell = ({ apiBaseUrl }) => {
                   activePane="videos"
                   userEmail={user?.email}
                   onLogout={logout}
+                  currentTheme={currentTheme}
+                  onThemeChange={onThemeChange}
                 />
               </RequireAuth>
             }
@@ -1150,6 +1150,8 @@ const AppShell = ({ apiBaseUrl }) => {
                   activePane="story"
                   userEmail={user?.email}
                   onLogout={logout}
+                  currentTheme={currentTheme}
+                  onThemeChange={onThemeChange}
                 />
               </RequireAuth>
             }
@@ -1163,6 +1165,8 @@ const AppShell = ({ apiBaseUrl }) => {
                   activePane="director"
                   userEmail={user?.email}
                   onLogout={logout}
+                  currentTheme={currentTheme}
+                  onThemeChange={onThemeChange}
                 />
               </RequireAuth>
             }
@@ -1176,19 +1180,8 @@ const AppShell = ({ apiBaseUrl }) => {
                   activePane="music"
                   userEmail={user?.email}
                   onLogout={logout}
-                />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/about"
-            element={
-              <RequireAuth>
-                <PixnovelWorkspace
-                  apiBaseUrl={apiBaseUrl}
-                  activePane="about"
-                  userEmail={user?.email}
-                  onLogout={logout}
+                  currentTheme={currentTheme}
+                  onThemeChange={onThemeChange}
                 />
               </RequireAuth>
             }
@@ -1206,13 +1199,30 @@ function App() {
     cognito: {},
   });
   const [configReady, setConfigReady] = useState(false);
+  const [themeName, setThemeName] = useState(() => {
+    if (typeof window === "undefined") return PIXNOVEL_DEFAULT_THEME;
+    return normalizePixnovelTheme(
+      window.localStorage.getItem(PIXNOVEL_THEME_STORAGE_KEY),
+      PIXNOVEL_DEFAULT_THEME
+    );
+  });
+
+  const handleThemeChange = useCallback((nextTheme, options = {}) => {
+    const normalizedTheme = normalizePixnovelTheme(nextTheme, PIXNOVEL_DEFAULT_THEME);
+    setThemeName(normalizedTheme);
+    if (options?.persist && typeof window !== "undefined") {
+      window.localStorage.setItem(PIXNOVEL_THEME_STORAGE_KEY, normalizedTheme);
+    }
+  }, []);
 
   useEffect(() => {
     document.body.classList.add("theme-pixnovel");
+    document.body.dataset.pixTheme = themeName;
     return () => {
       document.body.classList.remove("theme-pixnovel");
+      delete document.body.dataset.pixTheme;
     };
-  }, []);
+  }, [themeName]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1273,7 +1283,11 @@ function App() {
   return (
     <AuthProvider cognito={resolvedCognito}>
       <Router>
-        <AppShell apiBaseUrl={resolvedApiBaseUrl} />
+        <AppShell
+          apiBaseUrl={resolvedApiBaseUrl}
+          currentTheme={themeName}
+          onThemeChange={handleThemeChange}
+        />
       </Router>
     </AuthProvider>
   );

@@ -596,6 +596,8 @@ export const useImageStudio = ({
     predictionId,
     batchId,
     imageName,
+    prompt,
+    negativePrompt,
   }) => {
     if (!apiBaseUrl) return;
     const poll = async () => {
@@ -604,6 +606,8 @@ export const useImageStudio = ({
           predictionId,
           batchId,
           imageName,
+          prompt,
+          negativePrompt,
         });
         if (data?.status === "succeeded") {
           setImageGenerationNotice(data?.notice || "");
@@ -696,6 +700,8 @@ export const useImageStudio = ({
           predictionId: data.predictionId,
           batchId: data.batchId,
           imageName: payload.imageName,
+          prompt: payload.prompt,
+          negativePrompt: payload.negativePrompt || "",
         });
         return;
       }

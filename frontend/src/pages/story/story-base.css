@@ -406,11 +406,11 @@
 }
 
 .story-hero-kicker {
+  color: var(--pix-ui-title);
   margin: 0;
   font-size: 0.72rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #ffffff;
 }
 
 .story-title {

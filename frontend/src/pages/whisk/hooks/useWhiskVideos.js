@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { deleteVideo, listVideos } from "../../../services/s3";
+import { deleteVideo, listVideos, setVideoFavorite } from "../../../services/s3";
 import { readSessionCache, writeSessionCache } from "../../../utils/sessionCache";
 
 export const useWhiskVideos = ({
@@ -99,6 +99,36 @@ export const useWhiskVideos = ({
     [apiBaseUrl, onError, videoUrls]
   );
 
+  const toggleVideoFavorite = useCallback(
+    async (video) => {
+      if (!video?.key || !apiBaseUrl) return;
+      onError?.("");
+      const nextFavorite = !Boolean(video.favorite);
+      setVideos((prev) => {
+        const next = prev.map((item) =>
+          item.key === video.key ? { ...item, favorite: nextFavorite } : item
+        );
+        writeSessionCache(cacheKey, next);
+        return next;
+      });
+      try {
+        await setVideoFavorite(apiBaseUrl, video.key, nextFavorite);
+      } catch (error) {
+        setVideos((prev) => {
+          const next = prev.map((item) =>
+            item.key === video.key
+              ? { ...item, favorite: Boolean(video.favorite) }
+              : item
+          );
+          writeSessionCache(cacheKey, next);
+          return next;
+        });
+        onError?.(error?.message || "Failed to update favorite.");
+      }
+    },
+    [apiBaseUrl, cacheKey, onError]
+  );
+
   return {
     videos,
     videoUrls,
@@ -106,5 +136,6 @@ export const useWhiskVideos = ({
     refreshVideos,
     removeVideo,
     toggleVideoPreview,
+    toggleVideoFavorite,
   };
 };

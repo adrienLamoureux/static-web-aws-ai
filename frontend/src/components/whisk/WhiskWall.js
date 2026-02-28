@@ -19,6 +19,8 @@ function WhiskWall({
   onDeleteImage,
   onOpenImageModal,
   onOpenLightbox,
+  onToggleFavorite,
+  onViewPrompt,
   canLoadMore,
   onLoadMore,
   totalCount,
@@ -199,6 +201,43 @@ function WhiskWall({
                     </svg>
                   </a>
                 )}
+                {image.prompt ? (
+                  <button
+                    type="button"
+                    className="whisk-icon-button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onViewPrompt?.(image);
+                    }}
+                    aria-label="View generation prompt"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M4 5h16v14H4zM8 9h8M8 13h5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  className={`whisk-icon-button${image.favorite ? " is-favorite" : ""}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onToggleFavorite?.(image);
+                  }}
+                  aria-label={
+                    image.favorite
+                      ? "Remove image from favorites"
+                      : "Add image to favorites"
+                  }
+                >
+                  ♥
+                </button>
                 <button
                   type="button"
                   className="whisk-icon-button"

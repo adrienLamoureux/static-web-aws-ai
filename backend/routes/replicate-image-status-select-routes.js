@@ -18,6 +18,9 @@ module.exports = (app, deps) => {
     ListObjectsV2Command,
     DeleteObjectCommand,
     deleteMediaItem,
+    getItem,
+    buildMediaPk,
+    buildMediaSk,
   } = deps;
 
 const buildImageJobKey = (predictionId = "") =>
@@ -30,6 +33,8 @@ app.get("/replicate/image/status", async (req, res) => {
   const predictionId = req.query?.predictionId;
   const imageName = req.query?.imageName;
   const batchId = req.query?.batchId;
+  const prompt = String(req.query?.prompt || "").trim();
+  const negativePrompt = String(req.query?.negativePrompt || "").trim();
 
   if (!mediaBucket) {
     return res.status(500).json({ message: "MEDIA_BUCKET must be set" });
@@ -108,7 +113,15 @@ app.get("/replicate/image/status", async (req, res) => {
             ContentType: contentType,
           })
         );
-        await putMediaItem({ userId, type: "IMG", key });
+        await putMediaItem({
+          userId,
+          type: "IMG",
+          key,
+          extra: {
+            ...(prompt ? { prompt } : {}),
+            ...(negativePrompt ? { negativePrompt } : {}),
+          },
+        });
         const signedUrl = await getSignedUrl(
           s3Client,
           new GetObjectCommand({
@@ -271,7 +284,26 @@ app.post("/images/select", async (req, res) => {
       );
     }
 
-    await putMediaItem({ userId, type: "IMG", key: selectedKey });
+    const existingItem = await getItem({
+      pk: buildMediaPk(userId),
+      sk: buildMediaSk("IMG", selectedKey),
+    });
+    const nowIso = new Date().toISOString();
+    const existingExtra = { ...(existingItem || {}) };
+    delete existingExtra.pk;
+    delete existingExtra.sk;
+    delete existingExtra.type;
+    delete existingExtra.key;
+    await putMediaItem({
+      userId,
+      type: "IMG",
+      key: selectedKey,
+      extra: {
+        ...existingExtra,
+        createdAt: existingItem?.createdAt || nowIso,
+        updatedAt: nowIso,
+      },
+    });
     for (const key of deleteKeys) {
       await deleteMediaItem({ userId, type: "IMG", key });
     }

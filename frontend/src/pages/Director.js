@@ -2,11 +2,16 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router-dom";
 import {
   fetchDirectorOverview,
+  listDirectorMasonryImages,
   normalizeDirectorSoundMetadata,
+  requestDirectorMasonryUploadUrl,
   pinDirectorStorySession,
   prioritizeDirectorJob,
+  saveDirectorAppConfig,
   saveDirectorConfig,
+  deleteDirectorMasonryImage,
 } from "../services/operations";
+import { putFileToUrl } from "../services/s3";
 import "./director.css";
 
 const EMPTY_SUMMARY = Object.freeze({
@@ -82,9 +87,19 @@ const buildInitialDrafts = () => ({
     defaultEnergy: "",
     defaultTags: "",
   },
+  app: {
+    theme: "blue",
+  },
 });
 
-function Director({ apiBaseUrl = "", opsSnapshot = null, opsLoading = false, opsError = "" }) {
+function Director({
+  apiBaseUrl = "",
+  opsSnapshot = null,
+  opsLoading = false,
+  opsError = "",
+  currentTheme = "blue",
+  onThemeChange,
+}) {
   const [overview, setOverview] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -92,8 +107,11 @@ function Director({ apiBaseUrl = "", opsSnapshot = null, opsLoading = false, ops
   const [actionMessage, setActionMessage] = useState("");
   const [activeActionKey, setActiveActionKey] = useState("");
   const [drafts, setDrafts] = useState(buildInitialDrafts);
+  const [masonryImages, setMasonryImages] = useState([]);
+  const [isUploadingMasonry, setIsUploadingMasonry] = useState(false);
 
   const hasHydratedDraftsRef = useRef(false);
+  const masonryFileInputRef = useRef(null);
 
   const hydrateDrafts = useCallback((payload) => {
     const config = payload?.config || {};
@@ -146,8 +164,11 @@ function Director({ apiBaseUrl = "", opsSnapshot = null, opsLoading = false, ops
         defaultEnergy: config?.sound?.defaultEnergy || "medium",
         defaultTags: normalizeTagsForInput(config?.sound?.defaultTags),
       },
+      app: {
+        theme: config?.app?.theme || payload?.appConfig?.theme || currentTheme || "blue",
+      },
     });
-  }, []);
+  }, [currentTheme]);
 
   const loadOverview = useCallback(
     async ({ preserveDrafts = true } = {}) => {
@@ -157,6 +178,14 @@ function Director({ apiBaseUrl = "", opsSnapshot = null, opsLoading = false, ops
       try {
         const payload = await fetchDirectorOverview(apiBaseUrl);
         setOverview(payload);
+        const nextTheme = payload?.appConfig?.theme;
+        if (nextTheme) {
+          onThemeChange?.(nextTheme, { persist: true });
+        }
+        const nextMasonryImages = Array.isArray(payload?.modules?.experience?.masonryImages)
+          ? payload.modules.experience.masonryImages
+          : [];
+        setMasonryImages(nextMasonryImages);
         if (!preserveDrafts || !hasHydratedDraftsRef.current) {
           hydrateDrafts(payload);
           hasHydratedDraftsRef.current = true;
@@ -167,13 +196,14 @@ function Director({ apiBaseUrl = "", opsSnapshot = null, opsLoading = false, ops
         setIsLoading(false);
       }
     },
-    [apiBaseUrl, hydrateDrafts]
+    [apiBaseUrl, hydrateDrafts, onThemeChange]
   );
 
   useEffect(() => {
     hasHydratedDraftsRef.current = false;
     setOverview(null);
     setDrafts(buildInitialDrafts());
+    setMasonryImages([]);
     if (!apiBaseUrl) {
       setLoadError("API base URL is not configured.");
       setIsLoading(false);
@@ -204,6 +234,7 @@ function Director({ apiBaseUrl = "", opsSnapshot = null, opsLoading = false, ops
   const videoModule = moduleData.video || {};
   const storyModule = moduleData.story || {};
   const soundModule = moduleData.sound || {};
+  const experienceModule = moduleData.experience || {};
 
   const summary = useMemo(() => {
     const source = overview?.summary || opsSnapshot?.summary || EMPTY_SUMMARY;
@@ -272,6 +303,29 @@ function Director({ apiBaseUrl = "", opsSnapshot = null, opsLoading = false, ops
     () => (Array.isArray(options?.sound?.energyLevels) ? options.sound.energyLevels : []),
     [options?.sound?.energyLevels]
   );
+
+  const appThemes = useMemo(
+    () =>
+      Array.isArray(options?.app?.themes) && options.app.themes.length
+        ? options.app.themes
+        : [{ key: "blue", label: "Blue" }],
+    [options?.app?.themes]
+  );
+
+  useEffect(() => {
+    const normalizedTheme = String(currentTheme || "").trim().toLowerCase();
+    if (!normalizedTheme) return;
+    setDrafts((current) => {
+      if (current.app.theme === normalizedTheme) return current;
+      return {
+        ...current,
+        app: {
+          ...current.app,
+          theme: normalizedTheme,
+        },
+      };
+    });
+  }, [currentTheme]);
 
   const handleGenerationModelChange = useCallback(
     (nextModel) => {
@@ -346,6 +400,71 @@ function Director({ apiBaseUrl = "", opsSnapshot = null, opsLoading = false, ops
     });
   }, [apiBaseUrl, drafts.sound]);
 
+  const saveAppTheme = useCallback(async () => {
+    const payload = await saveDirectorAppConfig(apiBaseUrl, {
+      theme: drafts.app.theme,
+    });
+    const nextTheme = payload?.appConfig?.theme || drafts.app.theme;
+    onThemeChange?.(nextTheme, { persist: true });
+    setDrafts((current) => ({
+      ...current,
+      app: {
+        ...current.app,
+        theme: nextTheme,
+      },
+    }));
+  }, [apiBaseUrl, drafts.app.theme, onThemeChange]);
+
+  const refreshMasonryImages = useCallback(async () => {
+    const payload = await listDirectorMasonryImages(apiBaseUrl);
+    const items = Array.isArray(payload?.images) ? payload.images : [];
+    setMasonryImages(items);
+  }, [apiBaseUrl]);
+
+  const handleUploadMasonryImage = useCallback(
+    async (event) => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file || !apiBaseUrl) return;
+      setActionError("");
+      setActionMessage("");
+      setIsUploadingMasonry(true);
+      try {
+        const upload = await requestDirectorMasonryUploadUrl(apiBaseUrl, {
+          fileName: file.name,
+          contentType: file.type || "image/jpeg",
+        });
+        await putFileToUrl(upload.url, file, file.type || "image/jpeg");
+        await refreshMasonryImages();
+        setActionMessage("Masonry image uploaded.");
+      } catch (error) {
+        setActionError(error?.message || "Failed to upload masonry image.");
+      } finally {
+        setIsUploadingMasonry(false);
+      }
+    },
+    [apiBaseUrl, refreshMasonryImages]
+  );
+
+  const handleDeleteMasonryImage = useCallback(
+    async (imageKey) => {
+      if (!imageKey || !apiBaseUrl) return;
+      setActionError("");
+      setActionMessage("");
+      setActiveActionKey(`delete-masonry-${imageKey}`);
+      try {
+        await deleteDirectorMasonryImage(apiBaseUrl, { key: imageKey });
+        await refreshMasonryImages();
+        setActionMessage("Masonry image removed.");
+      } catch (error) {
+        setActionError(error?.message || "Failed to delete masonry image.");
+      } finally {
+        setActiveActionKey("");
+      }
+    },
+    [apiBaseUrl, refreshMasonryImages]
+  );
+
   const directorSignals = [
     { id: "queued", label: "Queued", value: `${summary.queued}` },
     { id: "running", label: "Running", value: `${summary.running}` },
@@ -373,7 +492,7 @@ function Director({ apiBaseUrl = "", opsSnapshot = null, opsLoading = false, ops
 
   return (
     <section className="director-page">
-      <header className="director-hero glass-panel">
+      <header className="director-hero">
         <div>
           <p className="director-kicker">Director</p>
           <h1 className="director-title">Global Command Center</h1>
@@ -392,7 +511,7 @@ function Director({ apiBaseUrl = "", opsSnapshot = null, opsLoading = false, ops
         </button>
       </header>
 
-      <section className="director-signals glass-panel" aria-label="Director signals">
+      <section className="director-signals" aria-label="Director signals">
         <div className="director-signals-head">
           <h2>Live Signals</h2>
           {(opsLoading || isLoading) && <span>Refreshing...</span>}
@@ -421,7 +540,7 @@ function Director({ apiBaseUrl = "", opsSnapshot = null, opsLoading = false, ops
       )}
 
       <section className="director-module-grid" aria-label="Director modules">
-        <article className="director-module glass-panel">
+        <article className="director-module">
           <div className="director-module-head">
             <div>
               <h3>1. Generation Ops</h3>
@@ -599,7 +718,7 @@ function Director({ apiBaseUrl = "", opsSnapshot = null, opsLoading = false, ops
           </div>
         </article>
 
-        <article className="director-module glass-panel">
+        <article className="director-module">
           <div className="director-module-head">
             <div>
               <h3>2. Video Pipeline</h3>
@@ -740,7 +859,7 @@ function Director({ apiBaseUrl = "", opsSnapshot = null, opsLoading = false, ops
           </div>
         </article>
 
-        <article className="director-module glass-panel">
+        <article className="director-module">
           <div className="director-module-head">
             <div>
               <h3>3. Story Control</h3>
@@ -799,7 +918,7 @@ function Director({ apiBaseUrl = "", opsSnapshot = null, opsLoading = false, ops
           )}
         </article>
 
-        <article className="director-module glass-panel">
+        <article className="director-module">
           <div className="director-module-head">
             <div>
               <h3>4. Sound Governance</h3>
@@ -919,6 +1038,113 @@ function Director({ apiBaseUrl = "", opsSnapshot = null, opsLoading = false, ops
             </ul>
           ) : (
             <p className="director-empty">All tracks already match sound metadata standards.</p>
+          )}
+        </article>
+
+        <article className="director-module">
+          <div className="director-module-head">
+            <div>
+              <h3>5. Experience Controls</h3>
+              <p>Set the global theme and curate portrait masonry assets.</p>
+            </div>
+          </div>
+
+          <div className="director-form-grid director-form-grid--two">
+            <label>
+              Global Theme
+              <select
+                value={drafts.app.theme}
+                onChange={(event) =>
+                  setDrafts((current) => ({
+                    ...current,
+                    app: {
+                      ...current.app,
+                      theme: event.target.value,
+                    },
+                  }))
+                }
+              >
+                {appThemes.map((theme) => (
+                  <option key={theme.key} value={theme.key}>
+                    {theme.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Masonry Portraits
+              <input
+                type="text"
+                value={`${
+                  experienceModule?.summary?.masonryImages ?? masonryImages.length
+                } image(s)`}
+                readOnly
+              />
+            </label>
+          </div>
+
+          <div className="director-module-actions">
+            <button
+              type="button"
+              onClick={() =>
+                runAction("save-app-theme", saveAppTheme, "Global theme saved.")
+              }
+              disabled={activeActionKey === "save-app-theme"}
+            >
+              {activeActionKey === "save-app-theme" ? "Saving..." : "Save Theme"}
+            </button>
+            <button
+              type="button"
+              onClick={() => masonryFileInputRef.current?.click()}
+              disabled={isUploadingMasonry}
+            >
+              {isUploadingMasonry ? "Uploading..." : "Upload Portrait"}
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                runAction(
+                  "refresh-masonry",
+                  refreshMasonryImages,
+                  "Masonry list refreshed."
+                )
+              }
+              disabled={activeActionKey === "refresh-masonry"}
+            >
+              Refresh List
+            </button>
+          </div>
+
+          <input
+            ref={masonryFileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            className="director-hidden-input"
+            onChange={handleUploadMasonryImage}
+          />
+
+          {masonryImages.length ? (
+            <div className="director-masonry-list">
+              {masonryImages.map((item) => (
+                <article key={item.key} className="director-masonry-card">
+                  <img src={item.url} alt="" loading="lazy" />
+                  <div className="director-masonry-meta">
+                    <p>{String(item.key || "").split("/").pop() || "masonry-image"}</p>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteMasonryImage(item.key)}
+                      disabled={activeActionKey === `delete-masonry-${item.key}`}
+                    >
+                      {activeActionKey === `delete-masonry-${item.key}`
+                        ? "Deleting..."
+                        : "Delete"}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="director-empty">No global masonry images yet.</p>
           )}
         </article>
       </section>

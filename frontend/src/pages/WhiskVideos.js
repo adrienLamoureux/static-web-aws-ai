@@ -8,13 +8,19 @@ function WhiskVideos({ apiBaseUrl = "" }) {
   const [error, setError] = useState("");
   const resolvedApiBaseUrl = apiBaseUrl || process.env.REACT_APP_API_URL || "";
 
-  const { videos, videoUrls, loadingVideoKey, removeVideo, toggleVideoPreview } =
-    useWhiskVideos({
-      apiBaseUrl: resolvedApiBaseUrl,
-      cacheKey: VIDEO_CACHE_KEY,
-      cacheMaxAge: CACHE_MAX_AGE_MS,
-      onError: setError,
-    });
+  const {
+    videos,
+    videoUrls,
+    loadingVideoKey,
+    removeVideo,
+    toggleVideoPreview,
+    toggleVideoFavorite,
+  } = useWhiskVideos({
+    apiBaseUrl: resolvedApiBaseUrl,
+    cacheKey: VIDEO_CACHE_KEY,
+    cacheMaxAge: CACHE_MAX_AGE_MS,
+    onError: setError,
+  });
 
   return (
     <section className="whisk-page whisk-videos-page">
@@ -58,6 +64,20 @@ function WhiskVideos({ apiBaseUrl = "" }) {
                         aria-label={url ? "Hide video preview" : "Load video preview"}
                       >
                         {isLoading ? "…" : url ? "⏸" : "▶"}
+                      </button>
+                      <button
+                        type="button"
+                        className={`whisk-icon-button${
+                          video.favorite ? " is-favorite" : ""
+                        }`}
+                        onClick={() => toggleVideoFavorite(video)}
+                        aria-label={
+                          video.favorite
+                            ? "Remove video from favorites"
+                            : "Add video to favorites"
+                        }
+                      >
+                        ♥
                       </button>
                       <button
                         type="button"

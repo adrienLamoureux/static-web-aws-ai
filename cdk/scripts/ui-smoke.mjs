@@ -51,7 +51,6 @@ const unauthenticatedChecks = [
     expectLogin: true,
     expectPath: "/login",
   },
-  { id: "about-redirect", path: "/about", expectLogin: true, expectPath: "/login" },
 ];
 
 const authenticatedChecks = [
@@ -59,19 +58,23 @@ const authenticatedChecks = [
     id: "home-page",
     path: "/",
     expectPath: "/",
-    expectedTexts: ["Compose Render Settings"],
+    expectedAnyTexts: [
+      "Compose Render Settings",
+      "Generate 1 Image",
+      "Anime-first creation cockpit",
+    ],
   },
   {
     id: "videos-page",
     path: "/videos",
     expectPath: "/videos",
-    expectedTexts: ["Videos"],
+    expectedAnyTexts: ["Generated clips and playback controls", "No videos available yet."],
   },
   {
     id: "director-page",
     path: "/director",
     expectPath: "/director",
-    expectedTexts: ["Global Command Center"],
+    expectedAnyTexts: ["Global Command Center", "Experience Controls"],
   },
   {
     id: "story-page",
@@ -83,13 +86,7 @@ const authenticatedChecks = [
     id: "music-library-page",
     path: "/music-library",
     expectPath: "/music-library",
-    expectedTexts: ["Upload and categorize soundtracks"],
-  },
-  {
-    id: "about-page",
-    path: "/about",
-    expectPath: "/about",
-    expectedTexts: ["Whisk Studio — static web app"],
+    expectedAnyTexts: ["Sound Lab", "Soundtrack Operations"],
   },
 ];
 

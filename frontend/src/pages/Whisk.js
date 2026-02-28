@@ -21,6 +21,7 @@ function Whisk({ apiBaseUrl = "" }) {
   const [selectedImageUrl, setSelectedImageUrl] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
   const [lightboxImage, setLightboxImage] = useState(null);
+  const [promptPreviewImage, setPromptPreviewImage] = useState(null);
   const pageSize = 10;
 
   const resolvedApiBaseUrl =
@@ -32,6 +33,7 @@ function Whisk({ apiBaseUrl = "" }) {
     refreshImages,
     updateImages,
     removeImage,
+    toggleImageFavorite,
   } = useWhiskImages({
     apiBaseUrl: resolvedApiBaseUrl,
     cacheKey: IMAGE_CACHE_KEY,
@@ -184,6 +186,8 @@ function Whisk({ apiBaseUrl = "" }) {
           status={status}
           onOpenVideo={openVideoModalForImage}
           onDeleteImage={removeImage}
+          onToggleFavorite={toggleImageFavorite}
+          onViewPrompt={setPromptPreviewImage}
           onOpenImageModal={() => {
             resetImageForm();
             setActiveModal("image");
@@ -218,6 +222,34 @@ function Whisk({ apiBaseUrl = "" }) {
             alt={lightboxImage.key || "Full size"}
             onClick={(event) => event.stopPropagation()}
           />
+        </div>
+      )}
+
+      {promptPreviewImage?.prompt && (
+        <div
+          className="whisk-lightbox whisk-lightbox--prompt"
+          onClick={() => setPromptPreviewImage(null)}
+        >
+          <div
+            className="whisk-prompt-card"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3>Generation Prompt</h3>
+            <p>{promptPreviewImage.prompt}</p>
+            {promptPreviewImage.negativePrompt ? (
+              <>
+                <h4>Negative Prompt</h4>
+                <p>{promptPreviewImage.negativePrompt}</p>
+              </>
+            ) : null}
+            <button
+              type="button"
+              className="btn-ghost px-4 py-2 text-sm"
+              onClick={() => setPromptPreviewImage(null)}
+            >
+              Close
+            </button>
+          </div>
         </div>
       )}
 

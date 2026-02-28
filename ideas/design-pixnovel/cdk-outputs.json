@@ -1,14 +1,14 @@
 {
   "StaticWebAWSAIStack-design-pixnovel": {
-    "MediaBucketName": "staticwebawsaistack-design-pix-mediabucketbcbb02ba-ytzob5dr1rcb",
-    "UserPoolClientId": "c2nk964g4jjqlqdkd12j9sqap",
-    "CloudFrontURL": "d31s9yo6pacgac.cloudfront.net",
-    "UserPoolId": "us-east-1_96fBMtBtC",
+    "MediaBucketName": "staticwebawsaistack-design-pix-mediabucketbcbb02ba-wkl70idfmtjs",
+    "UserPoolClientId": "286mj10u6cou4ta26bp77ci8js",
+    "CloudFrontURL": "d21j30h6jj4n2k.cloudfront.net",
+    "UserPoolId": "us-east-1_gOAt2OyED",
     "StageName": "design-pixnovel",
-    "APIEndpoint": "https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/",
+    "APIEndpoint": "https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/",
     "SecondaryAdminUserEmail": "not-configured",
     "AdminUserEmail": "not-configured",
-    "ApiGatewayEndpoint5AA8EC3A": "https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/",
+    "ApiGatewayEndpoint5AA8EC3A": "https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/",
     "CognitoDomainPrefix": "whisk-studio-design-pixnovel-761593662432",
     "CognitoDomain": "https://whisk-studio-design-pixnovel-761593662432.auth.us-east-1.amazoncognito.com"
   }

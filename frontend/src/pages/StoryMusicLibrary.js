@@ -194,7 +194,6 @@ function StoryMusicLibrary({ apiBaseUrl = "" }) {
   return (
     <section className="music-library-page">
       <div className="music-library-hero">
-        <p className="music-library-eyebrow">Music Library</p>
         <h1 className="music-library-title">Upload and categorize soundtracks</h1>
         <p className="music-library-copy">
           Add your own tracks with description and tags so they are easier to

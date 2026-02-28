@@ -38,6 +38,20 @@ export const deleteImage = (baseUrl, key) =>
     "Failed to delete image."
   );
 
+export const setImageFavorite = (baseUrl, key, favorite) =>
+  postJson(
+    buildApiUrl(baseUrl, "/s3/images/favorite"),
+    { key, favorite },
+    "Failed to update image favorite."
+  );
+
+export const setVideoFavorite = (baseUrl, key, favorite) =>
+  postJson(
+    buildApiUrl(baseUrl, "/s3/videos/favorite"),
+    { key, favorite },
+    "Failed to update video favorite."
+  );
+
 export const requestImageUploadUrl = (baseUrl, payload) =>
   postJson(
     buildApiUrl(baseUrl, "/s3/image-upload-url"),

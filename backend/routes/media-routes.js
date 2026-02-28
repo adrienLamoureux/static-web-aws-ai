@@ -17,10 +17,45 @@ module.exports = (app, deps) => {
     ListObjectsV2Command,
     DeleteObjectCommand,
     deleteMediaItem,
+    getItem,
+    buildMediaPk,
+    buildMediaSk,
     buildVideoPosterKeyFromVideoKey,
     buildFolderPosterKeyFromVideoKey,
     resolveVideoPosterKey,
   } = deps;
+
+  const setMediaFavorite = async ({ userId, type, key, favorite }) => {
+    const existing = await getItem({
+      pk: buildMediaPk(userId),
+      sk: buildMediaSk(type, key),
+    });
+    if (!existing) {
+      return null;
+    }
+    const nowIso = new Date().toISOString();
+    const existingExtra = { ...existing };
+    delete existingExtra.pk;
+    delete existingExtra.sk;
+    delete existingExtra.type;
+    delete existingExtra.key;
+    await putMediaItem({
+      userId,
+      type,
+      key,
+      extra: {
+        ...existingExtra,
+        favorite: Boolean(favorite),
+        createdAt: existing.createdAt || nowIso,
+        updatedAt: nowIso,
+      },
+    });
+    return {
+      key,
+      favorite: Boolean(favorite),
+      updatedAt: nowIso,
+    };
+  };
 
 app.post("/s3/image-upload-url", async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
@@ -160,6 +195,10 @@ app.get("/s3/images", async (req, res) => {
       .map((item) => ({
         key: item.key,
         createdAt: item.createdAt,
+        favorite: Boolean(item.favorite),
+        prompt: typeof item.prompt === "string" ? item.prompt : "",
+        negativePrompt:
+          typeof item.negativePrompt === "string" ? item.negativePrompt : "",
       }))
       .filter((item) => !item.key?.includes("/images/video-ready/"))
       .slice(0, Math.min(maxKeys, 1000));
@@ -178,7 +217,12 @@ app.get("/s3/images", async (req, res) => {
         .filter((key) => key && key !== `${userPrefix}images/`)
         .filter((key) => !key.includes("/images/video-ready/"))
         .sort((a, b) => a.localeCompare(b))
-        .map((key) => ({ key }));
+        .map((key) => ({
+          key,
+          favorite: false,
+          prompt: "",
+          negativePrompt: "",
+        }));
 
       await Promise.all(
         images.map((item) =>
@@ -196,7 +240,13 @@ app.get("/s3/images", async (req, res) => {
         const url = await getSignedUrl(s3Client, command, {
           expiresIn: urlExpirationSeconds,
         });
-        return { key: image.key, url };
+        return {
+          key: image.key,
+          url,
+          favorite: Boolean(image.favorite),
+          prompt: image.prompt || "",
+          negativePrompt: image.negativePrompt || "",
+        };
       })
     );
 
@@ -250,6 +300,43 @@ app.post("/s3/images/delete", async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Failed to delete image",
+      error: error?.message || String(error),
+    });
+  }
+});
+
+app.post("/s3/images/favorite", async (req, res) => {
+  const key = req.body?.key;
+  const userId = req.user?.sub;
+  const favorite =
+    typeof req.body?.favorite === "boolean" ? req.body.favorite : true;
+
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (!key || typeof key !== "string") {
+    return res.status(400).json({ message: "key is required" });
+  }
+  try {
+    ensureUserKey(key, userId);
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+
+  try {
+    const updated = await setMediaFavorite({
+      userId,
+      type: "IMG",
+      key,
+      favorite,
+    });
+    if (!updated) {
+      return res.status(404).json({ message: "Image not found" });
+    }
+    return res.json(updated);
+  } catch (error) {
+    return res.status(500).json({
+      message: "Failed to update image favorite",
       error: error?.message || String(error),
     });
   }
@@ -309,6 +396,43 @@ app.post("/s3/videos/delete", async (req, res) => {
   }
 });
 
+app.post("/s3/videos/favorite", async (req, res) => {
+  const key = req.body?.key;
+  const userId = req.user?.sub;
+  const favorite =
+    typeof req.body?.favorite === "boolean" ? req.body.favorite : true;
+
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (!key || typeof key !== "string") {
+    return res.status(400).json({ message: "key is required" });
+  }
+  try {
+    ensureUserKey(key, userId);
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+
+  try {
+    const updated = await setMediaFavorite({
+      userId,
+      type: "VID",
+      key,
+      favorite,
+    });
+    if (!updated) {
+      return res.status(404).json({ message: "Video not found" });
+    }
+    return res.json(updated);
+  } catch (error) {
+    return res.status(500).json({
+      message: "Failed to update video favorite",
+      error: error?.message || String(error),
+    });
+  }
+});
+
 app.get("/s3/videos", async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
   const maxKeys = Number(req.query?.maxKeys) || 100;
@@ -331,6 +455,7 @@ app.get("/s3/videos", async (req, res) => {
         key: item.key,
         posterKey: item.posterKey,
         createdAt: item.createdAt,
+        favorite: Boolean(item.favorite),
       }))
       .slice(0, Math.min(maxKeys, 1000));
 
@@ -354,7 +479,7 @@ app.get("/s3/videos", async (req, res) => {
         .map((item) => {
           const key = item.Key || "";
           const posterKey = resolveVideoPosterKey(key, objectKeys);
-          return { key, posterKey };
+          return { key, posterKey, favorite: false };
         });
       await Promise.all(
         videos.map((item) =>

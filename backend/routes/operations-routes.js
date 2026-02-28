@@ -43,6 +43,13 @@ const VIDEO_MODEL_LABELS = Object.freeze({
   "kling-v2.6": "Kling v2.6",
   "seedance-1.5-pro": "Seedance 1.5 Pro",
 });
+const APP_CONFIG_PK = "APP#GLOBAL";
+const APP_CONFIG_SK = "CFG#PIXNOVEL";
+const APP_THEME_OPTIONS = Object.freeze(["blue", "pink", "purple", "yellow"]);
+const DEFAULT_APP_THEME = APP_THEME_OPTIONS[0];
+const GLOBAL_MASONRY_PREFIX = "app/masonry/";
+const MAX_GLOBAL_MASONRY_IMAGES = 60;
+const GLOBAL_MASONRY_URL_EXPIRATION_SECONDS = 900;
 
 const cloneStatusCountsTemplate = () => ({ ...STATUS_COUNTS_TEMPLATE });
 
@@ -129,6 +136,22 @@ const resolveImageModelLabel = (key = "") =>
 
 const resolveVideoModelLabel = (key = "") =>
   VIDEO_MODEL_LABELS[key] || toTitleCaseFromKey(key);
+
+const resolveThemeLabel = (value = "") => {
+  const normalized = String(value || "").trim().toLowerCase();
+  return normalized
+    ? `${normalized.slice(0, 1).toUpperCase()}${normalized.slice(1)}`
+    : "";
+};
+
+const normalizeAppTheme = (value = "", fallback = DEFAULT_APP_THEME) => {
+  const normalized = String(value || "").trim().toLowerCase();
+  return APP_THEME_OPTIONS.includes(normalized) ? normalized : fallback;
+};
+
+const isMasonryImageKey = (key = "") =>
+  String(key || "").startsWith(GLOBAL_MASONRY_PREFIX) &&
+  /\.(png|jpe?g|webp|gif|avif)$/i.test(String(key || ""));
 
 const mapJobItem = (item = {}) => {
   const status = normalizeStatus(item.status);
@@ -369,6 +392,12 @@ const buildDirectorOptions = ({
     sound: {
       energyLevels: Array.from(SOUND_ENERGY_LEVELS),
     },
+    app: {
+      themes: APP_THEME_OPTIONS.map((theme) => ({
+        key: theme,
+        label: resolveThemeLabel(theme),
+      })),
+    },
   };
 };
 
@@ -416,6 +445,13 @@ module.exports = (app, deps) => {
     replicateModelConfig,
     replicateVideoConfig,
     DEFAULT_NEGATIVE_PROMPT,
+    s3Client,
+    getSignedUrl,
+    PutObjectCommand,
+    GetObjectCommand,
+    ListObjectsV2Command,
+    DeleteObjectCommand,
+    buildSafeBaseName,
     dynamoClient,
     PutCommand,
   } = deps;
@@ -457,7 +493,11 @@ module.exports = (app, deps) => {
     });
     const nowIso = new Date().toISOString();
     const existingItem = item || {};
-    const { pk, sk, type, key, ...existingExtra } = existingItem;
+    const existingExtra = { ...existingItem };
+    delete existingExtra.pk;
+    delete existingExtra.sk;
+    delete existingExtra.type;
+    delete existingExtra.key;
     await putMediaItem({
       userId,
       type: DIRECTOR_CONFIG_TYPE,
@@ -472,8 +512,106 @@ module.exports = (app, deps) => {
     return normalizedConfig;
   };
 
+  const readAppConfig = async () => {
+    if (!mediaTable) {
+      return {
+        item: null,
+        config: {
+          theme: DEFAULT_APP_THEME,
+        },
+      };
+    }
+    const item = await getItem({
+      pk: APP_CONFIG_PK,
+      sk: APP_CONFIG_SK,
+    });
+    return {
+      item,
+      config: {
+        theme: normalizeAppTheme(item?.theme, DEFAULT_APP_THEME),
+      },
+    };
+  };
+
+  const writeAppConfig = async (patchConfig = {}) => {
+    const { item, config: currentConfig } = await readAppConfig();
+    const nextConfig = {
+      theme: normalizeAppTheme(patchConfig.theme, currentConfig.theme),
+    };
+    if (!mediaTable) {
+      return nextConfig;
+    }
+
+    const nowIso = new Date().toISOString();
+    await dynamoClient.send(
+      new PutCommand({
+        TableName: mediaTable,
+        Item: {
+          ...(item || {}),
+          pk: APP_CONFIG_PK,
+          sk: APP_CONFIG_SK,
+          type: "CFG",
+          key: "app/config",
+          theme: nextConfig.theme,
+          createdAt: item?.createdAt || nowIso,
+          updatedAt: nowIso,
+        },
+      })
+    );
+    return nextConfig;
+  };
+
+  const listGlobalMasonryImages = async ({ limit = MAX_GLOBAL_MASONRY_IMAGES } = {}) => {
+    const mediaBucket = process.env.MEDIA_BUCKET;
+    if (!mediaBucket || !s3Client) {
+      return [];
+    }
+
+    const maxKeys = Math.max(1, Math.min(1000, Number(limit) || MAX_GLOBAL_MASONRY_IMAGES));
+    const response = await s3Client.send(
+      new ListObjectsV2Command({
+        Bucket: mediaBucket,
+        Prefix: GLOBAL_MASONRY_PREFIX,
+        MaxKeys: maxKeys,
+      })
+    );
+    const objects = (response.Contents || [])
+      .filter((item) => isMasonryImageKey(item.Key))
+      .sort((left, right) => toMs(right.LastModified) - toMs(left.LastModified))
+      .slice(0, maxKeys);
+
+    return Promise.all(
+      objects.map(async (item) => {
+        const key = item.Key;
+        const url = await getSignedUrl(
+          s3Client,
+          new GetObjectCommand({
+            Bucket: mediaBucket,
+            Key: key,
+          }),
+          { expiresIn: GLOBAL_MASONRY_URL_EXPIRATION_SECONDS }
+        );
+        return {
+          key,
+          url,
+          updatedAt: item.LastModified ? new Date(item.LastModified).toISOString() : "",
+          sizeBytes: Number(item.Size || 0),
+        };
+      })
+    );
+  };
+
   const buildDirectorOverview = async ({ userId, requestStartedAt }) => {
-    const [jobItems, imageItems, videoItems, rawSessionItems, rawMusicTracks, directorConfigData] =
+    const [
+      jobItems,
+      imageItems,
+      videoItems,
+      rawSessionItems,
+      rawMusicTracks,
+      directorConfigData,
+      appConfigData,
+      masonryImages,
+    ] =
       await Promise.all([
         queryMediaItems({ userId, type: "JOB" }),
         queryMediaItems({ userId, type: "IMG" }),
@@ -491,6 +629,8 @@ module.exports = (app, deps) => {
           scanForward: false,
         }),
         readDirectorConfig(userId),
+        readAppConfig(),
+        listGlobalMasonryImages(),
       ]);
 
     const dashboardData = buildDashboardData({
@@ -553,6 +693,7 @@ module.exports = (app, deps) => {
       summary: dashboardData.summary,
       signalCards: dashboardData.signalCards,
       config: directorConfigData.config,
+      appConfig: appConfigData.config,
       options: directorOptions,
       modules: {
         generation: {
@@ -598,6 +739,12 @@ module.exports = (app, deps) => {
           defaults: directorConfigData.config.sound,
           missingTracks: missingSoundTracks,
         },
+        experience: {
+          summary: {
+            masonryImages: masonryImages.length,
+          },
+          masonryImages,
+        },
       },
     };
   };
@@ -642,10 +789,14 @@ module.exports = (app, deps) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
     try {
-      const { config } = await readDirectorConfig(userId);
+      const [{ config }, appConfigData] = await Promise.all([
+        readDirectorConfig(userId),
+        readAppConfig(),
+      ]);
       return res.json({
         generatedAt: new Date().toISOString(),
         config,
+        appConfig: appConfigData.config,
         options: directorOptions,
       });
     } catch (error) {
@@ -672,6 +823,147 @@ module.exports = (app, deps) => {
     } catch (error) {
       return res.status(500).json({
         message: "Failed to save director config",
+        error: error?.message || String(error),
+      });
+    }
+  });
+
+  app.get("/ops/director/app-config", async (req, res) => {
+    const userId = req.user?.sub;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const appConfigData = await readAppConfig();
+      return res.json({
+        generatedAt: new Date().toISOString(),
+        appConfig: appConfigData.config,
+        options: {
+          themes: directorOptions.app?.themes || [],
+        },
+      });
+    } catch (error) {
+      return res.status(500).json({
+        message: "Failed to load app config",
+        error: error?.message || String(error),
+      });
+    }
+  });
+
+  app.post("/ops/director/app-config", async (req, res) => {
+    const userId = req.user?.sub;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const appConfig = await writeAppConfig(req.body || {});
+      return res.json({
+        savedAt: new Date().toISOString(),
+        appConfig,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        message: "Failed to save app config",
+        error: error?.message || String(error),
+      });
+    }
+  });
+
+  app.get("/ops/director/masonry/images", async (req, res) => {
+    const userId = req.user?.sub;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const images = await listGlobalMasonryImages();
+      return res.json({
+        generatedAt: new Date().toISOString(),
+        prefix: GLOBAL_MASONRY_PREFIX,
+        images,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        message: "Failed to load masonry images",
+        error: error?.message || String(error),
+      });
+    }
+  });
+
+  app.post("/ops/director/masonry/upload-url", async (req, res) => {
+    const userId = req.user?.sub;
+    const mediaBucket = process.env.MEDIA_BUCKET;
+    const fileName = String(req.body?.fileName || "masonry-image").trim();
+    const contentType = String(req.body?.contentType || "image/jpeg").trim();
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    if (!mediaBucket) {
+      return res.status(500).json({ message: "MEDIA_BUCKET is not set" });
+    }
+    if (!contentType.startsWith("image/")) {
+      return res.status(400).json({ message: "Only image uploads are allowed." });
+    }
+
+    const safeBase = buildSafeBaseName(fileName || "masonry-image");
+    const extension =
+      contentType.includes("png")
+        ? "png"
+        : contentType.includes("webp")
+          ? "webp"
+          : contentType.includes("gif")
+            ? "gif"
+            : "jpg";
+    const key = `${GLOBAL_MASONRY_PREFIX}${safeBase}-${Date.now()}.${extension}`;
+
+    try {
+      const command = new PutObjectCommand({
+        Bucket: mediaBucket,
+        Key: key,
+        ContentType: contentType,
+      });
+      const url = await getSignedUrl(s3Client, command, {
+        expiresIn: GLOBAL_MASONRY_URL_EXPIRATION_SECONDS,
+      });
+      return res.json({
+        bucket: mediaBucket,
+        key,
+        url,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        message: "Failed to create masonry upload URL",
+        error: error?.message || String(error),
+      });
+    }
+  });
+
+  app.post("/ops/director/masonry/images/delete", async (req, res) => {
+    const userId = req.user?.sub;
+    const mediaBucket = process.env.MEDIA_BUCKET;
+    const key = String(req.body?.key || "").trim();
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    if (!mediaBucket) {
+      return res.status(500).json({ message: "MEDIA_BUCKET is not set" });
+    }
+    if (!isMasonryImageKey(key)) {
+      return res.status(400).json({ message: "Invalid masonry key." });
+    }
+    try {
+      await s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: mediaBucket,
+          Key: key,
+        })
+      );
+      return res.json({
+        deletedAt: new Date().toISOString(),
+        key,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        message: "Failed to delete masonry image",
         error: error?.message || String(error),
       });
     }
@@ -719,7 +1011,11 @@ module.exports = (app, deps) => {
         return res.status(404).json({ message: "Job not found" });
       }
       const nowIso = new Date().toISOString();
-      const { pk, sk, type, key, ...existingExtra } = existingItem;
+      const existingExtra = { ...existingItem };
+      delete existingExtra.pk;
+      delete existingExtra.sk;
+      delete existingExtra.type;
+      delete existingExtra.key;
       await putMediaItem({
         userId,
         type: "JOB",

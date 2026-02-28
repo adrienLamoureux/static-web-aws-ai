@@ -2,6 +2,9 @@
   "name": "backend",
   "version": "1.0.0",
   "main": "lambda.js",
+  "scripts": {
+    "idea:masonry-seed": "node scripts/seed-global-masonry.js"
+  },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.624.0",
     "@aws-sdk/client-dynamodb": "^3.624.0",
