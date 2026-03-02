@@ -10,6 +10,7 @@ const registerStorySessionRoutes = require("./story-session-routes");
 const registerStoryMessageRoute = require("./story-message-route");
 const registerStoryIllustrationRoute = require("./story-illustration-route");
 const registerOperationsRoutes = require("./operations-routes");
+const registerLoraRoutes = require("./lora-routes");
 
 const registerRoutes = (app, deps) => {
   registerCorePromptRoutes(app, deps);
@@ -24,6 +25,7 @@ const registerRoutes = (app, deps) => {
   registerStoryMessageRoute(app, deps);
   registerStoryIllustrationRoute(app, deps);
   registerOperationsRoutes(app, deps);
+  registerLoraRoutes(app, deps);
 };
 
 module.exports = {

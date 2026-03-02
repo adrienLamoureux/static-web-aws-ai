@@ -217,7 +217,7 @@ body.theme-pixnovel .glass-panel {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(8, 12, 28, 0.1), rgba(8, 12, 28, 0.24));
+  background: linear-gradient(180deg, rgba(8, 12, 28, 0.06), rgba(8, 12, 28, 0.6));
   pointer-events: none;
   z-index: 1;
 }
@@ -229,7 +229,19 @@ body.theme-pixnovel .glass-panel {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
-  opacity: 0.94;
+  opacity: 0.96;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.28) 0%,
+    rgba(0, 0, 0, 0.64) 46%,
+    rgba(0, 0, 0, 1) 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.28) 0%,
+    rgba(0, 0, 0, 0.64) 46%,
+    rgba(0, 0, 0, 1) 100%
+  );
 }
 
 .pixnovel-hero-masonry-copy {
@@ -1370,6 +1382,12 @@ body.theme-pixnovel .whisk-icon-button.is-favorite {
   color: #ffd9e8;
 }
 
+body.theme-pixnovel .whisk-icon-button--active {
+  border-color: var(--pix-ui-border-strong);
+  background: linear-gradient(135deg, var(--pix-accent-soft-a), var(--pix-accent-soft-b));
+  color: #ffffff;
+}
+
 body.theme-pixnovel .whisk-prompt-card {
   width: min(720px, calc(100vw - 32px));
   max-height: calc(100vh - 48px);
@@ -2061,4 +2079,59 @@ body.theme-pixnovel :is(
   .pixnovel-form-input::placeholder
 ) {
   color: var(--pix-ui-text-soft);
+}
+
+body.theme-pixnovel .shared-library-page,
+body.theme-pixnovel .lora-page {
+  display: grid;
+  gap: 14px;
+}
+
+body.theme-pixnovel :is(
+  .shared-library-section,
+  .lora-panel,
+  .lora-modality-panel,
+  .lora-profile-item,
+  .lora-catalog-item,
+  .lora-profile-list
+) {
+  border-color: var(--pix-ui-border);
+  background: var(--pix-ui-surface);
+  box-shadow: var(--pix-ui-shadow);
+}
+
+body.theme-pixnovel :is(
+  .shared-library-section-head h3,
+  .lora-panel-head h3,
+  .lora-modality-head h4,
+  .lora-catalog-title,
+  .lora-profile-item-title
+) {
+  color: var(--pix-ui-title);
+}
+
+body.theme-pixnovel :is(
+  .lora-catalog-meta,
+  .lora-catalog-key,
+  .lora-profile-item-meta,
+  .lora-catalog-stats,
+  .whisk-video-meta-row
+) {
+  color: var(--pix-ui-text-soft);
+}
+
+body.theme-pixnovel .shared-library-controls {
+  align-items: end;
+}
+
+body.theme-pixnovel .shared-library-filter {
+  border-color: var(--pix-ui-border);
+  background: var(--pix-ui-surface);
+  color: var(--pix-ui-title);
+}
+
+body.theme-pixnovel .lora-chip {
+  border-color: var(--pix-ui-border);
+  background: var(--pix-ui-surface-soft);
+  color: var(--pix-ui-text);
 }

@@ -1,4 +1,12 @@
 const { buildDirectorFallbackConfig } = require("../lib/director-config");
+const {
+  LORA_MODALITY_VIDEO,
+  LORA_PROFILE_TYPE,
+} = require("../config/lora");
+const {
+  normalizeString,
+  applyCharacterProfileToReplicateInput,
+} = require("../lib/lora-utils");
 
 module.exports = (app, deps) => {
   const {
@@ -18,6 +26,9 @@ module.exports = (app, deps) => {
     getSignedUrl,
     GetObjectCommand,
     buildReplicatePredictionRequest,
+    getItem,
+    buildMediaPk,
+    buildMediaSk,
   } = deps;
 
 const buildVideoJobKey = (predictionId = "") =>
@@ -49,6 +60,7 @@ app.post("/replicate/video/generate", async (req, res) => {
   const inputKey = req.body?.inputKey;
   const imageUrl = req.body?.imageUrl;
   const prompt = req.body?.prompt?.trim();
+  const characterId = normalizeString(req.body?.characterId);
   const generateAudio = hasBodyField(req.body, "generateAudio")
     ? req.body?.generateAudio
     : directorFallbackConfig.video.generateAudio;
@@ -85,6 +97,25 @@ app.post("/replicate/video/generate", async (req, res) => {
   }
   if (modelConfig.requiresImage && !imageUrl && !inputKey) {
     return res.status(400).json({ message: "imageUrl or inputKey is required" });
+  }
+  let profileModality = {};
+  if (characterId) {
+    const profileItem = await getItem({
+      pk: buildMediaPk(userId),
+      sk: buildMediaSk(LORA_PROFILE_TYPE, characterId),
+    });
+    if (!profileItem) {
+      return res.status(400).json({
+        message: `No LoRA profile found for characterId: ${characterId}`,
+      });
+    }
+    profileModality = profileItem?.[LORA_MODALITY_VIDEO] || {};
+    const profileModelKey = normalizeString(profileModality?.modelKey);
+    if (profileModelKey && profileModelKey !== modelKey) {
+      return res.status(400).json({
+        message: `Character profile ${characterId} is configured for model ${profileModelKey}, not ${modelKey}`,
+      });
+    }
   }
   let resolvedImageUrl = imageUrl;
   if (modelConfig.requiresImage) {
@@ -123,10 +154,22 @@ app.post("/replicate/video/generate", async (req, res) => {
       return res.status(400).json({ message: "imageUrl is required" });
     }
   }
-  const input = modelConfig.buildInput({
-    imageUrl: resolvedImageUrl,
+  const promptWithProfile = applyCharacterProfileToReplicateInput({
+    input: {},
     prompt,
+    modelConfig,
+    profileModality,
+  }).prompt;
+  const rawInput = modelConfig.buildInput({
+    imageUrl: resolvedImageUrl,
+    prompt: promptWithProfile,
     generateAudio,
+  });
+  const { input } = applyCharacterProfileToReplicateInput({
+    input: rawInput,
+    prompt: promptWithProfile,
+    modelConfig,
+    profileModality,
   });
 
   try {
@@ -202,6 +245,7 @@ app.post("/replicate/video/generate", async (req, res) => {
           entityType: "video",
           predictionId: prediction.id,
           inputKey,
+          characterId,
           status: "completed",
           progressPct: 100,
           etaSeconds: 0,
@@ -218,6 +262,7 @@ app.post("/replicate/video/generate", async (req, res) => {
         outputUrl,
         predictionId: prediction.id,
         status: prediction.status,
+        characterId,
       });
     }
     await putMediaItem({
@@ -229,6 +274,7 @@ app.post("/replicate/video/generate", async (req, res) => {
         entityType: "video",
         predictionId: prediction.id,
         inputKey,
+        characterId,
         status: prediction.status,
         progressPct: prediction.status === "starting" ? 24 : 52,
         etaSeconds: 90,
@@ -242,6 +288,7 @@ app.post("/replicate/video/generate", async (req, res) => {
       provider: "replicate",
       predictionId: prediction.id,
       status: prediction.status,
+      characterId,
     });
   } catch (error) {
     console.error("Replicate video generation error details:", {
@@ -263,6 +310,7 @@ app.get("/replicate/video/status", async (req, res) => {
   const apiToken = process.env.REPLICATE_API_TOKEN;
   const predictionId = req.query?.predictionId;
   const inputKey = req.query?.inputKey;
+  const characterId = normalizeString(req.query?.characterId);
 
   if (!mediaBucket) {
     return res.status(500).json({ message: "MEDIA_BUCKET must be set" });
@@ -304,6 +352,7 @@ app.get("/replicate/video/status", async (req, res) => {
           entityType: "video",
           predictionId,
           inputKey,
+          characterId,
           status: prediction.status,
           progressPct: prediction.status === "starting" ? 30 : 68,
           etaSeconds: 55,
@@ -313,6 +362,7 @@ app.get("/replicate/video/status", async (req, res) => {
       return res.json({
         predictionId,
         status: prediction.status,
+        characterId,
       });
     }
     const outputUrl = getReplicateOutputUrl(prediction.output);
@@ -362,6 +412,7 @@ app.get("/replicate/video/status", async (req, res) => {
         entityType: "video",
         predictionId,
         inputKey,
+        characterId,
         status: "completed",
         progressPct: 100,
         etaSeconds: 0,
@@ -383,6 +434,7 @@ app.get("/replicate/video/status", async (req, res) => {
       status: prediction.status,
       outputKey,
       outputUrl: signedUrl,
+      characterId,
     });
   } catch (error) {
     try {
@@ -395,6 +447,7 @@ app.get("/replicate/video/status", async (req, res) => {
           entityType: "video",
           predictionId,
           inputKey,
+          characterId,
           status: "failed",
           progressPct: 100,
           etaSeconds: 0,

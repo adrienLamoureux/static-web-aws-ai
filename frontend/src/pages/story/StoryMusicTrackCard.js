@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import "./music-library.css";
 
 const GAPLESS_LOOP_CONFIG = Object.freeze({
   silenceThreshold: 0.0008,

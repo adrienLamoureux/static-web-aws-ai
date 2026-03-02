@@ -16,6 +16,8 @@ function WhiskWall({
   images,
   status,
   onOpenVideo,
+  onShareImage,
+  sharingImageKey,
   onDeleteImage,
   onOpenImageModal,
   onOpenLightbox,
@@ -237,6 +239,31 @@ function WhiskWall({
                   }
                 >
                   ♥
+                </button>
+                <button
+                  type="button"
+                  className="whisk-icon-button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onShareImage?.(image);
+                  }}
+                  disabled={!onShareImage || sharingImageKey === image.key}
+                  aria-label="Share image to library"
+                >
+                  {sharingImageKey === image.key ? (
+                    "…"
+                  ) : (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M15 8a3 3 0 1 0-2.8-4h-.4A3 3 0 0 0 9 8c0 .6.2 1.1.4 1.6l-3 2a3 3 0 1 0 1 1.6l3-2a3 3 0 0 0 3.2 0l3 2a3 3 0 1 0 1-1.6l-3-2c.3-.5.4-1 .4-1.6z"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
                 </button>
                 <button
                   type="button"

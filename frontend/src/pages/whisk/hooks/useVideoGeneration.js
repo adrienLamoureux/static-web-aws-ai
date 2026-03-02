@@ -13,6 +13,7 @@ export const useVideoGeneration = ({
   selectedImageKey,
   selectedSourceImageKey,
   selectedImageUrl,
+  characterId,
   onError,
   onSubmitted,
   onCompleted,
@@ -156,6 +157,7 @@ export const useVideoGeneration = ({
           prompt: prompt?.trim() || undefined,
           inputKey: resolvedInputKey,
           imageUrl: selectedImageUrl,
+          characterId: characterId || undefined,
           ...(isReplicateAudioOption
             ? { generateAudio: videoGenerateAudio }
             : {}),
@@ -245,6 +247,7 @@ export const useVideoGeneration = ({
         const data = await getReplicateVideoStatus(apiBaseUrl, {
           predictionId: replicatePredictionId,
           inputKey: replicateInputKey || selectedImageKey,
+          characterId: characterId || undefined,
         });
         const statusValue = data?.status || "";
         setReplicateJobStatus(statusValue);
@@ -271,7 +274,13 @@ export const useVideoGeneration = ({
         clearTimeout(timeoutId);
       }
     };
-  }, [apiBaseUrl, replicatePredictionId, replicateInputKey, selectedImageKey]);
+  }, [
+    apiBaseUrl,
+    replicatePredictionId,
+    replicateInputKey,
+    selectedImageKey,
+    characterId,
+  ]);
 
   return {
     videoProvider,

@@ -42,6 +42,7 @@ const browser = await chromium.launch({ headless: true });
 const unauthenticatedChecks = [
   { id: "login-page", path: "/login", expectLogin: true, expectPath: "/login" },
   { id: "home-redirect", path: "/", expectLogin: true, expectPath: "/login" },
+  { id: "lora-redirect", path: "/lora", expectLogin: true, expectPath: "/login" },
   { id: "videos-redirect", path: "/videos", expectLogin: true, expectPath: "/login" },
   { id: "director-redirect", path: "/director", expectLogin: true, expectPath: "/login" },
   { id: "story-redirect", path: "/story", expectLogin: true, expectPath: "/login" },
@@ -51,6 +52,7 @@ const unauthenticatedChecks = [
     expectLogin: true,
     expectPath: "/login",
   },
+  { id: "about-redirect", path: "/about", expectLogin: true, expectPath: "/login" },
 ];
 
 const authenticatedChecks = [
@@ -58,23 +60,25 @@ const authenticatedChecks = [
     id: "home-page",
     path: "/",
     expectPath: "/",
-    expectedAnyTexts: [
-      "Compose Render Settings",
-      "Generate 1 Image",
-      "Anime-first creation cockpit",
-    ],
+    expectedAnyTexts: ["Search shared images", "Shared Images"],
+  },
+  {
+    id: "lora-page",
+    path: "/lora",
+    expectPath: "/lora",
+    expectedAnyTexts: ["LoRA Catalog", "Character LoRA Profile"],
   },
   {
     id: "videos-page",
     path: "/videos",
     expectPath: "/videos",
-    expectedAnyTexts: ["Generated clips and playback controls", "No videos available yet."],
+    expectedTexts: ["Videos"],
   },
   {
     id: "director-page",
     path: "/director",
     expectPath: "/director",
-    expectedAnyTexts: ["Global Command Center", "Experience Controls"],
+    expectedTexts: ["Global Command Center"],
   },
   {
     id: "story-page",
@@ -86,7 +90,13 @@ const authenticatedChecks = [
     id: "music-library-page",
     path: "/music-library",
     expectPath: "/music-library",
-    expectedAnyTexts: ["Sound Lab", "Soundtrack Operations"],
+    expectedTexts: ["Upload and categorize soundtracks"],
+  },
+  {
+    id: "about-page",
+    path: "/about",
+    expectPath: "/about",
+    expectedTexts: ["Whisk Studio — static web app"],
   },
 ];
 

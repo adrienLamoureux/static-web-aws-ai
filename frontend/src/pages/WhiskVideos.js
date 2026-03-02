@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import { useWhiskVideos } from "./whisk/hooks/useWhiskVideos";
+import { shareVideo } from "../services/s3";
 
 const CACHE_MAX_AGE_MS = 5 * 60 * 1000;
 const VIDEO_CACHE_KEY = "whisk_videos_cache";
 
 function WhiskVideos({ apiBaseUrl = "" }) {
   const [error, setError] = useState("");
+  const [shareStatus, setShareStatus] = useState("");
+  const [sharingVideoKey, setSharingVideoKey] = useState("");
   const resolvedApiBaseUrl = apiBaseUrl || process.env.REACT_APP_API_URL || "";
 
   const {
@@ -21,6 +24,21 @@ function WhiskVideos({ apiBaseUrl = "" }) {
     cacheMaxAge: CACHE_MAX_AGE_MS,
     onError: setError,
   });
+
+  const handleShareVideo = async (video) => {
+    if (!video?.key || !resolvedApiBaseUrl) return;
+    setError("");
+    setShareStatus("");
+    setSharingVideoKey(video.key);
+    try {
+      await shareVideo(resolvedApiBaseUrl, video.key);
+      setShareStatus("Video shared to the library.");
+    } catch (shareError) {
+      setError(shareError?.message || "Failed to share video.");
+    } finally {
+      setSharingVideoKey("");
+    }
+  };
 
   return (
     <section className="whisk-page whisk-videos-page">
@@ -67,6 +85,28 @@ function WhiskVideos({ apiBaseUrl = "" }) {
                       </button>
                       <button
                         type="button"
+                        className="whisk-icon-button"
+                        onClick={() => handleShareVideo(video)}
+                        disabled={sharingVideoKey === video.key}
+                        aria-label="Share video to library"
+                      >
+                        {sharingVideoKey === video.key ? (
+                          "…"
+                        ) : (
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path
+                              d="M15 8a3 3 0 1 0-2.8-4h-.4A3 3 0 0 0 9 8c0 .6.2 1.1.4 1.6l-3 2a3 3 0 1 0 1 1.6l3-2a3 3 0 0 0 3.2 0l3 2a3 3 0 1 0 1-1.6l-3-2c.3-.5.4-1 .4-1.6z"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        )}
+                      </button>
+                      <button
+                        type="button"
                         className={`whisk-icon-button${
                           video.favorite ? " is-favorite" : ""
                         }`}
@@ -96,6 +136,7 @@ function WhiskVideos({ apiBaseUrl = "" }) {
           </div>
         )}
       </div>
+      {shareStatus && <div className="whisk-share-status">{shareStatus}</div>}
       {error && <div className="whisk-error-panel">{error}</div>}
     </section>
   );

@@ -7,7 +7,6 @@ import {
 } from "../services/story";
 import { buildSafeFileName } from "../utils/fileName";
 import StoryMusicTrackCard from "./story/StoryMusicTrackCard";
-import "./story/music-library.css";
 
 const AUDIO_CONTENT_TYPE_BY_EXTENSION = {
   mp3: "audio/mpeg",

@@ -1,4 +1,4 @@
-import { buildApiUrl, fetchJson, postJson } from "./apiClient";
+import { buildApiUrl, buildUrlWithQuery, fetchJson, postJson } from "./apiClient";
 
 export const listImages = (baseUrl) =>
   fetchJson(buildApiUrl(baseUrl, "/s3/images"), {}, "Failed to load images.");
@@ -50,6 +50,48 @@ export const setVideoFavorite = (baseUrl, key, favorite) =>
     buildApiUrl(baseUrl, "/s3/videos/favorite"),
     { key, favorite },
     "Failed to update video favorite."
+  );
+
+export const shareImage = (baseUrl, key) =>
+  postJson(
+    buildApiUrl(baseUrl, "/s3/images/share"),
+    { key },
+    "Failed to share image."
+  );
+
+export const shareVideo = (baseUrl, key) =>
+  postJson(
+    buildApiUrl(baseUrl, "/s3/videos/share"),
+    { key },
+    "Failed to share video."
+  );
+
+export const listSharedImages = (baseUrl, params = {}) =>
+  fetchJson(
+    buildUrlWithQuery(baseUrl, "/s3/shared/images", params),
+    {},
+    "Failed to load shared images."
+  );
+
+export const listSharedVideos = (baseUrl, params = {}) =>
+  fetchJson(
+    buildUrlWithQuery(baseUrl, "/s3/shared/videos", params),
+    {},
+    "Failed to load shared videos."
+  );
+
+export const listSharedImageFavorites = (baseUrl) =>
+  fetchJson(
+    buildApiUrl(baseUrl, "/s3/shared/images/favorites"),
+    {},
+    "Failed to load favorites."
+  );
+
+export const setSharedImageFavorite = (baseUrl, key, favorite) =>
+  postJson(
+    buildApiUrl(baseUrl, "/s3/shared/images/favorites"),
+    { key, favorite },
+    "Failed to update favorite."
   );
 
 export const requestImageUploadUrl = (baseUrl, payload) =>

@@ -1,4 +1,12 @@
 const { buildDirectorFallbackConfig } = require("../lib/director-config");
+const {
+  LORA_MODALITY_IMAGE,
+  LORA_PROFILE_TYPE,
+} = require("../config/lora");
+const {
+  normalizeString,
+  applyCharacterProfileToReplicateInput,
+} = require("../lib/lora-utils");
 
 module.exports = (app, deps) => {
   const {
@@ -22,6 +30,9 @@ module.exports = (app, deps) => {
     getReplicateOutputUrl,
     buildReplicatePredictionRequest,
     DEFAULT_NEGATIVE_PROMPT,
+    getItem,
+    buildMediaPk,
+    buildMediaSk,
   } = deps;
 
 const buildImageJobKey = (predictionId = "") =>
@@ -77,6 +88,7 @@ app.post("/replicate/image/generate", async (req, res) => {
     2
   );
   const seed = req.body?.seed;
+  const characterId = normalizeString(req.body?.characterId);
   const seeds = isDiffScheduler
     ? Array.from({ length: numImages }, () =>
         Number.isFinite(Number(seed))
@@ -174,20 +186,57 @@ app.post("/replicate/image/generate", async (req, res) => {
     }
   }
 
+  let profileModality = {};
+  if (characterId) {
+    const profileItem = await getItem({
+      pk: buildMediaPk(userId),
+      sk: buildMediaSk(LORA_PROFILE_TYPE, characterId),
+    });
+    if (!profileItem) {
+      return res.status(400).json({
+        message: `No LoRA profile found for characterId: ${characterId}`,
+      });
+    }
+    profileModality = profileItem?.[LORA_MODALITY_IMAGE] || {};
+    const profileModelKey = normalizeString(profileModality?.modelKey);
+    if (profileModelKey && profileModelKey !== modelKey) {
+      return res.status(400).json({
+        message: `Character profile ${characterId} is configured for model ${profileModelKey}, not ${modelKey}`,
+      });
+    }
+  }
+
   try {
+    const promptWithProfile = applyCharacterProfileToReplicateInput({
+      input: {},
+      prompt: trimmedPrompt,
+      modelConfig,
+      profileModality,
+    }).prompt;
+    const finalTrimmedPrompt = clampPromptTokens(promptWithProfile);
+    const loraProfileNotice = characterId
+      ? `Character LoRA profile ${characterId} applied.`
+      : "";
+
     if (modelConfig.usePredictions) {
       let prediction = null;
       const resolvedSeed = Number.isFinite(Number(seed))
         ? Number(seed)
         : undefined;
-      const input = modelConfig.buildInput({
-        prompt: trimmedPrompt,
+      const rawInput = modelConfig.buildInput({
+        prompt: finalTrimmedPrompt,
         negativePrompt: trimmedNegativePrompt,
         width,
         height,
         numOutputs: numImages,
         seed: resolvedSeed,
         scheduler,
+      });
+      const { input } = applyCharacterProfileToReplicateInput({
+        input: rawInput,
+        prompt: finalTrimmedPrompt,
+        modelConfig,
+        profileModality,
       });
       console.log("Replicate image prediction create:", {
         modelId: modelConfig.modelId,
@@ -223,6 +272,7 @@ app.post("/replicate/image/generate", async (req, res) => {
             predictionId: prediction.id,
             imageName,
             batchId,
+            characterId,
             status: prediction.status,
             progressPct: prediction.status === "starting" ? 18 : 42,
             etaSeconds: 75,
@@ -239,6 +289,7 @@ app.post("/replicate/image/generate", async (req, res) => {
           notice: [
             "Replicate is generating the image. We'll keep checking.",
             promptNotice,
+            loraProfileNotice,
           ]
             .filter(Boolean)
             .join(" "),
@@ -300,6 +351,7 @@ app.post("/replicate/image/generate", async (req, res) => {
           predictionId: prediction.id,
           imageName,
           batchId,
+          characterId,
           status: "completed",
           progressPct: 100,
           etaSeconds: 0,
@@ -312,7 +364,8 @@ app.post("/replicate/image/generate", async (req, res) => {
         modelId: modelConfig.modelId,
         provider: "replicate",
         batchId,
-        notice: promptNotice,
+        notice: [promptNotice, loraProfileNotice].filter(Boolean).join(" "),
+        characterId,
         images,
       });
     }
@@ -326,14 +379,20 @@ app.post("/replicate/image/generate", async (req, res) => {
           const resolvedScheduler = isDiffScheduler
             ? modelConfig.schedulers?.[index % modelConfig.schedulers.length]
             : scheduler;
-          const input = modelConfig.buildInput({
-            prompt: trimmedPrompt,
+          const rawInput = modelConfig.buildInput({
+            prompt: finalTrimmedPrompt,
             negativePrompt: trimmedNegativePrompt,
             width,
             height,
             numOutputs: 1,
             seed: currentSeed,
             scheduler: resolvedScheduler,
+          });
+          const { input } = applyCharacterProfileToReplicateInput({
+            input: rawInput,
+            prompt: finalTrimmedPrompt,
+            modelConfig,
+            profileModality,
           });
           console.log("Replicate image generate invoke:", {
             modelId: modelConfig.modelId,
@@ -396,9 +455,11 @@ app.post("/replicate/image/generate", async (req, res) => {
       notice: [
         `Generating ${numImages} images with a staggered start. This can take a bit.`,
         promptNotice,
+        loraProfileNotice,
       ]
         .filter(Boolean)
         .join(" "),
+      characterId,
       images,
     });
   } catch (error) {

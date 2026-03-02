@@ -298,6 +298,12 @@ const replicateVideoConfig = {
   "wan-2.2-i2v-fast": {
     modelId: "wan-video/wan-2.2-i2v-fast",
     requiresImage: true,
+    loraInjection: {
+      scaleFieldNames: [
+        "lora_scale_transformer",
+        "lora_scale_transformer_2",
+      ],
+    },
     buildInput: ({ imageUrl, prompt }) => ({
       image: imageUrl,
       prompt,
