@@ -245,6 +245,14 @@ export const useImageStudio = ({
     ]);
     return new Map(entries);
   }, [characterPresets]);
+  const selectedCharacterPreset = useMemo(
+    () =>
+      characterPresetMap.get(
+        (promptHelperSelections.character || "").trim().toLowerCase()
+      ) || null,
+    [characterPresetMap, promptHelperSelections.character]
+  );
+  const selectedCharacterId = selectedCharacterPreset?.id || "";
 
   const buildPromptFromSelectionsWithSelections = (selections) => {
     const parts = [];
@@ -661,6 +669,7 @@ export const useImageStudio = ({
         imageName: imageGenerationName.trim(),
         prompt: imagePrompt.trim(),
         negativePrompt: imageNegativePrompt.trim() || undefined,
+        characterId: selectedCharacterId || undefined,
         width,
         height,
         numImages:
@@ -894,6 +903,7 @@ export const useImageStudio = ({
     imageSourceOptions,
     imageGenerationProps,
     imageUploadProps,
+    selectedCharacterId,
     isGeneratingImage,
     isUploading,
     resetImageForm,

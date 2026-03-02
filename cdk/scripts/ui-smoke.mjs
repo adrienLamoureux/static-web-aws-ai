@@ -42,6 +42,7 @@ const browser = await chromium.launch({ headless: true });
 const unauthenticatedChecks = [
   { id: "login-page", path: "/login", expectLogin: true, expectPath: "/login" },
   { id: "home-redirect", path: "/", expectLogin: true, expectPath: "/login" },
+  { id: "lora-redirect", path: "/lora", expectLogin: true, expectPath: "/login" },
   { id: "videos-redirect", path: "/videos", expectLogin: true, expectPath: "/login" },
   { id: "director-redirect", path: "/director", expectLogin: true, expectPath: "/login" },
   { id: "story-redirect", path: "/story", expectLogin: true, expectPath: "/login" },
@@ -59,7 +60,13 @@ const authenticatedChecks = [
     id: "home-page",
     path: "/",
     expectPath: "/",
-    expectedTexts: ["Compose Render Settings"],
+    expectedAnyTexts: ["Search shared images", "Shared Images"],
+  },
+  {
+    id: "lora-page",
+    path: "/lora",
+    expectPath: "/lora",
+    expectedAnyTexts: ["LoRA Catalog", "Character LoRA Profile"],
   },
   {
     id: "videos-page",

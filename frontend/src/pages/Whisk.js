@@ -3,6 +3,7 @@ import WhiskHero from "../components/whisk/WhiskHero";
 import WhiskWall from "../components/whisk/WhiskWall";
 import WhiskModal from "../components/whisk/WhiskModal";
 import { selectGeneratedImage } from "../services/images";
+import { shareImage } from "../services/s3";
 import { removeSessionCache } from "../utils/sessionCache";
 import { useImageStudio } from "./whisk/hooks/useImageStudio";
 import { useVideoGeneration } from "./whisk/hooks/useVideoGeneration";
@@ -21,6 +22,8 @@ function Whisk({ apiBaseUrl = "" }) {
   const [selectedImageUrl, setSelectedImageUrl] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
   const [lightboxImage, setLightboxImage] = useState(null);
+  const [sharingImageKey, setSharingImageKey] = useState("");
+  const [shareStatus, setShareStatus] = useState("");
   const pageSize = 10;
 
   const resolvedApiBaseUrl =
@@ -81,6 +84,7 @@ function Whisk({ apiBaseUrl = "" }) {
     imageSourceOptions,
     imageGenerationProps,
     imageUploadProps,
+    selectedCharacterId,
     isGeneratingImage,
     isUploading,
     resetImageForm,
@@ -116,6 +120,7 @@ function Whisk({ apiBaseUrl = "" }) {
     selectedImageKey,
     selectedSourceImageKey,
     selectedImageUrl,
+    characterId: selectedCharacterId,
     onError: setError,
     onSubmitted: () => {
       invalidateVideoCache();
@@ -152,6 +157,21 @@ function Whisk({ apiBaseUrl = "" }) {
     setActiveModal("video");
   };
 
+  const handleShareImage = async (image) => {
+    if (!image?.key || !resolvedApiBaseUrl) return;
+    setError("");
+    setShareStatus("");
+    setSharingImageKey(image.key);
+    try {
+      await shareImage(resolvedApiBaseUrl, image.key);
+      setShareStatus("Image shared to the library.");
+    } catch (shareError) {
+      setError(shareError?.message || "Failed to share image.");
+    } finally {
+      setSharingImageKey("");
+    }
+  };
+
   const displayImages = useMemo(
     () =>
       images.filter(
@@ -183,6 +203,8 @@ function Whisk({ apiBaseUrl = "" }) {
           images={pagedImages}
           status={status}
           onOpenVideo={openVideoModalForImage}
+          onShareImage={handleShareImage}
+          sharingImageKey={sharingImageKey}
           onDeleteImage={removeImage}
           onOpenImageModal={() => {
             resetImageForm();
@@ -195,6 +217,7 @@ function Whisk({ apiBaseUrl = "" }) {
         />
       </div>
 
+      {shareStatus && <div className="whisk-share-status">{shareStatus}</div>}
       {error && <div className="whisk-error-panel">{error}</div>}
 
       {lightboxImage && (

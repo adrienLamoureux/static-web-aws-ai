@@ -44,3 +44,6 @@ Track rollouts of the same improvement across multiple idea stacks.
 - 2026-02-26T21:37:51.289Z | action=deploy | improvement=whisk-create-plus-alignment | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=6639653
 - 2026-02-26T22:36:14.977Z | action=deploy | improvement=cognito-localhost-multiport-callbacks | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=39dab2d
 - 2026-02-27T09:33:56.733Z | action=deploy-many | improvement=cognito-localhost-ports-3000-3009 | targets=design-endfield,design-main,design-moescape,design-pixnovel | succeeded=design-endfield,design-main,design-moescape,design-pixnovel | failed=- | commit=39dab2d
+- 2026-03-02T22:17:31.245Z | action=deploy | improvement=lora-management | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=1618965
+- 2026-03-02T22:20:01.462Z | action=deploy | improvement=lora-management | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=1618965
+- 2026-03-02T22:20:54.736Z | action=deploy | improvement=lora-management-smoke | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=1618965

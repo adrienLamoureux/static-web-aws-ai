@@ -72,3 +72,8 @@
 - 2026-02-27T09:23:07.237Z | event=diff | stage=design-pixnovel
 - 2026-02-27T09:33:56.732Z | event=deploy-many | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d31s9yo6pacgac.cloudfront.net / api=https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/ / commit=39dab2d / sanity=passed / ui_smoke=passed / improvement=cognito-localhost-ports-3000-3009
 - 2026-02-27T17:22:57.205Z | event=ui-smoke | stage=design-pixnovel / result=passed
+- 2026-03-02T11:10:19.790Z | event=sanity | stage=design-pixnovel / result=passed
+- 2026-03-02T11:10:48.504Z | event=ui-smoke | stage=design-pixnovel / result=passed
+- 2026-03-02T22:17:31.243Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d21j30h6jj4n2k.cloudfront.net / api=https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/ / commit=1618965 / sanity=passed / ui_smoke=passed / improvement=lora-management
+- 2026-03-02T22:20:01.460Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d21j30h6jj4n2k.cloudfront.net / api=https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/ / commit=1618965 / sanity=passed / ui_smoke=passed / improvement=lora-management
+- 2026-03-02T22:20:54.735Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d21j30h6jj4n2k.cloudfront.net / api=https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/ / commit=1618965 / sanity=passed / ui_smoke=passed / improvement=lora-management-smoke

@@ -9,6 +9,8 @@ import {
 } from "react-router-dom";
 import About from "./pages/About";
 import Whisk from "./pages/Whisk";
+import SharedLibrary from "./pages/SharedLibrary";
+import LoraManagement from "./pages/LoraManagement";
 import Story from "./pages/Story";
 import StoryMusicLibrary from "./pages/StoryMusicLibrary";
 import WhiskVideos from "./pages/WhiskVideos";
@@ -30,10 +32,20 @@ const mergeCognitoConfig = (base = {}, override = {}) => ({
 });
 
 const PIXNOVEL_PANE_META = {
+  shared: {
+    label: "Library",
+    route: "/",
+    subtitle: "Community-shared image and video library",
+  },
   whisk: {
     label: "Generator",
-    route: "/",
+    route: "/whisk",
     subtitle: "Realtime visual prompt studio",
+  },
+  lora: {
+    label: "LoRA",
+    route: "/lora",
+    subtitle: "Character LoRA catalog and profile management",
   },
   videos: {
     label: "Videos",
@@ -167,6 +179,52 @@ const PIXNOVEL_CONTEXT_PANEL_CONFIG = {
     ],
     footer: "Sound Lab keeps your music catalog ready for Director scene assignment.",
   },
+  shared: {
+    kicker: "Shared",
+    title: "Community Library Focus",
+    sections: [
+      {
+        label: "Discovery",
+        items: [
+          { title: "Images", value: "Shared wall with fast search" },
+          { title: "Favorites", value: "Pin reusable visual references" },
+          { title: "Videos", value: "Review community clips quickly" },
+        ],
+      },
+      {
+        label: "Contribute",
+        items: [
+          { title: "From Generator", value: "Use the new share action on cards" },
+          { title: "From Videos", value: "Share completed clips to library" },
+          { title: "Refresh", value: "Pull latest public assets instantly" },
+        ],
+      },
+    ],
+    footer: "Shared library is the default landing page for curated assets.",
+  },
+  lora: {
+    kicker: "LoRA",
+    title: "Character LoRA Management",
+    sections: [
+      {
+        label: "Catalog",
+        items: [
+          { title: "Sync", value: "Pull LoRA entries from CivitAI" },
+          { title: "Search", value: "Filter local catalog by name and trigger words" },
+          { title: "Pick", value: "Attach selected LoRAs to character profiles" },
+        ],
+      },
+      {
+        label: "Profiles",
+        items: [
+          { title: "Character scope", value: "Profile per character id" },
+          { title: "Modality split", value: "Separate image/video LoRA stacks" },
+          { title: "Save", value: "Persist profile for generation routes" },
+        ],
+      },
+    ],
+    footer: "Use LoRA profiles to keep character generation consistent across image and video.",
+  },
   about: {
     kicker: "Core",
     title: "Platform Snapshot",
@@ -190,6 +248,20 @@ const PIXNOVEL_FEED_CONFIG = {
     loadingText: "Loading operational queue...",
     emptyText: "No active jobs yet.",
     signalEmptyText: "No signals available yet.",
+  },
+  shared: {
+    queueTitle: "Share Queue",
+    signalTitle: "Library Signals",
+    loadingText: "Loading shared library signals...",
+    emptyText: "No queue items for shared library.",
+    signalEmptyText: "No shared library signals available yet.",
+  },
+  lora: {
+    queueTitle: "LoRA Queue",
+    signalTitle: "LoRA Signals",
+    loadingText: "Loading LoRA operations...",
+    emptyText: "No queued LoRA tasks.",
+    signalEmptyText: "No LoRA signals available yet.",
   },
   videos: {
     queueTitle: "Video Queue",
@@ -250,17 +322,17 @@ const PIXNOVEL_MASONRY_BASE_IMAGES = [
 const PIXNOVEL_MASONRY_COLUMNS = [
   {
     id: "column-a",
-    durationSeconds: 54,
+    durationSeconds: 86,
     startOffset: "0%",
   },
   {
     id: "column-b",
-    durationSeconds: 58,
+    durationSeconds: 94,
     startOffset: "-11%",
   },
   {
     id: "column-c",
-    durationSeconds: 63,
+    durationSeconds: 102,
     startOffset: "-22%",
   },
 ];
@@ -332,8 +404,14 @@ const PIXNOVEL_MASONRY_IMAGES = buildLoopedMasonryImages(
 );
 
 const resolveActivePane = (pathname) => {
-  if (pathname === "/" || pathname === "/whisk") {
+  if (pathname === "/" || pathname === "/shared") {
+    return "shared";
+  }
+  if (pathname === "/whisk") {
     return "whisk";
+  }
+  if (pathname === "/lora") {
+    return "lora";
   }
   if (pathname === "/story") {
     return "story";
@@ -350,7 +428,7 @@ const resolveActivePane = (pathname) => {
   if (pathname === "/about") {
     return "about";
   }
-  return "whisk";
+  return "shared";
 };
 
 const isVideoQueueItem = (item) =>
@@ -808,7 +886,9 @@ const PixnovelWorkspace = ({ apiBaseUrl, activePane, userEmail, onLogout }) => {
   const [opsError, setOpsError] = useState("");
 
   const paneByKey = {
+    shared: <SharedLibrary apiBaseUrl={apiBaseUrl} />,
     whisk: <Whisk apiBaseUrl={apiBaseUrl} />,
+    lora: <LoraManagement apiBaseUrl={apiBaseUrl} />,
     videos: <WhiskVideos apiBaseUrl={apiBaseUrl} />,
     director: (
       <Director
@@ -875,7 +955,7 @@ const PixnovelWorkspace = ({ apiBaseUrl, activePane, userEmail, onLogout }) => {
     if (activePane === "videos") {
       return opsSnapshot.queue.filter(isVideoQueueItem);
     }
-    if (activePane === "music") {
+    if (activePane === "music" || activePane === "shared" || activePane === "lora") {
       return [];
     }
     return opsSnapshot.queue;
@@ -892,7 +972,11 @@ const PixnovelWorkspace = ({ apiBaseUrl, activePane, userEmail, onLogout }) => {
         tone: "good",
       };
 
-    if (activePane === "whisk" || activePane === "about") {
+    if (
+      activePane === "whisk" ||
+      activePane === "shared" ||
+      activePane === "about"
+    ) {
       return opsSnapshot.signalCards;
     }
 
@@ -985,6 +1069,37 @@ const PixnovelWorkspace = ({ apiBaseUrl, activePane, userEmail, onLogout }) => {
           value: `${summary.recentFailedJobs || 0}`,
           hint: `Error rate ${summary.errorRatePct || 0}%`,
           tone: Number(summary.recentFailedJobs || 0) > 0 ? "bad" : "good",
+        },
+      ];
+    }
+
+    if (activePane === "lora") {
+      const summary = opsSnapshot.summary || DEFAULT_OPS_SUMMARY;
+      return [
+        {
+          ...apiSignal,
+          label: "LoRA API",
+        },
+        {
+          key: "lora-sync",
+          label: "Catalog sync",
+          value: "On demand",
+          hint: "Manual CivitAI sync from this page",
+          tone: "good",
+        },
+        {
+          key: "lora-backlog-impact",
+          label: "Render backlog",
+          value: `${summary.queueDepth || 0}`,
+          hint: "Generation queue pressure can delay profile testing",
+          tone: Number(summary.queueDepth || 0) > 4 ? "warn" : "good",
+        },
+        {
+          key: "lora-errors",
+          label: "Pipeline errors (1h)",
+          value: `${summary.recentFailedJobs || 0}`,
+          hint: `Error rate ${summary.errorRatePct || 0}%`,
+          tone: Number(summary.recentFailedJobs || 0) > 0 ? "warn" : "good",
         },
       ];
     }
@@ -1107,7 +1222,20 @@ const AppShell = ({ apiBaseUrl }) => {
               <RequireAuth>
                 <PixnovelWorkspace
                   apiBaseUrl={apiBaseUrl}
-                  activePane="whisk"
+                  activePane="shared"
+                  userEmail={user?.email}
+                  onLogout={logout}
+                />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/shared"
+            element={
+              <RequireAuth>
+                <PixnovelWorkspace
+                  apiBaseUrl={apiBaseUrl}
+                  activePane="shared"
                   userEmail={user?.email}
                   onLogout={logout}
                 />
@@ -1121,6 +1249,19 @@ const AppShell = ({ apiBaseUrl }) => {
                 <PixnovelWorkspace
                   apiBaseUrl={apiBaseUrl}
                   activePane="whisk"
+                  userEmail={user?.email}
+                  onLogout={logout}
+                />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/lora"
+            element={
+              <RequireAuth>
+                <PixnovelWorkspace
+                  apiBaseUrl={apiBaseUrl}
+                  activePane="lora"
                   userEmail={user?.email}
                   onLogout={logout}
                 />

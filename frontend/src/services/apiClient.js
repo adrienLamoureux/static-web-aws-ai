@@ -55,6 +55,17 @@ export const postJson = (url, payload, errorMessage) =>
     errorMessage
   );
 
+export const putJson = (url, payload, errorMessage) =>
+  fetchJson(
+    url,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    errorMessage
+  );
+
 export const deleteJson = (url, errorMessage) =>
   fetchJson(
     url,
