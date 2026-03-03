@@ -5,11 +5,11 @@ import {
   Routes,
   Link,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 import About from "./pages/About";
 import Whisk from "./pages/Whisk";
 import SharedLibrary from "./pages/SharedLibrary";
-import LoraManagement from "./pages/LoraManagement";
 import Story from "./pages/Story";
 import StoryMusicLibrary from "./pages/StoryMusicLibrary";
 import WhiskVideos from "./pages/WhiskVideos";
@@ -17,6 +17,7 @@ import Director from "./pages/Director";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
 import RequireAuth from "./components/auth/RequireAuth";
+import GlobalNowPlayingDock from "./components/music/GlobalNowPlayingDock";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import {
   fetchDirectorAppConfig,
@@ -46,11 +47,6 @@ const PIXNOVEL_PANE_META = {
     label: "Generator",
     route: "/whisk",
     subtitle: "Realtime visual prompt studio",
-  },
-  lora: {
-    label: "LoRA",
-    route: "/lora",
-    subtitle: "Character LoRA catalog and profile management",
   },
   videos: {
     label: "Videos",
@@ -131,29 +127,6 @@ const PIXNOVEL_CONTEXT_PANEL_CONFIG = {
       },
     ],
     footer: "Shared library is the default landing page for curated assets.",
-  },
-  lora: {
-    kicker: "LoRA",
-    title: "Character LoRA Management",
-    sections: [
-      {
-        label: "Catalog",
-        items: [
-          { title: "Sync", value: "Pull LoRA entries from CivitAI" },
-          { title: "Search", value: "Filter by model, creator, and trigger words" },
-          { title: "Pick", value: "Attach selected LoRAs to profiles" },
-        ],
-      },
-      {
-        label: "Profiles",
-        items: [
-          { title: "Character scope", value: "Profile per character id" },
-          { title: "Modality split", value: "Separate image/video LoRA stacks" },
-          { title: "Save", value: "Persist profiles for generation routes" },
-        ],
-      },
-    ],
-    footer: "Use LoRA profiles to keep character generation consistent.",
   },
   videos: {
     kicker: "Video Ops",
@@ -254,13 +227,6 @@ const PIXNOVEL_FEED_CONFIG = {
     loadingText: "Loading operational queue...",
     emptyText: "No active jobs yet.",
     signalEmptyText: "No signals available yet.",
-  },
-  lora: {
-    queueTitle: "LoRA Queue",
-    signalTitle: "LoRA Signals",
-    loadingText: "Loading LoRA operations...",
-    emptyText: "No queued LoRA tasks.",
-    signalEmptyText: "No LoRA signals available yet.",
   },
   videos: {
     queueTitle: "Video Queue",
@@ -819,27 +785,32 @@ const PixnovelHeroMasonry = ({ masonryBaseImages }) => {
   );
 };
 
-const PixnovelHero = ({ activePane, userEmail, onLogout, masonryBaseImages }) => {
+const PixnovelWorkspaceNav = ({ activePane }) => {
+  return (
+    <nav className="pixnovel-workspace-nav" aria-label="Workspace navigation">
+      {Object.entries(PIXNOVEL_PANE_META).map(([key, item]) => (
+        <Link
+          key={key}
+          to={item.route}
+          className={`pixnovel-top-link${activePane === key ? " is-active" : ""}`}
+        >
+          {item.label}
+        </Link>
+      ))}
+    </nav>
+  );
+};
+
+const PixnovelHero = ({ masonryBaseImages, userEmail, onLogout }) => {
   return (
     <section className="pixnovel-hero" aria-label="Creative hero section">
-      <div className="pixnovel-hero-topbar">
+      <div className="pixnovel-hero-chrome">
         <Link to="/" className="pixnovel-brand">
           Whisk Studio
         </Link>
-        <nav className="pixnovel-top-nav">
-          {Object.entries(PIXNOVEL_PANE_META).map(([key, item]) => (
-            <Link
-              key={key}
-              to={item.route}
-              className={`pixnovel-top-link${activePane === key ? " is-active" : ""}`}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="pixnovel-user-chip">
+        <div className="pixnovel-hero-auth">
           <span>{userEmail || "Signed in"}</span>
-          <button type="button" className="btn-ghost px-4 py-1 text-xs" onClick={onLogout}>
+          <button type="button" className="pixnovel-hero-auth-action" onClick={onLogout}>
             Sign out
           </button>
         </div>
@@ -856,6 +827,7 @@ const PixnovelWorkspace = ({
   onLogout,
   currentTheme,
   onThemeChange,
+  onNowPlayingChange,
 }) => {
   const [opsSnapshot, setOpsSnapshot] = useState({
     queue: [],
@@ -871,7 +843,6 @@ const PixnovelWorkspace = ({
   const paneByKey = {
     shared: <SharedLibrary apiBaseUrl={apiBaseUrl} />,
     whisk: <Whisk apiBaseUrl={apiBaseUrl} />,
-    lora: <LoraManagement apiBaseUrl={apiBaseUrl} />,
     videos: <WhiskVideos apiBaseUrl={apiBaseUrl} />,
     director: (
       <Director
@@ -883,7 +854,14 @@ const PixnovelWorkspace = ({
         onThemeChange={onThemeChange}
       />
     ),
-    story: <Story apiBaseUrl={apiBaseUrl} forcedViewMode="reader" pageVariant="story" />,
+    story: (
+      <Story
+        apiBaseUrl={apiBaseUrl}
+        forcedViewMode="reader"
+        pageVariant="story"
+        onNowPlayingChange={onNowPlayingChange}
+      />
+    ),
     music: <StoryMusicLibrary apiBaseUrl={apiBaseUrl} />,
     about: <About />,
   };
@@ -970,7 +948,7 @@ const PixnovelWorkspace = ({
     if (activePane === "videos") {
       return opsSnapshot.queue.filter(isVideoQueueItem);
     }
-    if (activePane === "music" || activePane === "shared" || activePane === "lora") {
+    if (activePane === "music" || activePane === "shared") {
       return [];
     }
     return opsSnapshot.queue;
@@ -1084,37 +1062,6 @@ const PixnovelWorkspace = ({
       ];
     }
 
-    if (activePane === "lora") {
-      const summary = opsSnapshot.summary || DEFAULT_OPS_SUMMARY;
-      return [
-        {
-          ...apiSignal,
-          label: "LoRA API",
-        },
-        {
-          key: "lora-sync",
-          label: "Catalog sync",
-          value: "On demand",
-          hint: "Manual CivitAI sync from this page",
-          tone: "good",
-        },
-        {
-          key: "lora-backlog-impact",
-          label: "Render backlog",
-          value: `${summary.queueDepth || 0}`,
-          hint: "Generation queue pressure can delay profile testing",
-          tone: Number(summary.queueDepth || 0) > 4 ? "warn" : "good",
-        },
-        {
-          key: "lora-errors",
-          label: "Pipeline errors (1h)",
-          value: `${summary.recentFailedJobs || 0}`,
-          hint: `Error rate ${summary.errorRatePct || 0}%`,
-          tone: Number(summary.recentFailedJobs || 0) > 0 ? "warn" : "good",
-        },
-      ];
-    }
-
     return opsSnapshot.signalCards;
   }, [activePane, opsSnapshot, paneQueue]);
 
@@ -1122,6 +1069,7 @@ const PixnovelWorkspace = ({
     activePane === "story" ||
     activePane === "music" ||
     activePane === "director";
+  const isStoryPane = activePane === "story";
   const sidePanel =
     activePane === "whisk" ? (
       <PixnovelGenerationMenu apiBaseUrl={apiBaseUrl} />
@@ -1189,24 +1137,36 @@ const PixnovelWorkspace = ({
   return (
     <div className="pixnovel-workspace">
       <PixnovelHero
-        activePane={activePane}
+        masonryBaseImages={masonryBaseImages}
         userEmail={userEmail}
         onLogout={onLogout}
-        masonryBaseImages={masonryBaseImages}
       />
+      <PixnovelWorkspaceNav activePane={activePane} />
 
       <div className={`pixnovel-grid${isExpandedStudioPane ? " pixnovel-grid--expanded" : ""}`}>
         {isExpandedStudioPane ? null : sidePanel}
 
         <section
-          className={`pixnovel-stage${isExpandedStudioPane ? " pixnovel-stage--expanded" : ""}`}
+          className={`pixnovel-stage${isExpandedStudioPane ? " pixnovel-stage--expanded" : ""}${
+            isStoryPane ? " pixnovel-stage--story-fullbleed" : ""
+          }`}
           key={activePane}
         >
-          <header className="pixnovel-stage-head">
+          <header
+            className={`pixnovel-stage-head${
+              isStoryPane ? " pixnovel-stage-head--visually-hidden" : ""
+            }`}
+          >
             <p className="pixnovel-stage-kicker">{PIXNOVEL_PANE_META[activePane].label}</p>
             <h2>{PIXNOVEL_PANE_META[activePane].subtitle}</h2>
           </header>
-          <div className="pixnovel-stage-body">{paneByKey[activePane]}</div>
+          <div
+            className={`pixnovel-stage-body${
+              isStoryPane ? " pixnovel-stage-body--story-fullbleed" : ""
+            }`}
+          >
+            {paneByKey[activePane]}
+          </div>
         </section>
 
         {isExpandedStudioPane ? null : feedPanel}
@@ -1217,6 +1177,10 @@ const PixnovelWorkspace = ({
 
 const AppShell = ({ apiBaseUrl, currentTheme, onThemeChange }) => {
   const { logout, user } = useAuth();
+  const location = useLocation();
+  const [nowPlayingTrack, setNowPlayingTrack] = useState(null);
+  const hideGlobalMusicDock =
+    location.pathname === "/login" || location.pathname === "/auth/callback";
 
   return (
     <div className="pixnovel-shell relative min-h-screen overflow-hidden">
@@ -1227,6 +1191,9 @@ const AppShell = ({ apiBaseUrl, currentTheme, onThemeChange }) => {
       </div>
 
       <main className="pixnovel-main relative z-10">
+        {!hideGlobalMusicDock && user?.email ? (
+          <GlobalNowPlayingDock nowPlayingTrack={nowPlayingTrack} />
+        ) : null}
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
@@ -1281,7 +1248,7 @@ const AppShell = ({ apiBaseUrl, currentTheme, onThemeChange }) => {
               <RequireAuth>
                 <PixnovelWorkspace
                   apiBaseUrl={apiBaseUrl}
-                  activePane="lora"
+                  activePane="director"
                   userEmail={user?.email}
                   onLogout={logout}
                   currentTheme={currentTheme}
@@ -1316,6 +1283,7 @@ const AppShell = ({ apiBaseUrl, currentTheme, onThemeChange }) => {
                   onLogout={logout}
                   currentTheme={currentTheme}
                   onThemeChange={onThemeChange}
+                  onNowPlayingChange={setNowPlayingTrack}
                 />
               </RequireAuth>
             }

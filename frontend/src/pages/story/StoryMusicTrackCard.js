@@ -148,6 +148,7 @@ function StoryMusicTrackCard({
   onLoopChange,
   autoPlayRequest = null,
   showSource = false,
+  uiVariant = "default",
 }) {
   const {
     trackId = "",
@@ -181,6 +182,7 @@ function StoryMusicTrackCard({
     Boolean(tempoBpm);
   const safeTagList = Array.isArray(tags) ? tags : [];
   const showLoopToggle = typeof onLoopChange === "function" && Boolean(url);
+  const isStoryV3Variant = uiVariant === "story-v3";
   const audioRef = useRef(null);
   const loopMonitorRef = useRef(null);
   const handledAutoPlayRequestRef = useRef("");
@@ -368,7 +370,11 @@ function StoryMusicTrackCard({
   ]);
 
   return (
-    <div className={`music-library-item ${isSelected ? "music-library-item--selected" : ""}`}>
+    <div
+      className={`music-library-item ${isSelected ? "music-library-item--selected" : ""}${
+        isStoryV3Variant ? " story-v3-track-card" : ""
+      }`}
+    >
       <div className="music-library-item-head">
         <p className="music-library-item-title">{title || "Untitled track"}</p>
         <span className="music-library-item-date">{stampLabel}</span>
@@ -385,7 +391,7 @@ function StoryMusicTrackCard({
         />
       )}
       {showLoopToggle && loop && (
-        <p className="story-music-track-loop-note">
+        <p className={isStoryV3Variant ? "story-v3-track-loop-note" : "story-music-track-loop-note"}>
           {prefersNativeLoop
             ? "Seamless loop active (lossless mode)."
             : isPreparingGaplessLoop
@@ -394,11 +400,15 @@ function StoryMusicTrackCard({
         </p>
       )}
       {(typeof onSelect === "function" || showLoopToggle) && (
-        <div className="story-music-track-item-actions">
+        <div className={isStoryV3Variant ? "story-v3-track-actions" : "story-music-track-item-actions"}>
           {typeof onSelect === "function" && (
             <button
               type="button"
-              className="btn-ghost px-3 py-1 text-xs story-music-track-select-btn"
+              className={
+                isStoryV3Variant
+                  ? "story-v3-btn story-v3-btn--ghost story-v3-btn--small story-v3-track-select-btn"
+                  : "btn-ghost px-3 py-1 text-xs story-music-track-select-btn"
+              }
               onClick={() => onSelect(track)}
               disabled={isSelected}
             >
@@ -406,7 +416,7 @@ function StoryMusicTrackCard({
             </button>
           )}
           {showLoopToggle && (
-            <label className="story-music-track-loop">
+            <label className={isStoryV3Variant ? "story-v3-toggle" : "story-music-track-loop"}>
               <input
                 type="checkbox"
                 checked={loop}

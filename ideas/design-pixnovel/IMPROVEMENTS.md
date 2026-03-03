@@ -44,3 +44,8 @@
 - 2026-03-02T22:20:54.735Z | improvement=lora-management-smoke | result=deployed | commit=1618965 | detail=stack=StaticWebAWSAIStack-design-pixnovel
 - 2026-03-02T22:25:05.902Z | improvement=full-stack-lora-shared-library | result=deployed | commit=ef28baa | detail=stack=StaticWebAWSAIStack-design-pixnovel
 - 2026-03-02T22:51:16.007Z | improvement=design-pixnovel-shared-lora-css | result=deployed | commit=b3a26a9 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-02T23:20:03.423Z | improvement=design-polish-header-spacing-lora-director | result=deployed | commit=29eef41 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-03T17:20:22.467Z | improvement=story-chat-polish-v3 | result=deployed | commit=29eef41 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-03T17:24:28.891Z | improvement=story-portrait-book-layout | result=deployed | commit=29eef41 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-03T17:28:04.398Z | improvement=set-replicate-token | result=deployed | commit=29eef41 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-03T17:43:54.092Z | improvement=story-chat-phone-style | result=deployed | commit=29eef41 | detail=stack=StaticWebAWSAIStack-design-pixnovel

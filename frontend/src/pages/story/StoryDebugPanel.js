@@ -12,10 +12,15 @@ export function StorySessionDebugPanel({
   }
 
   return (
-    <div className="story-session-debug">
-      <div className="story-session-debug-header">
-        <p className="story-debug-title">Story debug</p>
-        <label className="story-scenes-toggle">
+    <details className="story-v3-disclosure story-v3-disclosure--debug">
+      <summary className="story-v3-disclosure-summary">
+        <span>Story debug</span>
+        <span className="story-v3-disclosure-meta">
+          {storyDebugEnabled ? "enabled" : "disabled"}
+        </span>
+      </summary>
+      <div className="story-v3-debug-header">
+        <label className="story-v3-toggle">
           <input
             type="checkbox"
             checked={storyDebugEnabled}
@@ -24,7 +29,7 @@ export function StorySessionDebugPanel({
           Show
         </label>
         <select
-          className="field-select story-session-debug-select"
+          className="story-v3-select story-v3-debug-select"
           value={storyDebugView}
           onChange={(event) => setStoryDebugView(event.target.value)}
         >
@@ -34,78 +39,83 @@ export function StorySessionDebugPanel({
         </select>
       </div>
       {storyDebugEnabled && (
-        <div className="story-session-debug-body">
+        <div className="story-v3-debug-body">
           {(storyDebugView === "state" || storyDebugView === "both") && (
             <>
-              <p className="story-debug-label">State</p>
-              <pre className="story-debug-code">
+              <p className="story-v3-debug-label">State</p>
+              <pre className="story-v3-debug-code">
                 {JSON.stringify(activeSessionDetail.storyState || {}, null, 2)}
               </pre>
             </>
           )}
           {(storyDebugView === "lorebook" || storyDebugView === "both") && (
             <>
-              <p className="story-debug-label">Lorebook</p>
-              <pre className="story-debug-code">
+              <p className="story-v3-debug-label">Lorebook</p>
+              <pre className="story-v3-debug-code">
                 {JSON.stringify(activeSessionDetail.lorebook || {}, null, 2)}
               </pre>
             </>
           )}
         </div>
       )}
-    </div>
+    </details>
   );
 }
 
 export function SceneDebugPanel({ scene }) {
   return (
-    <div className="story-scene-debug">
-      <p className="story-debug-title">Debug</p>
-      <p className="story-debug-line">
-        <span className="story-debug-label">Scene prompt:</span> {scene.prompt || "—"}
-      </p>
-      <p className="story-debug-line">
-        <span className="story-debug-label">Scene environment:</span>{" "}
-        {scene.sceneEnvironment || "—"}
-      </p>
-      <p className="story-debug-line">
-        <span className="story-debug-label">Scene action:</span> {scene.sceneAction || "—"}
-      </p>
-      <p className="story-debug-line">
-        <span className="story-debug-label">Positive prompt:</span>{" "}
-        {scene.promptPositive || "—"}
-      </p>
-      <p className="story-debug-line">
-        <span className="story-debug-label">Negative prompt:</span>{" "}
-        {scene.promptNegative || "—"}
-      </p>
+    <details className="story-v3-disclosure story-v3-disclosure--scene-debug">
+      <summary className="story-v3-disclosure-summary">
+        <span>Scene debug payload</span>
+        <span className="story-v3-disclosure-meta">{scene.sceneId || "scene"}</span>
+      </summary>
+      <div className="story-v3-debug-body">
+        <p className="story-v3-debug-line">
+          <span className="story-v3-debug-label">Scene prompt:</span> {scene.prompt || "—"}
+        </p>
+        <p className="story-v3-debug-line">
+          <span className="story-v3-debug-label">Scene environment:</span>{" "}
+          {scene.sceneEnvironment || "—"}
+        </p>
+        <p className="story-v3-debug-line">
+          <span className="story-v3-debug-label">Scene action:</span> {scene.sceneAction || "—"}
+        </p>
+        <p className="story-v3-debug-line">
+          <span className="story-v3-debug-label">Positive prompt:</span>{" "}
+          {scene.promptPositive || "—"}
+        </p>
+        <p className="story-v3-debug-line">
+          <span className="story-v3-debug-label">Negative prompt:</span>{" "}
+          {scene.promptNegative || "—"}
+        </p>
 
-      {scene.debug?.context && (
-        <>
-          <p className="story-debug-line">
-            <span className="story-debug-label">Context mode:</span>{" "}
-            {scene.debug.context.mode || "—"}
-          </p>
-          <p className="story-debug-line">
-            <span className="story-debug-label">Context summary:</span>{" "}
-            {scene.debug.context.summary || "—"}
-          </p>
-          <p className="story-debug-line">
-            <span className="story-debug-label">Context latest:</span>{" "}
-            {scene.debug.context.latest || "—"}
-          </p>
-          <p className="story-debug-line">
-            <span className="story-debug-label">Context recent:</span>{" "}
-            {scene.debug.context.recent || "—"}
-          </p>
-        </>
-      )}
+        {scene.debug?.context && (
+          <>
+            <p className="story-v3-debug-line">
+              <span className="story-v3-debug-label">Context mode:</span>{" "}
+              {scene.debug.context.mode || "—"}
+            </p>
+            <p className="story-v3-debug-line">
+              <span className="story-v3-debug-label">Context summary:</span>{" "}
+              {scene.debug.context.summary || "—"}
+            </p>
+            <p className="story-v3-debug-line">
+              <span className="story-v3-debug-label">Context latest:</span>{" "}
+              {scene.debug.context.latest || "—"}
+            </p>
+            <p className="story-v3-debug-line">
+              <span className="story-v3-debug-label">Context recent:</span>{" "}
+              {scene.debug.context.recent || "—"}
+            </p>
+          </>
+        )}
 
-      {scene.debug?.replicate?.input && (
-        <pre className="story-debug-code">
-          {JSON.stringify(scene.debug.replicate.input, null, 2)}
-        </pre>
-      )}
-    </div>
+        {scene.debug?.replicate?.input && (
+          <pre className="story-v3-debug-code">
+            {JSON.stringify(scene.debug.replicate.input, null, 2)}
+          </pre>
+        )}
+      </div>
+    </details>
   );
 }

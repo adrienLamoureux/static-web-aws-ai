@@ -16,8 +16,6 @@ function StoryContinuityCenter({
   illustrationContextMode,
 }) {
   const [memoryTab, setMemoryTab] = useState(MEMORY_TABS.TIMELINE);
-  const [memoryOpen, setMemoryOpen] = useState(true);
-  const [whyResponseOpen, setWhyResponseOpen] = useState(false);
 
   const latestAssistantMessage = useMemo(
     () => [...messages].reverse().find((message) => message.role === "assistant") || null,
@@ -115,143 +113,145 @@ function StoryContinuityCenter({
   const contextSourceChips = CONTEXT_SOURCES_BY_MODE[illustrationContextMode] || [];
 
   return (
-    <div className="story-director-overview">
-      <div className="story-context-grid">
-        <article className="story-context-card glass-panel">
-          <p className="story-context-eyebrow">Always-on context</p>
-          <div className="story-context-stat-grid">
+    <div className="story-v3-continuity">
+      <section className="story-v3-continuity-core">
+        <article className="story-v3-panel">
+          <p className="story-v3-eyebrow">Always-on context</p>
+          <div className="story-v3-stat-grid">
             {alwaysOnContext.map((item) => (
-              <div key={item.label} className="story-context-stat">
-                <span className="story-context-stat-value">{item.value}</span>
-                <span className="story-context-stat-label">{item.label}</span>
+              <div key={item.label} className="story-v3-stat">
+                <span className="story-v3-stat-value">{item.value}</span>
+                <span className="story-v3-stat-label">{item.label}</span>
               </div>
             ))}
           </div>
         </article>
+      </section>
 
-        <article className="story-context-card glass-panel">
-          <p className="story-context-eyebrow">Triggered context</p>
-          <div className="story-context-lines">
-            <p className="story-context-line">
-              <span>Recent events:</span>
-              {recentEvents.length > 0
-                ? recentEvents.map((event) => event.id || event.type || "event").join(", ")
-                : " none"}
-            </p>
-            <p className="story-context-line">
-              <span>Scene mode:</span> {illustrationContextMode}
-            </p>
-            <p className="story-context-line">
-              <span>Latest summary:</span>{" "}
-              {latestDebugContext?.summary || "No scene-context summary yet."}
-            </p>
-          </div>
-        </article>
-
-        <article className="story-context-card glass-panel">
-          <p className="story-context-eyebrow">Context budget</p>
-          <div className="story-budget-row">
-            <span>{estimatedBudgetChars} chars estimated</span>
-            <span>{budgetPercent}%</span>
-          </div>
-          <div className="story-budget-track">
-            <div className="story-budget-fill" style={{ width: `${budgetPercent}%` }} />
-          </div>
-          <p className="story-context-hint">
-            Keeps prompt payload predictable for stronger continuity over long sessions.
-          </p>
-        </article>
-      </div>
-
-      <div className="story-why-card glass-panel">
-        <button
-          type="button"
-          className="story-disclosure-toggle"
-          onClick={() => setWhyResponseOpen((prev) => !prev)}
-        >
-          <span>Why this response?</span>
-          <span>{whyResponseOpen ? "Hide" : "Show"}</span>
-        </button>
-        {whyResponseOpen && (
-          <div className="story-why-body">
-            <p className="story-context-line">
-              <span>Sources in play:</span>
-            </p>
-            <div className="story-chip-row">
-              {contextSourceChips.map((source) => (
-                <span key={source} className="story-mini-chip">
-                  {source}
-                </span>
-              ))}
-              {contextSourceChips.length === 0 && (
-                <span className="story-mini-chip">No context source selected</span>
-              )}
-            </div>
-            <p className="story-context-line">
-              <span>Latest narrator beat:</span>{" "}
-              {latestAssistantMessage?.content || "No reply generated yet."}
-            </p>
-            {latestDebugContext?.latest && (
-              <p className="story-context-line">
-                <span>Latest context excerpt:</span> {latestDebugContext.latest}
+      <details className="story-v3-disclosure story-v3-disclosure--context">
+        <summary className="story-v3-disclosure-summary">
+          <span>Continuity context</span>
+          <span className="story-v3-disclosure-meta">
+            {recentEvents.length} recent event{recentEvents.length === 1 ? "" : "s"}
+          </span>
+        </summary>
+        <div className="story-v3-context-grid">
+          <article className="story-v3-panel">
+            <p className="story-v3-eyebrow">Triggered context</p>
+            <div className="story-v3-context-lines">
+              <p className="story-v3-context-line">
+                <span>Recent events:</span>
+                {recentEvents.length > 0
+                  ? recentEvents.map((event) => event.id || event.type || "event").join(", ")
+                  : " none"}
               </p>
+              <p className="story-v3-context-line">
+                <span>Scene mode:</span> {illustrationContextMode}
+              </p>
+              <p className="story-v3-context-line">
+                <span>Latest summary:</span>{" "}
+                {latestDebugContext?.summary || "No scene-context summary yet."}
+              </p>
+            </div>
+          </article>
+
+          <article className="story-v3-panel">
+            <p className="story-v3-eyebrow">Context budget</p>
+            <div className="story-v3-budget-row">
+              <span>{estimatedBudgetChars} chars estimated</span>
+              <span>{budgetPercent}%</span>
+            </div>
+            <div className="story-v3-budget-track">
+              <div className="story-v3-budget-fill" style={{ width: `${budgetPercent}%` }} />
+            </div>
+            <p className="story-v3-context-hint">
+              Keeps prompt payload predictable for stronger continuity over long sessions.
+            </p>
+          </article>
+        </div>
+      </details>
+
+      <details className="story-v3-disclosure story-v3-disclosure--why">
+        <summary className="story-v3-disclosure-summary">
+          <span>Why this response?</span>
+          <span className="story-v3-disclosure-meta">context sources and rationale</span>
+        </summary>
+        <div className="story-v3-why-body">
+          <p className="story-v3-context-line">
+            <span>Sources in play:</span>
+          </p>
+          <div className="story-v3-chip-row">
+            {contextSourceChips.map((source) => (
+              <span key={source} className="story-v3-mini-chip">
+                {source}
+              </span>
+            ))}
+            {contextSourceChips.length === 0 && (
+              <span className="story-v3-mini-chip">No context source selected</span>
             )}
           </div>
-        )}
-      </div>
+          <p className="story-v3-context-line">
+            <span>Latest narrator beat:</span>{" "}
+            {latestAssistantMessage?.content || "No reply generated yet."}
+          </p>
+          {latestDebugContext?.latest && (
+            <p className="story-v3-context-line">
+              <span>Latest context excerpt:</span> {latestDebugContext.latest}
+            </p>
+          )}
+        </div>
+      </details>
 
-      <div className="story-memory-card glass-panel">
-        <button
-          type="button"
-          className="story-disclosure-toggle"
-          onClick={() => setMemoryOpen((prev) => !prev)}
-        >
+      <details className="story-v3-disclosure story-v3-disclosure--memory">
+        <summary className="story-v3-disclosure-summary">
           <span>Explore memory</span>
-          <span>{memoryOpen ? "Collapse" : "Expand"}</span>
-        </button>
-        {memoryOpen && (
-          <>
-            <div className="story-tab-row" role="tablist" aria-label="Memory views">
-              <button
-                type="button"
-                className={`story-tab ${memoryTab === MEMORY_TABS.TIMELINE ? "is-active" : ""}`}
-                onClick={() => setMemoryTab(MEMORY_TABS.TIMELINE)}
-                role="tab"
-                aria-selected={memoryTab === MEMORY_TABS.TIMELINE}
-              >
-                Timeline
-              </button>
-              <button
-                type="button"
-                className={`story-tab ${memoryTab === MEMORY_TABS.RELEVANCE ? "is-active" : ""}`}
-                onClick={() => setMemoryTab(MEMORY_TABS.RELEVANCE)}
-                role="tab"
-                aria-selected={memoryTab === MEMORY_TABS.RELEVANCE}
-              >
-                Relevance
-              </button>
-            </div>
+          <span className="story-v3-disclosure-meta">timeline and relevance view</span>
+        </summary>
+        <div className="story-v3-memory-panel">
+          <div className="story-v3-tab-row" role="tablist" aria-label="Memory views">
+            <button
+              type="button"
+              className={`story-v3-tab ${memoryTab === MEMORY_TABS.TIMELINE ? "is-active" : ""}`}
+              onClick={() => setMemoryTab(MEMORY_TABS.TIMELINE)}
+              role="tab"
+              aria-selected={memoryTab === MEMORY_TABS.TIMELINE}
+            >
+              Timeline
+            </button>
+            <button
+              type="button"
+              className={`story-v3-tab ${memoryTab === MEMORY_TABS.RELEVANCE ? "is-active" : ""}`}
+              onClick={() => setMemoryTab(MEMORY_TABS.RELEVANCE)}
+              role="tab"
+              aria-selected={memoryTab === MEMORY_TABS.RELEVANCE}
+            >
+              Relevance
+            </button>
+          </div>
 
-            <div className="story-memory-list">
-              {memoryList.length === 0 && (
-                <p className="story-empty">No memory items yet. Continue writing to populate this panel.</p>
-              )}
-              {memoryList.map((item) => (
-                <article key={item.id} className="story-memory-item">
-                  <div className="story-memory-meta">
-                    <span className={`story-memory-pill story-memory-pill--${item.type}`}>
-                      {item.type}
-                    </span>
-                    <span>{formatStamp(item.createdAt)}</span>
-                  </div>
-                  <p className="story-memory-title">{item.title}</p>
-                  <p className="story-memory-detail">{item.detail || "No details recorded."}</p>
-                </article>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+          <div className="story-v3-memory-list">
+            {memoryList.length === 0 && (
+              <p className="story-v3-empty">
+                No memory items yet. Continue writing to populate this panel.
+              </p>
+            )}
+            {memoryList.map((item) => (
+              <article key={item.id} className="story-v3-memory-item">
+                <div className="story-v3-memory-meta">
+                  <span className={`story-v3-memory-pill story-v3-memory-pill--${item.type}`}>
+                    {item.type}
+                  </span>
+                  <span>{formatStamp(item.createdAt)}</span>
+                </div>
+                <p className="story-v3-memory-title">{item.title}</p>
+                <p className="story-v3-memory-detail">
+                  {item.detail || "No details recorded."}
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </details>
     </div>
   );
 }

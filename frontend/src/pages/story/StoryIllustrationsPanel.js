@@ -304,20 +304,20 @@ function StoryMusicTrack({
   }, [availableTracks, isManualOverride, manualOverrideTrackKey]);
 
   return (
-    <div className="story-music-track glass-panel">
-      <div className="story-scenes-header">
-        <h2 className="story-section-title">Music tracks</h2>
-        <span className="story-scenes-meta">
+    <div className="story-v3-music-panel">
+      <div className="story-v3-panel-head">
+        <h2 className="story-v3-section-title">Music tracks</h2>
+        <span className="story-v3-scenes-meta">
           {availableTracks.length} track{availableTracks.length === 1 ? "" : "s"}
         </span>
       </div>
-      <p className="story-music-track-meta">
+      <p className="story-v3-music-meta">
         {selectedTrack
           ? `Selected: ${selectedTrack.title || "Soundtrack"} (${selectedTrack.source === "library" ? "library" : "scene"})`
           : "Selected: none"}
       </p>
-      <div className="story-music-track-mode-row">
-        <p className="story-music-track-mode">
+      <div className="story-v3-music-mode-row">
+        <p className="story-v3-music-mode">
           {isManualOverride
             ? "Manual override active."
             : focusedSceneTrackKey
@@ -327,7 +327,7 @@ function StoryMusicTrack({
         {isManualOverride && (
           <button
             type="button"
-            className="btn-ghost px-3 py-1 text-xs story-music-track-follow-btn"
+            className="story-v3-btn story-v3-btn--ghost story-v3-btn--small story-v3-music-follow-btn"
             onClick={resumeSceneFocus}
             disabled={availableTracks.length === 0}
           >
@@ -336,20 +336,20 @@ function StoryMusicTrack({
         )}
       </div>
       {availableTracks.length === 0 ? (
-        <p className="story-empty">No soundtrack yet.</p>
+        <p className="story-v3-empty">No soundtrack yet.</p>
       ) : (
         <>
           <input
             type="search"
-            className="field-input story-music-track-search"
+            className="story-v3-input story-v3-search"
             value={trackQuery}
             onChange={(event) => setTrackQuery(event.target.value)}
             placeholder="Search tracks by title, mood, energy, or tags..."
           />
-          <div className="story-music-track-picker-row">
+          <div className="story-v3-picker-row">
             <select
               id="story-music-track-picker"
-              className="field-select story-music-track-picker"
+              className="story-v3-select story-v3-picker"
               value={selectedTrackKey}
               onChange={(event) => selectTrackManually(event.target.value)}
               disabled={trackOptions.length === 0}
@@ -364,7 +364,7 @@ function StoryMusicTrack({
                 ))
               )}
             </select>
-            <p className="story-music-track-search-meta">
+            <p className="story-v3-search-meta">
               {filteredTracks.length} match{filteredTracks.length === 1 ? "" : "es"}
             </p>
           </div>
@@ -376,9 +376,10 @@ function StoryMusicTrack({
               loop={isLooping}
               onLoopChange={setIsLooping}
               autoPlayRequest={musicAutoPlayRequest}
+              uiVariant="story-v3"
             />
           ) : (
-            <p className="story-empty">No selected track.</p>
+            <p className="story-v3-empty">No selected track.</p>
           )}
         </>
       )}
@@ -418,27 +419,27 @@ function ReaderIllustrations({
   };
 
   return (
-    <>
-      <div className="story-scenes-header">
-        <h2 className="story-section-title">Illustrated moments</h2>
-        <span className="story-scenes-meta">
+    <section className="story-v3-scene-stage">
+      <div className="story-v3-panel-head">
+        <h2 className="story-v3-section-title">Illustrated moments</h2>
+        <span className="story-v3-scenes-meta">
           {scenes.length} scene{scenes.length === 1 ? "" : "s"}
         </span>
       </div>
 
       {featuredScene ? (
-        <div className="story-reader-feature">
-          <div className="story-scene-card story-scene-card--feature">
+        <div className="story-v3-reader-feature">
+          <div className="story-v3-scene-card story-v3-scene-card--feature">
             {featuredScene.imageUrl ? (
               <>
                 <img
                   src={featuredScene.imageUrl}
                   alt={featuredScene.title || "Featured scene"}
                 />
-                <div className="story-scene-actions">
+                <div className="story-v3-scene-actions">
                   <button
                     type="button"
-                    className="story-scene-regenerate"
+                    className="story-v3-scene-action story-v3-scene-action--regenerate"
                     onClick={() => runRegenerate(featuredScene.sceneId)}
                     disabled={
                       !canRunActions || isSceneGenerating(featuredScene.sceneId)
@@ -450,7 +451,7 @@ function ReaderIllustrations({
                   </button>
                   <button
                     type="button"
-                    className="story-scene-animate"
+                    className="story-v3-scene-action story-v3-scene-action--animate"
                     onClick={() => runAnimate(featuredScene.sceneId)}
                     disabled={
                       !canRunActions ||
@@ -465,7 +466,7 @@ function ReaderIllustrations({
                   </button>
                   <button
                     type="button"
-                    className="story-scene-music-trigger"
+                    className="story-v3-scene-action story-v3-scene-action--music"
                     onClick={() => runMusic(featuredScene.sceneId)}
                     disabled={
                       !canRunActions || isSceneGeneratingMusic(featuredScene.sceneId)
@@ -478,13 +479,13 @@ function ReaderIllustrations({
                 </div>
               </>
             ) : (
-              <div className="story-scene-placeholder">
+              <div className="story-v3-scene-placeholder">
                 <span>Illustration pending</span>
               </div>
             )}
-            <div className="story-scene-overlay">
-              <p className="story-scene-title">{featuredScene.title || "Latest scene"}</p>
-              <p className="story-scene-description">{featuredScene.description}</p>
+            <div className="story-v3-scene-overlay">
+              <p className="story-v3-scene-title">{featuredScene.title || "Latest scene"}</p>
+              <p className="story-v3-scene-description">{featuredScene.description}</p>
             </div>
           </div>
           {(featuredScene.videoUrl ||
@@ -492,11 +493,11 @@ function ReaderIllustrations({
               featuredScene.videoStatus,
               Boolean(featuredScene.videoUrl)
             )) && (
-            <div className="story-scene-video">
+            <div className="story-v3-scene-video">
               {featuredScene.videoUrl ? (
                 <video controls preload="metadata" src={featuredScene.videoUrl} />
               ) : (
-                <p className="story-scene-video-status">
+                <p className="story-v3-scene-video-status">
                   {formatAnimationStatus(
                     featuredScene.videoStatus,
                     Boolean(featuredScene.videoUrl)
@@ -508,7 +509,7 @@ function ReaderIllustrations({
                   featuredScene.videoStatus,
                   Boolean(featuredScene.videoUrl)
                 ) && (
-                  <p className="story-scene-video-status">
+                  <p className="story-v3-scene-video-status">
                     {formatAnimationStatus(
                       featuredScene.videoStatus,
                       Boolean(featuredScene.videoUrl)
@@ -518,29 +519,29 @@ function ReaderIllustrations({
             </div>
           )}
           {featuredMusicStatusLabel && (
-            <div className="story-scene-music">
-              <p className="story-scene-music-status">{featuredMusicStatusLabel}</p>
+            <div className="story-v3-scene-music">
+              <p className="story-v3-scene-music-status">{featuredMusicStatusLabel}</p>
             </div>
           )}
         </div>
       ) : (
-        <div className="story-empty">
+        <div className="story-v3-empty">
           No illustrations yet. Continue the story to generate visual beats.
         </div>
       )}
 
       {readerScenes.length > 1 && (
-        <div className="story-reader-strip">
+        <div className="story-v3-reader-strip">
           {readerScenes.slice(1).map((scene) => (
-            <div key={scene.sceneId} className="story-reader-strip-item">
-              <div className="story-reader-strip-frame">
+            <div key={scene.sceneId} className="story-v3-strip-item">
+              <div className="story-v3-strip-frame">
                 {scene.imageUrl ? (
                   <>
                     <img src={scene.imageUrl} alt={scene.title || "Scene"} />
-                    <div className="story-scene-actions">
+                    <div className="story-v3-scene-actions">
                       <button
                         type="button"
-                        className="story-scene-regenerate"
+                        className="story-v3-scene-action story-v3-scene-action--regenerate"
                         onClick={() => runRegenerate(scene.sceneId)}
                         disabled={!canRunActions || isSceneGenerating(scene.sceneId)}
                       >
@@ -550,7 +551,7 @@ function ReaderIllustrations({
                       </button>
                       <button
                         type="button"
-                        className="story-scene-animate"
+                        className="story-v3-scene-action story-v3-scene-action--animate"
                         onClick={() => runAnimate(scene.sceneId)}
                         disabled={
                           !canRunActions ||
@@ -563,7 +564,7 @@ function ReaderIllustrations({
                       </button>
                       <button
                         type="button"
-                        className="story-scene-music-trigger"
+                        className="story-v3-scene-action story-v3-scene-action--music"
                         onClick={() => runMusic(scene.sceneId)}
                         disabled={
                           !canRunActions || isSceneGeneratingMusic(scene.sceneId)
@@ -574,28 +575,28 @@ function ReaderIllustrations({
                     </div>
                   </>
                 ) : (
-                  <div className="story-reader-strip-placeholder">Pending</div>
+                  <div className="story-v3-strip-placeholder">Pending</div>
                 )}
               </div>
-              <p className="story-reader-strip-title">{scene.title || "Scene beat"}</p>
+              <p className="story-v3-strip-title">{scene.title || "Scene beat"}</p>
               {scene.videoUrl ? (
-                <div className="story-scene-video">
+                <div className="story-v3-scene-video">
                   <video controls preload="metadata" src={scene.videoUrl} />
                   {formatAnimationStatus(scene.videoStatus, Boolean(scene.videoUrl)) && (
-                    <p className="story-scene-video-status">
+                    <p className="story-v3-scene-video-status">
                       {formatAnimationStatus(scene.videoStatus, Boolean(scene.videoUrl))}
                     </p>
                   )}
                 </div>
               ) : (
                 formatAnimationStatus(scene.videoStatus, Boolean(scene.videoUrl)) && (
-                  <p className="story-reader-strip-title">
+                  <p className="story-v3-strip-title">
                     {formatAnimationStatus(scene.videoStatus, Boolean(scene.videoUrl))}
                   </p>
                 )
               )}
               {formatMusicStatus(scene.musicStatus, Boolean(scene.musicUrl)) && (
-                <p className="story-reader-strip-title">
+                <p className="story-v3-strip-title">
                   {formatMusicStatus(scene.musicStatus, Boolean(scene.musicUrl))}
                 </p>
               )}
@@ -603,53 +604,33 @@ function ReaderIllustrations({
           ))}
         </div>
       )}
-    </>
+    </section>
   );
 }
 
 function StoryIllustrationsPanel({ isDirectorMode, ...props }) {
-  const focusedScene = useMemo(() => {
-    if (!isDirectorMode && props.featuredScene?.sceneId) {
-      return props.featuredScene;
-    }
-    if (!Array.isArray(props.scenes) || props.scenes.length === 0) return null;
-    const sortedScenes = [...props.scenes].sort(
-      (left, right) =>
-        parseTrackStamp(right.updatedAt || right.createdAt) -
-        parseTrackStamp(left.updatedAt || left.createdAt)
-    );
-    return sortedScenes[0] || null;
-  }, [isDirectorMode, props.featuredScene, props.scenes]);
-
   return (
-    <div className="story-book-column story-book-images">
-      <StoryMusicTrack
-        scenes={props.scenes}
-        musicLibrary={props.musicLibrary}
-        activeMusicTrackKey={props.activeMusicTrackKey}
-        musicAutoPlayRequest={props.musicAutoPlayRequest}
-        setActiveMusicTrackKey={props.setActiveMusicTrackKey}
-        focusedSceneId={focusedScene?.sceneId || ""}
-        focusedSceneTitle={focusedScene?.title || ""}
-      />
-      {isDirectorMode ? (
-        <StoryDirectorIllustrations {...props} />
-      ) : (
-        <ReaderIllustrations
-          scenes={props.scenes}
-          featuredScene={props.featuredScene}
-          readerScenes={props.readerScenes}
-          activeSessionId={props.activeSessionId}
-          status={props.status}
-          triggerIllustration={props.triggerIllustration}
-          triggerSceneAnimation={props.triggerSceneAnimation}
-          triggerSceneMusic={props.triggerSceneMusic}
-          isSceneGenerating={props.isSceneGenerating}
-          isSceneAnimating={props.isSceneAnimating}
-          isSceneGeneratingMusic={props.isSceneGeneratingMusic}
-        />
-      )}
-    </div>
+    <article className="story-v3-visual-shell">
+      <section className="story-v3-visual-block story-v3-visual-block--illustrations">
+        {isDirectorMode ? (
+          <StoryDirectorIllustrations {...props} />
+        ) : (
+          <ReaderIllustrations
+            scenes={props.scenes}
+            featuredScene={props.featuredScene}
+            readerScenes={props.readerScenes}
+            activeSessionId={props.activeSessionId}
+            status={props.status}
+            triggerIllustration={props.triggerIllustration}
+            triggerSceneAnimation={props.triggerSceneAnimation}
+            triggerSceneMusic={props.triggerSceneMusic}
+            isSceneGenerating={props.isSceneGenerating}
+            isSceneAnimating={props.isSceneAnimating}
+            isSceneGeneratingMusic={props.isSceneGeneratingMusic}
+          />
+        )}
+      </section>
+    </article>
   );
 }
 

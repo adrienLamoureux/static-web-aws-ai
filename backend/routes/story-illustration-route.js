@@ -41,6 +41,8 @@ module.exports = (app, deps) => {
   } = deps;
 
   const DEFAULT_STORY_ILLUSTRATION_MODEL = "wai-nsfw-illustrious-v11";
+  const DEFAULT_STORY_ILLUSTRATION_WIDTH = 768;
+  const DEFAULT_STORY_ILLUSTRATION_HEIGHT = 1024;
   const STORY_ILLUSTRATION_MODEL_KEYS = new Set([
     "animagine",
     "wai-nsfw-illustrious-v11",
@@ -105,6 +107,16 @@ module.exports = (app, deps) => {
   const STORY_MUSIC_DURATION_SECONDS = parseIntegerEnv(
     process.env.STORY_MUSIC_DURATION_SECONDS,
     DEFAULT_STORY_MUSIC_DURATION_SECONDS,
+    1
+  );
+  const STORY_ILLUSTRATION_WIDTH = parseIntegerEnv(
+    process.env.STORY_ILLUSTRATION_WIDTH,
+    DEFAULT_STORY_ILLUSTRATION_WIDTH,
+    1
+  );
+  const STORY_ILLUSTRATION_HEIGHT = parseIntegerEnv(
+    process.env.STORY_ILLUSTRATION_HEIGHT,
+    DEFAULT_STORY_ILLUSTRATION_HEIGHT,
     1
   );
   const STORY_MUSIC_MODEL_VERSION =
@@ -220,6 +232,34 @@ module.exports = (app, deps) => {
     "track",
     "with",
   ]);
+
+  const resolveStoryIllustrationSize = (modelConfig = {}) => {
+    const configuredSizes = Array.isArray(modelConfig?.sizes) ? modelConfig.sizes : [];
+    const normalizedSizes = configuredSizes
+      .map((size) => ({
+        width: Number(size?.width),
+        height: Number(size?.height),
+      }))
+      .filter(
+        (size) => Number.isFinite(size.width) && Number.isFinite(size.height)
+      );
+
+    if (normalizedSizes.length === 0) return null;
+
+    const exactMatch = normalizedSizes.find(
+      (size) =>
+        size.width === STORY_ILLUSTRATION_WIDTH &&
+        size.height === STORY_ILLUSTRATION_HEIGHT
+    );
+    if (exactMatch) return exactMatch;
+
+    const portraitMatch = normalizedSizes.find(
+      (size) => size.height > size.width
+    );
+    if (portraitMatch) return portraitMatch;
+
+    return normalizedSizes[0];
+  };
 
   const isOpeningSceneItem = (sceneItem = {}) => {
     const normalizedSceneId = normalizePromptFragment(sceneItem.sceneId || "")
@@ -1157,12 +1197,10 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
         message: `Replicate modelId is not configured for ${requestedModelKey}`,
       });
     }
-    const sizeAllowed = modelConfig.sizes?.some(
-      (size) => size.width === 1024 && size.height === 1024
-    );
-    if (!sizeAllowed) {
+    const resolvedImageSize = resolveStoryIllustrationSize(modelConfig);
+    if (!resolvedImageSize) {
       return res.status(500).json({
-        message: `${requestedModelKey} does not support 1024x1024 for story illustrations`,
+        message: `${requestedModelKey} has no supported image sizes configured for story illustrations`,
       });
     }
     const defaultScheduler = modelConfig.schedulers?.[0];
@@ -1170,8 +1208,8 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
     const input = modelConfig.buildInput({
       prompt: trimmedPositivePrompt,
       negativePrompt: trimmedNegativePrompt,
-      width: 1024,
-      height: 1024,
+      width: resolvedImageSize.width,
+      height: resolvedImageSize.height,
       numOutputs: 1,
       seed,
       scheduler: defaultScheduler,

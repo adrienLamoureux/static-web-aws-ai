@@ -12,6 +12,7 @@ import {
   deleteDirectorMasonryImage,
 } from "../services/operations";
 import { putFileToUrl } from "../services/s3";
+import LoraManagement from "./LoraManagement";
 import "./director.css";
 
 const EMPTY_SUMMARY = Object.freeze({
@@ -1146,6 +1147,16 @@ function Director({
           ) : (
             <p className="director-empty">No global masonry images yet.</p>
           )}
+        </article>
+
+        <article className="director-module director-module--full director-module--lora">
+          <div className="director-module-head">
+            <div>
+              <h3>6. LoRA Control</h3>
+              <p>Manage character LoRA catalog and profiles directly inside Director.</p>
+            </div>
+          </div>
+          <LoraManagement apiBaseUrl={apiBaseUrl} />
         </article>
       </section>
     </section>

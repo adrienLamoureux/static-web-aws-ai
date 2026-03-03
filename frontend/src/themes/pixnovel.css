@@ -18,6 +18,10 @@
   --pix-cyan: #4f9fff;
   --pix-violet: #79afff;
   --pix-rose: #9cc5ff;
+  --pix-story-v3-text: #0f1728;
+  --pix-story-v3-muted: rgba(15, 23, 40, 0.66);
+  --pix-story-v3-line: rgba(15, 23, 40, 0.14);
+  --pix-story-v3-accent: #1763d8;
   color-scheme: light;
 }
 
@@ -63,7 +67,7 @@ body.theme-pixnovel .glass-panel {
 .pixnovel-main {
   flex: 1 1 auto;
   width: 100%;
-  padding-bottom: 0;
+  padding-bottom: 16px;
 }
 
 .pixnovel-atmosphere {
@@ -121,68 +125,251 @@ body.theme-pixnovel .glass-panel {
   text-decoration: none;
 }
 
-.pixnovel-top-nav {
-  display: flex;
-  gap: 8px;
-  padding: 0.28rem;
-  border-radius: 999px;
-  border: 1px solid rgba(158, 187, 248, 0.28);
-  background: rgba(8, 12, 28, 0.62);
-}
-
 .pixnovel-top-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  color: var(--pix-muted);
+  border-radius: 0;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
   font-size: 0.77rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 0.36rem 0.76rem;
+  padding: 0.34rem 0.2rem;
   text-decoration: none;
+  white-space: nowrap;
+  text-shadow: 0 1px 6px rgba(6, 10, 26, 0.42);
 }
 
 .pixnovel-top-link:hover {
-  color: var(--pix-text);
+  color: #ffffff;
+  text-shadow: 0 1px 8px rgba(6, 10, 26, 0.5);
 }
 
 .pixnovel-top-link.is-active {
   color: #ffffff;
-  border-color: rgba(115, 216, 255, 0.62);
-  background: linear-gradient(135deg, rgba(110, 144, 255, 0.34), rgba(115, 216, 255, 0.24));
-  box-shadow: 0 12px 24px -20px rgba(115, 216, 255, 0.86);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  text-decoration: underline;
+  text-underline-offset: 0.35em;
+  text-decoration-thickness: 2px;
+  text-shadow: 0 1px 10px rgba(6, 10, 26, 0.56);
 }
 
-.pixnovel-user-chip {
+.pixnovel-hero-chrome {
+  position: absolute;
+  top: 18px;
+  left: 20px;
+  right: 20px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  pointer-events: none;
+}
+
+.pixnovel-hero-chrome .pixnovel-brand,
+.pixnovel-hero-auth-action {
+  pointer-events: auto;
+}
+
+.pixnovel-hero-auth {
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  color: #f4f9ff;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+}
+
+.pixnovel-hero-auth span {
+  color: rgba(244, 249, 255, 0.92);
+}
+
+.pixnovel-hero-auth-action {
+  border: 0;
+  background: transparent;
+  color: #f6fbff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 0;
+}
+
+.pixnovel-hero-auth-action:hover {
+  color: #ffffff;
+  text-decoration: underline;
+  text-underline-offset: 0.28em;
+}
+
+.pixnovel-global-music-dock {
+  position: fixed;
+  top: 64px;
+  right: 24px;
+  z-index: 40;
+  width: min(380px, calc(100vw - 32px));
+  display: grid;
+  gap: 8px;
+  border: 0;
+  border-radius: 18px;
+  background: linear-gradient(160deg, rgba(7, 12, 28, 0.8), rgba(7, 18, 44, 0.72));
+  backdrop-filter: blur(10px);
+  box-shadow: 0 22px 48px -34px rgba(0, 0, 0, 0.9);
+  padding: 12px;
+  color: #f5f9ff;
+}
+
+.pixnovel-global-music-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pixnovel-global-music-kicker {
+  margin: 0;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(238, 247, 255, 0.8);
+}
+
+.pixnovel-global-music-mode {
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(152, 242, 255, 0.9);
+}
+
+.pixnovel-global-music-title {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.28;
+  overflow-wrap: anywhere;
+}
+
+.pixnovel-global-music-meta-row,
+.pixnovel-global-music-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pixnovel-global-music-chip,
+.pixnovel-global-music-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
   border-radius: 999px;
-  border: 1px solid rgba(162, 188, 246, 0.35);
-  background: rgba(10, 14, 31, 0.68);
-  padding: 0.32rem;
+  background: rgba(161, 245, 255, 0.12);
+  color: rgba(220, 251, 255, 0.96);
+  font-size: 0.66rem;
+  letter-spacing: 0.03em;
+  padding: 0.18rem 0.5rem;
 }
 
-.pixnovel-user-chip span {
-  color: var(--pix-muted);
-  font-size: 0.77rem;
-  margin-left: 0.42rem;
+.pixnovel-global-music-tag {
+  background: rgba(78, 216, 255, 0.17);
 }
 
-.pixnovel-user-chip .btn-ghost {
-  border-color: rgba(162, 188, 246, 0.36);
-  background: rgba(14, 20, 40, 0.74);
-  color: var(--pix-text);
+.pixnovel-global-music-bars {
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(8, 19, 42, 0.62);
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  align-items: center;
+  gap: 3px;
+  padding: 8px 9px;
+  transition: box-shadow 180ms ease;
+}
+
+.pixnovel-global-music-bars.is-peak {
+  box-shadow: inset 0 0 0 1px rgba(128, 239, 255, 0.24), 0 0 22px -12px rgba(113, 237, 255, 0.9);
+}
+
+.pixnovel-global-music-bar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(176, 246, 255, 0.98), rgba(83, 221, 255, 0.92));
+  transform-origin: bottom center;
+  transform: scaleY(var(--pix-bar-scale, 0.12));
+  transition: transform 80ms linear;
+  box-shadow: 0 0 9px -3px rgba(122, 238, 255, 0.9);
+}
+
+.pixnovel-global-music-bars:not(.is-playing) .pixnovel-global-music-bar {
+  opacity: 0.8;
+}
+
+.pixnovel-global-music-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pixnovel-global-music-btn {
+  border: 1px solid rgba(156, 228, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(6, 15, 38, 0.54);
+  color: #f6fdff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  min-height: 34px;
+  padding: 0.38rem 0.8rem;
+  cursor: pointer;
+}
+
+.pixnovel-global-music-btn.is-active,
+.pixnovel-global-music-btn:hover {
+  background: rgba(100, 225, 255, 0.2);
+  border-color: rgba(156, 228, 255, 0.56);
+}
+
+.pixnovel-global-music-progress {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.66rem;
+  color: rgba(232, 248, 255, 0.94);
+}
+
+.pixnovel-global-music-progress input[type="range"] {
+  width: 100%;
+  accent-color: #6de8ff;
+}
+
+.pixnovel-global-music-audio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pixnovel-global-music-dock :is(button, input):focus-visible {
+  outline: 2px solid rgba(171, 244, 255, 0.9);
+  outline-offset: 2px;
 }
 
 .pixnovel-workspace {
   width: 100%;
   margin: 0;
   display: grid;
-  gap: 0;
+  gap: 12px;
   min-height: 100%;
   border: 0;
   border-radius: 0;
@@ -192,32 +379,65 @@ body.theme-pixnovel .glass-panel {
 
 .pixnovel-hero {
   border: 0;
-  border-bottom: 1px solid rgba(165, 190, 248, 0.22);
-  border-radius: 0;
-  background:
-    radial-gradient(circle at 12% 14%, rgba(115, 216, 255, 0.08), transparent 34%),
-    radial-gradient(circle at 88% 18%, rgba(132, 148, 255, 0.1), transparent 36%),
-    linear-gradient(138deg, rgba(13, 18, 39, 0.42), rgba(24, 33, 65, 0.24));
-  padding: 16px;
+  padding: 30px 30px 28px;
+  padding-bottom: 400px;
   display: grid;
-  gap: 12px;
+  gap: 22px;
   position: relative;
+}
+
+@media (max-width: 1023px) {
+  .pixnovel-global-music-dock {
+    top: 12px;
+    right: 12px;
+    width: min(340px, calc(100vw - 20px));
+    z-index: 42;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pixnovel-global-music-bars,
+  .pixnovel-global-music-bar {
+    transition: none;
+    animation: none;
+  }
+
+  .pixnovel-global-music-bars.is-peak {
+    box-shadow: none;
+  }
 }
 
 .pixnovel-hero-masonry {
   position: relative;
-  min-height: clamp(360px, 56vh, 760px);
-  border-radius: 14px;
+  min-height: clamp(680px, 84vh, 1320px);
+  border-radius: 18px;
   overflow: hidden;
   z-index: 0;
   pointer-events: none;
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 0.58) 42%,
+    rgba(0, 0, 0, 0.3) 100%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 0.58) 42%,
+    rgba(0, 0, 0, 0.3) 100%
+  );
 }
 
 .pixnovel-hero-masonry::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(8, 12, 28, 0.06), rgba(8, 12, 28, 0.6));
+  background: linear-gradient(
+    180deg,
+    rgba(8, 12, 28, 0.01) 0%,
+    rgba(8, 12, 28, 0.03) 58%,
+    rgba(8, 12, 28, 0.08) 100%
+  );
   pointer-events: none;
   z-index: 1;
 }
@@ -225,50 +445,38 @@ body.theme-pixnovel .glass-panel {
 .pixnovel-masonry-grid {
   position: absolute;
   inset: 0;
-  padding: 8px;
+  padding: 16px;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  opacity: 0.96;
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.28) 0%,
-    rgba(0, 0, 0, 0.64) 46%,
-    rgba(0, 0, 0, 1) 100%
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.28) 0%,
-    rgba(0, 0, 0, 0.64) 46%,
-    rgba(0, 0, 0, 1) 100%
-  );
+  gap: 14px;
+  opacity: 1;
 }
 
 .pixnovel-hero-masonry-copy {
   position: absolute;
-  left: 14px;
-  bottom: 14px;
+  left: 20px;
+  bottom: 20px;
   z-index: 2;
-  max-width: min(460px, calc(100% - 28px));
+  max-width: min(560px, calc(100% - 40px));
   border: 1px solid rgba(194, 218, 255, 0.38);
-  border-radius: 12px;
-  background: rgba(10, 16, 36, 0.42);
-  backdrop-filter: blur(5px);
-  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(10, 16, 36, 0.18);
+  backdrop-filter: blur(3px);
+  padding: 14px 15px;
 }
 
 .pixnovel-hero-masonry-title {
   margin: 0;
   font-family: var(--pix-font-display);
-  font-size: 0.88rem;
+  font-size: 0.98rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(246, 251, 255, 0.98);
 }
 
 .pixnovel-hero-masonry-subtitle {
-  margin: 6px 0 0;
-  font-size: 0.78rem;
+  margin: 7px 0 0;
+  font-size: 0.84rem;
   line-height: 1.45;
   color: rgba(236, 245, 255, 0.94);
 }
@@ -303,25 +511,31 @@ body.theme-pixnovel .glass-panel {
   content: none;
 }
 
-.pixnovel-hero-topbar {
+.pixnovel-workspace-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 0;
+  gap: 10px;
+  padding: 12px 24px 0;
+  width: 100%;
+}
+
+.pixnovel-workspace-nav .pixnovel-top-link {
+  flex: 1 1 0;
 }
 
 .pixnovel-grid {
   display: grid;
-  gap: 0;
-  grid-template-columns: 290px minmax(0, 1fr) 238px;
+  gap: 12px;
+  grid-template-columns: 312px minmax(0, 1fr) 272px;
   min-height: var(--pix-grid-min-height);
+  padding: 0 22px 26px;
 }
 
 .pixnovel-grid--expanded {
   grid-template-columns: minmax(0, 1fr);
   gap: 12px;
-  padding: 0 14px 16px;
+  padding: 0 22px 26px;
 }
 
 .pixnovel-focus-rails {
@@ -335,17 +549,17 @@ body.theme-pixnovel .glass-panel {
   position: static;
   top: auto;
   align-self: stretch;
-  border: 1px solid rgba(165, 190, 248, 0.24);
-  border-radius: 16px;
-  background: rgba(8, 13, 30, 0.62);
-  backdrop-filter: blur(6px);
-  padding: 14px;
+  border: 0;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--pix-ui-surface) 54%, transparent);
+  backdrop-filter: none;
+  padding: 12px;
 }
 
 .pixnovel-generator-panel,
 .pixnovel-feed-panel {
   position: sticky;
-  top: 112px;
+  top: 138px;
   align-self: start;
 }
 
@@ -354,9 +568,9 @@ body.theme-pixnovel .glass-panel {
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  padding: 18px 16px;
+  padding: 14px 12px;
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .pixnovel-generator-head h3 {
@@ -386,7 +600,7 @@ body.theme-pixnovel .glass-panel {
 }
 
 .pixnovel-control-group + .pixnovel-control-group {
-  border-top: 1px solid var(--pix-divider);
+  border-top: 1px solid color-mix(in srgb, var(--pix-ui-border) 62%, transparent);
   padding-top: 10px;
 }
 
@@ -599,8 +813,6 @@ body.theme-pixnovel .glass-panel {
 
 .pixnovel-stage {
   border: 0;
-  border-left: 1px solid rgba(165, 190, 248, 0.22);
-  border-right: 1px solid rgba(165, 190, 248, 0.22);
   border-radius: 0;
   background: transparent;
   box-shadow: none;
@@ -608,19 +820,16 @@ body.theme-pixnovel .glass-panel {
 }
 
 .pixnovel-stage--expanded {
-  border-left: 0;
-  border-right: 0;
-  border-top: 1px solid rgba(165, 190, 248, 0.22);
-  border-bottom: 1px solid rgba(165, 190, 248, 0.22);
+  border: 0;
   min-height: auto;
 }
 
 .pixnovel-stage-head {
-  padding: 14px 16px 0;
+  padding: 16px 18px 0;
 }
 
 .pixnovel-stage--expanded .pixnovel-stage-head {
-  padding: 18px 22px 0;
+  padding: 18px 20px 0;
 }
 
 .pixnovel-stage-kicker {
@@ -639,46 +848,74 @@ body.theme-pixnovel .glass-panel {
 }
 
 .pixnovel-stage-body {
-  padding: 0 10px 14px;
+  padding: 0 14px 16px;
 }
 
 .pixnovel-stage--expanded .pixnovel-stage-body {
-  padding: 0 14px 18px;
+  padding: 0 18px 22px;
+}
+
+.pixnovel-stage--story-fullbleed {
+  min-height: auto;
+}
+
+.pixnovel-stage-head--visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.pixnovel-stage-body--story-fullbleed {
+  padding: 0 10px 14px;
 }
 
 .pixnovel-stage-body .whisk-page,
 .pixnovel-stage-body .story-page,
+.pixnovel-stage-body .story-page--v3,
 .pixnovel-stage-body .music-library-page,
 .pixnovel-stage-body .gallery-shell {
   padding-top: 8px;
 }
 
 .pixnovel-stage--expanded .pixnovel-stage-body .story-page,
+.pixnovel-stage--expanded .pixnovel-stage-body .story-page--v3,
 .pixnovel-stage--expanded .pixnovel-stage-body .music-library-page {
   max-width: none;
   margin: 0;
   padding: 12px 12px 34px;
 }
 
+.pixnovel-stage-body--story-fullbleed .story-page,
+.pixnovel-stage-body--story-fullbleed .story-page--v3 {
+  padding-top: 0;
+}
+
 .pixnovel-feed-panel {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  padding: 18px 16px;
+  padding: 14px 12px;
 }
 
 .pixnovel-feed-card {
   border: 0;
+  border-radius: 0;
   background: transparent;
   box-shadow: none;
   padding: 0;
 }
 
 .pixnovel-feed-card + .pixnovel-feed-card {
-  border-top: 1px solid var(--pix-divider);
+  border-top: 1px solid color-mix(in srgb, var(--pix-ui-border) 62%, transparent);
   padding-top: 10px;
 }
 
@@ -1702,8 +1939,9 @@ body.theme-pixnovel .pixnovel-shell :is(
 @media (max-width: 1180px) {
   .pixnovel-grid {
     grid-template-columns: 1fr;
-    gap: 0;
+    gap: 12px;
     min-height: auto;
+    padding: 0 14px 20px;
   }
 
   .pixnovel-generator-panel,
@@ -1712,18 +1950,15 @@ body.theme-pixnovel .pixnovel-shell :is(
   }
 
   .pixnovel-stage {
-    border-left: 0;
-    border-right: 0;
-    border-top: 1px solid rgba(165, 190, 248, 0.22);
-    border-bottom: 1px solid rgba(165, 190, 248, 0.22);
+    border: 0;
   }
 
   .pixnovel-feed-panel {
-    border-top: 1px solid rgba(165, 190, 248, 0.22);
+    border-top-color: var(--pix-ui-border);
   }
 
   .pixnovel-grid--expanded {
-    padding-inline: 0;
+    padding-inline: 14px;
   }
 
   .pixnovel-focus-rails {
@@ -1732,25 +1967,30 @@ body.theme-pixnovel .pixnovel-shell :is(
 }
 
 @media (max-width: 920px) {
-  .pixnovel-hero-topbar {
-    flex-direction: column;
-    align-items: flex-start;
+  .pixnovel-hero-chrome {
+    top: 12px;
+    left: 12px;
+    right: 12px;
   }
 
-  .pixnovel-top-nav,
-  .pixnovel-user-chip {
-    width: 100%;
-    justify-content: center;
+  .pixnovel-workspace-nav {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 14px 0;
+  }
+
+  .pixnovel-workspace-nav .pixnovel-top-link {
+    flex: 1 1 calc(33.333% - 8px);
   }
 
   .pixnovel-hero-masonry {
-    min-height: clamp(300px, 50vh, 580px);
+    min-height: clamp(500px, 72vh, 920px);
   }
 
   .pixnovel-masonry-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px;
-    padding: 6px;
+    gap: 8px;
+    padding: 8px;
   }
 
   .pixnovel-hero-masonry-copy {
@@ -1777,12 +2017,34 @@ body.theme-pixnovel .pixnovel-shell :is(
 }
 
 @media (max-width: 640px) {
+  .pixnovel-hero-chrome {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .pixnovel-hero-auth {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .pixnovel-workspace-nav {
+    padding: 10px 10px 0;
+    gap: 6px;
+  }
+
+  .pixnovel-workspace-nav .pixnovel-top-link {
+    flex: 1 1 calc(50% - 6px);
+    font-size: 0.66rem;
+  }
+
   .pixnovel-hero {
-    padding: 12px;
+    padding: 12px 10px;
+    padding-bottom: 400px;
   }
 
   .pixnovel-hero-masonry {
-    min-height: clamp(240px, 42vh, 360px);
+    min-height: clamp(400px, 62vh, 700px);
   }
 
   .pixnovel-masonry-grid {
@@ -1832,26 +2094,26 @@ body.theme-pixnovel .pixnovel-shell :is(
 
 /* Pixnovel Unified Theme (single source of truth, no !important) */
 body.theme-pixnovel {
-  --pix-ui-surface: rgba(252, 255, 255, 0.96);
-  --pix-ui-surface-soft: rgba(245, 252, 255, 0.94);
-  --pix-ui-border: rgba(124, 178, 255, 0.34);
-  --pix-ui-border-strong: rgba(102, 167, 255, 0.54);
-  --pix-ui-text: #2f1e2d;
-  --pix-ui-text-soft: #63485f;
-  --pix-ui-title: #241624;
-  --pix-ui-shadow: 0 16px 30px -24px rgba(82, 139, 198, 0.26);
-  --pix-accent-start: #5ea7ff;
-  --pix-accent-mid: #86b7ff;
-  --pix-accent-end: #add1ff;
-  --pix-accent-soft-a: rgba(124, 178, 255, 0.24);
-  --pix-accent-soft-b: rgba(174, 212, 255, 0.28);
+  --pix-ui-surface: rgba(190, 213, 241, 0.58);
+  --pix-ui-surface-soft: rgba(170, 197, 231, 0.52);
+  --pix-ui-border: rgba(88, 132, 191, 0.44);
+  --pix-ui-border-strong: rgba(63, 108, 171, 0.62);
+  --pix-ui-text: #20324f;
+  --pix-ui-text-soft: #3e587f;
+  --pix-ui-title: #152541;
+  --pix-ui-shadow: 0 16px 32px -24px rgba(41, 72, 116, 0.32);
+  --pix-accent-start: #3e7ccc;
+  --pix-accent-mid: #5c96dd;
+  --pix-accent-end: #7bb0ea;
+  --pix-accent-soft-a: rgba(79, 123, 185, 0.34);
+  --pix-accent-soft-b: rgba(111, 155, 213, 0.34);
 
   color: var(--pix-ui-text);
   background:
-    radial-gradient(circle at 14% 11%, rgba(165, 209, 255, 0.24), transparent 36%),
-    radial-gradient(circle at 82% 10%, rgba(196, 226, 255, 0.24), transparent 34%),
-    radial-gradient(circle at 72% 86%, rgba(214, 234, 255, 0.16), transparent 40%),
-    linear-gradient(168deg, #fffdfd 0%, #f3f9ff 48%, #eaf4ff 100%);
+    radial-gradient(circle at 14% 11%, rgba(118, 155, 207, 0.24), transparent 36%),
+    radial-gradient(circle at 82% 10%, rgba(140, 175, 222, 0.24), transparent 34%),
+    radial-gradient(circle at 72% 86%, rgba(122, 160, 211, 0.18), transparent 40%),
+    linear-gradient(168deg, #d2e1f5 0%, #c8daf2 48%, #bfd3ee 100%);
 }
 
 body.theme-pixnovel::before {
@@ -1907,8 +2169,6 @@ body.theme-pixnovel .glass-panel {
   box-shadow: var(--pix-ui-shadow);
 }
 
-body.theme-pixnovel .pixnovel-top-nav,
-body.theme-pixnovel .pixnovel-user-chip,
 body.theme-pixnovel .pixnovel-option-pill,
 body.theme-pixnovel .pixnovel-form-input,
 body.theme-pixnovel .pixnovel-form-select,
@@ -1931,7 +2191,6 @@ body.theme-pixnovel .music-library-title {
 }
 
 body.theme-pixnovel .pixnovel-top-link,
-body.theme-pixnovel .pixnovel-user-chip span,
 body.theme-pixnovel .pixnovel-control-label,
 body.theme-pixnovel .pixnovel-feed-copy,
 body.theme-pixnovel .pixnovel-signal-hint,
@@ -1944,25 +2203,29 @@ body.theme-pixnovel .music-library-copy {
   color: var(--pix-ui-text-soft);
 }
 
-body.theme-pixnovel .pixnovel-hero {
-  border-color: var(--pix-ui-border);
-  background:
-    radial-gradient(circle at 12% 14%, rgba(160, 206, 255, 0.24), transparent 34%),
-    radial-gradient(circle at 88% 18%, rgba(198, 226, 255, 0.2), transparent 36%),
-    linear-gradient(144deg, rgba(252, 255, 255, 0.96), rgba(241, 250, 255, 0.9));
-}
-
 body.theme-pixnovel .pixnovel-hero::after {
   content: none;
 }
 
-body.theme-pixnovel .pixnovel-top-link.is-active,
+body.theme-pixnovel .pixnovel-top-link {
+  color: rgba(255, 255, 255, 0.92);
+  border: 0;
+}
+
+body.theme-pixnovel .pixnovel-top-link.is-active {
+  color: #ffffff;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  text-decoration-color: #ffffff;
+}
+
 body.theme-pixnovel .pixnovel-option-pill.is-active,
 body.theme-pixnovel .whisk-wall-more:hover {
   border-color: var(--pix-ui-border-strong);
   background: linear-gradient(135deg, var(--pix-accent-soft-a), var(--pix-accent-soft-b));
-  color: #3a2235;
-  box-shadow: 0 12px 24px -20px rgba(82, 139, 198, 0.36);
+  color: #10233f;
+  box-shadow: 0 12px 24px -20px rgba(41, 72, 116, 0.34);
 }
 
 body.theme-pixnovel .pixnovel-generate-button,
@@ -2024,9 +2287,9 @@ body.theme-pixnovel :is(
   .whisk-video-card,
   .whisk-selected-preview
 ) {
-  border-color: var(--pix-ui-border);
-  background: var(--pix-ui-surface);
-  box-shadow: var(--pix-ui-shadow);
+  border-color: transparent;
+  background: color-mix(in srgb, var(--pix-ui-surface) 68%, transparent);
+  box-shadow: none;
 }
 
 body.theme-pixnovel :is(
@@ -2095,9 +2358,9 @@ body.theme-pixnovel :is(
   .lora-catalog-item,
   .lora-profile-list
 ) {
-  border-color: var(--pix-ui-border);
-  background: var(--pix-ui-surface);
-  box-shadow: var(--pix-ui-shadow);
+  border-color: transparent;
+  background: color-mix(in srgb, var(--pix-ui-surface) 68%, transparent);
+  box-shadow: none;
 }
 
 body.theme-pixnovel :is(
@@ -2134,4 +2397,883 @@ body.theme-pixnovel .lora-chip {
   border-color: var(--pix-ui-border);
   background: var(--pix-ui-surface-soft);
   color: var(--pix-ui-text);
+}
+
+/* Story page typography-first layout: no card chrome, hierarchy via rhythm */
+body.theme-pixnovel .pixnovel-stage-body .story-page {
+  --pix-story-text-strong: #000000;
+  --pix-story-text-soft: #000000;
+  --pix-story-text-muted: rgba(0, 0, 0, 0.72);
+  padding: 10px 8px 24px;
+  gap: 26px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-workspace {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.34fr) minmax(0, 0.66fr);
+  gap: 28px;
+  align-items: start;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-workspace-sidebar {
+  position: sticky;
+  top: 12px;
+  display: grid;
+  gap: 18px;
+  align-self: start;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-workspace-main {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page .glass-panel,
+body.theme-pixnovel .pixnovel-stage-body .story-hero,
+body.theme-pixnovel .pixnovel-stage-body .story-mode-toolbar,
+body.theme-pixnovel .pixnovel-stage-body .story-config,
+body.theme-pixnovel .pixnovel-stage-body .story-reader-controls,
+body.theme-pixnovel .pixnovel-stage-body .story-book,
+body.theme-pixnovel .pixnovel-stage-body :is(
+  .story-mode-switch,
+  .story-tab-row,
+  .music-library-item,
+  .music-library-panel,
+  .music-library-meta-row,
+  .music-library-pill,
+  .music-library-tag,
+  .story-reader-control,
+  .story-chat-input,
+  .story-session-item,
+  .story-preset-card,
+  .story-context-stat,
+  .story-memory-item,
+  .story-timeline-chip,
+  .story-book-text,
+  .story-book-images,
+  .story-scene-card,
+  .story-scene-video,
+  .story-scene-music,
+  .story-scene-debug,
+  .story-session-debug,
+  .story-context-card,
+  .story-why-card,
+  .story-memory-card,
+  .story-production-board,
+  .story-scene-row,
+  .story-scene-library-row,
+  .story-reader-strip-frame,
+  .story-music-track,
+  .story-message-bubble
+) {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-hero,
+body.theme-pixnovel .pixnovel-stage-body .story-mode-toolbar,
+body.theme-pixnovel .pixnovel-stage-body .story-config,
+body.theme-pixnovel .pixnovel-stage-body .story-reader-controls {
+  padding: 0;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-control-surface,
+body.theme-pixnovel .pixnovel-stage-body .story-control-panel,
+body.theme-pixnovel .pixnovel-stage-body .story-chat-thread-surface,
+body.theme-pixnovel .pixnovel-stage-body .story-chat-compose,
+body.theme-pixnovel .pixnovel-stage-body .story-chat-debug,
+body.theme-pixnovel .pixnovel-stage-body .story-visual-block,
+body.theme-pixnovel .pixnovel-stage-body .story-director-layout,
+body.theme-pixnovel .pixnovel-stage-body .story-director-region {
+  display: grid;
+  gap: 12px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-control-surface {
+  gap: 16px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-control-panel {
+  padding: 0;
+  gap: 10px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-title {
+  margin: 0;
+  color: var(--pix-story-text-strong);
+  letter-spacing: 0.01em;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-subtitle {
+  color: var(--pix-story-text-soft);
+  max-width: 780px;
+  line-height: 1.6;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-config {
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-book {
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 24px;
+  overflow: visible;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-book--reader {
+  grid-template-columns: minmax(0, 1.14fr) minmax(0, 0.86fr);
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-config-divider,
+body.theme-pixnovel .pixnovel-stage-body .story-book-spine {
+  display: none;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-reader-controls,
+body.theme-pixnovel .pixnovel-stage-body .story-reader-grid {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-book-column {
+  padding: 0;
+  min-height: 0;
+  gap: 16px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-scenes-headline {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-scenes-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-scenes-field {
+  display: grid;
+  gap: 6px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-scenes-field--toggle {
+  align-content: end;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-chat-thread {
+  gap: 16px;
+  padding-right: 0;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-chat-thread--reader {
+  gap: 20px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-message-bubble {
+  padding: 0;
+  color: var(--pix-story-text-strong);
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-message--user .story-message-bubble {
+  font-weight: 700;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-scene-overlay {
+  background: transparent;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-scene-title {
+  color: var(--pix-story-text-strong);
+  text-shadow: none;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-scene-description {
+  color: var(--pix-story-text-soft);
+  text-shadow: none;
+}
+
+body.theme-pixnovel .pixnovel-stage-body :is(
+  .story-section-title,
+  .story-session-title,
+  .story-preset-title,
+  .story-memory-title,
+  .story-timeline-title,
+  .story-context-stat-value,
+  .story-chat-mode
+) {
+  color: var(--pix-story-text-strong);
+}
+
+body.theme-pixnovel .pixnovel-stage-body :is(
+  .story-session-meta,
+  .story-preset-copy,
+  .story-chat-subtitle,
+  .story-chat-meta,
+  .story-scenes-meta,
+  .story-chat-hint,
+  .story-scenes-label,
+  .story-scenes-toggle,
+  .story-reader-strip-title,
+  .story-empty,
+  .story-context-stat-label,
+  .story-context-line,
+  .story-budget-row,
+  .story-context-hint,
+  .story-memory-meta,
+  .story-memory-detail,
+  .story-timeline-meta,
+  .story-music-track-meta,
+  .story-music-track-mode,
+  .story-music-track-search-meta,
+  .story-music-track-loop,
+  .story-music-track-loop-note
+) {
+  color: var(--pix-story-text-soft);
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-session-list,
+body.theme-pixnovel .pixnovel-stage-body .story-preset-grid,
+body.theme-pixnovel .pixnovel-stage-body .story-reader-feature,
+body.theme-pixnovel .pixnovel-stage-body .story-reader-strip-item,
+body.theme-pixnovel .pixnovel-stage-body .story-scenes-controls {
+  gap: 14px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-session-row {
+  gap: 14px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page :is(
+  .story-mode-button,
+  .story-tab,
+  .story-group-type,
+  .story-folder-chip,
+  .story-session-delete,
+  .story-disclosure-toggle,
+  .story-mini-chip,
+  .btn-primary,
+  .btn-accent,
+  .btn-ghost,
+  .music-library-pill,
+  .music-library-tag,
+  .story-memory-pill--message,
+  .story-memory-pill--scene,
+  .story-chat-force-illustration,
+  .story-scene-generate,
+  .story-scene-apply-track,
+  .story-scene-animate,
+  .story-scene-music-trigger,
+  .story-scene-regenerate
+) {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--pix-story-text-strong);
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page :is(
+  .story-mode-button:hover,
+  .story-tab:hover,
+  .story-group-type:hover,
+  .story-folder-chip:hover,
+  .story-session-delete:hover,
+  .story-disclosure-toggle:hover,
+  .btn-primary:hover,
+  .btn-accent:hover,
+  .btn-ghost:hover,
+  .story-chat-force-illustration:hover,
+  .story-scene-generate:hover,
+  .story-scene-apply-track:hover,
+  .story-scene-animate:hover,
+  .story-scene-music-trigger:hover,
+  .story-scene-regenerate:hover
+) {
+  background: transparent;
+  box-shadow: none;
+  text-decoration: underline;
+  text-underline-offset: 0.24em;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page :is(
+  .story-session-item.is-active,
+  .story-preset-card.is-selected,
+  .story-tab.is-active,
+  .story-group-type.is-active,
+  .story-folder-chip.is-active,
+  .story-mode-button.is-active
+) {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.28em;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page :is(
+  .field-input,
+  .field-select,
+  .field-textarea,
+  .story-scenes-select,
+  .story-scene-folder-select,
+  .story-session-debug-select,
+  .story-music-track-picker,
+  .story-music-track-search
+) {
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, #ffffff 58%, var(--pix-ui-border));
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--pix-story-text-strong);
+  padding: 0.45rem 0;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page :is(
+  .field-input:focus,
+  .field-select:focus,
+  .field-textarea:focus,
+  .story-scenes-select:focus,
+  .story-scene-folder-select:focus,
+  .story-session-debug-select:focus,
+  .story-music-track-picker:focus,
+  .story-music-track-search:focus
+) {
+  outline: none;
+  border-bottom-color: #ffffff;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page :is(
+  .field-input::placeholder,
+  .field-textarea::placeholder
+) {
+  color: var(--pix-story-text-muted);
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page,
+body.theme-pixnovel .pixnovel-stage-body .story-page * {
+  color: #000000;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page :is(
+  input,
+  select,
+  textarea,
+  option
+) {
+  color: #000000;
+  caret-color: #000000;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page :is(
+  input::placeholder,
+  textarea::placeholder
+) {
+  color: rgba(0, 0, 0, 0.72);
+}
+
+@media (max-width: 1240px) {
+  body.theme-pixnovel .pixnovel-stage-body .story-workspace {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  body.theme-pixnovel .pixnovel-stage-body .story-workspace-sidebar {
+    position: static;
+  }
+
+  body.theme-pixnovel .pixnovel-stage-body .story-book,
+  body.theme-pixnovel .pixnovel-stage-body .story-book--reader {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  body.theme-pixnovel .pixnovel-stage-body .story-page {
+    padding: 6px 0 20px;
+    gap: 20px;
+  }
+
+  body.theme-pixnovel .pixnovel-stage-body .story-book,
+  body.theme-pixnovel .pixnovel-stage-body .story-config {
+    gap: 16px;
+  }
+
+  body.theme-pixnovel .pixnovel-stage-body .story-scenes-controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Story V2 cinematic split-stage layout (scoped to avoid legacy cascade collisions) */
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 {
+  --pix-story-text-strong: #000000;
+  --pix-story-text-soft: #000000;
+  --pix-story-text-muted: rgba(0, 0, 0, 0.72);
+  width: 100%;
+  margin: 0;
+  padding: 0 0 20px;
+  display: grid;
+  gap: 16px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2,
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 * {
+  color: #000000;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-hero {
+  display: grid;
+  gap: 8px;
+  padding: 6px 2px 10px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-title {
+  margin: 0;
+  font-family: var(--pix-font-display);
+  font-size: clamp(1.45rem, 1.6vw + 1rem, 2.15rem);
+  line-height: 1.15;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-subtitle {
+  margin: 0;
+  max-width: 74ch;
+  line-height: 1.6;
+  color: rgba(0, 0, 0, 0.82);
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr) 420px;
+  grid-template-areas: "rail narrative visual";
+  gap: 24px;
+  align-items: start;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-rail {
+  grid-area: rail;
+  position: sticky;
+  top: 8px;
+  align-self: start;
+  min-width: 0;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-narrative {
+  grid-area: narrative;
+  min-width: 0;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-visual {
+  grid-area: visual;
+  min-width: 0;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-rail-shell,
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-narrative-shell,
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-visual-shell,
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-visual-card,
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-director-card,
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-continuity-card,
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-memory-panel,
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-disclosure {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-rail-shell {
+  gap: 22px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-rail-section {
+  display: grid;
+  gap: 10px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-rail-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-rail-field,
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-rail-actions {
+  display: grid;
+  gap: 8px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-session-list {
+  max-height: min(42vh, 380px);
+  overflow-y: auto;
+  display: grid;
+  gap: 8px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-session-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 :is(
+  .story-session-item,
+  .story-preset-card
+) {
+  border: 0;
+  border-left: 2px solid rgba(0, 0, 0, 0.14);
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  padding: 6px 0 6px 10px;
+  display: grid;
+  gap: 3px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 :is(
+  .story-session-item.is-active,
+  .story-preset-card.is-selected
+) {
+  border-left-color: rgba(0, 0, 0, 0.66);
+  text-decoration: underline;
+  text-underline-offset: 0.24em;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-narrative-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: 14px;
+  min-height: min(74vh, 920px);
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-thread-surface {
+  min-height: 0;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-thread {
+  max-height: min(58vh, 700px);
+  min-height: 260px;
+  overflow-y: auto;
+  padding-right: 4px;
+  display: grid;
+  gap: 14px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-message-bubble {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  max-width: 82%;
+  line-height: 1.55;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-message--user .story-message-bubble {
+  font-weight: 700;
+  text-align: right;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-compose {
+  display: grid;
+  gap: 10px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-compose-actions {
+  display: grid;
+  gap: 8px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-compose-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-visual-shell {
+  display: grid;
+  gap: 22px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-visual-block {
+  display: grid;
+  gap: 12px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-visual-card {
+  display: grid;
+  gap: 12px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-scene-card {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+  box-shadow: none;
+  display: grid;
+  gap: 8px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-scene-card img,
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-reader-strip-frame img {
+  width: 100%;
+  display: block;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-scene-overlay {
+  position: static;
+  inset: auto;
+  background: transparent;
+  display: grid;
+  gap: 4px;
+  padding: 0;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-scene-title,
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-scene-description {
+  text-shadow: none;
+  margin: 0;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-reader-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 14px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-reader-strip-frame {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-director-layout {
+  display: grid;
+  gap: 16px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-director-region {
+  display: grid;
+  gap: 12px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-scene-grid {
+  display: grid;
+  gap: 18px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-continuity {
+  display: grid;
+  gap: 12px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-context-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-memory-panel {
+  display: grid;
+  gap: 10px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-disclosure {
+  border-top: 1px solid rgba(0, 0, 0, 0.2);
+  padding-top: 8px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-disclosure > summary {
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-disclosure-meta {
+  font-size: 0.74rem;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 :is(
+  .btn-primary,
+  .btn-accent,
+  .btn-ghost,
+  .story-chat-force-illustration,
+  .story-scene-generate,
+  .story-scene-apply-track,
+  .story-scene-animate,
+  .story-scene-music-trigger,
+  .story-scene-regenerate,
+  .story-session-delete,
+  .story-disclosure-toggle,
+  .story-group-type,
+  .story-folder-chip,
+  .story-tab,
+  .story-mode-button
+) {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #000000;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 :is(
+  .btn-primary:hover,
+  .btn-accent:hover,
+  .btn-ghost:hover,
+  .story-chat-force-illustration:hover,
+  .story-scene-generate:hover,
+  .story-scene-apply-track:hover,
+  .story-scene-animate:hover,
+  .story-scene-music-trigger:hover,
+  .story-scene-regenerate:hover,
+  .story-session-delete:hover,
+  .story-disclosure-toggle:hover,
+  .story-group-type:hover,
+  .story-folder-chip:hover,
+  .story-tab:hover,
+  .story-mode-button:hover
+) {
+  text-decoration: underline;
+  text-underline-offset: 0.24em;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 :is(
+  .field-input,
+  .field-select,
+  .field-textarea,
+  .story-scenes-select,
+  .story-scene-folder-select,
+  .story-session-debug-select,
+  .story-music-track-picker,
+  .story-music-track-search
+) {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.48);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #000000;
+  padding: 0.38rem 0;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 :is(
+  .field-input:focus,
+  .field-select:focus,
+  .field-textarea:focus,
+  .story-scenes-select:focus,
+  .story-scene-folder-select:focus,
+  .story-session-debug-select:focus,
+  .story-music-track-picker:focus,
+  .story-music-track-search:focus
+) {
+  outline: none;
+  border-bottom-color: rgba(0, 0, 0, 0.88);
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 :is(
+  input,
+  select,
+  textarea,
+  option
+) {
+  color: #000000;
+  caret-color: #000000;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 :is(
+  input::placeholder,
+  textarea::placeholder
+) {
+  color: rgba(0, 0, 0, 0.72);
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 :is(
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  summary
+):focus-visible {
+  outline: 2px solid rgba(0, 0, 0, 0.52);
+  outline-offset: 2px;
+}
+
+body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-error {
+  margin-top: 4px;
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-layout {
+    grid-template-columns: 240px minmax(0, 1fr) 360px;
+    gap: 18px;
+  }
+}
+
+@media (max-width: 1023px) {
+  body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "narrative"
+      "visual"
+      "rail";
+    gap: 20px;
+  }
+
+  body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-rail {
+    position: static;
+  }
+
+  body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-narrative-shell {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 759px) {
+  body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 {
+    gap: 12px;
+    padding-bottom: 16px;
+  }
+
+  body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-layout {
+    gap: 14px;
+  }
+
+  body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-thread {
+    max-height: min(52vh, 560px);
+    min-height: 220px;
+  }
+
+  body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-v2-reader-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  body.theme-pixnovel .pixnovel-stage-body .story-page.story-page--v2 .story-scenes-controls {
+    grid-template-columns: 1fr;
+  }
 }
