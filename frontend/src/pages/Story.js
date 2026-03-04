@@ -7,9 +7,121 @@ import useStoryStudio from "./story/useStoryStudio";
 import { STORY_VIEW_MODE } from "./story/constants";
 import "./story/story-v3.css";
 
+const DEFAULT_TRACK_TITLE = "Soundtrack";
+const DEFAULT_SCENE_TRACK_TITLE = "Scene soundtrack";
+const TRACK_SOURCE_LIBRARY = "library";
+const TRACK_SOURCE_SCENE = "scene";
+
 const parseTrackStamp = (value = "") => {
   const stamp = Date.parse(value || "");
   return Number.isFinite(stamp) ? stamp : 0;
+};
+
+const normalizeTrackTags = (tags = []) =>
+  Array.isArray(tags) ? tags.filter(Boolean) : [];
+
+const resolveTrackIdentity = (track = {}) =>
+  String(track?.key || track?.url || "").trim();
+
+const fromLibraryTrack = (track = {}) => {
+  if (!track?.url) return null;
+  return {
+    key: String(track.key || "").trim(),
+    url: track.url,
+    title: track.title || DEFAULT_TRACK_TITLE,
+    source: TRACK_SOURCE_LIBRARY,
+    mood: track.mood || "",
+    energy: track.energy || "",
+    tempoBpm: typeof track.tempoBpm === "number" ? track.tempoBpm : null,
+    tags: normalizeTrackTags(track.tags),
+    updatedAt: track.updatedAt || track.createdAt || "",
+  };
+};
+
+const fromSceneTrack = (scene = {}) => {
+  if (!scene?.musicUrl) return null;
+  return {
+    key: String(scene.musicKey || "").trim(),
+    url: scene.musicUrl,
+    title: scene.title || DEFAULT_SCENE_TRACK_TITLE,
+    source: TRACK_SOURCE_SCENE,
+    mood: scene.musicMood || "",
+    energy: scene.musicEnergy || "",
+    tempoBpm: typeof scene.musicTempoBpm === "number" ? scene.musicTempoBpm : null,
+    tags: normalizeTrackTags(scene.musicTags),
+    updatedAt: scene.musicUpdatedAt || scene.updatedAt || scene.createdAt || "",
+  };
+};
+
+const areTracksEqual = (left = {}, right = {}) =>
+  left?.key === right?.key &&
+  left?.url === right?.url &&
+  left?.title === right?.title &&
+  left?.source === right?.source &&
+  left?.mood === right?.mood &&
+  left?.energy === right?.energy &&
+  left?.tempoBpm === right?.tempoBpm &&
+  left?.updatedAt === right?.updatedAt &&
+  JSON.stringify(left?.tags || []) === JSON.stringify(right?.tags || []);
+
+const areTrackListsEqual = (previous = [], next = []) => {
+  if (!Array.isArray(previous) || !Array.isArray(next)) return false;
+  if (previous.length !== next.length) return false;
+  return previous.every((track, index) => areTracksEqual(track, next[index]));
+};
+
+const resolveAvailableTracks = ({
+  activeMusicTrackKey = "",
+  scenes = [],
+  musicLibrary = [],
+  featuredScene = null,
+  nowPlayingTrack = null,
+}) => {
+  const normalizedScenes = Array.isArray(scenes) ? scenes : [];
+  const normalizedLibrary = Array.isArray(musicLibrary) ? musicLibrary : [];
+  const sortedScenes = [...normalizedScenes].sort(
+    (left, right) =>
+      parseTrackStamp(right.musicUpdatedAt || right.updatedAt || right.createdAt) -
+      parseTrackStamp(left.musicUpdatedAt || left.updatedAt || left.createdAt)
+  );
+
+  const trackByIdentity = new Map();
+  const appendTrack = (track) => {
+    if (!track?.url) return;
+    const identity = resolveTrackIdentity(track);
+    if (!identity) return;
+    const existingTrack = trackByIdentity.get(identity);
+    if (!existingTrack) {
+      trackByIdentity.set(identity, track);
+      return;
+    }
+    if (parseTrackStamp(track.updatedAt) >= parseTrackStamp(existingTrack.updatedAt)) {
+      trackByIdentity.set(identity, { ...existingTrack, ...track });
+    }
+  };
+
+  const activeKey = String(activeMusicTrackKey || "").trim();
+  if (activeKey) {
+    const activeLibraryTrack = normalizedLibrary
+      .map(fromLibraryTrack)
+      .find((track) => track?.key === activeKey);
+    appendTrack(activeLibraryTrack);
+    const activeSceneTrack = sortedScenes
+      .map(fromSceneTrack)
+      .find((track) => track?.key === activeKey);
+    appendTrack(activeSceneTrack);
+  }
+
+  appendTrack(fromLibraryTrack(normalizedLibrary.find((track) => String(track?.key || "").trim() === String(featuredScene?.musicKey || "").trim())));
+  appendTrack(fromSceneTrack(featuredScene));
+
+  normalizedLibrary.forEach((track) => appendTrack(fromLibraryTrack(track)));
+  sortedScenes.forEach((scene) => appendTrack(fromSceneTrack(scene)));
+  appendTrack(nowPlayingTrack);
+
+  return [...trackByIdentity.values()].sort(
+    (left, right) => parseTrackStamp(right.updatedAt) - parseTrackStamp(left.updatedAt)
+  );
 };
 
 const resolveNowPlayingTrack = ({
@@ -32,37 +144,6 @@ const resolveNowPlayingTrack = ({
     if (!sceneKey || sceneByKey.has(sceneKey)) return;
     sceneByKey.set(sceneKey, scene);
   });
-
-  const fromLibraryTrack = (track = {}) => {
-    if (!track?.url) return null;
-    return {
-      key: String(track.key || "").trim(),
-      url: track.url,
-      title: track.title || "Soundtrack",
-      source: "library",
-      mood: track.mood || "",
-      energy: track.energy || "",
-      tempoBpm: typeof track.tempoBpm === "number" ? track.tempoBpm : null,
-      tags: Array.isArray(track.tags) ? track.tags.filter(Boolean) : [],
-      updatedAt: track.updatedAt || track.createdAt || "",
-    };
-  };
-
-  const fromSceneTrack = (scene = {}) => {
-    if (!scene?.musicUrl) return null;
-    return {
-      key: String(scene.musicKey || "").trim(),
-      url: scene.musicUrl,
-      title: scene.title || "Scene soundtrack",
-      source: "scene",
-      mood: scene.musicMood || "",
-      energy: scene.musicEnergy || "",
-      tempoBpm:
-        typeof scene.musicTempoBpm === "number" ? scene.musicTempoBpm : null,
-      tags: Array.isArray(scene.musicTags) ? scene.musicTags.filter(Boolean) : [],
-      updatedAt: scene.musicUpdatedAt || scene.updatedAt || scene.createdAt || "",
-    };
-  };
 
   if (key) {
     const libraryTrack = fromLibraryTrack(libraryByKey.get(key));
@@ -97,6 +178,7 @@ function Story({
   forcedViewMode = "",
   pageVariant = "story",
   onNowPlayingChange,
+  onTrackCatalogChange,
 }) {
   const {
     presets,
@@ -182,6 +264,17 @@ function Story({
       }),
     [activeMusicTrackKey, featuredScene, musicLibrary, scenes]
   );
+  const availableTracks = useMemo(
+    () =>
+      resolveAvailableTracks({
+        activeMusicTrackKey,
+        scenes,
+        musicLibrary,
+        featuredScene,
+        nowPlayingTrack,
+      }),
+    [activeMusicTrackKey, featuredScene, musicLibrary, nowPlayingTrack, scenes]
+  );
 
   useEffect(() => {
     if (typeof onNowPlayingChange !== "function") return;
@@ -202,6 +295,16 @@ function Story({
       return nowPlayingTrack;
     });
   }, [nowPlayingTrack, onNowPlayingChange]);
+
+  useEffect(() => {
+    if (typeof onTrackCatalogChange !== "function") return;
+    onTrackCatalogChange((previousTracks) => {
+      if (areTrackListsEqual(previousTracks, availableTracks)) {
+        return previousTracks;
+      }
+      return availableTracks;
+    });
+  }, [availableTracks, onTrackCatalogChange]);
 
   return (
     <section

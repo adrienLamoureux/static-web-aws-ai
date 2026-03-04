@@ -55,3 +55,4 @@ Track rollouts of the same improvement across multiple idea stacks.
 - 2026-03-03T17:28:04.399Z | action=deploy | improvement=set-replicate-token | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=29eef41
 - 2026-03-03T17:43:54.094Z | action=deploy | improvement=story-chat-phone-style | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=29eef41
 - 2026-03-03T20:27:51.040Z | action=deploy | improvement=story-neon-player-chat-send-icon | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=81e5390
+- 2026-03-04T16:10:42.682Z | action=deploy | improvement=director-vertical-refresh-and-music-dock-visibility | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=3273c5c

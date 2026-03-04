@@ -828,6 +828,7 @@ const PixnovelWorkspace = ({
   currentTheme,
   onThemeChange,
   onNowPlayingChange,
+  onTrackCatalogChange,
 }) => {
   const [opsSnapshot, setOpsSnapshot] = useState({
     queue: [],
@@ -860,6 +861,7 @@ const PixnovelWorkspace = ({
         forcedViewMode="reader"
         pageVariant="story"
         onNowPlayingChange={onNowPlayingChange}
+        onTrackCatalogChange={onTrackCatalogChange}
       />
     ),
     music: <StoryMusicLibrary apiBaseUrl={apiBaseUrl} />,
@@ -1179,6 +1181,7 @@ const AppShell = ({ apiBaseUrl, currentTheme, onThemeChange }) => {
   const { logout, user } = useAuth();
   const location = useLocation();
   const [nowPlayingTrack, setNowPlayingTrack] = useState(null);
+  const [musicTrackCatalog, setMusicTrackCatalog] = useState([]);
   const hideGlobalMusicDock =
     location.pathname === "/login" || location.pathname === "/auth/callback";
 
@@ -1192,7 +1195,10 @@ const AppShell = ({ apiBaseUrl, currentTheme, onThemeChange }) => {
 
       <main className="pixnovel-main relative z-10">
         {!hideGlobalMusicDock && user?.email ? (
-          <GlobalNowPlayingDock nowPlayingTrack={nowPlayingTrack} />
+          <GlobalNowPlayingDock
+            nowPlayingTrack={nowPlayingTrack}
+            availableTracks={musicTrackCatalog}
+          />
         ) : null}
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -1284,6 +1290,7 @@ const AppShell = ({ apiBaseUrl, currentTheme, onThemeChange }) => {
                   currentTheme={currentTheme}
                   onThemeChange={onThemeChange}
                   onNowPlayingChange={setNowPlayingTrack}
+                  onTrackCatalogChange={setMusicTrackCatalog}
                 />
               </RequireAuth>
             }
