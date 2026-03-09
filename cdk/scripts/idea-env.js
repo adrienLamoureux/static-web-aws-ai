@@ -131,6 +131,7 @@ if (command === "deploy") {
 
   withLock(() => {
     runOrFail("npm", ["--prefix", "cdk", "run", "build"], ROOT_DIR);
+    runOrFail("npm", ["--prefix", "backend", "install"], ROOT_DIR);
     if (!options.skipBuild) {
       runOrFail("npm", ["--prefix", "frontend", "run", "build"], ROOT_DIR);
     }
@@ -388,6 +389,7 @@ if (command === "diff-many" || command === "synth-many") {
 
   withLock(() => {
     runOrFail("npm", ["--prefix", "cdk", "run", "build"], ROOT_DIR);
+    runOrFail("npm", ["--prefix", "backend", "install"], ROOT_DIR);
     stages.forEach((stage) => {
       runCdkOrFail(
         [subcommand, ...buildCdkContextArgs({ stage, owner, ttlDays })],
@@ -863,6 +865,7 @@ function executeDeployMany({
 
   withLock(() => {
     runOrFail("npm", ["--prefix", "cdk", "run", "build"], ROOT_DIR);
+    runOrFail("npm", ["--prefix", "backend", "install"], ROOT_DIR);
     if (!skipBuild) {
       runOrFail("npm", ["--prefix", "frontend", "run", "build"], ROOT_DIR);
     }
