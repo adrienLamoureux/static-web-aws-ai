@@ -318,6 +318,10 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       process.env.REPLICATE_API_TOKEN || ""
     );
     apiLambda.addEnvironment(
+      "CIVITAI_API_TOKEN",
+      process.env.CIVITAI_API_TOKEN || ""
+    );
+    apiLambda.addEnvironment(
       "HUGGING_FACE_TOKEN",
       process.env.HUGGING_FACE_TOKEN || ""
     );
