@@ -9,7 +9,7 @@ const {
   normalizeDirectorConfig,
   getDirectorConfigDbKey,
 } = require("../lib/director-config");
-const { hasLoraInjectionSupport } = require("../lib/lora-utils");
+const { hasConfiguredLoraSupport } = require("../lib/lora-utils");
 
 const MAX_QUEUE_ITEMS = 6;
 const MAX_ACTIVE_JOBS = 8;
@@ -37,6 +37,8 @@ const IMAGE_MODEL_LABELS = Object.freeze({
   "seedream-4.5": "Seedream 4.5",
   "wai-nsfw-illustrious-v12": "WAI NSFW Illustrious v12",
   "anillustrious-v4": "Anillustrious v4",
+  "civitai-sd15-anime": "CivitAI SD 1.5 Anime",
+  "civitai-pony-sdxl": "CivitAI Pony SDXL",
 });
 const VIDEO_MODEL_LABELS = Object.freeze({
   "wan-2.2-i2v-fast": "Wan 2.2 I2V Fast",
@@ -354,6 +356,7 @@ const buildDashboardData = ({
 
 const buildDirectorOptions = ({
   replicateModelConfig = {},
+  civitaiModelConfig = {},
   replicateVideoConfig = {},
 }) => {
   const generationByModel = {};
@@ -376,7 +379,34 @@ const buildDirectorOptions = ({
     return {
       key: modelKey,
       label: resolveImageModelLabel(modelKey),
-      supportsLora: hasLoraInjectionSupport(modelConfig),
+      provider: "replicate",
+      supportsLora: hasConfiguredLoraSupport(modelConfig),
+      estimatedUnitCostUsd: null,
+    };
+  });
+  const civitaiModels = Object.keys(civitaiModelConfig).map((modelKey) => {
+    const modelConfig = civitaiModelConfig[modelKey] || {};
+    const sizes = Array.isArray(modelConfig.sizes)
+      ? modelConfig.sizes.map((size) => ({
+          width: Number(size.width),
+          height: Number(size.height),
+          label: `${Number(size.width)}x${Number(size.height)}`,
+        }))
+      : [];
+    generationByModel[modelKey] = {
+      schedulers: [],
+      sizes,
+    };
+    return {
+      key: modelKey,
+      label: resolveImageModelLabel(modelKey),
+      provider: "civitai",
+      supportsLora: hasConfiguredLoraSupport(modelConfig),
+      estimatedUnitCostUsd: Number.isFinite(
+        Number(modelConfig.estimatedUnitCostUsd)
+      )
+        ? Number(modelConfig.estimatedUnitCostUsd)
+        : null,
     };
   });
   const videoModels = Object.keys(replicateVideoConfig).map((modelKey) => {
@@ -384,13 +414,29 @@ const buildDirectorOptions = ({
     return {
       key: modelKey,
       label: resolveVideoModelLabel(modelKey),
-      supportsLora: hasLoraInjectionSupport(modelConfig),
+      provider: "replicate",
+      supportsLora: hasConfiguredLoraSupport(modelConfig),
     };
   });
   return {
     generation: {
       imageModels,
+      civitaiModels,
       byModel: generationByModel,
+      providers: [
+        {
+          key: "replicate",
+          label: "Replicate",
+          supportsLora: imageModels.some((item) => item.supportsLora),
+          enabled: true,
+        },
+        {
+          key: "civitai",
+          label: "CivitAI",
+          supportsLora: civitaiModels.some((item) => item.supportsLora),
+          enabled: true,
+        },
+      ],
     },
     video: {
       models: videoModels,
@@ -449,6 +495,7 @@ const registerOperationsRoutes = (app, deps) => {
     buildMediaSk,
     buildStorySessionSk,
     replicateModelConfig,
+    civitaiModelConfig,
     replicateVideoConfig,
     DEFAULT_NEGATIVE_PROMPT,
     s3Client,
@@ -469,6 +516,7 @@ const registerOperationsRoutes = (app, deps) => {
   });
   const directorOptions = buildDirectorOptions({
     replicateModelConfig,
+    civitaiModelConfig,
     replicateVideoConfig,
   });
 

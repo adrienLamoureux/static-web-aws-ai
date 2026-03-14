@@ -3,6 +3,8 @@ const {
   CIVITAI_WEB_BASE_URL,
   CIVITAI_MODELS_PATH,
   CIVITAI_MODEL_TYPE,
+  CIVITAI_ORCHESTRATION_BASE_URL,
+  CIVITAI_ORCHESTRATION_JOBS_PATH,
   CIVITAI_REQUEST_TIMEOUT_MS,
   LORA_SYNC_DEFAULT_LIMIT,
   LORA_SYNC_MAX_LIMIT,
@@ -113,11 +115,25 @@ const mapCivitaiModelsToCatalogEntries = (models = []) => {
 
 const createCivitaiClient = ({
   apiBaseUrl = CIVITAI_API_BASE_URL,
+  orchestrationBaseUrl = CIVITAI_ORCHESTRATION_BASE_URL,
   apiToken = process.env.CIVITAI_API_TOKEN || "",
   requestTimeoutMs = CIVITAI_REQUEST_TIMEOUT_MS,
   fetchImpl = resolveFetch(),
 } = {}) => {
-  const runRequest = async ({ url, timeoutMs }) => {
+  const resolveTimeoutMs = () =>
+    clampInteger(
+      requestTimeoutMs,
+      CIVITAI_REQUEST_TIMEOUT_MS,
+      1000,
+      120000
+    );
+
+  const runRequest = async ({
+    url,
+    method = "GET",
+    timeoutMs = resolveTimeoutMs(),
+    payload = undefined,
+  }) => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
@@ -127,9 +143,13 @@ const createCivitaiClient = ({
       if (apiToken) {
         headers.Authorization = `Bearer ${apiToken}`;
       }
+      if (payload) {
+        headers["Content-Type"] = "application/json";
+      }
       const response = await fetchImpl(url, {
-        method: "GET",
+        method,
         headers,
+        ...(payload ? { body: JSON.stringify(payload) } : {}),
         signal: controller.signal,
       });
       if (!response.ok) {
@@ -177,12 +197,7 @@ const createCivitaiClient = ({
 
     const payload = await runRequest({
       url: url.toString(),
-      timeoutMs: clampInteger(
-        requestTimeoutMs,
-        CIVITAI_REQUEST_TIMEOUT_MS,
-        1000,
-        120000
-      ),
+      timeoutMs: resolveTimeoutMs(),
     });
     const catalogEntries = mapCivitaiModelsToCatalogEntries(payload?.items || []);
 
@@ -192,8 +207,70 @@ const createCivitaiClient = ({
     };
   };
 
+  const createImageJobs = async ({
+    modelId = "",
+    baseModel = "",
+    params = {},
+    additionalNetworks = undefined,
+    quantity = 1,
+    wait = false,
+    detailed = true,
+    charge = true,
+    whatIf = false,
+  } = {}) => {
+    const normalizedModelId = normalizeString(modelId);
+    if (!normalizedModelId) {
+      throw new Error("CivitAI modelId is required");
+    }
+    const url = new URL(CIVITAI_ORCHESTRATION_JOBS_PATH, orchestrationBaseUrl);
+    url.searchParams.set("wait", wait ? "true" : "false");
+    url.searchParams.set("detailed", detailed ? "true" : "false");
+    url.searchParams.set("charge", charge ? "true" : "false");
+    url.searchParams.set("whatif", whatIf ? "true" : "false");
+
+    const body = {
+      $type: "textToImage",
+      model: normalizedModelId,
+      baseModel: normalizeString(baseModel) || "SD_1_5",
+      params: params || {},
+      quantity: clampInteger(quantity, 1, 1, 8),
+      ...(additionalNetworks &&
+      typeof additionalNetworks === "object" &&
+      Object.keys(additionalNetworks).length
+        ? { additionalNetworks }
+        : {}),
+    };
+
+    return runRequest({
+      url: url.toString(),
+      method: "POST",
+      payload: body,
+    });
+  };
+
+  const getImageJobs = async ({
+    token = "",
+    wait = false,
+    detailed = true,
+  } = {}) => {
+    const normalizedToken = normalizeString(token);
+    if (!normalizedToken) {
+      throw new Error("CivitAI job token is required");
+    }
+    const url = new URL(CIVITAI_ORCHESTRATION_JOBS_PATH, orchestrationBaseUrl);
+    url.searchParams.set("token", normalizedToken);
+    url.searchParams.set("wait", wait ? "true" : "false");
+    url.searchParams.set("detailed", detailed ? "true" : "false");
+    return runRequest({
+      url: url.toString(),
+      method: "GET",
+    });
+  };
+
   return {
     searchLoras,
+    createImageJobs,
+    getImageJobs,
   };
 };
 

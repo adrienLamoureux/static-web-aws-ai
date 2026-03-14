@@ -77,9 +77,12 @@ const hasLoraInjectionSupport = (modelConfig = {}) => {
   return Boolean(weightsField || strengthField || scaleFieldNames.length);
 };
 
+const hasConfiguredLoraSupport = (modelConfig = {}) =>
+  hasLoraInjectionSupport(modelConfig) || parseBooleanLike(modelConfig?.supportsLora, false);
+
 const getLoraSupportedModelKeys = (modelConfigByKey = {}) =>
   Object.keys(modelConfigByKey || {}).filter((modelKey) =>
-    hasLoraInjectionSupport(modelConfigByKey[modelKey] || {})
+    hasConfiguredLoraSupport(modelConfigByKey[modelKey] || {})
   );
 
 const buildLoraUnsupportedModelError = ({
@@ -285,6 +288,7 @@ module.exports = {
   parseBooleanLike,
   buildLoraCatalogId,
   hasLoraInjectionSupport,
+  hasConfiguredLoraSupport,
   getLoraSupportedModelKeys,
   buildLoraUnsupportedModelError,
   mergePromptFragments,

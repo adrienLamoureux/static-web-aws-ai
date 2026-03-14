@@ -2,6 +2,7 @@ const registerCorePromptRoutes = require("./core-prompt");
 const registerMediaRoutes = require("./media-routes");
 const registerBedrockRoutes = require("./bedrock-routes");
 const registerReplicateImageRoutes = require("./replicate-image-routes");
+const registerCivitaiImageRoutes = require("./civitai-image-routes");
 const registerGradioRoutes = require("./gradio-routes");
 const registerReplicateImageStatusSelectRoutes = require("./replicate-image-status-select-routes");
 const registerReplicateVideoRoutes = require("./replicate-video-routes");
@@ -17,6 +18,7 @@ const registerRoutes = (app, deps) => {
   registerMediaRoutes(app, deps);
   registerBedrockRoutes(app, deps);
   registerReplicateImageRoutes(app, deps);
+  registerCivitaiImageRoutes(app, deps);
   registerGradioRoutes(app, deps);
   registerReplicateImageStatusSelectRoutes(app, deps);
   registerReplicateVideoRoutes(app, deps);

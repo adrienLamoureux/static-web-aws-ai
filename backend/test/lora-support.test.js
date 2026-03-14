@@ -4,12 +4,14 @@ const assert = require("node:assert/strict");
 const registerLoraRoutes = require("../routes/lora-routes");
 const registerReplicateImageRoutes = require("../routes/replicate-image-routes");
 const registerReplicateVideoRoutes = require("../routes/replicate-video-routes");
+const registerCivitaiImageRoutes = require("../routes/civitai-image-routes");
 const registerOperationsRoutes = require("../routes/operations-routes");
 const {
   hasLoraInjectionSupport,
 } = require("../lib/lora-utils");
 const {
   replicateModelConfig,
+  civitaiModelConfig,
   replicateVideoConfig,
 } = require("../config/models");
 
@@ -107,18 +109,87 @@ test("hasLoraInjectionSupport handles representative injection shapes", () => {
 test("buildDirectorOptions exposes supportsLora for image/video models", () => {
   const options = registerOperationsRoutes.buildDirectorOptions({
     replicateModelConfig,
+    civitaiModelConfig,
     replicateVideoConfig,
   });
   const imageSupport = new Map(
     options.generation.imageModels.map((item) => [item.key, item.supportsLora])
+  );
+  const civitaiSupport = new Map(
+    options.generation.civitaiModels.map((item) => [item.key, item.supportsLora])
   );
   const videoSupport = new Map(
     options.video.models.map((item) => [item.key, item.supportsLora])
   );
 
   assert.equal(imageSupport.get("animagine"), false);
+  assert.equal(civitaiSupport.get("civitai-sd15-anime"), true);
   assert.equal(videoSupport.get("wan-2.2-i2v-fast"), true);
   assert.equal(videoSupport.get("veo-3.1-fast"), false);
+});
+
+test("POST /civitai/image/generate rejects unsupported model when characterId is set", async () => {
+  const app = createMockApp();
+  registerCivitaiImageRoutes(app, {
+    civitaiModelConfig: {
+      "civitai-no-lora": {
+        modelId: "urn:air:sd1:checkpoint:civitai:1@1",
+        baseModel: "SD_1_5",
+        supportsLora: false,
+        sizes: [{ width: 1024, height: 1024 }],
+        buildInput: ({ prompt, width, height }) => ({
+          prompt,
+          width,
+          height,
+        }),
+      },
+    },
+    buildImageBatchId: () => "batch-1",
+    clampPromptTokens: (value) => String(value || ""),
+    MAX_REPLICATE_PROMPT_TOKENS: 77,
+    fetchImageBuffer: async () => ({
+      buffer: Buffer.from(""),
+      contentType: "image/png",
+    }),
+    buildImageKey: () => "users/user-1/images/test.png",
+    s3Client: { send: async () => {} },
+    PutObjectCommand: function PutObjectCommand() {},
+    putMediaItem: async () => {},
+    getSignedUrl: async () => "https://example.com/test.png",
+    GetObjectCommand: function GetObjectCommand() {},
+    getItem: async () => null,
+    buildMediaPk: () => "USER#user-1",
+    buildMediaSk: () => "LORAPROFILE#frieren",
+  });
+  const handler = app.routes.post.get("/civitai/image/generate");
+  assert.equal(typeof handler, "function");
+
+  await withEnv(
+    {
+      MEDIA_BUCKET: "bucket",
+      CIVITAI_API_TOKEN: "token",
+    },
+    async () => {
+      const req = {
+        user: { sub: "user-1" },
+        body: {
+          model: "civitai-no-lora",
+          imageName: "test",
+          prompt: "anime portrait",
+          width: 1024,
+          height: 1024,
+          characterId: "frieren",
+        },
+      };
+      const res = createMockRes();
+      await handler(req, res);
+
+      assert.equal(res.output.statusCode, 400);
+      assert.equal(res.output.payload?.code, "LORA_UNSUPPORTED_MODEL");
+      assert.equal(res.output.payload?.modality, "image");
+      assert.equal(res.output.payload?.modelKey, "civitai-no-lora");
+    }
+  );
 });
 
 test("PUT /lora/profiles/:characterId rejects unsupported profile model key", async () => {
