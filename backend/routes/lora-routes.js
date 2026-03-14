@@ -11,6 +11,9 @@ const {
 const { createCivitaiClient } = require("../lib/civitai-client");
 const {
   clampInteger,
+  hasLoraInjectionSupport,
+  getLoraSupportedModelKeys,
+  buildLoraUnsupportedModelError,
   normalizeLowerString,
   normalizeString,
   normalizeStringArray,
@@ -26,7 +29,33 @@ module.exports = (app, deps) => {
     queryBySkPrefix,
     putMediaItem,
     getItem,
+    replicateModelConfig,
+    replicateVideoConfig,
   } = deps;
+
+  const imageLoraSupportedModels = getLoraSupportedModelKeys(replicateModelConfig);
+  const videoLoraSupportedModels = getLoraSupportedModelKeys(replicateVideoConfig);
+
+  const getUnsupportedModelPayload = ({ modality, modelKey }) => {
+    const resolvedModelKey = normalizeString(modelKey);
+    if (!resolvedModelKey) return null;
+    const isImageModality = modality === LORA_MODALITY_IMAGE;
+    const modelConfigByKey = isImageModality
+      ? replicateModelConfig || {}
+      : replicateVideoConfig || {};
+    const supportedModels = isImageModality
+      ? imageLoraSupportedModels
+      : videoLoraSupportedModels;
+    const modelConfig = modelConfigByKey[resolvedModelKey] || {};
+    if (hasLoraInjectionSupport(modelConfig)) {
+      return null;
+    }
+    return buildLoraUnsupportedModelError({
+      modality,
+      modelKey: resolvedModelKey,
+      supportedModels,
+    });
+  };
 
   const parseLimit = (
     value,
@@ -314,6 +343,20 @@ module.exports = (app, deps) => {
       modalityConfig: req.body?.[LORA_MODALITY_VIDEO] || {},
       maxItems: LORA_PROFILE_MAX_ITEMS_PER_MODALITY,
     });
+    const unsupportedImageModelPayload = getUnsupportedModelPayload({
+      modality: LORA_MODALITY_IMAGE,
+      modelKey: normalizedImageProfile.modelKey,
+    });
+    if (unsupportedImageModelPayload) {
+      return res.status(400).json(unsupportedImageModelPayload);
+    }
+    const unsupportedVideoModelPayload = getUnsupportedModelPayload({
+      modality: LORA_MODALITY_VIDEO,
+      modelKey: normalizedVideoProfile.modelKey,
+    });
+    if (unsupportedVideoModelPayload) {
+      return res.status(400).json(unsupportedVideoModelPayload);
+    }
     const requestedCatalogIds = [
       ...normalizedImageProfile.loras.map((item) => item.catalogId),
       ...normalizedVideoProfile.loras.map((item) => item.catalogId),

@@ -67,6 +67,43 @@ const buildLoraCatalogId = ({ provider = "", modelId = "", versionId = "" }) => 
   return `${normalizedProvider}:${normalizedModelId}:${normalizedVersionId}`;
 };
 
+const hasLoraInjectionSupport = (modelConfig = {}) => {
+  const injectionConfig = modelConfig?.loraInjection || {};
+  const weightsField = normalizeString(injectionConfig.weightsField);
+  const strengthField = normalizeString(injectionConfig.strengthField);
+  const scaleFieldNames = Array.isArray(injectionConfig.scaleFieldNames)
+    ? injectionConfig.scaleFieldNames.map((item) => normalizeString(item)).filter(Boolean)
+    : [];
+  return Boolean(weightsField || strengthField || scaleFieldNames.length);
+};
+
+const getLoraSupportedModelKeys = (modelConfigByKey = {}) =>
+  Object.keys(modelConfigByKey || {}).filter((modelKey) =>
+    hasLoraInjectionSupport(modelConfigByKey[modelKey] || {})
+  );
+
+const buildLoraUnsupportedModelError = ({
+  modelKey = "",
+  modality = "",
+  supportedModels = [],
+}) => {
+  const resolvedModelKey = normalizeString(modelKey);
+  const resolvedModality = normalizeString(modality) || "image";
+  const normalizedSupportedModels = Array.isArray(supportedModels)
+    ? supportedModels.map((item) => normalizeString(item)).filter(Boolean)
+    : [];
+  const supportedModelNotice = normalizedSupportedModels.length
+    ? `Supported models: ${normalizedSupportedModels.join(", ")}.`
+    : "No LoRA-capable models are configured for this modality.";
+  return {
+    code: "LORA_UNSUPPORTED_MODEL",
+    message: `Model "${resolvedModelKey}" does not support LoRA for ${resolvedModality}. ${supportedModelNotice}`,
+    modality: resolvedModality,
+    modelKey: resolvedModelKey,
+    supportedModels: normalizedSupportedModels,
+  };
+};
+
 const splitPromptFragments = (prompt = "") =>
   normalizeString(prompt)
     .split(",")
@@ -247,6 +284,9 @@ module.exports = {
   clampInteger,
   parseBooleanLike,
   buildLoraCatalogId,
+  hasLoraInjectionSupport,
+  getLoraSupportedModelKeys,
+  buildLoraUnsupportedModelError,
   mergePromptFragments,
   normalizeLoraProfileModality,
   mergeCatalogMetadataIntoProfile,

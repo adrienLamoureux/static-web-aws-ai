@@ -4,6 +4,9 @@ const {
   LORA_PROFILE_TYPE,
 } = require("../config/lora");
 const {
+  buildLoraUnsupportedModelError,
+  getLoraSupportedModelKeys,
+  hasLoraInjectionSupport,
   normalizeString,
   applyCharacterProfileToReplicateInput,
 } = require("../lib/lora-utils");
@@ -30,6 +33,8 @@ module.exports = (app, deps) => {
     buildMediaPk,
     buildMediaSk,
   } = deps;
+
+const videoLoraSupportedModels = getLoraSupportedModelKeys(replicateVideoConfig);
 
 const buildVideoJobKey = (predictionId = "") =>
   `render/replicate/video/${predictionId || Date.now()}`;
@@ -100,6 +105,15 @@ app.post("/replicate/video/generate", async (req, res) => {
   }
   let profileModality = {};
   if (characterId) {
+    if (!hasLoraInjectionSupport(modelConfig)) {
+      return res.status(400).json(
+        buildLoraUnsupportedModelError({
+          modality: LORA_MODALITY_VIDEO,
+          modelKey,
+          supportedModels: videoLoraSupportedModels,
+        })
+      );
+    }
     const profileItem = await getItem({
       pk: buildMediaPk(userId),
       sk: buildMediaSk(LORA_PROFILE_TYPE, characterId),

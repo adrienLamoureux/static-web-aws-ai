@@ -4,6 +4,9 @@ const {
   LORA_PROFILE_TYPE,
 } = require("../config/lora");
 const {
+  buildLoraUnsupportedModelError,
+  getLoraSupportedModelKeys,
+  hasLoraInjectionSupport,
   normalizeString,
   applyCharacterProfileToReplicateInput,
 } = require("../lib/lora-utils");
@@ -34,6 +37,8 @@ module.exports = (app, deps) => {
     buildMediaPk,
     buildMediaSk,
   } = deps;
+
+const imageLoraSupportedModels = getLoraSupportedModelKeys(replicateModelConfig);
 
 const buildImageJobKey = (predictionId = "") =>
   `render/replicate/image/${predictionId || Date.now()}`;
@@ -188,6 +193,15 @@ app.post("/replicate/image/generate", async (req, res) => {
 
   let profileModality = {};
   if (characterId) {
+    if (!hasLoraInjectionSupport(modelConfig)) {
+      return res.status(400).json(
+        buildLoraUnsupportedModelError({
+          modality: LORA_MODALITY_IMAGE,
+          modelKey,
+          supportedModels: imageLoraSupportedModels,
+        })
+      );
+    }
     const profileItem = await getItem({
       pk: buildMediaPk(userId),
       sk: buildMediaSk(LORA_PROFILE_TYPE, characterId),

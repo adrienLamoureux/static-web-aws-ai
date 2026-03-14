@@ -32,7 +32,7 @@ This repo is also set up for parallel product experimentation:
 
 ## Repository Layout
 
-- `frontend/`: React app (routes: Whisk, Story, Music Library, About, Login).
+- `frontend/`: React app (routes: `/`, `/shared`, `/whisk`, `/lora`, `/videos`, `/director`, `/story`, `/music-library`, `/about`, `/login`, `/auth/callback`).
 - `backend/`: Express API, route modules, service/dependency wiring.
 - `cdk/`: AWS CDK infrastructure and deployment automation scripts.
 - `ideas/`: Per-idea context docs (`README`, `DECISIONS`, `RUNBOOK`, `STATUS`, `IMPROVEMENTS`).
@@ -55,7 +55,8 @@ Main groups:
 
 Auth behavior:
 - `backend/lib/auth.js` enforces user auth on API routes.
-- Request user identity comes from API Gateway claims or decoded bearer JWT fallback.
+- Request user identity comes from API Gateway Cognito claims.
+- Optional unsigned bearer fallback is disabled by default and only available when `ALLOW_UNSIGNED_JWT_FALLBACK=true` outside production (local/debug only).
 - Unauthenticated requests return `401 Unauthorized`.
 
 ## Prerequisites

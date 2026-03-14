@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "lambda.js",
   "scripts": {
-    "idea:masonry-seed": "node scripts/seed-global-masonry.js"
+    "idea:masonry-seed": "node scripts/seed-global-masonry.js",
+    "lint": "node --check index.js && node --check lambda.js && node --check lib/*.js && node --check routes/*.js",
+    "test": "node --test"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.624.0",

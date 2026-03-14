@@ -9,6 +9,7 @@ const {
   normalizeDirectorConfig,
   getDirectorConfigDbKey,
 } = require("../lib/director-config");
+const { hasLoraInjectionSupport } = require("../lib/lora-utils");
 
 const MAX_QUEUE_ITEMS = 6;
 const MAX_ACTIVE_JOBS = 8;
@@ -375,12 +376,17 @@ const buildDirectorOptions = ({
     return {
       key: modelKey,
       label: resolveImageModelLabel(modelKey),
+      supportsLora: hasLoraInjectionSupport(modelConfig),
     };
   });
-  const videoModels = Object.keys(replicateVideoConfig).map((modelKey) => ({
-    key: modelKey,
-    label: resolveVideoModelLabel(modelKey),
-  }));
+  const videoModels = Object.keys(replicateVideoConfig).map((modelKey) => {
+    const modelConfig = replicateVideoConfig[modelKey] || {};
+    return {
+      key: modelKey,
+      label: resolveVideoModelLabel(modelKey),
+      supportsLora: hasLoraInjectionSupport(modelConfig),
+    };
+  });
   return {
     generation: {
       imageModels,
@@ -432,7 +438,7 @@ const resolveTrackId = (item = {}) => {
   return "";
 };
 
-module.exports = (app, deps) => {
+const registerOperationsRoutes = (app, deps) => {
   const {
     mediaTable,
     queryMediaItems,
@@ -1165,3 +1171,6 @@ module.exports = (app, deps) => {
     }
   });
 };
+
+module.exports = registerOperationsRoutes;
+module.exports.buildDirectorOptions = buildDirectorOptions;
