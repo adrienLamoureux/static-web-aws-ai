@@ -6,6 +6,8 @@ const {
   CIVITAI_ORCHESTRATION_BASE_URL,
   CIVITAI_ORCHESTRATION_JOBS_PATH,
   CIVITAI_REQUEST_TIMEOUT_MS,
+  CIVITAI_BASEMODEL_SCAN_PAGE_LIMIT,
+  CIVITAI_BASEMODEL_SCAN_PAGE_SIZE,
   LORA_SYNC_DEFAULT_LIMIT,
   LORA_SYNC_MAX_LIMIT,
 } = require("../config/lora");
@@ -37,6 +39,24 @@ const normalizeCivitaiPeriod = (value = "") => {
   const normalized = normalizeString(value);
   return normalized || "Month";
 };
+
+const DIGITS_ONLY_PATTERN = /^\d+$/;
+const DEFAULT_EMPTY_METADATA = Object.freeze({});
+
+const normalizeModelIdList = (value = undefined) => {
+  const values = Array.isArray(value) ? value : [value];
+  const output = [];
+  const seen = new Set();
+  values.forEach((item) => {
+    const normalized = normalizeString(item);
+    if (!DIGITS_ONLY_PATTERN.test(normalized) || seen.has(normalized)) return;
+    seen.add(normalized);
+    output.push(normalized);
+  });
+  return output;
+};
+
+const normalizeBaseModelKey = (value = "") => normalizeString(value).toLowerCase();
 
 const resolveCivitaiDownloadUrl = (version = {}) => {
   if (!Array.isArray(version.files)) return "";
@@ -166,6 +186,88 @@ const createCivitaiClient = ({
     }
   };
 
+  const fetchAndMapCatalogEntries = async ({
+    url,
+    timeoutMs = resolveTimeoutMs(),
+  }) => {
+    const payload = await runRequest({
+      url,
+      timeoutMs,
+    });
+    return {
+      catalogEntries: mapCivitaiModelsToCatalogEntries(payload?.items || []),
+      metadata:
+        payload?.metadata && typeof payload.metadata === "object"
+          ? payload.metadata
+          : DEFAULT_EMPTY_METADATA,
+    };
+  };
+
+  const collectBaseModelMatchesFromBroadSearch = async ({
+    query = "",
+    baseModel = "",
+    limit = LORA_SYNC_DEFAULT_LIMIT,
+    nsfw = undefined,
+    timeoutMs = resolveTimeoutMs(),
+  }) => {
+    const normalizedQuery = normalizeString(query);
+    const normalizedBaseModelKey = normalizeBaseModelKey(baseModel);
+    if (!normalizedQuery || !normalizedBaseModelKey) {
+      return {
+        items: [],
+        metadata: DEFAULT_EMPTY_METADATA,
+      };
+    }
+    const initialUrl = new URL(CIVITAI_MODELS_PATH, apiBaseUrl);
+    initialUrl.searchParams.set("types", CIVITAI_MODEL_TYPE);
+    initialUrl.searchParams.set("limit", String(CIVITAI_BASEMODEL_SCAN_PAGE_SIZE));
+    initialUrl.searchParams.set("query", normalizedQuery);
+    if (typeof nsfw !== "undefined") {
+      initialUrl.searchParams.set("nsfw", parseBooleanLike(nsfw, false) ? "true" : "false");
+    }
+
+    const seenCatalogIds = new Set();
+    const matchedEntries = [];
+    let scannedPages = 0;
+    let nextUrl = initialUrl.toString();
+    let lastMetadata = DEFAULT_EMPTY_METADATA;
+
+    while (
+      nextUrl &&
+      scannedPages < CIVITAI_BASEMODEL_SCAN_PAGE_LIMIT &&
+      matchedEntries.length < limit
+    ) {
+      scannedPages += 1;
+      const { catalogEntries, metadata } = await fetchAndMapCatalogEntries({
+        url: nextUrl,
+        timeoutMs,
+      });
+      lastMetadata = metadata;
+      catalogEntries.forEach((entry) => {
+        const catalogId = normalizeString(entry.catalogId);
+        if (!catalogId || seenCatalogIds.has(catalogId)) return;
+        if (normalizeBaseModelKey(entry.baseModel) !== normalizedBaseModelKey) return;
+        seenCatalogIds.add(catalogId);
+        matchedEntries.push(entry);
+      });
+      if (matchedEntries.length >= limit) break;
+      nextUrl = normalizeString(metadata?.nextPage);
+    }
+
+    return {
+      items: matchedEntries.slice(0, limit),
+      metadata: {
+        ...lastMetadata,
+        fallbackSearch: {
+          strategy: "broad-query-post-filter-base-model",
+          pagesScanned: scannedPages,
+          pageSize: CIVITAI_BASEMODEL_SCAN_PAGE_SIZE,
+          requestedBaseModel: normalizeString(baseModel),
+        },
+      },
+    };
+  };
+
   const searchLoras = async ({
     query = "",
     limit = LORA_SYNC_DEFAULT_LIMIT,
@@ -173,6 +275,7 @@ const createCivitaiClient = ({
     sort = "",
     period = "",
     baseModel = "",
+    modelIds = [],
   } = {}) => {
     const resolvedLimit = clampInteger(
       limit,
@@ -187,23 +290,49 @@ const createCivitaiClient = ({
     const normalizedSort = normalizeCivitaiSort(sort);
     const normalizedPeriod = normalizeCivitaiPeriod(period);
     const normalizedBaseModel = normalizeString(baseModel);
-    if (normalizedQuery) url.searchParams.set("query", normalizedQuery);
-    if (normalizedSort) url.searchParams.set("sort", normalizedSort);
-    if (normalizedPeriod) url.searchParams.set("period", normalizedPeriod);
+    const normalizedModelIds = normalizeModelIdList(modelIds);
+    const hasModelIdFilter = normalizedModelIds.length > 0;
+    if (!hasModelIdFilter && normalizedQuery) {
+      url.searchParams.set("query", normalizedQuery);
+    }
+    if (!hasModelIdFilter && normalizedSort) {
+      url.searchParams.set("sort", normalizedSort);
+    }
+    if (!hasModelIdFilter && normalizedPeriod) {
+      url.searchParams.set("period", normalizedPeriod);
+    }
     if (normalizedBaseModel) url.searchParams.set("baseModels", normalizedBaseModel);
+    normalizedModelIds.forEach((modelId) => {
+      url.searchParams.append("ids", modelId);
+    });
     if (typeof nsfw !== "undefined") {
       url.searchParams.set("nsfw", parseBooleanLike(nsfw, false) ? "true" : "false");
     }
 
-    const payload = await runRequest({
+    const timeoutMs = resolveTimeoutMs();
+    const { catalogEntries, metadata } = await fetchAndMapCatalogEntries({
       url: url.toString(),
-      timeoutMs: resolveTimeoutMs(),
+      timeoutMs,
     });
-    const catalogEntries = mapCivitaiModelsToCatalogEntries(payload?.items || []);
+
+    if (
+      !hasModelIdFilter &&
+      normalizedBaseModel &&
+      normalizedQuery &&
+      catalogEntries.length === 0
+    ) {
+      return collectBaseModelMatchesFromBroadSearch({
+        query: normalizedQuery,
+        baseModel: normalizedBaseModel,
+        limit: resolvedLimit,
+        nsfw,
+        timeoutMs,
+      });
+    }
 
     return {
       items: catalogEntries.slice(0, resolvedLimit),
-      metadata: payload?.metadata || {},
+      metadata,
     };
   };
 

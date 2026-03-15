@@ -22,7 +22,97 @@ const {
   mergeCatalogMetadataIntoProfile,
 } = require("../lib/lora-utils");
 
-module.exports = (app, deps) => {
+const CIVITAI_ERROR_STATUS_PATTERN = /CivitAI request failed \((\d{3})\):/i;
+const CIVITAI_MODEL_URL_ID_PATTERN = /civitai\.com\/models\/(\d+)/i;
+const DIGITS_ONLY_PATTERN = /^\d+$/;
+
+const extractCivitaiStatusCodeFromError = (error) => {
+  const message = normalizeString(error?.message || error);
+  const match = message.match(CIVITAI_ERROR_STATUS_PATTERN);
+  const parsedStatus = Number(match?.[1]);
+  if (!Number.isInteger(parsedStatus)) return null;
+  return parsedStatus;
+};
+
+const collectCatalogBaseModels = (catalogItems = []) => {
+  const seen = new Set();
+  const output = [];
+  (Array.isArray(catalogItems) ? catalogItems : []).forEach((item) => {
+    const baseModel = normalizeString(item?.baseModel);
+    if (!baseModel) return;
+    const key = normalizeLowerString(baseModel);
+    if (seen.has(key)) return;
+    seen.add(key);
+    output.push(baseModel);
+  });
+  return output;
+};
+
+const normalizeModelIdList = (value = undefined) => {
+  if (Array.isArray(value)) {
+    return Array.from(
+      new Set(
+        value
+          .map((item) => normalizeString(item))
+          .filter((item) => DIGITS_ONLY_PATTERN.test(item))
+      )
+    );
+  }
+  const normalized = normalizeString(value);
+  if (!normalized) return [];
+  if (DIGITS_ONLY_PATTERN.test(normalized)) return [normalized];
+  return Array.from(
+    new Set(
+      normalized
+        .split(/[,\s]+/g)
+        .map((item) => normalizeString(item))
+        .filter((item) => DIGITS_ONLY_PATTERN.test(item))
+    )
+  );
+};
+
+const extractModelIdFromCivitaiUrl = (value = "") => {
+  const normalized = normalizeString(value);
+  if (!normalized) return "";
+  const match = normalized.match(CIVITAI_MODEL_URL_ID_PATTERN);
+  return normalizeString(match?.[1]);
+};
+
+const resolveRequestedModelIds = (payload = {}) => {
+  const modelIds = [
+    ...normalizeModelIdList(payload.modelIds),
+    ...normalizeModelIdList(payload.ids),
+    ...normalizeModelIdList(payload.modelId),
+    ...normalizeModelIdList(payload.civitaiModelId),
+    ...normalizeModelIdList(payload.query),
+    ...normalizeModelIdList(extractModelIdFromCivitaiUrl(payload.modelUrl)),
+    ...normalizeModelIdList(extractModelIdFromCivitaiUrl(payload.modelRef)),
+    ...normalizeModelIdList(extractModelIdFromCivitaiUrl(payload.query)),
+  ];
+  return Array.from(new Set(modelIds));
+};
+
+const withBaseModelHint = ({
+  metadata = {},
+  requestedBaseModel = "",
+  hintItems = [],
+}) => {
+  const normalizedRequestedModel = normalizeString(requestedBaseModel);
+  if (!normalizedRequestedModel) return metadata;
+  const suggestedBaseModels = collectCatalogBaseModels(hintItems);
+  if (!suggestedBaseModels.length) return metadata;
+  const normalizedMetadata =
+    metadata && typeof metadata === "object" ? metadata : {};
+  return {
+    ...normalizedMetadata,
+    baseModelHint: {
+      requestedBaseModel: normalizedRequestedModel,
+      suggestedBaseModels,
+    },
+  };
+};
+
+const registerLoraRoutes = (app, deps) => {
   const {
     buildMediaPk,
     buildMediaSk,
@@ -161,18 +251,34 @@ module.exports = (app, deps) => {
     const baseModel = normalizeString(req.body?.baseModel);
     const sort = normalizeString(req.body?.sort);
     const period = normalizeString(req.body?.period);
+    const modelIds = resolveRequestedModelIds(req.body || {});
     const hasNsfwInput = Object.prototype.hasOwnProperty.call(req.body || {}, "nsfw");
 
     try {
       const civitaiClient = createCivitaiClient();
-      const { items, metadata } = await civitaiClient.searchLoras({
+      const searchParams = {
         query,
         limit: syncLimit,
         baseModel,
         sort,
         period,
+        modelIds,
         nsfw: hasNsfwInput ? req.body?.nsfw : undefined,
-      });
+      };
+      const { items, metadata } = await civitaiClient.searchLoras(searchParams);
+      let responseMetadata = metadata;
+      if (baseModel && items.length === 0) {
+        const fallbackResult = await civitaiClient.searchLoras({
+          ...searchParams,
+          limit: LORA_SYNC_MAX_LIMIT,
+          baseModel: "",
+        });
+        responseMetadata = withBaseModelHint({
+          metadata: responseMetadata,
+          requestedBaseModel: baseModel,
+          hintItems: fallbackResult.items,
+        });
+      }
       const now = new Date().toISOString();
       const writes = items.map((entry) =>
         putMediaItem({
@@ -192,16 +298,22 @@ module.exports = (app, deps) => {
         syncedCount: items.length,
         query,
         baseModel,
-        metadata,
+        modelIds,
+        metadata: responseMetadata,
         items: items.map((item) => normalizeCatalogResponseItem(item)),
       });
     } catch (error) {
+      const errorMessage = error?.message || String(error);
+      const upstreamStatus = extractCivitaiStatusCodeFromError(errorMessage);
+      const shouldForwardClientError = upstreamStatus >= 400 && upstreamStatus < 500;
       console.error("CivitAI LoRA sync error:", {
-        message: error?.message || String(error),
+        message: errorMessage,
       });
-      return res.status(500).json({
-        message: "Failed to sync LoRA catalog from CivitAI",
-        error: error?.message || String(error),
+      return res.status(shouldForwardClientError ? upstreamStatus : 500).json({
+        message: shouldForwardClientError
+          ? "CivitAI rejected the LoRA catalog sync request"
+          : "Failed to sync LoRA catalog from CivitAI",
+        error: errorMessage,
       });
     }
   });
@@ -432,3 +544,11 @@ module.exports = (app, deps) => {
     }
   });
 };
+
+module.exports = registerLoraRoutes;
+module.exports.extractCivitaiStatusCodeFromError = extractCivitaiStatusCodeFromError;
+module.exports.collectCatalogBaseModels = collectCatalogBaseModels;
+module.exports.withBaseModelHint = withBaseModelHint;
+module.exports.normalizeModelIdList = normalizeModelIdList;
+module.exports.extractModelIdFromCivitaiUrl = extractModelIdFromCivitaiUrl;
+module.exports.resolveRequestedModelIds = resolveRequestedModelIds;
