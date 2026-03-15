@@ -1,6 +1,6 @@
 # Branches And Worktrees Diagram
 
-As of 2026-02-24, this is the active Git/worktree topology used for parallel idea development.
+As of 2026-03-15, this is the active Git/worktree topology used for parallel idea development.
 
 ## Mermaid Diagram
 
@@ -9,26 +9,42 @@ flowchart LR
   subgraph BR["Branch Topology (commit history)"]
     MAIN["main"]
     DEV["codex/dev"]
-    DMAIN["codex/design-main/code"]
-    DEND["codex/design-endfield/code"]
-    DMOE["codex/design-moescape/code"]
+    DPIX["codex/design-pixnovel/code"]
+    DLEG["codex/design-pixnovel-legacy/code"]
+    PAUR["codex/palette-aurora/code"]
+    PBRE["codex/palette-breeze-light/code"]
+    PEMB["codex/palette-ember/code"]
+    PLIL["codex/palette-lilac-light/code"]
+    PNOI["codex/palette-nocturne/code"]
     MAIN --> DEV
-    DEV --> DMAIN
-    DEV --> DEND
-    DEV --> DMOE
+    DEV --> DPIX
+    DEV --> DLEG
+    DEV --> PAUR
+    DEV --> PBRE
+    DEV --> PEMB
+    DEV --> PLIL
+    DEV --> PNOI
   end
 
   subgraph WT["Worktree Mapping (filesystem checkouts)"]
     WTDEV["/Users/adrienlamoureux/Documents/code/static-web-aws-ai"]
-    WTM["/Users/adrienlamoureux/Documents/code/wt/design-main/code"]
-    WTE["/Users/adrienlamoureux/Documents/code/wt/design-endfield/code"]
-    WTO["/Users/adrienlamoureux/Documents/code/wt/design-moescape/code"]
+    WTPIX["/Users/adrienlamoureux/Documents/code/wt/design-pixnovel/code"]
+    WTLEG["/Users/adrienlamoureux/Documents/code/wt/design-pixnovel-legacy/code"]
+    WTAUR["/Users/adrienlamoureux/Documents/code/wt/palette-aurora/code"]
+    WTBRE["/Users/adrienlamoureux/Documents/code/wt/palette-breeze-light/code"]
+    WTEMB["/Users/adrienlamoureux/Documents/code/wt/palette-ember/code"]
+    WTLIL["/Users/adrienlamoureux/Documents/code/wt/palette-lilac-light/code"]
+    WTNOI["/Users/adrienlamoureux/Documents/code/wt/palette-nocturne/code"]
   end
 
   DEV -. checked out in .-> WTDEV
-  DMAIN -. checked out in .-> WTM
-  DEND -. checked out in .-> WTE
-  DMOE -. checked out in .-> WTO
+  DPIX -. checked out in .-> WTPIX
+  DLEG -. checked out in .-> WTLEG
+  PAUR -. checked out in .-> WTAUR
+  PBRE -. checked out in .-> WTBRE
+  PEMB -. checked out in .-> WTEMB
+  PLIL -. checked out in .-> WTLIL
+  PNOI -. checked out in .-> WTNOI
 ```
 
 ## How To Read It

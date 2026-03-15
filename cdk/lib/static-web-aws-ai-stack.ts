@@ -21,6 +21,7 @@ const DEFAULT_COGNITO_DOMAIN_BASE = "whisk-studio";
 const ADMIN_OUTPUT_NOT_CONFIGURED = "not-configured";
 const ADMIN_TEMP_PASSWORD_MIN_LENGTH = 10;
 const AWS_ACCOUNT_ID_PATTERN = /\b\d{12}\b/;
+const API_GATEWAY_CORS_ERROR_ALLOW_METHODS = "'GET,POST,PUT,PATCH,DELETE,OPTIONS'";
 const LOCAL_COGNITO_PORT_START = 3000;
 const LOCAL_COGNITO_PORT_COUNT = 10;
 const TCP_PORT_MIN = 1;
@@ -382,7 +383,7 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       responseHeaders: {
         "Access-Control-Allow-Origin": "'*'",
         "Access-Control-Allow-Headers": "'*'",
-        "Access-Control-Allow-Methods": "'GET,POST,OPTIONS'",
+        "Access-Control-Allow-Methods": API_GATEWAY_CORS_ERROR_ALLOW_METHODS,
       },
     });
 
@@ -392,7 +393,7 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       responseHeaders: {
         "Access-Control-Allow-Origin": "'*'",
         "Access-Control-Allow-Headers": "'*'",
-        "Access-Control-Allow-Methods": "'GET,POST,OPTIONS'",
+        "Access-Control-Allow-Methods": API_GATEWAY_CORS_ERROR_ALLOW_METHODS,
       },
     });
 

@@ -30,7 +30,7 @@
 - Integration/QA track: isolated `design-pixnovel` stack deploy + sanity + UI smoke + seed content.
 
 ## Functionalities
-- Active authenticated routes in this idea are: `/`, `/videos`, `/director`, `/story`, `/music-library`, `/about`.
+- Active authenticated routes in this idea are: `/`, `/shared`, `/whisk`, `/lora`, `/videos`, `/director`, `/story`, `/music-library`, `/about`.
 - Existing Whisk/Story/Music/About features remain intact in the center stage panel.
 - Video browsing/preview/delete now lives on the dedicated `/videos` page instead of being embedded in the Generator page.
 - New `/director` page acts as a global command center to orchestrate generation, video pipeline, story control, soundtrack governance, and release quality gates.

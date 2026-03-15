@@ -7,14 +7,17 @@
 - Current status: `LIVE`
 - Active worktree: `/Users/adrienlamoureux/Documents/code/wt/design-pixnovel/code`
 - Active branch: `codex/design-pixnovel/code`
-- CloudFront URL: `https://d31s9yo6pacgac.cloudfront.net`
-- API Endpoint: `https://n0gnjjanh8.execute-api.us-east-1.amazonaws.com/prod/`
+- CloudFront URL: `https://d21j30h6jj4n2k.cloudfront.net`
+- API Endpoint: `https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/`
 - Seed user email: `seed+design-pixnovel@example.com`
 - Seed status: `COMPLETED (8 images, 6 music tracks from design-main, explicit demo password set)`
 - Current UX split:
-  - `/` Generator: image wall + quick generate panel + image-to-video launch modal
+  - `/` and `/shared`: shared image workspace in Pixnovel shell
+  - `/whisk`: generator workspace with image wall + quick generate panel + image-to-video launch modal
+  - `/lora`: character LoRA catalog/profile management
   - `/videos`: dedicated video preview/delete library
-  - `/story`, `/music-library`, `/about`: unchanged feature domains in Pixnovel shell
+  - `/director`: global command surface for queue/configuration operations
+  - `/story`, `/music-library`, `/about`: existing feature domains rendered inside Pixnovel shell
 
 ## Open Risks
 - Hero portrait is CSS-rendered and may still need a final art asset direction.
@@ -79,4 +82,12 @@
 - 2026-03-02T22:20:54.735Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d21j30h6jj4n2k.cloudfront.net / api=https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/ / commit=1618965 / sanity=passed / ui_smoke=passed / improvement=lora-management-smoke
 - 2026-03-02T22:25:05.902Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d21j30h6jj4n2k.cloudfront.net / api=https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/ / commit=ef28baa / sanity=passed / ui_smoke=passed / improvement=full-stack-lora-shared-library
 - 2026-03-09T09:41:13.012Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d21j30h6jj4n2k.cloudfront.net / api=https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/ / commit=4f01342 / sanity=passed / ui_smoke=passed / improvement=consistency-hygiene
-- 2026-03-15T11:14:23.771Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d21j30h6jj4n2k.cloudfront.net / api=https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/ / commit=79bf304 / sanity=passed / ui_smoke=passed / improvement=redeploy-design-pixnovel
+- 2026-03-10T10:51:00.927Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d21j30h6jj4n2k.cloudfront.net / api=https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/ / commit=f1201d4 / sanity=passed / ui_smoke=passed / improvement=full-audit-apply
+- 2026-03-11T08:59:19.822Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d21j30h6jj4n2k.cloudfront.net / api=https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/ / commit=f1201d4 / sanity=passed / ui_smoke=passed / improvement=lora-discoverability-capability-enforcement
+- 2026-03-14T10:51:59.043Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d21j30h6jj4n2k.cloudfront.net / api=https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/ / commit=c297b2b / sanity=passed / ui_smoke=passed / improvement=civitai-lora-provider-runtime
+- 2026-03-14T11:21:45.682Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d21j30h6jj4n2k.cloudfront.net / api=https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/ / commit=3f7e5e6 / sanity=passed / ui_smoke=passed / improvement=whisk-civitai-quick-lora-and-dialog-contrast
+- 2026-03-15T11:22:44.947Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d21j30h6jj4n2k.cloudfront.net / api=https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/ / commit=4410016 / sanity=passed / ui_smoke=passed / improvement=redeploy-design-worktree
+- 2026-03-15T11:37:54.567Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d21j30h6jj4n2k.cloudfront.net / api=https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/ / commit=4410016 / sanity=passed / ui_smoke=passed / improvement=civitai-id-sync-support
+- 2026-03-15T11:40:21.319Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d21j30h6jj4n2k.cloudfront.net / api=https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/ / commit=4410016 / sanity=passed / ui_smoke=passed / improvement=civitai-id-sync-sortless
+- 2026-03-15T11:42:22.435Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d21j30h6jj4n2k.cloudfront.net / api=https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/ / commit=4410016 / sanity=passed / ui_smoke=passed / improvement=civitai-query-id-support
+- 2026-03-15T16:14:06.639Z | event=deploy | stack=StaticWebAWSAIStack-design-pixnovel / cloudfront=https://d21j30h6jj4n2k.cloudfront.net / api=https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/ / commit=4410016 / sanity=passed / ui_smoke=passed / improvement=civitai-term-search-fallback

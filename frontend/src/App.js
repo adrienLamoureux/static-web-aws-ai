@@ -7,9 +7,9 @@ import {
   Routes,
   useLocation,
 } from "react-router-dom";
+import { fetchRuntimeConfig, resolveApiBaseUrl } from "./services/runtime-config";
 
 const TOKEN_STORAGE_KEY = "whisk_auth_tokens";
-const CONFIG_PATH = "/config.json";
 
 const NAV_ITEMS = [
   { label: "Shared", path: "/" },
@@ -310,8 +310,7 @@ export default function App() {
   useEffect(() => {
     let isMounted = true;
 
-    fetch(CONFIG_PATH)
-      .then((response) => (response.ok ? response.json() : null))
+    fetchRuntimeConfig()
       .then((payload) => {
         if (!isMounted || !payload) return;
         setRuntimeApiBaseUrl(String(payload.apiBaseUrl || ""));
@@ -324,17 +323,11 @@ export default function App() {
   }, []);
 
   const apiBaseUrl = useMemo(() => {
-    const envApiBaseUrl = String(process.env.REACT_APP_API_URL || "");
-
-    if (
-      envApiBaseUrl &&
-      typeof window !== "undefined" &&
-      window.location.hostname === "localhost"
-    ) {
-      return envApiBaseUrl;
-    }
-
-    return runtimeApiBaseUrl || envApiBaseUrl;
+    return resolveApiBaseUrl({
+      runtimeApiBaseUrl,
+      envApiBaseUrl: String(process.env.REACT_APP_API_URL || ""),
+      hostname: typeof window !== "undefined" ? window.location.hostname : "",
+    });
   }, [runtimeApiBaseUrl]);
 
   return <AppShell apiBaseUrl={apiBaseUrl} />;

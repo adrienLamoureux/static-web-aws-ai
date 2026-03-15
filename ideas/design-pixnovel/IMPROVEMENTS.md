@@ -44,4 +44,12 @@
 - 2026-03-02T22:20:54.735Z | improvement=lora-management-smoke | result=deployed | commit=1618965 | detail=stack=StaticWebAWSAIStack-design-pixnovel
 - 2026-03-02T22:25:05.902Z | improvement=full-stack-lora-shared-library | result=deployed | commit=ef28baa | detail=stack=StaticWebAWSAIStack-design-pixnovel
 - 2026-03-09T09:41:13.012Z | improvement=consistency-hygiene | result=deployed | commit=4f01342 | detail=stack=StaticWebAWSAIStack-design-pixnovel
-- 2026-03-15T11:14:23.772Z | improvement=redeploy-design-pixnovel | result=deployed | commit=79bf304 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-10T10:51:00.928Z | improvement=full-audit-apply | result=deployed | commit=f1201d4 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-11T08:59:19.823Z | improvement=lora-discoverability-capability-enforcement | result=deployed | commit=f1201d4 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-14T10:51:59.043Z | improvement=civitai-lora-provider-runtime | result=deployed | commit=c297b2b | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-14T11:21:45.683Z | improvement=whisk-civitai-quick-lora-and-dialog-contrast | result=deployed | commit=3f7e5e6 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-15T11:22:44.947Z | improvement=redeploy-design-worktree | result=deployed | commit=4410016 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-15T11:37:54.568Z | improvement=civitai-id-sync-support | result=deployed | commit=4410016 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-15T11:40:21.319Z | improvement=civitai-id-sync-sortless | result=deployed | commit=4410016 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-15T11:42:22.435Z | improvement=civitai-query-id-support | result=deployed | commit=4410016 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-15T16:14:06.640Z | improvement=civitai-term-search-fallback | result=deployed | commit=4410016 | detail=stack=StaticWebAWSAIStack-design-pixnovel
