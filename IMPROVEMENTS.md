@@ -58,3 +58,4 @@ Track rollouts of the same improvement across multiple idea stacks.
 - 2026-03-15T11:40:21.321Z | action=deploy | improvement=civitai-id-sync-sortless | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=4410016
 - 2026-03-15T11:42:22.437Z | action=deploy | improvement=civitai-query-id-support | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=4410016
 - 2026-03-15T16:14:06.641Z | action=deploy | improvement=civitai-term-search-fallback | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=4410016
+- 2026-03-15T17:40:17.016Z | action=deploy | improvement=prepush-rebase-ui-validate-resume | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=19337c2
