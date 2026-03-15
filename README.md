@@ -47,10 +47,13 @@ Route registration is centralized in `backend/routes/index.js`.
 
 Main groups:
 - Prompt helper: `/bedrock/prompt-helper`
-- Media management: `/media/*`
+- Media management and sharing: `/s3/*`, `/images/*`
 - Bedrock generation/status: `/bedrock/*`
 - Replicate generation/status: `/replicate/*`
+- CivitAI generation/status: `/civitai/*`
 - Gradio workflows: `/gradio/*`
+- LoRA catalog/profile management: `/lora/*`
+- Director operations: `/ops/*`
 - Story sessions/messages/illustrations/music: `/story/*`
 
 Auth behavior:
