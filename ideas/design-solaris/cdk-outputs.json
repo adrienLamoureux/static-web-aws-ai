@@ -1,0 +1,15 @@
+{
+  "StaticWebAWSAIStack-design-solaris": {
+    "MediaBucketName": "staticwebawsaistack-design-sol-mediabucketbcbb02ba-ivdxeaafdd7r",
+    "UserPoolClientId": "155kvubnvqnc1dael5nqak7ov",
+    "CloudFrontURL": "d17qd3rx45vcxl.cloudfront.net",
+    "UserPoolId": "us-east-1_6wp58lnqu",
+    "StageName": "design-solaris",
+    "APIEndpoint": "https://u3a3qlhk2h.execute-api.us-east-1.amazonaws.com/prod/",
+    "SecondaryAdminUserEmail": "not-configured",
+    "AdminUserEmail": "not-configured",
+    "ApiGatewayEndpoint5AA8EC3A": "https://u3a3qlhk2h.execute-api.us-east-1.amazonaws.com/prod/",
+    "CognitoDomainPrefix": "whiskstudio-alx-design-solaris-761593662432",
+    "CognitoDomain": "https://whiskstudio-alx-design-solaris-761593662432.auth.us-east-1.amazoncognito.com"
+  }
+}

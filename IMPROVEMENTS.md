@@ -59,3 +59,6 @@ Track rollouts of the same improvement across multiple idea stacks.
 - 2026-03-15T11:42:22.437Z | action=deploy | improvement=civitai-query-id-support | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=4410016
 - 2026-03-15T16:14:06.641Z | action=deploy | improvement=civitai-term-search-fallback | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=4410016
 - 2026-03-15T17:40:17.016Z | action=deploy | improvement=prepush-rebase-ui-validate-resume | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=19337c2
+- 2026-03-16T15:30:18.039Z | action=deploy | improvement=initial-scaffold | targets=design-solaris | succeeded=design-solaris | failed=- | commit=628b7c7
+- 2026-03-16T15:39:04.415Z | action=deploy | improvement=initial-scaffold | targets=design-kinetic | succeeded=design-kinetic | failed=- | commit=628b7c7
+- 2026-03-16T15:44:57.128Z | action=deploy | improvement=initial-scaffold | targets=design-atelier | succeeded=design-atelier | failed=- | commit=628b7c7
