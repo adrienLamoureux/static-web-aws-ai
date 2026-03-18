@@ -59,3 +59,7 @@ Track rollouts of the same improvement across multiple idea stacks.
 - 2026-03-15T11:42:22.437Z | action=deploy | improvement=civitai-query-id-support | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=4410016
 - 2026-03-15T16:14:06.641Z | action=deploy | improvement=civitai-term-search-fallback | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=4410016
 - 2026-03-15T17:40:17.016Z | action=deploy | improvement=prepush-rebase-ui-validate-resume | targets=design-pixnovel | succeeded=design-pixnovel | failed=- | commit=19337c2
+- 2026-03-17T09:55:55.474Z | action=deploy | improvement=add-videos-route | targets=design-fusion | succeeded=design-fusion | failed=- | commit=628b7c7
+- 2026-03-17T10:07:42.012Z | action=deploy | improvement=fix-css-tokens | targets=design-fusion | succeeded=design-fusion | failed=- | commit=628b7c7
+- 2026-03-17T10:30:46.921Z | action=deploy | improvement=api-integration-complete | targets=design-fusion | succeeded=design-fusion | failed=- | commit=628b7c7
+- 2026-03-17T11:24:11.341Z | action=deploy | improvement=real-cognito-auth | targets=design-fusion | succeeded=design-fusion | failed=- | commit=628b7c7

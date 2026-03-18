@@ -1,0 +1,8 @@
+{
+  "StaticWebAWSAIStack-design-fusion": {
+    "UserPoolClientId": "267491h1hdekr5bvlbpo2uscc6",
+    "CloudFrontURL": "d3ei9r5awjyzzr.cloudfront.net",
+    "StageName": "design-fusion",
+    "APIEndpoint": "https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/"
+  }
+}

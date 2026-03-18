@@ -60,7 +60,7 @@ const authenticatedChecks = [
     id: "home-page",
     path: "/",
     expectPath: "/",
-    expectedAnyTexts: ["Search shared images", "Shared Images"],
+    expectedAnyTexts: ["Search shared images", "Shared Images", "Whisk Studio"],
   },
   {
     id: "lora-page",

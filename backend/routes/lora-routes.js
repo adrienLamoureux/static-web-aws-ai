@@ -1,3 +1,4 @@
+const { randomUUID } = require("crypto");
 const {
   DEFAULT_CHARACTER_PROFILE_SEARCH_LIMIT,
   LORA_CATALOG_TYPE,
@@ -118,6 +119,7 @@ const registerLoraRoutes = (app, deps) => {
     buildMediaSk,
     queryBySkPrefix,
     putMediaItem,
+    deleteMediaItem,
     getItem,
     replicateModelConfig,
     replicateVideoConfig,
@@ -179,38 +181,50 @@ const registerLoraRoutes = (app, deps) => {
     createdAt: normalizeString(item.createdAt),
   });
 
-  const normalizeProfileResponseItem = (item = {}) => ({
-    characterId: normalizeString(item.characterId || item.key),
-    displayName: normalizeString(item.displayName),
-    image: {
-      modelKey: normalizeString(item?.image?.modelKey),
-      promptPrefix: normalizeString(item?.image?.promptPrefix),
-      loras: Array.isArray(item?.image?.loras)
-        ? item.image.loras.map((loraItem) => ({
-            catalogId: normalizeString(loraItem.catalogId),
-            name: normalizeString(loraItem.name),
-            downloadUrl: normalizeString(loraItem.downloadUrl),
-            strength: Number(loraItem.strength) || 0,
-            triggerWords: normalizeStringArray(loraItem.triggerWords),
-          }))
-        : [],
-    },
-    video: {
-      modelKey: normalizeString(item?.video?.modelKey),
-      promptPrefix: normalizeString(item?.video?.promptPrefix),
-      loras: Array.isArray(item?.video?.loras)
-        ? item.video.loras.map((loraItem) => ({
-            catalogId: normalizeString(loraItem.catalogId),
-            name: normalizeString(loraItem.name),
-            downloadUrl: normalizeString(loraItem.downloadUrl),
-            strength: Number(loraItem.strength) || 0,
-            triggerWords: normalizeStringArray(loraItem.triggerWords),
-          }))
-        : [],
-    },
-    updatedAt: normalizeString(item.updatedAt),
-    createdAt: normalizeString(item.createdAt),
-  });
+  const normalizeLoraItems = (loras) =>
+    Array.isArray(loras)
+      ? loras.map((loraItem) => ({
+          catalogId: normalizeString(loraItem.catalogId),
+          name: normalizeString(loraItem.name),
+          downloadUrl: normalizeString(loraItem.downloadUrl),
+          strength: Number(loraItem.strength) || 0,
+          triggerWords: normalizeStringArray(loraItem.triggerWords),
+        }))
+      : [];
+
+  const normalizeProfileResponseItem = (item = {}) => {
+    // id is the profile's own UUID (or legacy characterId for old records)
+    const id = normalizeString(item.id || item.key || item.characterId);
+    // characterId is the linked character (may equal id for legacy records)
+    const characterId = normalizeString(item.characterId || item.key);
+    const imageModelKey = normalizeString(item?.image?.modelKey || item.imageModel);
+    const imagePromptPrefix = normalizeString(item?.image?.promptPrefix || item.imagePrompt);
+    const videoModelKey = normalizeString(item?.video?.modelKey || item.videoModel);
+    const videoPromptPrefix = normalizeString(item?.video?.promptPrefix || item.videoPrompt);
+    return {
+      id,
+      characterId,
+      name: normalizeString(item.name || item.displayName),
+      displayName: normalizeString(item.displayName || item.name),
+      // Top-level convenience fields (mirrors image/video.modelKey/promptPrefix)
+      imageModel: imageModelKey,
+      imagePrompt: imagePromptPrefix,
+      videoModel: videoModelKey,
+      videoPrompt: videoPromptPrefix,
+      image: {
+        modelKey: imageModelKey,
+        promptPrefix: imagePromptPrefix,
+        loras: normalizeLoraItems(item?.image?.loras),
+      },
+      video: {
+        modelKey: videoModelKey,
+        promptPrefix: videoPromptPrefix,
+        loras: normalizeLoraItems(item?.video?.loras),
+      },
+      updatedAt: normalizeString(item.updatedAt),
+      createdAt: normalizeString(item.createdAt),
+    };
+  };
 
   const listUserItemsByType = async ({ userId, type, limit }) =>
     queryBySkPrefix({
@@ -382,16 +396,22 @@ const registerLoraRoutes = (app, deps) => {
       DEFAULT_CHARACTER_PROFILE_SEARCH_LIMIT,
       DEFAULT_CHARACTER_PROFILE_SEARCH_LIMIT
     );
+    const filterCharacterId = normalizeString(req.query?.characterId || req.query?.character_id || "");
 
     try {
-      const items = await listUserItemsByType({
+      const rawItems = await listUserItemsByType({
         userId,
         type: LORA_PROFILE_TYPE,
-        limit,
+        limit: DEFAULT_CHARACTER_PROFILE_SEARCH_LIMIT,
       });
+      const normalized = rawItems.map((item) => normalizeProfileResponseItem(item));
+      // Filter by characterId if requested
+      const items = filterCharacterId
+        ? normalized.filter((p) => p.characterId === filterCharacterId)
+        : normalized;
       return res.json({
         total: items.length,
-        items: items.map((item) => normalizeProfileResponseItem(item)),
+        items: items.slice(0, limit),
       });
     } catch (error) {
       console.error("LoRA profile list error:", {
@@ -401,6 +421,94 @@ const registerLoraRoutes = (app, deps) => {
         message: "Failed to load LoRA profiles",
         error: error?.message || String(error),
       });
+    }
+  });
+
+  // POST /lora/profiles — create a new LoRA profile (UUID id, linked to a character)
+  app.post("/lora/profiles", async (req, res) => {
+    const userId = req.user?.sub;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const characterId = normalizeString(req.body?.characterId || "");
+    const name = normalizeString(req.body?.name || req.body?.displayName || "");
+    if (!characterId) {
+      return res.status(400).json({ message: "characterId is required" });
+    }
+    if (!name) {
+      return res.status(400).json({ message: "name is required" });
+    }
+
+    const profileId = randomUUID();
+    // Use same modality normalization as PUT
+    const normalizedImageProfile = normalizeLoraProfileModality({
+      modalityConfig: req.body?.[LORA_MODALITY_IMAGE] || {},
+      maxItems: LORA_PROFILE_MAX_ITEMS_PER_MODALITY,
+    });
+    const normalizedVideoProfile = normalizeLoraProfileModality({
+      modalityConfig: req.body?.[LORA_MODALITY_VIDEO] || {},
+      maxItems: LORA_PROFILE_MAX_ITEMS_PER_MODALITY,
+    });
+
+    const unsupportedImage = getUnsupportedModelPayload({ modality: LORA_MODALITY_IMAGE, modelKey: normalizedImageProfile.modelKey });
+    if (unsupportedImage) return res.status(400).json(unsupportedImage);
+    const unsupportedVideo = getUnsupportedModelPayload({ modality: LORA_MODALITY_VIDEO, modelKey: normalizedVideoProfile.modelKey });
+    if (unsupportedVideo) return res.status(400).json(unsupportedVideo);
+
+    const requestedCatalogIds = [
+      ...normalizedImageProfile.loras.map((i) => i.catalogId),
+      ...normalizedVideoProfile.loras.map((i) => i.catalogId),
+    ].filter(Boolean);
+
+    try {
+      const catalogById = await fetchCatalogByIds({ userId, catalogIds: requestedCatalogIds });
+      const missingIds = requestedCatalogIds.filter((id) => id && !catalogById.has(id));
+      if (missingIds.length > 0) {
+        return res.status(400).json({ message: "Some catalog entries are missing. Sync catalog first.", missingCatalogIds: missingIds });
+      }
+
+      const imageProfile = {
+        ...normalizedImageProfile,
+        loras: mergeCatalogMetadataIntoProfile({ profileLoras: normalizedImageProfile.loras, catalogById }),
+      };
+      const videoProfile = {
+        ...normalizedVideoProfile,
+        loras: mergeCatalogMetadataIntoProfile({ profileLoras: normalizedVideoProfile.loras, catalogById }),
+      };
+
+      const now = new Date().toISOString();
+      await putMediaItem({
+        userId,
+        type: LORA_PROFILE_TYPE,
+        key: profileId,
+        extra: {
+          id: profileId,
+          characterId,
+          name,
+          displayName: name,
+          imageModel: imageProfile.modelKey,
+          imagePrompt: imageProfile.promptPrefix,
+          videoModel: videoProfile.modelKey,
+          videoPrompt: videoProfile.promptPrefix,
+          image: imageProfile,
+          video: videoProfile,
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+
+      return res.status(201).json({
+        profile: normalizeProfileResponseItem({
+          id: profileId, characterId, name, displayName: name,
+          imageModel: imageProfile.modelKey, imagePrompt: imageProfile.promptPrefix,
+          videoModel: videoProfile.modelKey, videoPrompt: videoProfile.promptPrefix,
+          image: imageProfile, video: videoProfile,
+          createdAt: now, updatedAt: now,
+        }),
+      });
+    } catch (error) {
+      console.error("LoRA profile create error:", { message: error?.message || String(error) });
+      return res.status(500).json({ message: "Failed to create LoRA profile", error: error?.message || String(error) });
     }
   });
 
@@ -436,10 +544,36 @@ const registerLoraRoutes = (app, deps) => {
     }
   });
 
+  // DELETE /lora/profiles/:profileId
+  app.delete("/lora/profiles/:profileId", async (req, res) => {
+    const userId = req.user?.sub;
+    const profileId = normalizeString(req.params?.profileId);
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    if (!profileId) return res.status(400).json({ message: "profileId is required" });
+
+    try {
+      const existing = await getItem({
+        pk: buildMediaPk(userId),
+        sk: buildMediaSk(LORA_PROFILE_TYPE, profileId),
+      });
+      if (!existing) {
+        return res.status(404).json({ message: "LoRA profile not found" });
+      }
+      // deleteMediaItem uses buildMediaSk(type, key) internally
+      await deleteMediaItem({ userId, type: LORA_PROFILE_TYPE, key: profileId });
+      return res.json({ deleted: true, id: profileId });
+    } catch (error) {
+      console.error("LoRA profile delete error:", { message: error?.message || String(error) });
+      return res.status(500).json({ message: "Failed to delete LoRA profile", error: error?.message || String(error) });
+    }
+  });
+
   app.put("/lora/profiles/:characterId", async (req, res) => {
     const userId = req.user?.sub;
     const characterId = normalizeString(req.params?.characterId);
-    const displayName = normalizeString(req.body?.displayName);
+    // Support both `name` and legacy `displayName`
+    const name = normalizeString(req.body?.name || req.body?.displayName);
+    const displayName = name;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
@@ -509,28 +643,44 @@ const registerLoraRoutes = (app, deps) => {
       };
 
       const now = new Date().toISOString();
+      const createdAt = normalizeString(existing?.createdAt) || now;
+      // id = the existing id field if present, or falls back to characterId (legacy)
+      const profileId = normalizeString(existing?.id || existing?.key || characterId);
+      const profileCharacterId = normalizeString(existing?.characterId || characterId);
       await putMediaItem({
         userId,
         type: LORA_PROFILE_TYPE,
         key: characterId,
         extra: {
-          characterId,
+          id: profileId,
+          characterId: profileCharacterId,
+          name,
           displayName,
+          imageModel: imageProfile.modelKey,
+          imagePrompt: imageProfile.promptPrefix,
+          videoModel: videoProfile.modelKey,
+          videoPrompt: videoProfile.promptPrefix,
           image: imageProfile,
           video: videoProfile,
           updatedAt: now,
-          createdAt: normalizeString(existing?.createdAt) || now,
+          createdAt,
         },
       });
 
       return res.json({
         profile: normalizeProfileResponseItem({
-          characterId,
+          id: profileId,
+          characterId: profileCharacterId,
+          name,
           displayName,
+          imageModel: imageProfile.modelKey,
+          imagePrompt: imageProfile.promptPrefix,
+          videoModel: videoProfile.modelKey,
+          videoPrompt: videoProfile.promptPrefix,
           image: imageProfile,
           video: videoProfile,
           updatedAt: now,
-          createdAt: normalizeString(existing?.createdAt) || now,
+          createdAt,
         }),
       });
     } catch (error) {
