@@ -447,7 +447,7 @@ export class StaticWebAWSAIStack extends cdk.Stack {
     );
 
     const userPoolClient = userPool.addClient("UserPoolClient", {
-      authFlows: { userPassword: true },
+      authFlows: { userPassword: true, userSrp: true },
       oAuth: {
         flows: { authorizationCodeGrant: true },
         scopes: [

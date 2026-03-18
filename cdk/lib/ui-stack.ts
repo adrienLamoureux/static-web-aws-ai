@@ -89,7 +89,7 @@ export class UiOnlyStack extends cdk.Stack {
       "DesignUserPoolClient",
       {
         userPool,
-        authFlows: { userPassword: true },
+        authFlows: { userPassword: true, userSrp: true },
         oAuth: {
           flows: { authorizationCodeGrant: true },
           scopes: [
