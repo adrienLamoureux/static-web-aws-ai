@@ -21,8 +21,6 @@ allowed_path() {
   local path="$1"
   case "${path}" in
     frontend/*) return 0 ;;
-    cdk/lib/static-web-aws-ai-stack.ts) return 0 ;;
-    cdk/scripts/idea-env.js) return 0 ;;
     *) return 1 ;;
   esac
 }
