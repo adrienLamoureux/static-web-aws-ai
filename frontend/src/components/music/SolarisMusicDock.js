@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import useAudioBars from "./useAudioBars";
+import { useMusic } from "../../contexts/MusicContext";
 
 const DEFAULT_TRACK_TITLE = "Soundtrack";
 const EMPTY_TRACK_TITLE = "No soundtrack selected";
@@ -91,8 +92,13 @@ const formatTrackOption = (track = {}) => {
   return `${track.title || DEFAULT_TRACK_TITLE} · ${sourceLabel}`;
 };
 
-function SolarisMusicDock({ nowPlayingTrack, availableTracks = [] }) {
+function SolarisMusicDock({ nowPlayingTrack: nowPlayingProp, availableTracks: availProp }) {
+  const { tracks: contextTracks, currentTrack: contextCurrentTrack, autoPlayRequest } = useMusic();
+  // Props take priority if provided; otherwise fall back to context values
+  const nowPlayingTrack = nowPlayingProp || contextCurrentTrack || null;
+  const availableTracks = Array.isArray(availProp) && availProp.length > 0 ? availProp : (contextTracks || []);
   const audioRef = useRef(null);
+  const lastPlayRequestId = useRef(0);
   const [isLooping, setIsLooping] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -183,6 +189,23 @@ function SolarisMusicDock({ nowPlayingTrack, availableTracks = [] }) {
     audioElement.loop = isLooping;
   }, [isLooping]);
 
+  // Respond to playTrack() calls from MusicContext — select + auto-play the track
+  useEffect(() => {
+    const requestId = autoPlayRequest?.requestId;
+    const requestKey = autoPlayRequest?.trackKey;
+    if (!requestId || !requestKey || requestId === lastPlayRequestId.current) return;
+    lastPlayRequestId.current = requestId;
+    setSelectedTrackIdentity(requestKey);
+    // Brief delay to let React re-render with the new <audio> src before calling play()
+    const timer = setTimeout(() => {
+      const audio = audioRef.current;
+      if (!audio) return;
+      audio.loop = isLooping;
+      audio.play().catch(() => {});
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [autoPlayRequest, isLooping]);
+
   useEffect(() => {
     const audioElement = audioRef.current;
     if (!audioElement) return;
@@ -241,6 +264,7 @@ function SolarisMusicDock({ nowPlayingTrack, availableTracks = [] }) {
           className="sol-music-audio"
           preload="metadata"
           src={trackUrl}
+          loop={isLooping}
           crossOrigin="anonymous"
           onLoadedMetadata={(event) => {
             const nextDuration = Number(event.currentTarget.duration);
@@ -258,29 +282,13 @@ function SolarisMusicDock({ nowPlayingTrack, availableTracks = [] }) {
         />
       ) : null}
 
-      {isExpanded ? (
-        <>
-          <div className="sol-music-expanded-head" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: 12 }}>
-            <div>
-              <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--sol-text-tertiary)', marginBottom: 2 }}>{NOW_PLAYING_LABEL}</p>
-              <span style={{ fontSize: 10, color: 'var(--sol-text-tertiary)' }}>{modeLabel}</span>
-            </div>
-            <button
-              type="button"
-              className="sol-music-toggle"
-              onClick={() => setIsExpanded(false)}
-              aria-label={COLLAPSE_LABEL}
-            >
-              ×
-            </button>
-          </div>
-
-          <p className="sol-music-track-name">{trackTitle}</p>
-
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 10, width: '100%' }}>
-            <span className="sol-field-label">{TRACK_LABEL}</span>
+      {/* Track picker — visible only when expanded */}
+      {isExpanded && (
+        <div className="sol-music-expanded-panel">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <select
               className="sol-field-select"
+              style={{ flex: 1, fontSize: 12 }}
               value={selectedTrackIdentity}
               onChange={(event) => setSelectedTrackIdentity(event.target.value)}
               aria-label={TRACK_PICKER_LABEL}
@@ -299,105 +307,99 @@ function SolarisMusicDock({ nowPlayingTrack, availableTracks = [] }) {
                 <option value="">{EMPTY_TRACK_OPTION}</option>
               )}
             </select>
-          </label>
-
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
-            {sourceLabel ? <span className="sol-lora-chip">{sourceLabel}</span> : null}
-            {selectedTrack?.mood ? (
-              <span className="sol-lora-chip">{selectedTrack.mood}</span>
-            ) : null}
-            {selectedTrack?.energy ? (
-              <span className="sol-lora-chip">{selectedTrack.energy}</span>
-            ) : null}
+            <button
+              type="button"
+              className="sol-music-toggle"
+              onClick={() => setIsExpanded(false)}
+              aria-label={COLLAPSE_LABEL}
+              style={{ flexShrink: 0 }}
+            >
+              ×
+            </button>
           </div>
-
-          {tagList.length > 0 ? (
+          {(sourceLabel || selectedTrack?.mood || selectedTrack?.energy || tagList.length > 0) && (
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 6 }}>
+              {sourceLabel ? <span className="sol-lora-chip">{sourceLabel}</span> : null}
+              {selectedTrack?.mood ? <span className="sol-lora-chip">{selectedTrack.mood}</span> : null}
+              {selectedTrack?.energy ? <span className="sol-lora-chip">{selectedTrack.energy}</span> : null}
               {tagList.map((tag, index) => (
-                <span
-                  key={`${trackKey || "track"}-${tag}-${index}`}
-                  className="sol-track-tag"
-                >
-                  {tag}
-                </span>
+                <span key={`${trackKey || "track"}-${tag}-${index}`} className="sol-track-tag">{tag}</span>
               ))}
             </div>
-          ) : null}
+          )}
+        </div>
+      )}
 
-          {!hasTrack ? (
-            <p style={{ fontSize: 12, color: 'var(--sol-text-tertiary)', marginTop: 8 }}>
-              Pick a story scene with music to start playback.
-            </p>
-          ) : null}
+      {/* Compact bar — always visible */}
+      <div className="sol-music-compact-bar">
+        {barsMarkup}
 
-          {barsMarkup}
+        <button
+          type="button"
+          className="sol-music-controls-btn"
+          onClick={handleTogglePlay}
+          aria-label={isPlaying ? "Pause soundtrack" : "Play soundtrack"}
+          disabled={!hasTrack}
+        >
+          {isPlaying ? "⏸" : "▶"}
+        </button>
 
-          <div
-            className="sol-music-controls"
-            role="group"
-            aria-label="Soundtrack controls"
-            style={{ marginTop: 12 }}
-          >
-            <button
-              type="button"
-              className={isPlaying ? "" : ""}
-              onClick={handleTogglePlay}
-              aria-label={isPlaying ? "Pause soundtrack" : "Play soundtrack"}
-              disabled={!hasTrack}
-            >
-              {isPlaying ? "⏸" : "▶"}
-            </button>
-            <button
-              type="button"
-              className={isMuted ? "active" : ""}
-              onClick={() => setIsMuted((previous) => !previous)}
-              aria-label={isMuted ? "Unmute soundtrack" : "Mute soundtrack"}
-              disabled={!hasTrack}
-            >
-              {isMuted ? "🔇" : "🔊"}
-            </button>
-            <button
-              type="button"
-              className={isLooping ? "active" : ""}
-              onClick={() => setIsLooping((previous) => !previous)}
-              aria-label={isLooping ? "Disable loop" : "Enable loop"}
-              disabled={!hasTrack}
-            >
-              ↺
-            </button>
-          </div>
+        <span
+          className="sol-music-track-name"
+          title={hasTrack ? trackTitle : undefined}
+          style={{ fontSize: 12, flex: 1, minWidth: 0 }}
+        >
+          {trackTitle}
+        </span>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, width: '100%' }}>
+        {hasTrack && (
+          <>
             <span className="sol-music-time">{formatTime(elapsedSeconds)}</span>
             <input
               type="range"
               className="sol-music-progress"
+              style={{ width: 90, flexShrink: 0 }}
               min="0"
               max={String(SEEK_SCALE)}
               step="1"
               value={String(Math.round(seekValue))}
               onChange={handleSeek}
               aria-label="Seek soundtrack position"
-              disabled={!hasTrack || durationSeconds <= MIN_DURATION_SECONDS}
+              disabled={durationSeconds <= MIN_DURATION_SECONDS}
             />
             <span className="sol-music-time">{formatTime(durationSeconds)}</span>
-          </div>
-        </>
-      ) : (
+          </>
+        )}
+
+        <button
+          type="button"
+          className={`sol-music-controls-btn${isLooping ? " active" : ""}`}
+          onClick={() => setIsLooping((previous) => !previous)}
+          aria-label={isLooping ? "Disable loop" : "Enable loop"}
+          disabled={!hasTrack}
+          title="Loop"
+        >
+          ↺
+        </button>
+        <button
+          type="button"
+          className={`sol-music-controls-btn${isMuted ? " active" : ""}`}
+          onClick={() => setIsMuted((previous) => !previous)}
+          aria-label={isMuted ? "Unmute soundtrack" : "Mute soundtrack"}
+          disabled={!hasTrack}
+        >
+          {isMuted ? "🔇" : "🔊"}
+        </button>
         <button
           type="button"
           className="sol-music-toggle"
-          onClick={() => setIsExpanded(true)}
-          aria-label={EXPAND_LABEL}
-          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+          onClick={() => setIsExpanded((prev) => !prev)}
+          aria-label={isExpanded ? COLLAPSE_LABEL : EXPAND_LABEL}
+          title="Track list"
         >
-          <span style={{ position: 'absolute', left: -9999, width: 1, height: 1, overflow: 'hidden' }}>
-            {trackTitle || NOW_PLAYING_LABEL}
-          </span>
-          {barsMarkup}
-          {hasTrack && <span className="sol-music-track-name" style={{ fontSize: 12, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{trackTitle}</span>}
+          ≡
         </button>
-      )}
+      </div>
     </aside>
   );
 }

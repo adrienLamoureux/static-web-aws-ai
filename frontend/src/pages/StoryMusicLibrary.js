@@ -139,7 +139,7 @@ export default function StoryMusicLibrary() {
         <p className="sol-page-subtitle">Upload and categorize soundtracks</p>
       </div>
 
-      <div className="sol-lora-grid">
+      <div className="sol-lora-grid" style={{ gridTemplateColumns: 'minmax(260px,1fr) 2fr' }}>
         {/* Upload panel */}
         <div className="sol-lora-panel">
           <p className="sol-lora-section-title">Upload music</p>

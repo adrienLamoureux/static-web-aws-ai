@@ -537,7 +537,7 @@ export default function Whisk() {
     onImageNameChange,
     onGenerateImage,
     imageGenerationNotice,
-    loraSupportNotice,
+    // loraSupportNotice — available but not used in current layout
     promptHelperProps,
   } = imageGenerationProps;
 

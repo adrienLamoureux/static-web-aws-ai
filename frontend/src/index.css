@@ -281,6 +281,22 @@ button { cursor: pointer; }
 .sol-chat-bubble.user { background: var(--sol-accent-subtle); margin-left: 40px; align-self: flex-end; border-bottom-right-radius: 4px; }
 .sol-chat-bubble.assistant { background: var(--sol-surface); border: 1px solid var(--sol-border); margin-right: 40px; align-self: flex-start; border-bottom-left-radius: 4px; }
 
+/* Markdown inside chat bubbles */
+.sol-chat-bubble p { margin: 0.4em 0; }
+.sol-chat-bubble p:first-child { margin-top: 0; }
+.sol-chat-bubble p:last-child { margin-bottom: 0; }
+.sol-chat-bubble ul, .sol-chat-bubble ol { margin: 0.4em 0; padding-left: 1.5em; }
+.sol-chat-bubble strong { font-weight: 600; }
+.sol-chat-bubble em { font-style: italic; }
+.sol-chat-bubble code { background: rgba(0,0,0,0.06); padding: 1px 4px; border-radius: 3px; font-size: 0.9em; font-family: 'JetBrains Mono', monospace; }
+.sol-chat-bubble pre { background: rgba(0,0,0,0.04); padding: 8px 12px; border-radius: 6px; overflow-x: auto; margin: 0.4em 0; }
+.sol-chat-bubble pre code { background: none; padding: 0; }
+.sol-chat-bubble h1, .sol-chat-bubble h2, .sol-chat-bubble h3 { font-weight: 600; margin: 0.6em 0 0.3em; }
+.sol-chat-bubble h1 { font-size: 1.15em; }
+.sol-chat-bubble h2 { font-size: 1.08em; }
+.sol-chat-bubble h3 { font-size: 1em; }
+.sol-chat-bubble blockquote { border-left: 3px solid var(--sol-border); padding-left: 10px; margin: 0.4em 0; color: var(--sol-text-secondary); font-style: italic; }
+
 /* ============================================================
    AUTH PAGE
    ============================================================ */
@@ -502,25 +518,32 @@ button { cursor: pointer; }
   background: var(--sol-surface);
   border-top: 1px solid var(--sol-border);
   display: flex;
-  align-items: center;
-  padding: 0 20px;
-  gap: 14px;
-  height: 64px;
+  flex-direction: column;
   flex-shrink: 0;
   z-index: 10;
-  transition: height 200ms ease;
 }
-.sol-music-dock.is-expanded {
-  height: auto;
+.sol-music-dock.is-expanded .sol-music-expanded-panel {
+  display: flex;
   flex-direction: column;
-  align-items: stretch;
-  padding: 16px 20px;
+  gap: 4px;
+  padding: 10px 16px 8px;
+  border-bottom: 1px solid var(--sol-border);
+}
+.sol-music-dock:not(.is-expanded) .sol-music-expanded-panel { display: none; }
+.sol-music-compact-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  height: 44px;
+  width: 100%;
+  box-sizing: border-box;
 }
 .sol-music-bars {
   display: flex;
   gap: 2px;
   align-items: flex-end;
-  height: 24px;
+  height: 18px;
   flex-shrink: 0;
 }
 .sol-music-bar {
@@ -531,22 +554,37 @@ button { cursor: pointer; }
   min-height: 2px;
 }
 .sol-music-toggle {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   border: 1px solid var(--sol-border);
   background: var(--sol-elevated);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--sol-text-secondary);
   flex-shrink: 0;
 }
+.sol-music-controls-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--sol-text-secondary);
+  font-size: 13px;
+  padding: 3px 5px;
+  border-radius: 4px;
+  transition: color 120ms;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.sol-music-controls-btn:hover:not(:disabled) { color: var(--sol-text-primary); }
+.sol-music-controls-btn.active { color: var(--sol-accent); }
+.sol-music-controls-btn:disabled { opacity: 0.35; cursor: default; }
 .sol-music-track { flex: 1; min-width: 0; }
 .sol-music-track-name {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--sol-text-primary);
   white-space: nowrap;
@@ -554,57 +592,39 @@ button { cursor: pointer; }
   text-overflow: ellipsis;
 }
 .sol-music-track-meta { font-size: 11px; color: var(--sol-text-tertiary); white-space: nowrap; }
-.sol-music-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-.sol-music-controls button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--sol-text-secondary);
-  font-size: 14px;
-  padding: 4px;
-  border-radius: 4px;
-  transition: color 120ms;
-}
-.sol-music-controls button:hover { color: var(--sol-text-primary); }
-.sol-music-controls button.active { color: var(--sol-accent); }
 .sol-music-progress {
-  flex: 1;
   -webkit-appearance: none;
-  height: 4px;
+  height: 3px;
   border-radius: 2px;
   background: var(--sol-elevated);
   cursor: pointer;
   outline: none;
+  flex-shrink: 0;
 }
 .sol-music-progress::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: var(--sol-accent);
   cursor: pointer;
 }
-.sol-music-time { font-size: 11px; color: var(--sol-text-tertiary); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.sol-music-time { font-size: 10px; color: var(--sol-text-tertiary); flex-shrink: 0; font-variant-numeric: tabular-nums; }
 
 /* ============================================================
    SOL TRACK CARDS (Music Library)
    ============================================================ */
 .sol-track-item {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 0;
+  flex-direction: column;
+  gap: 0;
+  padding: 12px 0;
   border-bottom: 1px solid var(--sol-border);
   cursor: pointer;
   transition: background 120ms;
 }
 .sol-track-item:last-child { border-bottom: none; }
-.sol-track-item:hover { background: var(--sol-elevated); margin: 0 -16px; padding: 14px 16px; border-radius: 8px; }
+.sol-track-item:hover { background: var(--sol-elevated); margin: 0 -16px; padding: 12px 16px; border-radius: 8px; }
 .sol-track-card { padding: 14px 16px; border: 1px solid var(--sol-border); border-radius: 10px; background: var(--sol-surface); margin-bottom: 8px; }
 .sol-track-title { font-size: 13px; font-weight: 600; color: var(--sol-text-primary); margin-bottom: 4px; }
 .sol-track-audio { width: 100%; height: 32px; margin: 8px 0; accent-color: var(--sol-accent); }

@@ -375,11 +375,38 @@ function SolarisTrackCard({
         isStoryV3Variant ? " sol-track-card" : ""
       }`}
     >
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p className="sol-track-title">{title || "Untitled track"}</p>
-        {stampLabel && <span style={{ fontSize: 10, color: 'var(--sol-text-tertiary)' }}>{stampLabel}</span>}
+      {/* Title row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p className="sol-track-title">{title || "Untitled track"}</p>
+          {stampLabel && <span style={{ fontSize: 10, color: 'var(--sol-text-tertiary)' }}>{stampLabel}</span>}
+        </div>
+        {typeof onSelect === "function" && (
+          <button
+            type="button"
+            className="sol-btn-secondary"
+            style={{ fontSize: 11, padding: '3px 10px', flexShrink: 0 }}
+            onClick={() => onSelect(track)}
+            disabled={isSelected}
+          >
+            {isSelected ? "Selected" : "Select"}
+          </button>
+        )}
+        {showLoopToggle && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, flexShrink: 0 }}>
+            <input
+              type="checkbox"
+              checked={loop}
+              onChange={(event) => onLoopChange(event.target.checked)}
+            />
+            Loop
+          </label>
+        )}
       </div>
-      {description && <p style={{ fontSize: 12, color: 'var(--sol-text-secondary)', marginTop: 2 }}>{description}</p>}
+
+      {description && <p style={{ fontSize: 12, color: 'var(--sol-text-secondary)', marginTop: 4 }}>{description}</p>}
+
+      {/* Full-width audio player */}
       {url && (
         <audio
           ref={audioRef}
@@ -390,6 +417,7 @@ function SolarisTrackCard({
           loop={prefersNativeLoop}
         />
       )}
+
       {showLoopToggle && loop && (
         <p className="sol-track-loop-note">
           {prefersNativeLoop
@@ -399,31 +427,7 @@ function SolarisTrackCard({
               : "Seamless loop active (compatibility mode)."}
         </p>
       )}
-      {(typeof onSelect === "function" || showLoopToggle) && (
-        <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
-          {typeof onSelect === "function" && (
-            <button
-              type="button"
-              className="sol-btn-secondary"
-              style={{ fontSize: 11, padding: '3px 10px' }}
-              onClick={() => onSelect(track)}
-              disabled={isSelected}
-            >
-              {isSelected ? "Selected" : "Select"}
-            </button>
-          )}
-          {showLoopToggle && (
-            <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
-              <input
-                type="checkbox"
-                checked={loop}
-                onChange={(event) => onLoopChange(event.target.checked)}
-              />
-              Loop
-            </label>
-          )}
-        </div>
-      )}
+
       {showMeta && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
           {sourceLabel && <span className="sol-track-pill">{sourceLabel}</span>}
@@ -432,6 +436,7 @@ function SolarisTrackCard({
           {tempoBpm ? <span className="sol-track-pill tempo">Tempo: {tempoBpm}</span> : null}
         </div>
       )}
+
       {safeTagList.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: 4 }}>
           {safeTagList.map((tag, index) => (

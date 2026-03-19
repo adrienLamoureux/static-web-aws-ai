@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { useConfig } from '../contexts/ConfigContext';
+import { useMusic } from '../contexts/MusicContext';
 import {
   listStoryPresets,
   listStorySessions,
@@ -11,6 +13,8 @@ import {
 } from '../services/story';
 import { listLoraProfilesForCharacter } from '../services/lora';
 import { listCharacters } from '../services/characters';
+import useSceneMedia from './story/useSceneMedia';
+import StorySceneCard from '../components/story/StorySceneCard';
 
 export default function Story() {
   const { apiBaseUrl } = useConfig();
@@ -36,11 +40,37 @@ export default function Story() {
   const [switchingLora, setSwitchingLora] = useState(false);
   // All characters (for name lookup)
   const [allCharacters, setAllCharacters] = useState([]);
+  // Set of message indices currently waiting for an on-demand illustration
+  const [illustratingMessages, setIllustratingMessages] = useState(new Set());
+  const { triggerAnimation, triggerMusic, getSceneMedia, clearAllPolls, mediaMap } = useSceneMedia(apiBaseUrl);
+  const { pushTracks, playTrack } = useMusic();
   const bottomRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // When scene music generation completes, push track to the music dock and auto-play it
+  useEffect(() => {
+    for (const [sceneId, media] of Object.entries(mediaMap)) {
+      if (media?.musicStatus === 'succeeded' && media?.musicUrl) {
+        const scene = scenes[sceneId];
+        const track = {
+          url: media.musicUrl,
+          key: media.musicKey || media.musicUrl,
+          source: 'scene',
+          title: scene?.title || 'Scene Music',
+          mood: media.musicMood || scene?.musicMood || '',
+          energy: media.musicEnergy || scene?.musicEnergy || '',
+          tempoBpm: media.musicTempoBpm || scene?.musicTempoBpm || null,
+          tags: media.musicTags || scene?.musicTags || [],
+          updatedAt: new Date().toISOString(),
+        };
+        pushTracks([track]);
+        playTrack(track);
+      }
+    }
+  }, [mediaMap, scenes, pushTracks, playTrack]);
 
   // Load characters once (for name lookups)
   useEffect(() => {
@@ -75,9 +105,11 @@ export default function Story() {
 
   const selectSession = useCallback(async (sessionId) => {
     if (!sessionId || !apiBaseUrl) return;
+    clearAllPolls();
     setActiveSessionId(sessionId);
     setLoadingSession(true);
     setMessages([]);
+    setIllustratingMessages(new Set());
     setError('');
     setShowLoraSwitcher(false);
     try {
@@ -90,15 +122,58 @@ export default function Story() {
       setSessionCharacterId(charId);
       setSessionLoraProfileId(loraId);
 
-      // Merge scenes from session into scene map
-      const sessionScenes = Array.isArray(session?.scenes) ? session.scenes : [];
-      mergeScenes(sessionScenes);
+      // Messages and scenes are top-level in the response, not inside session
+      const rawMessages = data?.messages || session?.messages || [];
+      const rawScenes   = data?.scenes   || session?.scenes   || [];
 
-      const msgs = (session?.messages || []).map(m => ({
+      // Populate scenes map (includes signed imageUrl, videoUrl, musicUrl)
+      mergeScenes(rawScenes);
+
+      // Push any already-generated music tracks from this session to the dock
+      const musicTracks = rawScenes
+        .filter(s => s?.musicUrl)
+        .map(s => ({
+          url: s.musicUrl,
+          key: s.musicKey || s.musicUrl,
+          source: 'scene',
+          title: s.title || 'Scene Music',
+          mood: s.musicMood || '',
+          energy: s.musicEnergy || '',
+          tempoBpm: s.musicTempoBpm || null,
+          tags: s.musicTags || [],
+          updatedAt: s.createdAt || '',
+        }));
+      if (musicTracks.length > 0) pushTracks(musicTracks);
+
+      // Build message list preserving createdAt for scene matching below
+      const msgs = rawMessages.map(m => ({
         role: m.role === 'user' ? 'user' : 'assistant',
         text: m.content || m.text || '',
         sceneId: m.sceneId || null,
+        createdAt: m.createdAt || null,
       }));
+
+      // The DB does not store sceneId on messages, so match chronologically:
+      // sort scenes by createdAt, then pair each scene with the nearest
+      // assistant message that doesn't already have a sceneId.
+      if (rawScenes.length > 0) {
+        const sorted = [...rawScenes]
+          .filter(s => s?.sceneId)
+          .sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+        for (const scene of sorted) {
+          const sceneTime = new Date(scene.createdAt || 0).getTime();
+          // Find the last unmatched assistant message whose createdAt <= scene's + 10s
+          let bestIdx = -1;
+          for (let k = 0; k < msgs.length; k++) {
+            if (msgs[k].role === 'assistant' && !msgs[k].sceneId) {
+              const msgTime = new Date(msgs[k].createdAt || 0).getTime();
+              if (msgTime <= sceneTime + 10000) bestIdx = k;
+            }
+          }
+          if (bestIdx !== -1) msgs[bestIdx] = { ...msgs[bestIdx], sceneId: scene.sceneId };
+        }
+      }
+
       if (msgs.length === 0) {
         // Use the preset opening as the first assistant message if available
         const opening = session?.opening || session?.preset?.opening || null;
@@ -115,7 +190,7 @@ export default function Story() {
     } finally {
       setLoadingSession(false);
     }
-  }, [apiBaseUrl, mergeScenes]);
+  }, [apiBaseUrl, mergeScenes, clearAllPolls, pushTracks]);
 
   // Load LoRA profiles + resolve character name when session character changes
   useEffect(() => {
@@ -186,18 +261,21 @@ export default function Story() {
   };
 
   // Auto-illustrate the opening scene after session creation.
-  // Uses forceCurrent=true so the backend illustrates whatever scene is current
-  // without requiring a known sceneId. The result is attached to the first
-  // assistant message so it displays inline in the chat.
-  const autoIllustrateOpening = useCallback(async (sessionId) => {
+  // Prefers illustrating the known opening scene by ID so the result lands on
+  // the same sceneId that was pre-populated in the UI. Falls back to
+  // forceCurrent=true when no sceneId is known (the backend would otherwise
+  // create a new scene with a different ID, causing a key mismatch).
+  const autoIllustrateOpening = useCallback(async (sessionId, knownSceneId = null) => {
     if (!sessionId || !apiBaseUrl) return;
+    const payload = knownSceneId ? { sceneId: knownSceneId } : { forceCurrent: true };
     try {
-      const data = await generateStoryIllustration(apiBaseUrl, sessionId, { forceCurrent: true });
+      const data = await generateStoryIllustration(apiBaseUrl, sessionId, payload);
       const imageUrl = data?.imageUrl || null;
       const scene = data?.scene || null;
       const sceneId = data?.sceneId || scene?.sceneId || null;
       if (!sceneId) return;
-      mergeScenes([{ ...(scene || {}), sceneId, imageUrl: imageUrl || scene?.imageUrl }]);
+      // Merge scene data and clear illustrating flag
+      mergeScenes([{ ...(scene || {}), sceneId, imageUrl: imageUrl || scene?.imageUrl, illustrating: false }]);
       // Attach scene to the first assistant message that has no sceneId yet
       setMessages(prev => {
         const idx = prev.findIndex(m => m.role === 'assistant' && !m.sceneId);
@@ -207,7 +285,14 @@ export default function Story() {
         return updated;
       });
     } catch {
-      // Non-fatal — user can still illustrate manually
+      // Non-fatal — clear illustrating flag on any pending scene
+      setScenes(prev => {
+        const updated = { ...prev };
+        for (const [key, val] of Object.entries(updated)) {
+          if (val?.illustrating) updated[key] = { ...val, illustrating: false };
+        }
+        return updated;
+      });
     }
   }, [apiBaseUrl, mergeScenes]);
 
@@ -222,12 +307,38 @@ export default function Story() {
       if (preset?.defaultCharacterId) payload.characterId = preset.defaultCharacterId;
       const created = await createStorySession(apiBaseUrl, payload);
       const newSession = created?.session || created;
-      if (newSession?.sessionId) {
-        setSessions(prev => [newSession, ...prev]);
+      // Backend returns `id`, not `sessionId` — normalize for the sessions list
+      const sessionId = newSession?.id || newSession?.sessionId;
+      if (sessionId) {
+        const normalized = { ...newSession, sessionId };
+        setSessions(prev => [normalized, ...prev]);
         setShowPresetPicker(false);
-        await selectSession(newSession.sessionId);
-        // Auto-generate opening scene illustration
-        await autoIllustrateOpening(newSession.sessionId);
+        await selectSession(sessionId);
+
+        // Pre-populate opening scene from create response so the card appears immediately
+        const openingScenes = Array.isArray(created?.scenes) ? created.scenes : [];
+        const openingSceneId = openingScenes[0]?.sceneId;
+        if (openingSceneId) {
+          mergeScenes(openingScenes);
+          // Mark as illustrating so the card shows "Generating…" during the API call
+          setScenes(prev => ({
+            ...prev,
+            [openingSceneId]: { ...(prev[openingSceneId] || openingScenes[0]), illustrating: true },
+          }));
+          // Attach scene to the first assistant message in chat
+          setMessages(prev => {
+            const idx = prev.findIndex(m => m.role === 'assistant' && !m.sceneId);
+            if (idx === -1) return prev;
+            const updated = [...prev];
+            updated[idx] = { ...updated[idx], sceneId: openingSceneId };
+            return updated;
+          });
+        }
+
+        // Auto-generate opening scene illustration in background (non-blocking).
+        // Pass openingSceneId so the backend illustrates the existing scene
+        // (not a new one) — avoids sceneId mismatch in the scenes map.
+        autoIllustrateOpening(sessionId, openingSceneId || null);
       }
     } catch (e) {
       setError(e?.message || 'Failed to create session.');
@@ -291,6 +402,36 @@ export default function Story() {
       }));
     }
   }, [apiBaseUrl, activeSessionId]);
+
+  // On-demand illustration for any assistant message that has no scene yet.
+  // Uses forceCurrent=true — backend derives prompt from current story state.
+  const handleIllustrateMessage = useCallback(async (msgIndex) => {
+    if (!activeSessionId || !apiBaseUrl) return;
+    setIllustratingMessages(prev => new Set([...prev, msgIndex]));
+    try {
+      const data = await generateStoryIllustration(apiBaseUrl, activeSessionId, { forceCurrent: true });
+      const imageUrl = data?.imageUrl || null;
+      const scene = data?.scene || null;
+      const sceneId = data?.sceneId || scene?.sceneId || null;
+      if (!sceneId) return;
+      mergeScenes([{ ...(scene || {}), sceneId, imageUrl: imageUrl || scene?.imageUrl }]);
+      setMessages(prev => {
+        const updated = [...prev];
+        if (updated[msgIndex] && !updated[msgIndex].sceneId) {
+          updated[msgIndex] = { ...updated[msgIndex], sceneId };
+        }
+        return updated;
+      });
+    } catch {
+      // Non-fatal — button reappears automatically when removed from the set
+    } finally {
+      setIllustratingMessages(prev => {
+        const next = new Set(prev);
+        next.delete(msgIndex);
+        return next;
+      });
+    }
+  }, [apiBaseUrl, activeSessionId, mergeScenes]);
 
   const handleKey = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
@@ -450,63 +591,52 @@ export default function Story() {
                     {msg.text}
                   </div>
                 ) : (
-                <div className={`sol-chat-bubble ${msg.role}`}>{msg.text}</div>
+                <div className={`sol-chat-bubble ${msg.role}`}><ReactMarkdown>{msg.text}</ReactMarkdown></div>
                 )}
                 {/* Scene illustration card (assistant messages only) */}
                 {msg.role === 'assistant' && msg.sceneId && (() => {
                   const scene = scenes[msg.sceneId];
                   if (!scene) return null;
+                  const media = getSceneMedia(msg.sceneId);
+                  const merged = media ? { ...scene, ...media } : scene;
                   return (
-                    <div style={{
-                      margin: '6px 0 10px 0',
-                      background: 'var(--sol-elevated)',
-                      border: '1px solid var(--sol-border)',
-                      borderRadius: 10,
-                      overflow: 'hidden',
-                      maxWidth: 420,
-                    }}>
-                      {scene.imageUrl ? (
-                        <img
-                          src={scene.imageUrl}
-                          alt={scene.title || 'Scene illustration'}
-                          style={{ width: '100%', display: 'block', maxHeight: 320, objectFit: 'cover' }}
-                        />
-                      ) : null}
-                      <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {scene.title && (
-                          <span style={{ fontSize: 12, color: 'var(--sol-text-secondary)', flex: 1, fontStyle: 'italic' }}>
-                            {scene.title}
-                          </span>
-                        )}
-                        {!scene.imageUrl && !scene.illustrating && (
-                          <button
-                            className="sol-btn-secondary"
-                            style={{ fontSize: 11, padding: '3px 10px', whiteSpace: 'nowrap' }}
-                            onClick={() => handleIllustrate(msg.sceneId)}
-                          >
-                            🎨 Illustrate
-                          </button>
-                        )}
-                        {scene.illustrating && (
-                          <span style={{ fontSize: 11, color: 'var(--sol-text-tertiary)' }}>Generating…</span>
-                        )}
-                        {scene.imageUrl && (
-                          <button
-                            className="sol-btn-secondary"
-                            style={{ fontSize: 11, padding: '3px 10px', whiteSpace: 'nowrap' }}
-                            onClick={() => handleIllustrate(msg.sceneId)}
-                            title="Re-generate illustration"
-                          >
-                            ↺
-                          </button>
-                        )}
-                        {scene.illustrationError && (
-                          <span style={{ fontSize: 11, color: '#ef4444' }}>{scene.illustrationError}</span>
-                        )}
-                      </div>
-                    </div>
+                    <StorySceneCard
+                      scene={merged}
+                      onIllustrate={() => handleIllustrate(msg.sceneId)}
+                      onAnimate={() => triggerAnimation(activeSessionId, msg.sceneId)}
+                      onMusic={() => triggerMusic(activeSessionId, msg.sceneId)}
+                      onPlayInDock={() => playTrack({
+                        url: merged.musicUrl,
+                        key: merged.musicKey || merged.musicUrl,
+                        source: 'scene',
+                        title: merged.title || 'Scene Music',
+                        mood: merged.musicMood || '',
+                        energy: merged.musicEnergy || '',
+                        tempoBpm: merged.musicTempoBpm || null,
+                        tags: merged.musicTags || [],
+                        updatedAt: merged.createdAt || '',
+                      })}
+                      animating={merged.videoStatus === 'starting' || merged.videoStatus === 'processing'}
+                      generatingMusic={merged.musicStatus === 'starting' || merged.musicStatus === 'processing'}
+                    />
                   );
                 })()}
+                {/* On-demand illustrate button for assistant messages without a scene */}
+                {msg.role === 'assistant' && !msg.sceneId && activeSessionId && (
+                  <div style={{ marginBottom: 6 }}>
+                    {illustratingMessages.has(i) ? (
+                      <span style={{ fontSize: 11, color: 'var(--sol-text-tertiary)', fontStyle: 'italic' }}>Generating illustration…</span>
+                    ) : (
+                      <button
+                        className="sol-btn-secondary"
+                        style={{ fontSize: 11, padding: '3px 10px' }}
+                        onClick={() => handleIllustrateMessage(i)}
+                      >
+                        🎨 Illustrate
+                      </button>
+                    )}
+                  </div>
+                )}
               </React.Fragment>
             ))}
             {sending && <div className="sol-chat-bubble assistant" style={{ opacity: 0.6 }}>Thinking…</div>}
