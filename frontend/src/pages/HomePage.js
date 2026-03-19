@@ -7,34 +7,34 @@ import { listSharedImages } from '../services/s3';
 
 const NAV_CARDS = [
   {
-    label: 'Whisk',
-    path: '/whisk',
-    description: 'Generate images from prompts and characters.',
+    label: 'Forge',
+    path: '/forge',
+    description: 'Generate images and animate videos.',
     emoji: '✦',
   },
   {
-    label: 'Story',
-    path: '/story',
+    label: 'Storyboard',
+    path: '/storyboard',
     description: 'Write interactive illustrated stories.',
     emoji: '📖',
   },
   {
-    label: 'Videos',
-    path: '/videos',
-    description: 'Animate images into short video clips.',
-    emoji: '🎬',
+    label: 'Showcase',
+    path: '/showcase',
+    description: 'Browse the community image and video gallery.',
+    emoji: '🖼',
   },
   {
-    label: 'LoRA',
-    path: '/lora',
-    description: 'Manage LoRA profiles for each character.',
+    label: 'Director',
+    path: '/director',
+    description: 'Characters, LoRA profiles and settings.',
     emoji: '⚙',
   },
   {
-    label: 'Shared',
-    path: '/shared',
-    description: 'Browse the community image and video gallery.',
-    emoji: '🖼',
+    label: 'Sound Vault',
+    path: '/director/sounds',
+    description: 'Upload and manage soundtracks.',
+    emoji: '🎵',
   },
 ];
 
@@ -137,7 +137,7 @@ export default function HomePage() {
               Recently generated
             </span>
             <Link
-              to="/shared"
+              to="/showcase"
               style={{ fontSize: 12, color: 'var(--sol-text-secondary)', textDecoration: 'none' }}
             >
               View all →
@@ -151,7 +151,7 @@ export default function HomePage() {
             }}
           >
             {recentImages.map((img, i) => (
-              <Link key={img.key || i} to="/shared" style={{ textDecoration: 'none' }}>
+              <Link key={img.key || i} to="/showcase" style={{ textDecoration: 'none' }}>
                 <div
                   className="sol-card"
                   style={{

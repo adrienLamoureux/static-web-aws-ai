@@ -110,6 +110,37 @@ button { cursor: pointer; }
   border-left-color: var(--sol-accent);
 }
 .sol-nav-link-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sol-nav-section-header {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sol-text-tertiary);
+  padding: 12px 16px 4px;
+  margin: 0;
+}
+
+/* Tab bar */
+.sol-tab-bar {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--sol-border);
+  margin-bottom: 16px;
+}
+.sol-tab {
+  padding: 8px 16px;
+  font-size: 13px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--sol-text-secondary);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.sol-tab:hover { color: var(--sol-text-primary); }
+.sol-tab.is-active {
+  color: var(--sol-accent);
+  border-bottom-color: var(--sol-accent);
+}
 
 /* ============================================================
    MAIN AREA

@@ -548,13 +548,6 @@ export default function Whisk() {
 
       {/* ── Left: image gallery ── */}
       <div className="sol-split-canvas">
-        <div className="sol-page-header">
-          <h2 className="sol-page-title">Generator</h2>
-          <p className="sol-page-subtitle">
-            {isLoadingLoraData ? 'Loading configuration…' : 'Your generated images'}
-          </p>
-        </div>
-
         <SolarisImageWall
           images={images}
           status={status}

@@ -41,11 +41,6 @@ export default function WhiskVideos() {
 
   return (
     <div>
-      <div className="sol-page-header">
-        <h2 className="sol-page-title">Videos</h2>
-        <p className="sol-page-subtitle">Your generated videos</p>
-      </div>
-
       {error && <p style={{ fontSize: 12, color: '#ef4444', marginBottom: 12 }}>{error}</p>}
       {shareNotice && <p style={{ fontSize: 12, color: 'var(--sol-accent)', marginBottom: 12 }}>{shareNotice}</p>}
 

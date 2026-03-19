@@ -16,25 +16,38 @@ import SolarisMusicDock from "./components/music/SolarisMusicDock";
 // Pages
 import HomePage from "./pages/HomePage";
 import SharedLibrary from "./pages/SharedLibrary";
-import Whisk from "./pages/Whisk";
-import WhiskVideos from "./pages/WhiskVideos";
+import Forge from "./pages/Forge";
 import LoraManagement from "./pages/LoraManagement";
 import Director from "./pages/Director";
 import Story from "./pages/Story";
 import StoryMusicLibrary from "./pages/StoryMusicLibrary";
 import AuthCallback from "./pages/AuthCallback";
 
-const NAV_ITEMS = [
-  { label: "Home", path: "/" },
-  { label: "Shared", path: "/shared" },
-  { label: "Whisk", path: "/whisk" },
-  { label: "Videos", path: "/videos" },
-  { label: "LoRA", path: "/lora" },
-  { label: "Director", path: "/director" },
-  { label: "Story", path: "/story" },
-  { label: "Music", path: "/music-library" },
-  { label: "About", path: "/about" },
+const NAV_SECTIONS = [
+  { header: null, items: [{ label: "Home", path: "/" }] },
+  {
+    header: "Atelier",
+    items: [
+      { label: "Forge", path: "/forge" },
+      { label: "Storyboard", path: "/storyboard" },
+    ],
+  },
+  {
+    header: "Gallery",
+    items: [{ label: "Showcase", path: "/showcase" }],
+  },
+  {
+    header: "Director",
+    items: [
+      { label: "Command", path: "/director" },
+      { label: "Sound Vault", path: "/director/sounds" },
+      { label: "LoRA Catalog", path: "/director/lora" },
+    ],
+  },
+  { header: null, items: [{ label: "About", path: "/about" }] },
 ];
+
+const ALL_NAV_ITEMS = NAV_SECTIONS.flatMap((s) => s.items);
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -114,14 +127,21 @@ function SolarisShell({ children }) {
           {sidebarOpen && <span className="sol-brand-name">Whisk Studio</span>}
         </div>
         <nav className="sol-sidebar-nav">
-          {isAuthenticated && NAV_ITEMS.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`sol-nav-link${location.pathname === item.path ? " is-active" : ""}`}
-            >
-              <span className="sol-nav-link-label">{item.label}</span>
-            </Link>
+          {isAuthenticated && NAV_SECTIONS.map((section, si) => (
+            <React.Fragment key={si}>
+              {section.header && (
+                <p className="sol-nav-section-header">{section.header}</p>
+              )}
+              {section.items.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`sol-nav-link${location.pathname === item.path ? " is-active" : ""}`}
+                >
+                  <span className="sol-nav-link-label">{item.label}</span>
+                </Link>
+              ))}
+            </React.Fragment>
           ))}
         </nav>
         {isAuthenticated && (
@@ -147,7 +167,7 @@ function SolarisShell({ children }) {
             ☰
           </button>
           <span style={{ fontSize: 13, color: 'var(--sol-text-secondary)', marginLeft: 8 }}>
-            {NAV_ITEMS.find(n => n.path === location.pathname)?.label || "Whisk Studio"}
+            {ALL_NAV_ITEMS.find(n => n.path === location.pathname)?.label || "Whisk Studio"}
           </span>
         </div>
         <div className="sol-content">{children}</div>
@@ -163,15 +183,22 @@ function AppRoutes() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        {/* Primary routes */}
         <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-        <Route path="/shared" element={<ProtectedRoute><SharedLibrary /></ProtectedRoute>} />
-        <Route path="/whisk" element={<ProtectedRoute><Whisk /></ProtectedRoute>} />
-        <Route path="/videos" element={<ProtectedRoute><WhiskVideos /></ProtectedRoute>} />
-        <Route path="/lora" element={<ProtectedRoute><LoraManagement /></ProtectedRoute>} />
+        <Route path="/forge" element={<ProtectedRoute><Forge /></ProtectedRoute>} />
+        <Route path="/storyboard" element={<ProtectedRoute><Story /></ProtectedRoute>} />
+        <Route path="/showcase" element={<ProtectedRoute><SharedLibrary /></ProtectedRoute>} />
         <Route path="/director" element={<ProtectedRoute><Director /></ProtectedRoute>} />
-        <Route path="/story" element={<ProtectedRoute><Story /></ProtectedRoute>} />
-        <Route path="/music-library" element={<ProtectedRoute><StoryMusicLibrary /></ProtectedRoute>} />
+        <Route path="/director/sounds" element={<ProtectedRoute><StoryMusicLibrary /></ProtectedRoute>} />
+        <Route path="/director/lora" element={<ProtectedRoute><LoraManagement /></ProtectedRoute>} />
         <Route path="/about" element={<ProtectedRoute><AboutPage /></ProtectedRoute>} />
+        {/* Legacy redirects */}
+        <Route path="/whisk" element={<Navigate to="/forge" replace />} />
+        <Route path="/videos" element={<Navigate to="/forge?tab=videos" replace />} />
+        <Route path="/story" element={<Navigate to="/storyboard" replace />} />
+        <Route path="/shared" element={<Navigate to="/showcase" replace />} />
+        <Route path="/lora" element={<Navigate to="/director/lora" replace />} />
+        <Route path="/music-library" element={<Navigate to="/director/sounds" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </SolarisShell>
