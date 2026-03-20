@@ -4,7 +4,7 @@ Use this file as the top-level overview for all parallel full-stack idea environ
 
 ## Registry
 <!-- IDEA_REGISTRY_START -->
-- idea=design-fusion | stack=StaticWebAWSAIStack-design-fusion | status=LIVE | last_action=2026-03-19T08:12:44.530Z | cloudfront=https://d3ei9r5awjyzzr.cloudfront.net | api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ | folder=ideas/design-fusion | note=Deployed 7a88804
+- idea=design-fusion | stack=StaticWebAWSAIStack-design-fusion | status=LIVE | last_action=2026-03-19T08:43:09.321Z | cloudfront=https://d3ei9r5awjyzzr.cloudfront.net | api=https://luu3x0m826.execute-api.us-east-1.amazonaws.com/prod/ | folder=ideas/design-fusion | note=Deployed 68211ea
 - idea=design-pixnovel | stack=StaticWebAWSAIStack-design-pixnovel | status=LIVE | last_action=2026-03-15T17:40:17.006Z | cloudfront=https://d21j30h6jj4n2k.cloudfront.net | api=https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/ | folder=ideas/design-pixnovel | note=Deployed 19337c2 (prepush-rebase-ui-validate-resume)
 <!-- IDEA_REGISTRY_END -->
 

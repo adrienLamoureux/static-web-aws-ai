@@ -1,8 +1,15 @@
 {
   "StaticWebAWSAIStack-design-fusion": {
-    "UserPoolClientId": "267491h1hdekr5bvlbpo2uscc6",
+    "MediaBucketName": "staticwebawsaistack-design-fus-mediabucketbcbb02ba-nr2hveygmqn9",
+    "UserPoolClientId": "5atggma85lo4rolcdev68nd4cp",
     "CloudFrontURL": "d3ei9r5awjyzzr.cloudfront.net",
+    "UserPoolId": "us-east-1_32zXLy4Gx",
     "StageName": "design-fusion",
-    "APIEndpoint": "https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/"
+    "APIEndpoint": "https://luu3x0m826.execute-api.us-east-1.amazonaws.com/prod/",
+    "SecondaryAdminUserEmail": "not-configured",
+    "AdminUserEmail": "not-configured",
+    "ApiGatewayEndpoint5AA8EC3A": "https://luu3x0m826.execute-api.us-east-1.amazonaws.com/prod/",
+    "CognitoDomainPrefix": "whiskstudio-alx-design-fusion-761593662432",
+    "CognitoDomain": "https://whiskstudio-alx-design-fusion-761593662432.auth.us-east-1.amazoncognito.com"
   }
 }
