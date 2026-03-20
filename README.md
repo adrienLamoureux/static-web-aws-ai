@@ -1,74 +1,89 @@
 # Static Web AWS AI
 
-Whisk Studio is a full-stack AI creation app deployed on AWS:
-- React frontend hosted behind CloudFront.
-- Express API running in Lambda behind API Gateway.
-- Cognito authentication (Hosted UI + PKCE in frontend).
-- DynamoDB for metadata and S3 for media assets.
-- AI integrations for text/image/video/music workflows (Bedrock, Replicate, Gradio).
+Whisk Studio is an AWS-hosted AI creation platform with image, video, story, music, LoRA, and director workflows. This repository now operates as one full-stack baseline branch plus multiple UI overlay branches.
 
-This repo is also set up for parallel product experimentation:
-- Multiple isolated "idea stacks" can run at the same time.
-- Each idea has its own CloudFront/API/Cognito/S3/DynamoDB resources.
-- Shared improvements can be rolled out across all or selected ideas.
+## Current Development Model
 
-## What The Product Does
+| Branch | Role | Frontend Reality |
+|--------|------|------------------|
+| `codex/dev` | Source of truth for backend, CDK, contracts, registries, and shared docs | Intentionally minimal placeholder UI |
+| `codex/design-fusion/code` | Solaris overlay branch | Full React app with grouped navigation and warm light-first shell |
+| `codex/design-pixnovel/code` | Pixnovel overlay branch | Full React app with cinematic shell, quick-generate panel, and director-first layout |
 
-- Authenticated user workspace for generating and managing creative assets.
-- Story session system with characters, scenes, prompts, and message history.
-- Image and video generation workflows.
-- Story music library and per-scene music selection flows.
-- User-scoped storage model for uploaded/generated media.
+The important consequence is that `codex/dev` should stay functionality-first and contract-focused. Rich UX work belongs in the design worktrees.
 
-## High-Level Architecture
+## Product Capabilities
+- Authenticated creative workspace for images, videos, stories, soundtracks, and LoRA profiles
+- Shared image/video library with favorites and sharing flows
+- Director operations for configuration, queue visibility, session pinning, and masonry asset management
+- Story sessions with scene illustrations, animation, and per-scene music
+- Multi-provider AI integrations through Bedrock, Replicate, CivitAI, and Gradio/HuggingFace
 
-1. Browser loads frontend from CloudFront.
-2. Frontend fetches `/config.json` to resolve runtime API base URL and Cognito settings.
-3. User signs in via Cognito Hosted UI (authorization code + PKCE).
-4. Frontend sends bearer token in `Authorization` header.
-5. API Gateway validates token with Cognito authorizer, then invokes Lambda.
-6. Express backend handles route logic, stores metadata in DynamoDB, and media in S3.
-7. Backend calls AI providers where needed (Bedrock, Replicate, Gradio).
+## Architecture At A Glance
+1. CloudFront serves the React bundle and a generated `/config.json`.
+2. The frontend resolves `apiBaseUrl` and Cognito settings from `/config.json`, with localhost env fallbacks.
+3. Design branches authenticate through Cognito Hosted UI + PKCE. The `codex/dev` placeholder frontend uses a fake session token only for baseline route coverage.
+4. API Gateway invokes the Lambda-wrapped Express backend.
+5. Express routes persist metadata in DynamoDB and media in S3.
+6. Backend routes call Bedrock, Replicate, CivitAI, and Gradio providers when needed.
+
+See `docs/architecture.md` for the current branch/worktree topology, route groups, storage keys, and deployment modes.
 
 ## Repository Layout
+- `backend/`: Express API, route modules, auth, data access helpers, provider integrations
+- `frontend/`: placeholder frontend on `codex/dev`; full React apps on design branches
+- `cdk/`: infrastructure stacks plus `idea:*` helper scripts
+- `ideas/`: per-idea context (`README`, `DECISIONS`, `RUNBOOK`, `STATUS`, `IMPROVEMENTS`, sometimes `cdk-outputs.json`)
+- `docs/`: shared architecture and workflow diagrams
+- `ai/`: optional research scripts/notebooks only
+- `IDEAS.md`: top-level registry of deployed idea stacks
+- `IMPROVEMENTS.md`: shared rollout log across ideas
+- `AGENTS.md`: collaboration rules for future agents
+- `REQUIREMENTS.md`: branch-specific requirements for `codex/dev`
 
-- `frontend/`: React app (routes: `/`, `/shared`, `/whisk`, `/lora`, `/videos`, `/director`, `/story`, `/music-library`, `/about`, `/login`, `/auth/callback`).
-- `backend/`: Express API, route modules, service/dependency wiring.
-- `cdk/`: AWS CDK infrastructure and deployment automation scripts.
-- `ideas/`: Per-idea context docs (`README`, `DECISIONS`, `RUNBOOK`, `STATUS`, `IMPROVEMENTS`).
-- `ai/`: Optional notebooks/scripts for experiments.
-- `IDEAS.md`: top-level registry of deployed idea stacks.
-- `IMPROVEMENTS.md`: cross-idea rollout history.
-- `AGENTS.md`: coding/operational workflow policy.
+## Backend Contract Summary
+- Route registration lives in `backend/routes/index.js`.
+- There are 15 registered route modules exposing 73 HTTP endpoints.
+- Major domains:
+  - prompt helper
+  - media management and sharing
+  - image generation and status
+  - video generation and status
+  - story sessions, messaging, illustration, animation, and music
+  - director operations
+  - LoRA catalog and profile management
+  - character CRUD
+- Critical invariant:
+  - `POST /story/sessions`
+  - `GET /story/sessions/:id`
+  both return `{ session, messages, scenes }` with `messages` and `scenes` at top level, not nested inside `session`.
 
-## Backend Route Groups
+## Storage Model Summary
+- DynamoDB uses a single table with `pk` / `sk`.
+- User partition root: `USER#<cognito-sub>`.
+- Story session root: `SESSION#<sessionId>`.
+- Story message keys: `SESSION#<sessionId>#MSG#<timestamp>`.
+- Story scene keys: `SESSION#<sessionId>#SCENE#<sceneId>`.
+- S3 user isolation uses the prefix `users/<cognito-sub>/`.
 
-Route registration is centralized in `backend/routes/index.js`.
+## Deployment Modes
+- Full stack:
+  - `cdk/lib/static-web-aws-ai-stack.ts`
+  - creates CloudFront, S3, API Gateway, Lambda, Cognito, DynamoDB
+- UI-only overlay:
+  - `cdk/lib/ui-stack.ts`
+  - creates only the website bucket/distribution and a per-design Cognito app client
+  - deploy with `npm --prefix cdk run idea:deploy -- --stage=<idea-id> --backend-stage=<backend-id>`
 
-Main groups:
-- Prompt helper: `/bedrock/prompt-helper`
-- Media management and sharing: `/s3/*`, `/images/*`
-- Bedrock generation/status: `/bedrock/*`
-- Replicate generation/status: `/replicate/*`
-- CivitAI generation/status: `/civitai/*`
-- Gradio workflows: `/gradio/*`
-- LoRA catalog/profile management: `/lora/*`
-- Director operations: `/ops/*`
-- Story sessions/messages/illustrations/music: `/story/*`
+## Active Worktrees And Live Stacks
 
-Auth behavior:
-- `backend/lib/auth.js` enforces user auth on API routes.
-- Request user identity comes from API Gateway Cognito claims.
-- Optional unsigned bearer fallback is disabled by default and only available when `ALLOW_UNSIGNED_JWT_FALLBACK=true` outside production (local/debug only).
-- Unauthenticated requests return `401 Unauthorized`.
+| Branch | Worktree | CloudFront | API |
+|--------|----------|------------|-----|
+| `codex/dev` | `/Users/adrienlamoureux/Documents/code/static-web-aws-ai` | `https://d2l9b1xmucsb19.cloudfront.net` | `https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/` |
+| `codex/design-fusion/code` | `/Users/adrienlamoureux/Documents/code/wt/design-fusion/code` | `https://d3ei9r5awjyzzr.cloudfront.net` | `https://luu3x0m826.execute-api.us-east-1.amazonaws.com/prod/` |
+| `codex/design-pixnovel/code` | `/Users/adrienlamoureux/Documents/code/wt/design-pixnovel/code` | `https://d21j30h6jj4n2k.cloudfront.net` | `https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/` |
 
-## Prerequisites
-
-- Node.js 20+ (22 works in this repo).
-- npm.
-- AWS CLI configured with credentials.
-- CDK bootstrap done in target account/region.
-- Optional provider tokens depending on enabled features (Replicate, Hugging Face, etc).
+Shared test credentials across the live stacks: `test@test.com` / `Test1234567@`
 
 ## Local Development
 
@@ -80,31 +95,22 @@ npm --prefix backend install
 npm --prefix cdk install
 ```
 
-Run frontend locally:
+Run the placeholder frontend on `codex/dev`:
 
 ```bash
 npm --prefix frontend start
 ```
 
-Run frontend locally but wired to a deployed idea stack API/Cognito:
+Run any frontend against hosted stack config:
 
 ```bash
 npm --prefix cdk run idea:ui-local -- --stage=<idea-id>
 ```
 
-Optional flags:
-- `--port=<port>` to run CRA on a custom localhost port.
-- `--print-env` to only print resolved runtime env vars without starting CRA.
-- `--open` to allow browser auto-open (default behavior is `BROWSER=none`).
-
-Frontend runtime configuration options:
-- Hosted file: `/config.json` (generated/deployed by CDK).
-- Env fallback for local dev:
-  - `REACT_APP_API_URL`
-  - `REACT_APP_COGNITO_DOMAIN`
-  - `REACT_APP_COGNITO_CLIENT_ID`
-  - `REACT_APP_COGNITO_USER_POOL_ID`
-  - `REACT_APP_COGNITO_REGION`
+Useful flags:
+- `--port=<port>`
+- `--print-env`
+- `--open`
 
 Quick backend sanity check:
 
@@ -112,96 +118,39 @@ Quick backend sanity check:
 node -e "require('./backend/index')"
 ```
 
-## Infrastructure And Deployment
-
-CDK app entrypoint:
-- `cdk/bin/static-web-aws-ai-stack.ts`
-
-Default deployment helper scripts:
+## Infrastructure Commands
 
 ```bash
 npm --prefix cdk run build
 npm --prefix cdk run idea:list
 npm --prefix cdk run idea:init -- --stage=<idea-id> --title="<title>"
 npm --prefix cdk run idea:deploy -- --stage=<idea-id>
+npm --prefix cdk run idea:deploy -- --stage=<idea-id> --backend-stage=<backend-id>
 npm --prefix cdk run idea:ui-local -- --stage=<idea-id>
 npm --prefix cdk run idea:destroy -- --stage=<idea-id>
 ```
 
-Post-deploy validation policy:
-- `idea:deploy`, `idea:deploy-many`, and `idea:rollout` automatically run sanity + UI smoke after successful CDK deploy.
-- UI smoke is mandatory for those deploy commands (the runner rejects `--skip-ui-smoke`).
+Post-deploy validation is mandatory:
+- `idea:deploy`, `idea:deploy-many`, and `idea:rollout` run sanity + UI smoke automatically
+- the deploy runner rejects `--skip-ui-smoke`
 
-Frontend-only iteration policy:
-- For UI-only updates, prefer local iteration with `idea:ui-local` (uses hosted AWS API/Cognito config) instead of redeploying the stack each change.
-- Deploy is still required when backend/cdk changes are involved.
+## Validation Rules
+- Backend touched: `node -e "require('./backend/index')"`
+- Frontend touched: `npm --prefix frontend run build`
+- CDK touched: `npm --prefix cdk run build`
+- Backend or CDK changes are not considered complete until the relevant stage deploy succeeds and both sanity and UI smoke pass
 
-### Runtime Config Generated By CDK
+## Documentation Map
+- `AGENTS.md`: collaboration rules and branch boundaries
+- `REQUIREMENTS.md`: `codex/dev` operating constraints and frozen contracts
+- `docs/architecture.md`: current architecture, route map, branch/worktree model
+- `docs/branches-worktrees-diagram.md`: visual topology
+- `ideas/dev/README.md`: baseline branch/stack intent
+- `ideas/design-fusion/README.md`: Solaris overlay summary
+- `ideas/design-pixnovel/README.md`: Pixnovel overlay summary
+- `frontend/REQUIREMENTS.md` inside each UI worktree: branch-local frontend guidance
 
-During deployment, CDK publishes `config.json` to the website bucket with:
-- `apiBaseUrl`
-- `cognito.domain`
-- `cognito.clientId`
-- `cognito.userPoolId`
-- `cognito.region`
-
-Important:
-- Deployed config now defaults to the stack API (`api.url`) unless overridden with `FRONTEND_API_URL_OVERRIDE`.
-- Avoid using `REACT_APP_API_URL` for deployed stack wiring, since that can point all stacks to one API and cause auth mismatch.
-
-## Parallel Idea Stacks (Multi-Website Workflow)
-
-This repo supports full-stack parallel variants.
-
-Create and deploy an idea:
-
-```bash
-npm --prefix cdk run idea:init -- --stage=design-main --title="Current design baseline"
-npm --prefix cdk run idea:deploy -- --stage=design-main
-```
-
-Deploy one improvement to multiple ideas:
-
-```bash
-npm --prefix cdk run idea:deploy-many -- --stages=design-main,design-endfield,design-moescape --improvement="my-change"
-```
-
-Roll out to all ideas:
-
-```bash
-npm --prefix cdk run idea:rollout -- --improvement="my-change"
-```
-
-Seed demo content/users from a source stack:
-
-```bash
-npm --prefix cdk run idea:seed-many -- --stages=design-main,design-endfield,design-moescape --source-stack=StaticWebAWSAIStack
-```
-
-See current registry and live URLs in:
-- `IDEAS.md`
-- `ideas/<idea-id>/STATUS.md`
-
-## Branching And Worktrees
-
-Current collaboration baseline:
-- Default long-lived branch: `codex/dev`
-- `codex/dev` is full-stack and functionality-first (minimal frontend styling)
-- Ongoing agent edits happen on `codex/dev`
-- Rich UI/theme variants are isolated to design branches (for example `codex/design-pixnovel/code`)
-- Human opens PR from `codex/dev` to `main` and merges manually
-
-Recommended worktree pattern for larger tasks:
-
-```bash
-git worktree add ../wt/<idea-id>/plan -b codex/<idea-id>/plan codex/dev
-git worktree add ../wt/<idea-id>/code -b codex/<idea-id>/code codex/dev
-git worktree add ../wt/<idea-id>/integrate -b codex/<idea-id>/integrate codex/dev
-```
-
-## Configuration Notes
-
-Common env vars used by stack/runtime:
+## Common Configuration
 - `ADMIN_EMAIL`
 - `SECONDARY_ADMIN_EMAIL`
 - `ADMIN_TEMP_PASSWORD`
@@ -209,23 +158,19 @@ Common env vars used by stack/runtime:
 - `FRONTEND_API_URL_OVERRIDE`
 - `REPLICATE_API_TOKEN`
 - `HUGGING_FACE_TOKEN`
-- `BEDROCK_*` model/profile overrides
+- `BEDROCK_*`
 
-Sensitive values should stay in environment or secret stores, not committed.
+Keep secrets in env or secret stores, never in committed files.
 
 ## Troubleshooting
-
-Unauthorized after login:
-- Check that stack `config.json` API endpoint matches that stack's Cognito pool.
-- Hard refresh browser and sign in again.
-- Clear session storage key `whisk_auth_tokens` if token state is stale.
-
-Stack update is slow:
-- `Custom::CDKBucketDeployment` and CloudFront invalidation steps can take several minutes.
-
-Seeding fails on source stack:
-- Use `--source-stack=<stack-name>` when source naming does not follow stage convention.
-
-## AI Folder
-
-`ai/` contains optional notebooks/scripts for experimentation. It is not required for core app runtime.
+- Unauthorized after login:
+  - check that the deployed `config.json` points to the matching API and Cognito pool
+  - hard refresh and sign in again
+  - clear the `whisk_auth_tokens` session storage key if token state is stale
+- Placeholder auth confusion on `codex/dev`:
+  - the baseline frontend does not execute the real Cognito flow
+  - use a design worktree or a deployed idea stack when validating actual auth UX
+- Slow stack updates:
+  - `BucketDeployment` and CloudFront invalidation can take several minutes
+- Seeding issues:
+  - use `--source-stack=<stack-name>` when the source stack name does not follow stage naming

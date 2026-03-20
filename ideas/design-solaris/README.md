@@ -1,37 +1,45 @@
 # Solaris — warm light-first creative workspace (design-solaris)
 
 ## Objective
-- Describe the idea and why it exists.
+- Explore a warm, light-first shell that emphasizes calm navigation and readable surfaces.
+- Serve as a distinct design direction that can diverge visually without changing the backend contract.
 
 ## Design References
-- Primary visual benchmark:
-- Secondary visual benchmark:
+- Primary visual benchmark: warm editorial creative workspaces.
+- Secondary visual benchmark: restrained, high-legibility control surfaces.
 
 ## Scope
 - In scope:
+  - isolated stage deployment
+  - future dedicated Solaris frontend variant
 - Out of scope:
+  - backend divergence
+  - provider/runtime changes
 
 ## Delivery Tracks
-- Plan track:
-- Build track:
-- Integration/QA track:
+- Plan track: initial scaffold only.
+- Build track: no active code worktree is currently checked out.
+- Integration/QA track: the scaffold deployment is live.
 
 ## Functionalities
-- List expected user-facing behaviors.
-- Track major feature toggles or model choices.
+- The stage is live and available for future Solaris-specific UI exploration.
+- Until a dedicated code worktree exists, this idea should be treated as a prepared environment rather than an actively evolving overlay branch.
 
 ## Architecture Touchpoints
-- Backend:
-- Frontend:
-- CDK:
-- AI scripts/notebooks:
+- Backend: shared contracts from `codex/dev`
+- Frontend: no active dedicated worktree at the moment
+- CDK: `StaticWebAWSAIStack-design-solaris`
+- AI scripts/notebooks: no stage-specific changes
 
 ## Contract Notes
-- API changes:
-- Runtime config changes:
-- Data model/storage changes:
+- API changes: none stage-specific
+- Runtime config changes: none stage-specific
+- Data model/storage changes: none stage-specific
 
 ## Handoff Notes For Sub-Agents
 - Current priority:
+  - create a dedicated `codex/design-solaris/code` worktree before implementation resumes
 - Known blockers:
+  - stage exists, but no active overlay branch is checked out
 - Next smallest shippable increment:
+  - freeze the Solaris layout contract and stand up the missing code worktree

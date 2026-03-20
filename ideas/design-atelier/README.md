@@ -1,37 +1,45 @@
 # Atelier — professional productivity workspace (design-atelier)
 
 ## Objective
-- Describe the idea and why it exists.
+- Explore a more task-focused, professional creative workspace variant.
+- Keep the same backend feature set while testing a calmer, productivity-oriented shell.
 
 ## Design References
-- Primary visual benchmark:
-- Secondary visual benchmark:
+- Primary visual benchmark: productivity-first creative dashboards.
+- Secondary visual benchmark: structured editorial admin/workflow tools.
 
 ## Scope
 - In scope:
+  - isolated stage deployment
+  - alternate frontend shell and information architecture
 - Out of scope:
+  - backend contract divergence
+  - new provider integrations
 
 ## Delivery Tracks
-- Plan track:
-- Build track:
-- Integration/QA track:
+- Plan track: define the design-system direction and route priorities.
+- Build track: no active code worktree is currently checked out.
+- Integration/QA track: initial scaffold was deployed successfully.
 
 ## Functionalities
-- List expected user-facing behaviors.
-- Track major feature toggles or model choices.
+- Stage exists as a live scaffold and can host a future dedicated frontend variant.
+- Product capabilities remain the shared Whisk feature set until a new UI branch is activated.
 
 ## Architecture Touchpoints
-- Backend:
-- Frontend:
-- CDK:
-- AI scripts/notebooks:
+- Backend: shared contracts from `codex/dev`
+- Frontend: no active dedicated worktree at the moment
+- CDK: `StaticWebAWSAIStack-design-atelier`
+- AI scripts/notebooks: no stage-specific changes
 
 ## Contract Notes
-- API changes:
-- Runtime config changes:
-- Data model/storage changes:
+- API changes: none stage-specific
+- Runtime config changes: none stage-specific
+- Data model/storage changes: none stage-specific
 
 ## Handoff Notes For Sub-Agents
 - Current priority:
+  - if work resumes, create a dedicated `code` worktree before UI implementation
 - Known blockers:
+  - no active overlay branch is checked out for this idea
 - Next smallest shippable increment:
+  - stand up a `codex/design-atelier/code` worktree and freeze the frontend route/layout contract
