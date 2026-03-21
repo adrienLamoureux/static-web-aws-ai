@@ -39,19 +39,17 @@ if (!cloudfrontUrl) {
 
 const { chromium } = await loadPlaywright();
 const browser = await chromium.launch({ headless: true });
+/* ─── Kitsune route model ───
+   Primary: /, /studio, /stories, /browse, /admin, /admin/sounds, /admin/lora, /about
+   Legacy paths redirect to primary routes.
+*/
 const unauthenticatedChecks = [
   { id: "login-page", path: "/login", expectLogin: true, expectPath: "/login" },
   { id: "home-redirect", path: "/", expectLogin: true, expectPath: "/login" },
-  { id: "lora-redirect", path: "/lora", expectLogin: true, expectPath: "/login" },
-  { id: "videos-redirect", path: "/videos", expectLogin: true, expectPath: "/login" },
-  { id: "director-redirect", path: "/director", expectLogin: true, expectPath: "/login" },
-  { id: "story-redirect", path: "/story", expectLogin: true, expectPath: "/login" },
-  {
-    id: "music-library-redirect",
-    path: "/music-library",
-    expectLogin: true,
-    expectPath: "/login",
-  },
+  { id: "studio-redirect", path: "/studio", expectLogin: true, expectPath: "/login" },
+  { id: "stories-redirect", path: "/stories", expectLogin: true, expectPath: "/login" },
+  { id: "browse-redirect", path: "/browse", expectLogin: true, expectPath: "/login" },
+  { id: "admin-redirect", path: "/admin", expectLogin: true, expectPath: "/login" },
   { id: "about-redirect", path: "/about", expectLogin: true, expectPath: "/login" },
 ];
 
@@ -60,43 +58,74 @@ const authenticatedChecks = [
     id: "home-page",
     path: "/",
     expectPath: "/",
-    expectedAnyTexts: ["Search shared images", "Shared Images", "Whisk Studio"],
+    expectedAnyTexts: ["Home", "Your creative dashboard", "Whisk Studio"],
+  },
+  {
+    id: "studio-page",
+    path: "/studio",
+    expectPath: "/studio",
+    expectedAnyTexts: ["Studio", "Generate images"],
+  },
+  {
+    id: "stories-page",
+    path: "/stories",
+    expectPath: "/stories",
+    expectedAnyTexts: ["Stories", "Storytelling", "Story Teller", "Storybook"],
+  },
+  {
+    id: "browse-page",
+    path: "/browse",
+    expectPath: "/browse",
+    expectedAnyTexts: ["Browse", "Gallery", "Shared Images"],
+  },
+  {
+    id: "admin-page",
+    path: "/admin",
+    expectPath: "/admin",
+    expectedAnyTexts: ["Admin Dashboard", "Admin", "Command Center"],
+  },
+  {
+    id: "sounds-page",
+    path: "/admin/sounds",
+    expectPath: "/admin/sounds",
+    expectedAnyTexts: ["Sound Vault", "Upload and categorize", "Music Library"],
   },
   {
     id: "lora-page",
-    path: "/lora",
-    expectPath: "/lora",
-    expectedAnyTexts: ["LoRA Catalog", "Character LoRA Profile"],
-  },
-  {
-    id: "videos-page",
-    path: "/videos",
-    expectPath: "/videos",
-    expectedTexts: ["Videos"],
-  },
-  {
-    id: "director-page",
-    path: "/director",
-    expectPath: "/director",
-    expectedTexts: ["Global Command Center"],
-  },
-  {
-    id: "story-page",
-    path: "/story",
-    expectPath: "/story",
-    expectedAnyTexts: ["Storytelling Studio", "Story Teller", "Storybook Canvas"],
-  },
-  {
-    id: "music-library-page",
-    path: "/music-library",
-    expectPath: "/music-library",
-    expectedTexts: ["Upload and categorize soundtracks"],
+    path: "/admin/lora",
+    expectPath: "/admin/lora",
+    expectedAnyTexts: ["LoRA", "Character LoRA"],
   },
   {
     id: "about-page",
     path: "/about",
     expectPath: "/about",
     expectedTexts: ["Whisk Studio — static web app"],
+  },
+  /* Legacy redirects */
+  {
+    id: "legacy-forge",
+    path: "/forge",
+    expectPath: "/studio",
+    expectedAnyTexts: ["Studio"],
+  },
+  {
+    id: "legacy-story",
+    path: "/story",
+    expectPath: "/stories",
+    expectedAnyTexts: ["Stories", "Storytelling"],
+  },
+  {
+    id: "legacy-shared",
+    path: "/shared",
+    expectPath: "/browse",
+    expectedAnyTexts: ["Browse", "Gallery"],
+  },
+  {
+    id: "legacy-director",
+    path: "/director",
+    expectPath: "/admin",
+    expectedAnyTexts: ["Admin"],
   },
 ];
 
