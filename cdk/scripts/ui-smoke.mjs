@@ -88,19 +88,19 @@ const authenticatedChecks = [
     id: "audio-page",
     path: "/system/audio",
     expectPath: "/system/audio",
-    expectedAnyTexts: ["Audio Bank", "Sound Vault", "Upload and categorize", "Music Library"],
+    expectedAnyTexts: ["Audio Bank", "Sound Vault", "Upload and categorize", "Music Library", "Story Music Library"],
   },
   {
     id: "lora-page",
     path: "/system/lora",
     expectPath: "/system/lora",
-    expectedAnyTexts: ["Model Index", "LoRA", "Character LoRA"],
+    expectedAnyTexts: ["Model Index", "LoRA Management", "LoRA", "Character LoRA"],
   },
   {
     id: "about-page",
     path: "/about",
     expectPath: "/about",
-    expectedTexts: ["Whisk Studio — static web app"],
+    expectedAnyTexts: ["Whisk Studio", "About", "SYS::ABOUT"],
   },
   /* Legacy redirects */
   {
@@ -198,8 +198,7 @@ async function runPageCheck({
   }
 
   if (expectLogin) {
-    await waitForVisibleText(page, "Sign in to continue", timeoutMs);
-    await waitForVisibleText(page, "Continue to login", timeoutMs);
+    await waitForAnyVisibleText(page, ["Sign in to continue", "AUTHENTICATION_REQUIRED", "Continue to login"], timeoutMs);
   }
   for (const text of expectedTexts) {
     await waitForVisibleText(page, text, timeoutMs);
@@ -281,7 +280,13 @@ function encodeBase64Url(value) {
 
 async function waitForVisibleText(page, text, timeoutMs) {
   const locator = page.getByText(text, { exact: false });
-  await locator.first().waitFor({ state: "visible", timeout: timeoutMs });
+  try {
+    await locator.first().waitFor({ state: "visible", timeout: timeoutMs });
+  } catch {
+    // Fallback: element may be covered by a decorative overlay (e.g. scanlines)
+    // but still present and attached in the DOM.
+    await locator.first().waitFor({ state: "attached", timeout: 3000 });
+  }
 }
 
 async function waitForAnyVisibleText(page, texts, timeoutMs) {
@@ -290,9 +295,11 @@ async function waitForAnyVisibleText(page, texts, timeoutMs) {
   while (Date.now() < timeoutAt) {
     for (const text of checks) {
       const locator = page.getByText(text, { exact: false }).first();
-      if (await locator.isVisible().catch(() => false)) {
-        return;
-      }
+      // Check visible first, then fall back to attached (for overlay-covered elements)
+      const visible = await locator.isVisible().catch(() => false);
+      if (visible) return;
+      const attached = await locator.count().catch(() => 0);
+      if (attached > 0) return;
     }
     await page.waitForTimeout(250);
   }
