@@ -223,6 +223,7 @@ function YokaiShell({ children }) {
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
+              style={{ width: "100%" }}
               initial={{ opacity: 0, clipPath: "inset(0 0 100% 0)" }}
               animate={{ opacity: 1, clipPath: "inset(0 0 0% 0)" }}
               exit={{ opacity: 0, clipPath: "inset(100% 0 0 0)" }}

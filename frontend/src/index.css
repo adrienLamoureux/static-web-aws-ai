@@ -5,7 +5,7 @@
    ═══════════════════════════════════════════════════════════ */
 
 /* ─── Fonts ─── */
-@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap&font-display=swap');
 
 /* ─── Tokens ─── */
 :root {
@@ -83,8 +83,6 @@ button { cursor: pointer; }
 
 .yk-shell {
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: var(--yk-rail-width) 1fr;
 }
 
 /* ─── Scanline Overlay ─── */
@@ -95,7 +93,7 @@ button { cursor: pointer; }
   background: var(--yk-scanline);
   pointer-events: none;
   z-index: 9999;
-  opacity: 0.5;
+  opacity: 0.08;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -213,6 +211,7 @@ button { cursor: pointer; }
 .yk-content {
   flex: 1;
   padding: 20px 24px;
+  min-width: 0;
 }
 
 /* ─── Page Header (inline, for pages that don't use banner) ─── */
@@ -714,7 +713,7 @@ button { cursor: pointer; }
 /* ─── Login Page ─── */
 
 .yk-login-page {
-  min-height: 100vh;
+  min-height: calc(100vh - 40px);
   display: flex;
   align-items: center;
   justify-content: center;
