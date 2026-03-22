@@ -1,0 +1,15 @@
+{
+  "StaticWebAWSAIStack-design-yokai": {
+    "MediaBucketName": "staticwebawsaistack-design-yok-mediabucketbcbb02ba-sce5unfdfrdt",
+    "UserPoolClientId": "47odo71lvcr642ra2hsorj1pd0",
+    "CloudFrontURL": "doz5asgnyk2n8.cloudfront.net",
+    "UserPoolId": "us-east-1_fLw4qSxjW",
+    "StageName": "design-yokai",
+    "APIEndpoint": "https://ved9vtdyga.execute-api.us-east-1.amazonaws.com/prod/",
+    "SecondaryAdminUserEmail": "not-configured",
+    "AdminUserEmail": "not-configured",
+    "ApiGatewayEndpoint5AA8EC3A": "https://ved9vtdyga.execute-api.us-east-1.amazonaws.com/prod/",
+    "CognitoDomainPrefix": "whisk-studio-design-yokai-761593662432",
+    "CognitoDomain": "https://whisk-studio-design-yokai-761593662432.auth.us-east-1.amazoncognito.com"
+  }
+}
