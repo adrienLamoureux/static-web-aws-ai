@@ -3,22 +3,16 @@ const express = require("express");
 const { createDeps } = require("./lib/build-deps");
 const { registerRoutes } = require("./routes");
 
-const CORS_ALLOW_ORIGIN = "*";
-const CORS_ALLOW_HEADERS = [
-  "Origin",
-  "X-Requested-With",
-  "Content-Type",
-  "Accept",
-  "Authorization",
-].join(", ");
-const CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"].join(", ");
-
 const app = express();
 app.use(express.json());
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", CORS_ALLOW_ORIGIN);
-  res.header("Access-Control-Allow-Headers", CORS_ALLOW_HEADERS);
-  res.header("Access-Control-Allow-Methods", CORS_ALLOW_METHODS);
+  const allowedOrigin = "*";
+  res.header("Access-Control-Allow-Origin", allowedOrigin);
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+  );
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   if (req.method === "OPTIONS") {
     return res.sendStatus(204);
   }

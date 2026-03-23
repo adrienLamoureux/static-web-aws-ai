@@ -18,13 +18,7 @@ module.exports = (app, deps) => {
     ListObjectsV2Command,
     DeleteObjectCommand,
     deleteMediaItem,
-    getItem,
-    buildMediaPk,
-    buildMediaSk,
   } = deps;
-
-const buildImageJobKey = (predictionId = "") =>
-  `render/replicate/image/${predictionId || Date.now()}`;
 
 app.get("/replicate/image/status", async (req, res) => {
   const mediaBucket = process.env.MEDIA_BUCKET;
@@ -33,8 +27,6 @@ app.get("/replicate/image/status", async (req, res) => {
   const predictionId = req.query?.predictionId;
   const imageName = req.query?.imageName;
   const batchId = req.query?.batchId;
-  const prompt = String(req.query?.prompt || "").trim();
-  const negativePrompt = String(req.query?.negativePrompt || "").trim();
 
   if (!mediaBucket) {
     return res.status(500).json({ message: "MEDIA_BUCKET must be set" });
@@ -64,24 +56,7 @@ app.get("/replicate/image/status", async (req, res) => {
         message: "Prediction not found",
       });
     }
-    const jobKey = buildImageJobKey(predictionId);
     if (prediction.status !== "succeeded") {
-      await putMediaItem({
-        userId,
-        type: "JOB",
-        key: jobKey,
-        extra: {
-          provider: "replicate",
-          entityType: "image",
-          predictionId,
-          imageName,
-          batchId,
-          status: prediction.status,
-          progressPct: prediction.status === "starting" ? 20 : 58,
-          etaSeconds: 45,
-          updatedAt: new Date().toISOString(),
-        },
-      });
       return res.json({
         predictionId,
         status: prediction.status,
@@ -113,15 +88,7 @@ app.get("/replicate/image/status", async (req, res) => {
             ContentType: contentType,
           })
         );
-        await putMediaItem({
-          userId,
-          type: "IMG",
-          key,
-          extra: {
-            ...(prompt ? { prompt } : {}),
-            ...(negativePrompt ? { negativePrompt } : {}),
-          },
-        });
+        await putMediaItem({ userId, type: "IMG", key });
         const signedUrl = await getSignedUrl(
           s3Client,
           new GetObjectCommand({
@@ -133,23 +100,6 @@ app.get("/replicate/image/status", async (req, res) => {
         return { key, url: signedUrl };
       })
     );
-    await putMediaItem({
-      userId,
-      type: "JOB",
-      key: jobKey,
-      extra: {
-        provider: "replicate",
-        entityType: "image",
-        predictionId,
-        imageName,
-        batchId,
-        status: "completed",
-        progressPct: 100,
-        etaSeconds: 0,
-        completedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    });
 
     res.json({
       predictionId,
@@ -158,28 +108,6 @@ app.get("/replicate/image/status", async (req, res) => {
       images,
     });
   } catch (error) {
-    if (predictionId) {
-      try {
-        await putMediaItem({
-          userId,
-          type: "JOB",
-          key: buildImageJobKey(predictionId),
-          extra: {
-            provider: "replicate",
-            entityType: "image",
-            predictionId,
-            imageName,
-            batchId,
-            status: "failed",
-            progressPct: 100,
-            etaSeconds: 0,
-            completedAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            errorMessage: error?.message || String(error),
-          },
-        });
-      } catch (_ignored) {}
-    }
     console.error("Replicate image status error details:", {
       name: error?.name,
       message: error?.message,
@@ -284,26 +212,7 @@ app.post("/images/select", async (req, res) => {
       );
     }
 
-    const existingItem = await getItem({
-      pk: buildMediaPk(userId),
-      sk: buildMediaSk("IMG", selectedKey),
-    });
-    const nowIso = new Date().toISOString();
-    const existingExtra = { ...(existingItem || {}) };
-    delete existingExtra.pk;
-    delete existingExtra.sk;
-    delete existingExtra.type;
-    delete existingExtra.key;
-    await putMediaItem({
-      userId,
-      type: "IMG",
-      key: selectedKey,
-      extra: {
-        ...existingExtra,
-        createdAt: existingItem?.createdAt || nowIso,
-        updatedAt: nowIso,
-      },
-    });
+    await putMediaItem({ userId, type: "IMG", key: selectedKey });
     for (const key of deleteKeys) {
       await deleteMediaItem({ userId, type: "IMG", key });
     }

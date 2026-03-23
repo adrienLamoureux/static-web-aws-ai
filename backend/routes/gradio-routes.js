@@ -169,16 +169,7 @@ app.post("/gradio/image/generate", async (req, res) => {
         ContentType: contentType || "image/png",
       })
     );
-    await putMediaItem({
-      userId,
-      type: "IMG",
-      key,
-      extra: {
-        prompt,
-        negativePrompt: resolvedNegativePrompt || "",
-        model: modelKey,
-      },
-    });
+    await putMediaItem({ userId, type: "IMG", key });
     const signedUrl = await getSignedUrl(
       s3Client,
       new GetObjectCommand({

@@ -64,13 +64,10 @@ module.exports = (app, deps) => {
 
   const buildSessionResponse = (item = {}) => ({
     id: resolveSessionId(item),
-    sessionId: resolveSessionId(item),
     title: item.title,
     presetId: item.presetId,
     protagonistName: item.protagonistName,
     synopsis: item.synopsis,
-    characterId: item.characterId || null,
-    loraProfileId: item.loraProfileId || null,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
     turnCount: item.turnCount || 0,
@@ -312,49 +309,10 @@ app.delete("/story/sessions", async (req, res) => {
   }
 });
 
-app.patch("/story/sessions/:id/lora", async (req, res) => {
-  const userId = req.user?.sub;
-  const sessionId = req.params?.id;
-  if (!userId) return res.status(401).json({ message: "Unauthorized" });
-  if (!sessionId) return res.status(400).json({ message: "sessionId is required" });
-
-  const loraProfileId = req.body?.loraProfileId !== undefined
-    ? (req.body.loraProfileId || null)
-    : undefined;
-
-  if (loraProfileId === undefined) {
-    return res.status(400).json({ message: "loraProfileId is required in body (use null to clear)" });
-  }
-
-  try {
-    const existing = await getItem({
-      pk: buildMediaPk(userId),
-      sk: buildStorySessionSk(sessionId),
-    });
-    if (!existing) {
-      return res.status(404).json({ message: "Story session not found" });
-    }
-    const now = new Date().toISOString();
-    const updated = { ...existing, loraProfileId, updatedAt: now };
-    await dynamoClient.send(
-      new PutCommand({ TableName: mediaTable, Item: updated })
-    );
-    return res.json({
-      session: buildSessionResponse(updated),
-    });
-  } catch (error) {
-    console.error("Session lora patch error:", error?.message);
-    return res.status(500).json({ message: "Failed to update session LoRA", error: error?.message });
-  }
-});
-
 app.post("/story/sessions", async (req, res) => {
   const userId = req.user?.sub;
   const presetId = req.body?.presetId;
   const title = req.body?.title?.trim();
-  // New optional fields: characterId and loraProfileId
-  const requestedCharacterId = req.body?.characterId || null;
-  const requestedLoraProfileId = req.body?.loraProfileId || null;
   if (!mediaTable) {
     return res.status(500).json({ message: "MEDIA_TABLE is not set" });
   }
@@ -435,10 +393,6 @@ app.post("/story/sessions", async (req, res) => {
       protagonistId: resolvedProtagonistId || character?.id || "",
       protagonistName,
       protagonistPrompt,
-      // characterId: explicit character selection (may differ from protagonistId)
-      characterId: requestedCharacterId || resolvedProtagonistId || character?.id || null,
-      // loraProfileId: optional LoRA profile to use for illustrations
-      loraProfileId: requestedLoraProfileId || null,
       worldPrompt: preset.worldPrompt,
       stylePrompt: preset.stylePrompt,
       negativePrompt: preset.negativePrompt,

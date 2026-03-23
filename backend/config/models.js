@@ -3,17 +3,6 @@ const DEFAULT_NEGATIVE_PROMPT =
 const DEFAULT_GRADIO_NEGATIVE_PROMPT =
   "lowres, {bad}, error, fewer, extra, missing, worst quality, jpeg artifacts, bad quality, watermark, unfinished, displeasing, chromatic aberration, signature, extra digits, artistic error, username, scan, [abstract]";
 
-const parseOptionalNumber = (value) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-};
-
-const CIVITAI_DEFAULT_SIZES = Object.freeze([
-  { width: 1024, height: 1024 },
-  { width: 768, height: 1024 },
-  { width: 1024, height: 768 },
-]);
-
 
 const imageModelConfig = {
   titan: {
@@ -214,57 +203,6 @@ const replicateModelConfig = {
   },
 };
 
-const civitaiModelConfig = {
-  "civitai-sd15-anime": {
-    provider: "civitai",
-    modelId:
-      process.env.CIVITAI_SD15_MODEL_URN ||
-      "urn:air:sd1:checkpoint:civitai:4384@128713",
-    baseModel: "SD_1_5",
-    loraAirModelFamily: "sd1",
-    supportsLora: true,
-    estimatedUnitCostUsd: parseOptionalNumber(
-      process.env.CIVITAI_SD15_ESTIMATED_UNIT_COST_USD
-    ),
-    sizes: CIVITAI_DEFAULT_SIZES,
-    buildInput: ({ prompt, negativePrompt, width, height, seed }) => ({
-      prompt,
-      ...(negativePrompt ? { negativePrompt } : {}),
-      scheduler: "EulerA",
-      steps: 28,
-      cfgScale: 7,
-      width,
-      height,
-      ...(Number.isFinite(Number(seed)) ? { seed: Number(seed) } : {}),
-      clipSkip: 2,
-    }),
-  },
-  "civitai-pony-sdxl": {
-    provider: "civitai",
-    modelId:
-      process.env.CIVITAI_PONY_MODEL_URN ||
-      "urn:air:pony:checkpoint:civitai:372465@534642",
-    baseModel: "SDXL",
-    loraAirModelFamily: "sdxl",
-    supportsLora: true,
-    estimatedUnitCostUsd: parseOptionalNumber(
-      process.env.CIVITAI_PONY_ESTIMATED_UNIT_COST_USD
-    ),
-    sizes: CIVITAI_DEFAULT_SIZES,
-    buildInput: ({ prompt, negativePrompt, width, height, seed }) => ({
-      prompt,
-      ...(negativePrompt ? { negativePrompt } : {}),
-      scheduler: "EulerA",
-      steps: 28,
-      cfgScale: 7,
-      width,
-      height,
-      ...(Number.isFinite(Number(seed)) ? { seed: Number(seed) } : {}),
-      clipSkip: 2,
-    }),
-  },
-};
-
 const gradioSpaceConfig = {
   wainsfw: {
     spaceId: "Menyu/wainsfw",
@@ -360,12 +298,6 @@ const replicateVideoConfig = {
   "wan-2.2-i2v-fast": {
     modelId: "wan-video/wan-2.2-i2v-fast",
     requiresImage: true,
-    loraInjection: {
-      scaleFieldNames: [
-        "lora_scale_transformer",
-        "lora_scale_transformer_2",
-      ],
-    },
     buildInput: ({ imageUrl, prompt }) => ({
       image: imageUrl,
       prompt,
@@ -426,7 +358,6 @@ module.exports = {
   DEFAULT_GRADIO_NEGATIVE_PROMPT,
   imageModelConfig,
   replicateModelConfig,
-  civitaiModelConfig,
   gradioSpaceConfig,
   replicateVideoConfig,
 };
