@@ -1,0 +1,15 @@
+{
+  "StaticWebAWSAIStack-dev": {
+    "MediaBucketName": "staticwebawsaistack-dev-mediabucketbcbb02ba-fg7e7cs3miis",
+    "UserPoolClientId": "6qcsnr78lth12ql962iu9thhu6",
+    "CloudFrontURL": "d2l9b1xmucsb19.cloudfront.net",
+    "UserPoolId": "us-east-1_KGfmw3Ykn",
+    "StageName": "dev",
+    "APIEndpoint": "https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/",
+    "SecondaryAdminUserEmail": "not-configured",
+    "AdminUserEmail": "not-configured",
+    "ApiGatewayEndpoint5AA8EC3A": "https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/",
+    "CognitoDomainPrefix": "whiskstudio-alx-dev-761593662432",
+    "CognitoDomain": "https://whiskstudio-alx-dev-761593662432.auth.us-east-1.amazoncognito.com"
+  }
+}

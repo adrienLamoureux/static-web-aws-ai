@@ -1,90 +1,79 @@
-# Codex Collaboration Instructions
+# Design-Sakura Agent Guide
 
-## Core Engineering Rules
-- Follow `SOLID`, `DRY`, and `KISS`.
-- Do not add hardcoded values.
-- Do not add magic numbers.
-- Externalize secrets and environment-specific values to env/config (`process.env`, `frontend/public/config.json`, `.env`).
-- Reuse existing constant/config modules before creating new literals.
+> Last updated: 2026-03-23
+> Branch: `codex/design-sakura/code`
+> Worktree: `/Users/adrienlamoureux/Documents/code/wt/design-sakura/code`
+> Live stack: see `ideas/design-sakura/STATUS.md`
+> Backend (shared): `codex/dev` — `https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/`
 
-## Stack Map
-- Backend API: Node.js + Express in `backend/`, Lambda adapter in `backend/lambda.js`.
-- Backend composition root: `backend/lib/build-deps.js`.
-- Backend routes: `backend/routes/*.js`.
-- Backend domain/helpers: `backend/lib/*.js`.
-- Frontend app: React (CRA) in `frontend/src/`.
-- Frontend API access: `frontend/src/services/*.js` (single source for HTTP calls).
-- Frontend story domain: `frontend/src/pages/story/*`.
-- Infra: AWS CDK TypeScript in `cdk/`.
-- AI scripts: Python notebooks/scripts in `ai/` (isolated from runtime app paths).
+## Mission
+- This branch is a frontend-only UI overlay. It does **not** own a backend.
+- It uses the `codex/dev` backend (Lambda + API GW + DynamoDB + Cognito User Pool) via `UiOnlyStack`.
+- The design system is **Sakura Bloom** (`skr-` CSS prefix): deep indigo `#0D0B14`, sakura pink `#FF6B9D`, glassmorphism, bottom HUD navigation.
+- Treat it as a live authenticated product surface: all routes hit the shared dev API.
 
-## Parallel Workflow Policy
-- Use single-thread execution for small changes that touch one area.
-- Use `planner -> workers -> integrator` for medium/large tasks.
-- Run each worker in a separate Git worktree and branch.
-- Branch naming: `codex/<ticket>-<slice>`.
-- Freeze contracts before workers start.
+## ⚠ Scope — HARD LIMIT
+**This branch may only change `frontend/**`** and these branch-local docs:
+- `AGENTS.md`
+- `README.md`
+- `frontend/REQUIREMENTS.md`
+- `ideas/design-sakura/**`
 
-## Planner Required Output
-1. Problem statement and non-goals.
-2. Frozen contracts (API payloads, function signatures, shared object shapes).
-3. Slice ownership by path.
-4. Validation gates per slice.
-5. Merge order and integration risks.
+**Never change:**
+- `backend/**` — all backend work belongs on `codex/dev`
+- `cdk/lib/static-web-aws-ai-stack.ts` — full-stack CDK, not ours
+- shared idea registries or cross-repo architecture docs
 
-## Worker Rules
-- Edit only owned files and contract-approved interfaces.
-- Keep diffs minimal and reversible.
-- If an API contract changes in backend routes, include or coordinate matching updates in `frontend/src/services/`.
-- Do not change auth behavior in `backend/lib/auth.js` unless explicitly required.
-- Raise blockers with concrete file references and contract impact.
+If a task appears to require a backend change, stop. Move that work to `codex/dev` first.
 
-## Integrator Rules
-- Merge slices in planner order.
-- Detect and resolve contract drift before cleanup refactors.
-- Run relevant quality gates.
-- Report regressions and behavior risks first, then summary.
+## Read Order
+1. `frontend/REQUIREMENTS.md`
+2. `frontend/src/App.js` (SakuraShell, bottom HUD, route map)
+3. `frontend/src/index.css` (Sakura Bloom design tokens — `skr-` prefix)
+4. The page or component you are about to touch
+5. The matching service file under `frontend/src/services/`
+
+## Runtime Architecture
+- Provider chain (frozen): `ConfigProvider → AuthProvider → MusicProvider → Router`
+- `ConfigContext` loads `/config.json` and provides `apiBaseUrl`, `cognito`, `configReady`
+- `AuthContext` owns Cognito PKCE login/logout. Do NOT modify.
+- `MusicContext` is the shared track registry and autoplay trigger
+- Styling is centralized in `frontend/src/index.css` using the `skr-` namespace
+
+## Route Map
+| Path | Page | Notes |
+|------|------|-------|
+| `/` | Realm (HomePage) | Animated masonry hero |
+| `/atelier` | Atelier (Forge) | Images + Videos tabs |
+| `/chronicle` | Chronicle (Story) | Story sessions |
+| `/gallery` | Gallery (SharedLibrary) | Masonry gallery |
+| `/sanctum` | Sanctum (Director) | Admin dashboard |
+| `/sanctum/sounds` | Sound Vault (StoryMusicLibrary) | |
+| `/sanctum/lora` | LoRA Archive (LoraManagement) | |
+| `/about` | About | |
+
+Legacy paths (`/forge`, `/story`, `/shared`, `/director/*`, `/music-library`, etc.) all redirect to the primary routes above.
+
+## CSS Conventions
+- All new classes must use the `skr-` prefix
+- Design tokens are CSS variables defined in `:root` in `index.css`
+- Key tokens: `--skr-bg`, `--skr-surface`, `--skr-accent` (sakura pink), `--skr-accent-secondary` (wisteria purple)
+- Do not introduce Tailwind, Bootstrap, or other utility frameworks
+
+## Frozen Service Contracts
+- `services/` files are read-only in this branch. If an API payload changes, update `codex/dev` first.
+- `GET /story/sessions/:id` → `{ session: { id }, messages: [], scenes: [] }` — messages/scenes at top level
+- Music track shape: `{ key, url, title, source, mood, energy, tempoBpm, tags, updatedAt }`
 
 ## Quality Gates
-Run from repo root:
+- Frontend build: `npm --prefix frontend run build`
+- Deploy (ui-only, uses shared dev backend):
+  `npm --prefix cdk run idea:deploy -- --stage=design-sakura --backend-stage=dev`
 
-- Backend touched:
-`node -e "require('./backend/index')"`
+**Always deploy with `--backend-stage=dev`.** Never deploy without it — omitting creates a duplicate full-stack with its own backend.
 
-- Frontend touched:
-`npm --prefix frontend run build`
-
-- CDK touched:
-`npm --prefix cdk run build`
-
-- Cross-layer changes (backend + frontend contract or backend + cdk):
-run all applicable commands above before finalizing.
-
-## Slice Templates For This Repo
-- `backend-api`: `backend/routes/**`, `backend/lib/**`, optional `backend/config/**`.
-- `frontend-ui`: `frontend/src/pages/**`, `frontend/src/components/**`, related css.
-- `frontend-service`: `frontend/src/services/**`, API payload/response normalization.
-- `infra-cdk`: `cdk/lib/**`, `cdk/bin/**`.
-- `ai-research`: `ai/scripts/**`, `ai/notebooks/**`.
-
-## Investigation-First Mode
-For bugs and unclear behavior, start read-only:
-1. Reproduction steps.
-2. Top 3 hypotheses ranked by likelihood.
-3. Evidence with file references.
-4. Smallest validation experiment.
-
-Only after that, implement the minimal safe fix and re-run gates.
-
-## Prompt Templates
-Planner:
-"Decompose this ticket into independent slices for backend/frontend/cdk as needed. Freeze contracts, define ownership by file paths, and list validation gates and merge order."
-
-Worker:
-"Implement only slice <X> in the assigned paths. Respect frozen contracts. Keep changes minimal, avoid hardcoded values/magic numbers, and run slice gates."
-
-Integrator:
-"Integrate all completed slices, check for contract drift, run all required gates, and report regressions/risks before final summary."
-
-Investigation:
-"Investigate in read-only mode first. Return reproduction, ranked hypotheses, evidence with file references, and the smallest validation experiment. No code changes yet."
+## What `--backend-stage=dev` Does
+- Reads `ideas/dev/cdk-outputs.json` for the backend API endpoint, User Pool ID, and Cognito domain
+- Deploys a `UiOnlyStack`: CloudFront + S3 + a new Cognito app client on the **shared** dev User Pool
+- No Lambda, no API GW, no DynamoDB, no new Cognito User Pool are created
+- `config.json` in the S3 bucket points to the shared dev API automatically
