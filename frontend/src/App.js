@@ -12,7 +12,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ConfigProvider, useConfig } from "./contexts/ConfigContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { MusicProvider } from "./contexts/MusicContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import SakuraMusicBar from "./components/sakura/SakuraMusicBar";
+import ThemeSwitcher from "./components/sakura/ThemeSwitcher";
 
 // Pages
 import HomePage from "./pages/HomePage";
@@ -132,6 +134,7 @@ function SakuraShell({ children }) {
             <span className="skr-brand-name">Whisk Studio</span>
           </Link>
           <div className="skr-topbar-right">
+            <ThemeSwitcher />
             <span className="skr-topbar-user">{user?.email || ""}</span>
             <button type="button" className="skr-btn-ghost" onClick={logout}>
               Sign out
@@ -235,13 +238,15 @@ function ConfiguredApp() {
   }
 
   return (
-    <AuthProvider cognito={cognito}>
-      <MusicProvider>
-        <Router>
-          <AppRoutes />
-        </Router>
-      </MusicProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider cognito={cognito}>
+        <MusicProvider>
+          <Router>
+            <AppRoutes />
+          </Router>
+        </MusicProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
