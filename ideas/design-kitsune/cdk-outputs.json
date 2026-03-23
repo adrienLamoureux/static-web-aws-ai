@@ -1,15 +1,8 @@
 {
   "StaticWebAWSAIStack-design-kitsune": {
-    "MediaBucketName": "staticwebawsaistack-design-kit-mediabucketbcbb02ba-s5stu3tumpxk",
-    "UserPoolClientId": "8s85puar8pomo4ujfn9n2efe2",
+    "UserPoolClientId": "5rlkoiildifak4b6591ek47ohi",
     "CloudFrontURL": "d2gmxz2dbzrvfm.cloudfront.net",
-    "UserPoolId": "us-east-1_tvruM5avI",
     "StageName": "design-kitsune",
-    "APIEndpoint": "https://rqtsmads46.execute-api.us-east-1.amazonaws.com/prod/",
-    "SecondaryAdminUserEmail": "not-configured",
-    "AdminUserEmail": "not-configured",
-    "ApiGatewayEndpoint5AA8EC3A": "https://rqtsmads46.execute-api.us-east-1.amazonaws.com/prod/",
-    "CognitoDomainPrefix": "whisk-studio-design-kitsune-761593662432",
-    "CognitoDomain": "https://whisk-studio-design-kitsune-761593662432.auth.us-east-1.amazoncognito.com"
+    "APIEndpoint": "https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/"
   }
 }
