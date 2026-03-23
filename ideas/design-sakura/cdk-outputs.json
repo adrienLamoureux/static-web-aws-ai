@@ -1,15 +1,8 @@
 {
   "StaticWebAWSAIStack-design-sakura": {
-    "MediaBucketName": "staticwebawsaistack-design-sak-mediabucketbcbb02ba-qibqiulx16gd",
-    "UserPoolClientId": "6it868565l2i2p04gm48s7ar9l",
+    "UserPoolClientId": "48b6fobf9tf0j9o19vr7nn8ht0",
     "CloudFrontURL": "d2lepwk3t4buta.cloudfront.net",
-    "UserPoolId": "us-east-1_MUAYQXnQA",
     "StageName": "design-sakura",
-    "APIEndpoint": "https://xu3rykdxfj.execute-api.us-east-1.amazonaws.com/prod/",
-    "SecondaryAdminUserEmail": "not-configured",
-    "AdminUserEmail": "not-configured",
-    "ApiGatewayEndpoint5AA8EC3A": "https://xu3rykdxfj.execute-api.us-east-1.amazonaws.com/prod/",
-    "CognitoDomainPrefix": "whisk-studio-design-sakura-761593662432",
-    "CognitoDomain": "https://whisk-studio-design-sakura-761593662432.auth.us-east-1.amazoncognito.com"
+    "APIEndpoint": "https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/"
   }
 }
