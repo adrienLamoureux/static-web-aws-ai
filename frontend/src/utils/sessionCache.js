@@ -25,6 +25,15 @@ export const writeSessionCache = (key, data) => {
   }
 };
 
+export const removeSessionCache = (key) => {
+  if (!key || typeof window === "undefined") return;
+  try {
+    window.sessionStorage.removeItem(key);
+  } catch (error) {
+    // ignore cache remove failures
+  }
+};
+
 export const clearSessionCache = () => {
   if (typeof window === "undefined") return;
   try {

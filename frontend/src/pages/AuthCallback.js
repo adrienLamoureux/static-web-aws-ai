@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
-function AuthCallback() {
+export default function AuthCallback() {
   const { completeLogin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -24,7 +24,7 @@ function AuthCallback() {
       try {
         const redirectTo = await completeLogin({ code, state });
         if (!isMounted) return;
-        navigate(redirectTo, { replace: true });
+        navigate(redirectTo || "/", { replace: true });
       } catch (err) {
         if (!isMounted) return;
         setError(err?.message || "Login failed.");
@@ -39,30 +39,27 @@ function AuthCallback() {
   }, [completeLogin, location.search, navigate]);
 
   return (
-    <section className="auth-shell">
-      <div className="auth-card glass-panel">
-        <p className="auth-eyebrow">Whisk Studio</p>
-        <h1 className="auth-title">Signing you in…</h1>
-        <p className="auth-copy">
-          Completing the secure login handshake. This should only take a moment.
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--skr-base)' }}>
+      <div className="skr-card" style={{ padding: 40, width: 420, maxWidth: '95vw', textAlign: 'center' }}>
+        <p style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--skr-text-tertiary)', marginBottom: 16 }}>
+          whisk studio
         </p>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--skr-text-primary)', marginBottom: 12 }}>
+          Signing you in…
+        </h1>
         {error ? (
-          <p className="auth-error">{error}</p>
+          <>
+            <p style={{ fontSize: 13, color: '#ef4444', marginBottom: 20 }}>{error}</p>
+            <button className="skr-btn-secondary" onClick={() => navigate('/login')}>
+              Back to login
+            </button>
+          </>
         ) : (
-          <p className="auth-loading">Finalizing session…</p>
-        )}
-        {error && (
-          <button
-            type="button"
-            className="btn-primary px-6 py-2 text-sm"
-            onClick={() => navigate("/login")}
-          >
-            Back to login
-          </button>
+          <p style={{ fontSize: 14, color: 'var(--skr-text-secondary)' }}>
+            Finalizing your session…
+          </p>
         )}
       </div>
-    </section>
+    </div>
   );
 }
-
-export default AuthCallback;

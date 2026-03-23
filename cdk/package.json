@@ -2,10 +2,31 @@
   "name": "cdk",
   "version": "1.0.0",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "idea:list": "node scripts/idea-env.js list",
+    "idea:init": "node scripts/idea-env.js init",
+    "idea:deploy": "node scripts/idea-env.js deploy",
+    "idea:ui-local": "node scripts/idea-env.js ui-local",
+    "idea:rollout": "node scripts/idea-env.js rollout",
+    "idea:deploy-all": "node scripts/idea-env.js deploy-many --all",
+    "idea:seed": "node scripts/seed-idea-content.js seed",
+    "idea:seed-many": "node scripts/seed-idea-content.js seed-many",
+    "idea:seed-all": "node scripts/seed-idea-content.js seed-many --all",
+    "idea:destroy": "node scripts/idea-env.js destroy",
+    "idea:sanity": "node scripts/idea-env.js sanity",
+    "idea:ui-smoke": "node scripts/idea-env.js ui-smoke",
+    "idea:diff": "node scripts/idea-env.js diff",
+    "idea:diff-all": "node scripts/idea-env.js diff-many --all",
+    "idea:synth": "node scripts/idea-env.js synth",
+    "idea:synth-all": "node scripts/idea-env.js synth-many --all",
+    "idea:deploy-many": "node scripts/idea-env.js deploy-many",
+    "idea:diff-many": "node scripts/idea-env.js diff-many",
+    "idea:synth-many": "node scripts/idea-env.js synth-many",
+    "idea:scope-check": "bash ../scripts/check-design-pixnovel-scope.sh"
   },
   "devDependencies": {
     "@types/node": "^22.13.17",
+    "playwright": "^1.58.2",
     "typescript": "^5.8.2"
   },
   "dependencies": {

@@ -8,11 +8,53 @@ import {
   getReplicateVideoStatus,
 } from "../../../services/replicate";
 
+const buildUnsupportedLoraMessage = ({
+  modelKey = "",
+  modality = "video",
+  supportedModels = [],
+}) => {
+  const normalizedModelKey = String(modelKey || "").trim() || "selected model";
+  const options = Array.isArray(supportedModels)
+    ? supportedModels.map((item) => String(item || "").trim()).filter(Boolean)
+    : [];
+  const supportedText = options.length
+    ? `Compatible models: ${options.join(", ")}.`
+    : `No ${modality} models are currently configured with LoRA support.`;
+  return `The selected LoRA profile cannot be used with "${normalizedModelKey}". ${supportedText}`;
+};
+
+const FALLBACK_REPLICATE_VIDEO_MODELS = Object.freeze([
+  {
+    key: "wan-2.2-i2v-fast",
+    name: "wan-2.2-i2v-fast",
+    description: "Image-to-video fast",
+  },
+  {
+    key: "veo-3.1-fast",
+    name: "veo-3.1-fast",
+    description: "Image-to-video with audio",
+  },
+  {
+    key: "kling-v2.6",
+    name: "kling-v2.6",
+    description: "Text-to-video",
+  },
+  {
+    key: "seedance-1.5-pro",
+    name: "seedance-1.5-pro",
+    description: "Text-to-video with audio",
+  },
+]);
+
 export const useVideoGeneration = ({
   apiBaseUrl,
   selectedImageKey,
   selectedSourceImageKey,
   selectedImageUrl,
+  selectedLoraProfileId = "",
+  loraVideoSupportByModel = {},
+  supportedVideoLoraModels = [],
+  directorVideoModels = [],
   onError,
   onSubmitted,
   onCompleted,
@@ -56,30 +98,27 @@ export const useVideoGeneration = ({
     },
   ];
 
+  const replicateModelOptionsFromDirector = useMemo(
+    () =>
+      (Array.isArray(directorVideoModels) ? directorVideoModels : [])
+        .map((item) => {
+          const key = String(item?.key || "").trim();
+          if (!key) return null;
+          return {
+            key,
+            name: key,
+            description: String(item?.label || key).trim() || key,
+          };
+        })
+        .filter(Boolean),
+    [directorVideoModels]
+  );
+
   const videoModelOptions = useMemo(() => {
     if (videoProvider === "replicate") {
-      return [
-        {
-          key: "wan-2.2-i2v-fast",
-          name: "wan-2.2-i2v-fast",
-          description: "Image-to-video fast",
-        },
-        {
-          key: "veo-3.1-fast",
-          name: "veo-3.1-fast",
-          description: "Image-to-video with audio",
-        },
-        {
-          key: "kling-v2.6",
-          name: "kling-v2.6",
-          description: "Text-to-video",
-        },
-        {
-          key: "seedance-1.5-pro",
-          name: "seedance-1.5-pro",
-          description: "Text-to-video with audio",
-        },
-      ];
+      return replicateModelOptionsFromDirector.length
+        ? replicateModelOptionsFromDirector
+        : FALLBACK_REPLICATE_VIDEO_MODELS;
     }
     return [
       {
@@ -88,7 +127,7 @@ export const useVideoGeneration = ({
         description: "Bedrock Nova Reel",
       },
     ];
-  }, [videoProvider]);
+  }, [videoProvider, replicateModelOptionsFromDirector]);
 
   const isReplicateAudioOption =
     videoProvider === "replicate" &&
@@ -117,6 +156,19 @@ export const useVideoGeneration = ({
     }
     if (!apiBaseUrl) {
       onError?.("API base URL is missing. Set it in config.json or .env.");
+      return;
+    }
+    if (
+      selectedLoraProfileId &&
+      (videoProvider !== "replicate" || !Boolean(loraVideoSupportByModel[videoModel]))
+    ) {
+      onError?.(
+        buildUnsupportedLoraMessage({
+          modelKey: videoModel,
+          modality: "video",
+          supportedModels: supportedVideoLoraModels,
+        })
+      );
       return;
     }
     onError?.("");
@@ -156,6 +208,7 @@ export const useVideoGeneration = ({
           prompt: prompt?.trim() || undefined,
           inputKey: resolvedInputKey,
           imageUrl: selectedImageUrl,
+          characterId: selectedLoraProfileId || undefined,
           ...(isReplicateAudioOption
             ? { generateAudio: videoGenerateAudio }
             : {}),
@@ -245,6 +298,7 @@ export const useVideoGeneration = ({
         const data = await getReplicateVideoStatus(apiBaseUrl, {
           predictionId: replicatePredictionId,
           inputKey: replicateInputKey || selectedImageKey,
+          characterId: selectedLoraProfileId || undefined,
         });
         const statusValue = data?.status || "";
         setReplicateJobStatus(statusValue);
@@ -271,7 +325,13 @@ export const useVideoGeneration = ({
         clearTimeout(timeoutId);
       }
     };
-  }, [apiBaseUrl, replicatePredictionId, replicateInputKey, selectedImageKey]);
+  }, [
+    apiBaseUrl,
+    replicatePredictionId,
+    replicateInputKey,
+    selectedImageKey,
+    selectedLoraProfileId,
+  ]);
 
   return {
     videoProvider,

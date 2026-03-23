@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   generateBedrockImage,
   generatePromptHelper,
@@ -7,6 +7,10 @@ import {
   generateReplicateImage,
   getReplicateImageStatus,
 } from "../../../services/replicate";
+import {
+  generateCivitaiImage,
+  getCivitaiImageStatus,
+} from "../../../services/civitai";
 import { generateHuggingFaceImage } from "../../../services/huggingface";
 import { createVideoReadyImage } from "../../../services/images";
 import {
@@ -16,6 +20,7 @@ import {
 import { buildSafeFileName } from "../../../utils/fileName";
 import { listStoryCharacters } from "../../../services/story";
 import { listPromptHelperOptions } from "../../../services/promptHelper";
+import { saveLoraProfile } from "../../../services/lora";
 
 const DEFAULT_IMAGE_SOURCE = "replicate";
 const DEFAULT_IMAGE_MODEL = "animagine";
@@ -25,6 +30,52 @@ const DEFAULT_IMAGE_SIZE = "1280x720";
 const DEFAULT_IMAGE_SCHEDULER = "Euler a";
 const DEFAULT_IMAGE_COUNT = "1";
 const DEFAULT_CHARACTER_ID = "frieren";
+const CIVITAI_LORA_MODE_PROFILE = "profile";
+const CIVITAI_LORA_MODE_QUICK = "quick";
+const CIVITAI_RUNTIME_PROFILE_ID = "__whisk_civitai_runtime__";
+const CIVITAI_RUNTIME_PROFILE_NAME = "Whisk Runtime CivitAI LoRA";
+const CIVITAI_MAX_RUNTIME_LORAS = 9;
+const CIVITAI_CATALOG_RESULT_LIMIT = 12;
+const DEFAULT_CIVITAI_LORA_STRENGTH = 0.8;
+const FALLBACK_REPLICATE_IMAGE_MODELS = Object.freeze([
+  {
+    key: "wai-nsfw-illustrious-v11",
+    name: "WAI NSFW Illustrious v11",
+    description: "Cheapest, uncensored",
+  },
+  {
+    key: "wai-nsfw-illustrious-v12",
+    name: "WAI NSFW Illustrious v12",
+    description: "Cheap, uncensored",
+  },
+  {
+    key: "animagine",
+    name: "Animagine XL v4 Opt",
+    description: "Cheapest, balanced composition",
+  },
+  {
+    key: "seedream-4.5",
+    name: "Seedream 4.5",
+    description: "Expensive, high landscape quality",
+  },
+  {
+    key: "anillustrious-v4",
+    name: "Anillustrious v4",
+    description: "Expensive, high details character, uncensored",
+  },
+]);
+const FALLBACK_CIVITAI_IMAGE_MODELS = Object.freeze([
+  {
+    key: "civitai-sd15-anime",
+    name: "CivitAI SD 1.5 Anime",
+    description: "LoRA-ready CivitAI model",
+  },
+  {
+    key: "civitai-pony-sdxl",
+    name: "CivitAI Pony SDXL",
+    description: "LoRA-ready CivitAI model",
+  },
+]);
 const DEFAULT_PROMPT_HELPER_SELECTIONS = {
   background: "",
   character: "",
@@ -43,6 +94,47 @@ const DEFAULT_PROMPT_HELPER_SELECTIONS = {
   markings: "",
   outfitMaterials: "",
   styleReference: "",
+};
+
+const buildUnsupportedLoraMessage = ({
+  modelKey = "",
+  modality = "image",
+  supportedModels = [],
+}) => {
+  const normalizedModelKey = String(modelKey || "").trim() || "selected model";
+  const options = Array.isArray(supportedModels)
+    ? supportedModels.map((item) => String(item || "").trim()).filter(Boolean)
+    : [];
+  const supportedText = options.length
+    ? `Compatible models: ${options.join(", ")}.`
+    : `No ${modality} models are currently configured with LoRA support.`;
+  return `The selected LoRA profile cannot be used with "${normalizedModelKey}". ${supportedText}`;
+};
+
+const buildSizeLabel = (width, height) => {
+  const numericWidth = Number(width);
+  const numericHeight = Number(height);
+  if (!Number.isFinite(numericWidth) || !Number.isFinite(numericHeight)) {
+    return "Custom";
+  }
+  if (numericWidth === numericHeight) {
+    return `${numericWidth}x${numericHeight} (Square)`;
+  }
+  if (numericWidth > numericHeight && numericWidth / numericHeight > 1.7) {
+    return `${numericWidth}x${numericHeight} (16:9)`;
+  }
+  if (numericHeight > numericWidth) {
+    return `${numericWidth}x${numericHeight} (Portrait)`;
+  }
+  return `${numericWidth}x${numericHeight}`;
+};
+
+const normalizeCivitaiLoraStrength = (value) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return DEFAULT_CIVITAI_LORA_STRENGTH;
+  }
+  return Math.max(0, Math.min(2, Math.round(numeric * 100) / 100));
 };
 
 const resolveDefaultPreset = (presets = []) =>
@@ -80,6 +172,15 @@ const buildSelectionsFromPreset = (preset) => {
 
 export const useImageStudio = ({
   apiBaseUrl,
+  selectedLoraProfileId = "",
+  loraCatalogEntries = [],
+  loraImageSupportByModel = {},
+  loraImageSupportByProviderModel = {},
+  supportedImageLoraModels = [],
+  supportedImageLoraModelsByProvider = {},
+  directorImageModels = [],
+  directorCivitaiModels = [],
+  directorGenerationByModel = {},
   onError,
   onVideoReady,
   onResetVideoReady,
@@ -127,6 +228,11 @@ export const useImageStudio = ({
   const [imageName, setImageName] = useState("");
   const [uploadKey, setUploadKey] = useState("");
   const [uploadStatus, setUploadStatus] = useState("idle");
+  const [civitaiLoraMode, setCivitaiLoraMode] = useState(
+    CIVITAI_LORA_MODE_PROFILE
+  );
+  const [civitaiCatalogQuery, setCivitaiCatalogQuery] = useState("");
+  const [civitaiRuntimeLoras, setCivitaiRuntimeLoras] = useState([]);
   const replicatePollRef = useRef(null);
 
   const isUploading = uploadStatus === "uploading";
@@ -245,49 +351,51 @@ export const useImageStudio = ({
     ]);
     return new Map(entries);
   }, [characterPresets]);
-
-  const buildPromptFromSelectionsWithSelections = (selections) => {
-    const parts = [];
-    const pushTrimmed = (value) => {
-      const trimmed = value?.trim();
-      if (trimmed) {
-        parts.push(trimmed);
+  const buildPromptFromSelectionsWithSelections = useCallback(
+    (selections) => {
+      const parts = [];
+      const pushTrimmed = (value) => {
+        const trimmed = value?.trim();
+        if (trimmed) {
+          parts.push(trimmed);
+        }
+      };
+      pushTrimmed(selections.viewDistance);
+      pushTrimmed(selections.background);
+      const hasCharacter = Boolean(selections.character?.trim());
+      if (hasCharacter) {
+        parts.push("1girl, solo");
+        pushTrimmed(selections.outfitMaterials);
+        const characterValue = selections.character.trim();
+        const preset = characterPresetMap.get(characterValue.toLowerCase());
+        if (preset?.name) {
+          const weight =
+            typeof preset.weight === "number" ? preset.weight : 1.4;
+          parts.push(`(${preset.name}:${weight})`);
+        } else {
+          parts.push(characterValue);
+        }
       }
-    };
-    pushTrimmed(selections.viewDistance);
-    pushTrimmed(selections.background);
-    const hasCharacter = Boolean(selections.character?.trim());
-    if (hasCharacter) {
-      parts.push("1girl, solo");
-      pushTrimmed(selections.outfitMaterials);
-      const characterValue = selections.character.trim();
-      const preset = characterPresetMap.get(characterValue.toLowerCase());
-      if (preset?.name) {
-        const weight =
-          typeof preset.weight === "number" ? preset.weight : 1.4;
-        parts.push(`(${preset.name}:${weight})`);
-      } else {
-        parts.push(characterValue);
+      pushTrimmed(selections.signatureTraits);
+      pushTrimmed(selections.eyeDetails);
+      pushTrimmed(selections.pose);
+      pushTrimmed(selections.faceDetails);
+      pushTrimmed(selections.breastSize);
+      pushTrimmed(selections.ears);
+      pushTrimmed(selections.tails);
+      pushTrimmed(selections.horns);
+      pushTrimmed(selections.wings);
+      pushTrimmed(selections.hairStyles);
+      pushTrimmed(selections.accessories);
+      pushTrimmed(selections.markings);
+      if (!hasCharacter) {
+        pushTrimmed(selections.outfitMaterials);
       }
-    }
-    pushTrimmed(selections.signatureTraits);
-    pushTrimmed(selections.eyeDetails);
-    pushTrimmed(selections.pose);
-    pushTrimmed(selections.faceDetails);
-    pushTrimmed(selections.breastSize);
-    pushTrimmed(selections.ears);
-    pushTrimmed(selections.tails);
-    pushTrimmed(selections.horns);
-    pushTrimmed(selections.wings);
-    pushTrimmed(selections.hairStyles);
-    pushTrimmed(selections.accessories);
-    pushTrimmed(selections.markings);
-    if (!hasCharacter) {
-      pushTrimmed(selections.outfitMaterials);
-    }
-    pushTrimmed(selections.styleReference);
-    return parts.filter(Boolean).join(", ");
-  };
+      pushTrimmed(selections.styleReference);
+      return parts.filter(Boolean).join(", ");
+    },
+    [characterPresetMap]
+  );
 
   const resetImageForm = () => {
     setImageSource(DEFAULT_IMAGE_SOURCE);
@@ -310,6 +418,9 @@ export const useImageStudio = ({
     setImageName("");
     setUploadKey("");
     setUploadStatus("idle");
+    setCivitaiLoraMode(CIVITAI_LORA_MODE_PROFILE);
+    setCivitaiCatalogQuery("");
+    setCivitaiRuntimeLoras([]);
     onResetVideoReady?.();
   };
 
@@ -332,6 +443,7 @@ export const useImageStudio = ({
       }
     }
   }, [
+    buildPromptFromSelectionsWithSelections,
     defaultCharacterPreset,
     imageNegativePrompt,
     imagePrompt,
@@ -350,6 +462,11 @@ export const useImageStudio = ({
       description: "Anime-focused models",
     },
     {
+      key: "civitai",
+      name: "Generate with CivitAI",
+      description: "CivitAI orchestration runtime",
+    },
+    {
       key: "huggingface",
       name: "Generate with Hugging Face",
       description: "Gradio Space models",
@@ -360,6 +477,43 @@ export const useImageStudio = ({
       description: "Send your own image to S3",
     },
   ];
+
+  const replicateModelOptionsFromDirector = useMemo(
+    () =>
+      (Array.isArray(directorImageModels) ? directorImageModels : [])
+        .map((item) => {
+          const key = String(item?.key || "").trim();
+          if (!key) return null;
+          return {
+            key,
+            name: String(item?.label || key).trim() || key,
+            description: item?.supportsLora ? "LoRA-capable model" : "Replicate model",
+          };
+        })
+        .filter(Boolean),
+    [directorImageModels]
+  );
+  const civitaiModelOptionsFromDirector = useMemo(
+    () =>
+      (Array.isArray(directorCivitaiModels) ? directorCivitaiModels : [])
+        .map((item) => {
+          const key = String(item?.key || "").trim();
+          if (!key) return null;
+          const estimatedUnitCostUsd = Number(item?.estimatedUnitCostUsd);
+          const costLabel = Number.isFinite(estimatedUnitCostUsd)
+            ? `~$${estimatedUnitCostUsd.toFixed(4)} / image`
+            : "Usage-based pricing";
+          return {
+            key,
+            name: String(item?.label || key).trim() || key,
+            description: item?.supportsLora
+              ? `LoRA-capable model • ${costLabel}`
+              : costLabel,
+          };
+        })
+        .filter(Boolean),
+    [directorCivitaiModels]
+  );
 
   const imageModelOptions = useMemo(() => {
     if (imageSource === "bedrock") {
@@ -385,36 +539,38 @@ export const useImageStudio = ({
         },
       ];
     }
-    return [
-      {
-        key: "wai-nsfw-illustrious-v11",
-        name: "WAI NSFW Illustrious v11",
-        description: "Cheapest, uncensored",
-      },
-      {
-        key: "wai-nsfw-illustrious-v12",
-        name: "WAI NSFW Illustrious v12",
-        description: "Cheap, uncensored",
-      },
-      {
-        key: "animagine",
-        name: "Animagine XL v4 Opt",
-        description: "Cheapest, balanced composition",
-      },
-      {
-        key: "seedream-4.5",
-        name: "Seedream 4.5",
-        description: "Expensive, high landscape quality",
-      },
-      {
-        key: "anillustrious-v4",
-        name: "Anillustrious v4",
-        description: "Expensive, high details character, uncensored",
-      },
-    ];
-  }, [imageSource]);
+    if (imageSource === "civitai") {
+      return civitaiModelOptionsFromDirector.length
+        ? civitaiModelOptionsFromDirector
+        : FALLBACK_CIVITAI_IMAGE_MODELS;
+    }
+    return replicateModelOptionsFromDirector.length
+      ? replicateModelOptionsFromDirector
+      : FALLBACK_REPLICATE_IMAGE_MODELS;
+  }, [
+    imageSource,
+    replicateModelOptionsFromDirector,
+    civitaiModelOptionsFromDirector,
+  ]);
 
   const imageSizeOptions = useMemo(() => {
+    if (imageSource === "replicate" || imageSource === "civitai") {
+      const modelConfig = directorGenerationByModel?.[imageModel] || {};
+      const configuredSizes = Array.isArray(modelConfig?.sizes) ? modelConfig.sizes : [];
+      if (configuredSizes.length) {
+        return configuredSizes
+          .map((size) => {
+            const width = Number(size?.width);
+            const height = Number(size?.height);
+            if (!Number.isFinite(width) || !Number.isFinite(height)) return null;
+            return {
+              value: `${width}x${height}`,
+              label: buildSizeLabel(width, height),
+            };
+          })
+          .filter(Boolean);
+      }
+    }
     if (imageSource === "huggingface") {
       if (imageModel === "wainsfw") {
         return [
@@ -469,18 +625,37 @@ export const useImageStudio = ({
       return [{ value: "1024x1024", label: "1024x1024 (Square)" }];
     }
     return [{ value: "1024x1024", label: "1024x1024 (Square)" }];
-  }, [imageSource, imageModel]);
+  }, [imageSource, imageModel, directorGenerationByModel]);
 
   const imageSchedulerOptions = useMemo(() => {
-    if (imageSource === "replicate" && imageModel === "animagine") {
-      return [
-        { value: "Euler a", label: "Euler a" },
-        { value: "DPM++ 2M Karras", label: "DPM++ 2M Karras" },
-        { value: "diff", label: "Both (Euler a + DPM++ 2M Karras)" },
-      ];
+    if (imageSource === "replicate") {
+      const modelConfig = directorGenerationByModel?.[imageModel] || {};
+      const configuredSchedulers = Array.isArray(modelConfig?.schedulers)
+        ? modelConfig.schedulers
+        : [];
+      if (configuredSchedulers.length) {
+        const schedulerOptions = configuredSchedulers.map((scheduler) => ({
+          value: scheduler,
+          label: scheduler,
+        }));
+        if (configuredSchedulers.length > 1) {
+          schedulerOptions.push({
+            value: "diff",
+            label: `Both (${configuredSchedulers.join(" + ")})`,
+          });
+        }
+        return schedulerOptions;
+      }
+      if (imageModel === "animagine") {
+        return [
+          { value: "Euler a", label: "Euler a" },
+          { value: "DPM++ 2M Karras", label: "DPM++ 2M Karras" },
+          { value: "diff", label: "Both (Euler a + DPM++ 2M Karras)" },
+        ];
+      }
     }
     return [];
-  }, [imageSource, imageModel]);
+  }, [imageSource, imageModel, directorGenerationByModel]);
 
   useEffect(() => {
     const allowedValues = imageSizeOptions.map((option) => option.value);
@@ -511,16 +686,116 @@ export const useImageStudio = ({
     []
   );
 
+  const normalizedLoraCatalogEntries = useMemo(
+    () =>
+      (Array.isArray(loraCatalogEntries) ? loraCatalogEntries : [])
+        .map((entry) => {
+          const catalogId = String(entry?.catalogId || "").trim();
+          if (!catalogId) return null;
+          return {
+            catalogId,
+            name: String(entry?.name || entry?.modelName || catalogId).trim(),
+            baseModel: String(entry?.baseModel || "").trim(),
+            creatorName: String(entry?.creatorName || "").trim(),
+            triggerWords: Array.isArray(entry?.triggerWords)
+              ? entry.triggerWords
+                  .map((word) => String(word || "").trim())
+                  .filter(Boolean)
+              : [],
+            downloadUrl: String(entry?.downloadUrl || "").trim(),
+          };
+        })
+        .filter(Boolean),
+    [loraCatalogEntries]
+  );
+
+  const civitaiCatalogResults = useMemo(() => {
+    const query = String(civitaiCatalogQuery || "")
+      .trim()
+      .toLowerCase();
+    const filtered = query
+      ? normalizedLoraCatalogEntries.filter((entry) => {
+          const searchable = [
+            entry.catalogId,
+            entry.name,
+            entry.baseModel,
+            entry.creatorName,
+            ...(entry.triggerWords || []),
+          ]
+            .join(" ")
+            .toLowerCase();
+          return searchable.includes(query);
+        })
+      : normalizedLoraCatalogEntries;
+    return filtered.slice(0, CIVITAI_CATALOG_RESULT_LIMIT);
+  }, [civitaiCatalogQuery, normalizedLoraCatalogEntries]);
+
+  const addCivitaiRuntimeLora = useCallback((entry) => {
+    if (!entry?.catalogId) return;
+    setCivitaiRuntimeLoras((previous) => {
+      if (previous.some((item) => item.catalogId === entry.catalogId)) {
+        return previous;
+      }
+      if (previous.length >= CIVITAI_MAX_RUNTIME_LORAS) {
+        return previous;
+      }
+      return [
+        ...previous,
+        {
+          catalogId: entry.catalogId,
+          name: entry.name,
+          downloadUrl: entry.downloadUrl,
+          triggerWords: entry.triggerWords || [],
+          strength: DEFAULT_CIVITAI_LORA_STRENGTH,
+        },
+      ];
+    });
+  }, []);
+
+  const removeCivitaiRuntimeLora = useCallback((catalogId) => {
+    const resolvedCatalogId = String(catalogId || "").trim();
+    if (!resolvedCatalogId) return;
+    setCivitaiRuntimeLoras((previous) =>
+      previous.filter((item) => item.catalogId !== resolvedCatalogId)
+    );
+  }, []);
+
+  const updateCivitaiRuntimeLoraStrength = useCallback(
+    (catalogId, strength) => {
+      const resolvedCatalogId = String(catalogId || "").trim();
+      if (!resolvedCatalogId) return;
+      const normalizedStrength = normalizeCivitaiLoraStrength(strength);
+      setCivitaiRuntimeLoras((previous) =>
+        previous.map((item) =>
+          item.catalogId === resolvedCatalogId
+            ? { ...item, strength: normalizedStrength }
+            : item
+        )
+      );
+    },
+    []
+  );
+
   useEffect(() => {
     const allowedModels = imageModelOptions.map((option) => option.key);
     if (!allowedModels.includes(imageModel)) {
-      setImageModel(imageModelOptions[0]?.key || "titan");
+      setImageModel(
+        imageModelOptions[0]?.key ||
+          (imageSource === "bedrock" ? "titan" : DEFAULT_IMAGE_MODEL)
+      );
     }
-  }, [imageModel, imageModelOptions]);
+  }, [imageModel, imageModelOptions, imageSource]);
 
   useEffect(() => {
     if (imageSource !== "replicate") {
       setImageCount(DEFAULT_IMAGE_COUNT);
+    }
+  }, [imageSource]);
+
+  useEffect(() => {
+    if (imageSource !== "civitai") {
+      setCivitaiLoraMode(CIVITAI_LORA_MODE_PROFILE);
+      setCivitaiCatalogQuery("");
     }
   }, [imageSource]);
 
@@ -596,6 +871,8 @@ export const useImageStudio = ({
     predictionId,
     batchId,
     imageName,
+    prompt,
+    negativePrompt,
   }) => {
     if (!apiBaseUrl) return;
     const poll = async () => {
@@ -604,6 +881,8 @@ export const useImageStudio = ({
           predictionId,
           batchId,
           imageName,
+          prompt,
+          negativePrompt,
         });
         if (data?.status === "succeeded") {
           setImageGenerationNotice(data?.notice || "");
@@ -634,6 +913,118 @@ export const useImageStudio = ({
     replicatePollRef.current = setTimeout(poll, 2500);
   };
 
+  const startCivitaiImagePolling = ({
+    token,
+    batchId,
+    imageName,
+    prompt,
+    negativePrompt,
+    characterId,
+  }) => {
+    if (!apiBaseUrl) return;
+    const poll = async () => {
+      try {
+        const data = await getCivitaiImageStatus(apiBaseUrl, {
+          token,
+          batchId,
+          imageName,
+          prompt,
+          negativePrompt,
+          characterId,
+        });
+        if (data?.status === "succeeded") {
+          setImageGenerationNotice(data?.notice || "");
+          setImageGenerationStatus("success");
+          clearReplicatePoll();
+          onGenerationComplete?.();
+          return;
+        }
+        if (data?.status === "failed") {
+          clearReplicatePoll();
+          setImageGenerationStatus("error");
+          onError?.(data?.error || "CivitAI image generation failed.");
+          return;
+        }
+        setImageGenerationNotice("CivitAI is still generating the image...");
+      } catch (_error) {
+        setImageGenerationNotice("CivitAI is still generating the image...");
+      }
+      replicatePollRef.current = setTimeout(poll, 2500);
+    };
+    clearReplicatePoll();
+    replicatePollRef.current = setTimeout(poll, 2500);
+  };
+
+  const loraSupportBySourceModel = useMemo(
+    () => ({
+      replicate:
+        loraImageSupportByProviderModel?.replicate || loraImageSupportByModel || {},
+      civitai: loraImageSupportByProviderModel?.civitai || {},
+    }),
+    [loraImageSupportByModel, loraImageSupportByProviderModel]
+  );
+
+  const supportedLoraModelsBySource = useMemo(
+    () => ({
+      replicate:
+        supportedImageLoraModelsByProvider?.replicate || supportedImageLoraModels || [],
+      civitai: supportedImageLoraModelsByProvider?.civitai || [],
+    }),
+    [supportedImageLoraModels, supportedImageLoraModelsByProvider]
+  );
+
+  const activeCharacterIdForGeneration =
+    imageSource === "civitai" && civitaiLoraMode === CIVITAI_LORA_MODE_QUICK
+      ? civitaiRuntimeLoras.length
+        ? CIVITAI_RUNTIME_PROFILE_ID
+        : ""
+      : selectedLoraProfileId;
+
+  const loraUnsupportedForCurrentSelection = Boolean(
+    activeCharacterIdForGeneration &&
+      (!["replicate", "civitai"].includes(imageSource) ||
+        !Boolean(loraSupportBySourceModel?.[imageSource]?.[imageModel]))
+  );
+
+  const localLoraSupportNotice = loraUnsupportedForCurrentSelection
+    ? buildUnsupportedLoraMessage({
+        modelKey: imageModel,
+        modality: "image",
+        supportedModels: supportedLoraModelsBySource?.[imageSource] || [],
+      })
+    : "";
+
+  const persistRuntimeCivitaiProfileIfNeeded = useCallback(async () => {
+    if (
+      imageSource !== "civitai" ||
+      civitaiLoraMode !== CIVITAI_LORA_MODE_QUICK ||
+      civitaiRuntimeLoras.length === 0
+    ) {
+      return "";
+    }
+    const profileLoras = civitaiRuntimeLoras.map((item) => ({
+      catalogId: item.catalogId,
+      name: item.name,
+      downloadUrl: item.downloadUrl,
+      strength: normalizeCivitaiLoraStrength(item.strength),
+      triggerWords: Array.isArray(item.triggerWords) ? item.triggerWords : [],
+    }));
+    await saveLoraProfile(apiBaseUrl, CIVITAI_RUNTIME_PROFILE_ID, {
+      displayName: CIVITAI_RUNTIME_PROFILE_NAME,
+      image: {
+        modelKey: "",
+        promptPrefix: "",
+        loras: profileLoras,
+      },
+      video: {
+        modelKey: "",
+        promptPrefix: "",
+        loras: [],
+      },
+    });
+    return CIVITAI_RUNTIME_PROFILE_ID;
+  }, [apiBaseUrl, civitaiLoraMode, civitaiRuntimeLoras, imageSource]);
+
   const handleGenerateImage = async () => {
     if (!apiBaseUrl) {
       onError?.("API base URL is missing. Set it in config.json or .env.");
@@ -647,34 +1038,71 @@ export const useImageStudio = ({
       onError?.("Prompt is required.");
       return;
     }
+    if (loraUnsupportedForCurrentSelection) {
+      onError?.(
+        buildUnsupportedLoraMessage({
+          modelKey: imageModel,
+          modality: "image",
+          supportedModels: supportedLoraModelsBySource?.[imageSource] || [],
+        })
+      );
+      return;
+    }
     onError?.("");
     setImageGenerationStatus("loading");
     onResetVideoReady?.();
     setImageGenerationNotice("");
-    onCloseImageModal?.();
     clearReplicatePoll();
 
     try {
+      const resolvedCharacterId = await persistRuntimeCivitaiProfileIfNeeded();
       const [width, height] = imageSize.split("x").map(Number);
       const payload = {
         model: imageModel,
         imageName: imageGenerationName.trim(),
         prompt: imagePrompt.trim(),
         negativePrompt: imageNegativePrompt.trim() || undefined,
+        characterId:
+          resolvedCharacterId || activeCharacterIdForGeneration || undefined,
         width,
         height,
         numImages:
-          imageSource === "replicate" ? Number(imageCount) || 1 : 1,
+          imageSource === "replicate" || imageSource === "civitai"
+            ? Number(imageCount) || 1
+            : 1,
         ...(imageSource === "replicate" && imageSchedulerOptions.length > 0
           ? { scheduler: imageScheduler }
           : {}),
       };
+      onCloseImageModal?.();
       const data =
         imageSource === "bedrock"
           ? await generateBedrockImage(apiBaseUrl, payload)
+          : imageSource === "civitai"
+            ? await generateCivitaiImage(apiBaseUrl, payload)
           : imageSource === "huggingface"
             ? await generateHuggingFaceImage(apiBaseUrl, payload)
             : await generateReplicateImage(apiBaseUrl, payload);
+      if (imageSource === "civitai" && data?.token && data?.status !== "succeeded") {
+        if (data.status === "failed") {
+          setImageGenerationStatus("error");
+          onError?.(data?.error || "CivitAI image generation failed.");
+          return;
+        }
+        setImageGenerationNotice(
+          data?.notice || "CivitAI is processing the image. We'll keep checking."
+        );
+        setImageGenerationStatus("loading");
+        startCivitaiImagePolling({
+          token: data.token,
+          batchId: data.batchId,
+          imageName: payload.imageName,
+          prompt: payload.prompt,
+          negativePrompt: payload.negativePrompt || "",
+          characterId: payload.characterId || "",
+        });
+        return;
+      }
       if (
         data?.predictionId &&
         data?.status &&
@@ -696,6 +1124,8 @@ export const useImageStudio = ({
           predictionId: data.predictionId,
           batchId: data.batchId,
           imageName: payload.imageName,
+          prompt: payload.prompt,
+          negativePrompt: payload.negativePrompt || "",
         });
         return;
       }
@@ -721,9 +1151,6 @@ export const useImageStudio = ({
       onError?.("Prompt helper fields are empty.");
       return;
     }
-    const selectedPreset = characterPresetMap.get(
-      (promptHelperSelections.character || "").trim().toLowerCase()
-    );
     setImageNegativePrompt(defaultNegativePrompt);
     setPromptHelperStatus("success");
     setImagePrompt(prompt);
@@ -875,6 +1302,17 @@ export const useImageStudio = ({
     onGenerateImage: handleGenerateImage,
     isGeneratingImage,
     imageGenerationNotice,
+    loraSupportNotice: localLoraSupportNotice,
+    civitaiLoraMode,
+    onCivitaiLoraModeChange: setCivitaiLoraMode,
+    civitaiCatalogQuery,
+    onCivitaiCatalogQueryChange: setCivitaiCatalogQuery,
+    civitaiCatalogResults,
+    civitaiRuntimeLoras,
+    onAddCivitaiRuntimeLora: addCivitaiRuntimeLora,
+    onRemoveCivitaiRuntimeLora: removeCivitaiRuntimeLora,
+    onCivitaiRuntimeLoraStrengthChange: updateCivitaiRuntimeLoraStrength,
+    civitaiRuntimeLoraLimit: CIVITAI_MAX_RUNTIME_LORAS,
   };
 
   const imageUploadProps = {

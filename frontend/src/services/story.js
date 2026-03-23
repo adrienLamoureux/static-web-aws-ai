@@ -182,3 +182,15 @@ export const deleteStorySession = (baseUrl, sessionId) =>
     buildApiUrl(baseUrl, `/story/sessions/${sessionId}`),
     "Failed to delete story session."
   );
+
+// Switch the LoRA profile on an active story session without changing the character.
+export const switchSessionLora = (baseUrl, sessionId, loraProfileId) =>
+  fetchJson(
+    buildApiUrl(baseUrl, `/story/sessions/${sessionId}/lora`),
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ loraProfileId: loraProfileId || null }),
+    },
+    "Failed to switch session LoRA profile."
+  );

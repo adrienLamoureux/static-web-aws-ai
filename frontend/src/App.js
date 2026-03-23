@@ -1,179 +1,254 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { BrowserRouter as Router, Route, Routes, Link, Navigate } from "react-router-dom";
-import About from "./pages/About";
-import Whisk from "./pages/Whisk";
+import React, { useState, useCallback } from "react";
+import {
+  BrowserRouter as Router,
+  Link,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { ConfigProvider, useConfig } from "./contexts/ConfigContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { MusicProvider } from "./contexts/MusicContext";
+import SakuraMusicBar from "./components/sakura/SakuraMusicBar";
+
+// Pages
+import HomePage from "./pages/HomePage";
+import SharedLibrary from "./pages/SharedLibrary";
+import Forge from "./pages/Forge";
+import LoraManagement from "./pages/LoraManagement";
+import Director from "./pages/Director";
 import Story from "./pages/Story";
 import StoryMusicLibrary from "./pages/StoryMusicLibrary";
-import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
-import RequireAuth from "./components/auth/RequireAuth";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
-const mergeCognitoConfig = (base = {}, override = {}) => ({
-  domain: override.domain || base.domain || "",
-  clientId: override.clientId || base.clientId || "",
-  userPoolId: override.userPoolId || base.userPoolId || "",
-  region: override.region || base.region || "",
-});
+/* ─── Navigation (Bottom HUD) ─── */
 
-const AppShell = ({ apiBaseUrl }) => {
-  const { isAuthenticated, logout, user } = useAuth();
+const NAV_ITEMS = [
+  { label: "Realm", path: "/", icon: "✦" },
+  { label: "Atelier", path: "/atelier", icon: "◈" },
+  { label: "Chronicle", path: "/chronicle", icon: "▤" },
+  { label: "Gallery", path: "/gallery", icon: "◻" },
+  { label: "Sanctum", path: "/sanctum", icon: "⚙" },
+];
+
+/* ─── Protected Route ─── */
+
+function ProtectedRoute({ children }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return null;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return children;
+}
+
+/* ─── About Page ─── */
+
+function AboutPage() {
+  return (
+    <div>
+      <div className="skr-page-header">
+        <h2 className="skr-page-title">About</h2>
+        <p className="skr-page-subtitle">Whisk Studio — Sakura Bloom variant</p>
+      </div>
+      <div className="skr-card" style={{ padding: 24 }}>
+        <p style={{ color: "var(--skr-text-secondary)" }}>
+          A maximalist immersive creative workspace inspired by visual novel aesthetics.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Login Page ─── */
+
+function LoginPage() {
+  const { isAuthenticated, isLoading, startLogin, isConfigured } = useAuth();
+  const navigate = useNavigate();
+
+  if (!isLoading && isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
+  const handleContinue = async () => {
+    if (!isConfigured) {
+      navigate("/");
+      return;
+    }
+    try {
+      await startLogin("/");
+    } catch (e) {
+      console.error("Login failed:", e);
+    }
+  };
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 noise-layer opacity-60" />
-      <div className="absolute inset-x-0 top-0 h-80 bg-[radial-gradient(circle_at_center,_rgba(196,178,141,0.24),_transparent_70%)] blur-3xl" />
+    <div className="skr-login-page">
+      <div className="skr-login-petals" aria-hidden="true" />
+      <div className="skr-login-card">
+        <div className="skr-login-emblem">✦</div>
+        <h1 className="skr-login-title">Whisk Studio</h1>
+        <p className="skr-login-subtitle">Creative workspace awaits</p>
+        <button
+          type="button"
+          className="skr-btn-primary"
+          style={{ width: "100%", marginTop: 20 }}
+          onClick={handleContinue}
+          disabled={isLoading}
+        >
+          Continue to login
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Sakura Shell ─── */
+
+function SakuraShell({ children }) {
+  const location = useLocation();
+  const { isAuthenticated, logout, user } = useAuth();
+  const [hudExpanded, setHudExpanded] = useState(false);
+
+  const isActive = useCallback(
+    (path) => {
+      if (path === "/") return location.pathname === "/";
+      return location.pathname === path || location.pathname.startsWith(path + "/");
+    },
+    [location.pathname]
+  );
+
+  return (
+    <div className="skr-shell">
+      {/* Gradient backdrop */}
+      <div className="skr-backdrop" aria-hidden="true" />
+
+      {/* Top bar — only when authenticated */}
       {isAuthenticated && (
-        <header className="relative z-10 mx-auto flex w-full max-w-[1240px] items-center justify-between px-6 py-6 md:px-10">
-          <Link
-            to="/"
-            className="text-lg font-semibold tracking-tight text-ink font-display"
-          >
-            Whisk Studio
+        <header className="skr-topbar">
+          <Link to="/" className="skr-topbar-brand">
+            <span className="skr-brand-emblem">✦</span>
+            <span className="skr-brand-name">Whisk Studio</span>
           </Link>
-          <nav className="flex items-center gap-5 text-sm font-medium">
-            <Link to="/" className="nav-link">
-              Whisk
-            </Link>
-            <Link to="/story" className="nav-link">
-              Story
-            </Link>
-            <Link to="/music-library" className="nav-link">
-              Music
-            </Link>
-            <Link to="/about" className="nav-link">
-              About
-            </Link>
-          </nav>
-          <div className="nav-user">
-            <span className="nav-user-email">{user?.email || "Signed in"}</span>
-            <button type="button" className="btn-ghost px-4 py-1 text-xs" onClick={logout}>
+          <div className="skr-topbar-right">
+            <span className="skr-topbar-user">{user?.email || ""}</span>
+            <button type="button" className="skr-btn-ghost" onClick={logout}>
               Sign out
             </button>
           </div>
         </header>
       )}
-      <main className="relative z-10">
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route
-            path="/"
-            element={
-              <RequireAuth>
-                <Whisk apiBaseUrl={apiBaseUrl} />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/whisk"
-            element={
-              <RequireAuth>
-                <Whisk apiBaseUrl={apiBaseUrl} />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/story"
-            element={
-              <RequireAuth>
-                <Story apiBaseUrl={apiBaseUrl} />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/music-library"
-            element={
-              <RequireAuth>
-                <StoryMusicLibrary apiBaseUrl={apiBaseUrl} />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/about"
-            element={
-              <RequireAuth>
-                <About />
-              </RequireAuth>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+
+      {/* Main content */}
+      <main className="skr-main">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            style={{ width: "100%" }}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
       </main>
+
+      {/* Music bar */}
+      <SakuraMusicBar />
+
+      {/* Bottom HUD navigation */}
+      {isAuthenticated && (
+        <nav className="skr-hud">
+          <div className="skr-hud-pill">
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`skr-hud-item${isActive(item.path) ? " is-active" : ""}`}
+              >
+                <span className="skr-hud-icon">{item.icon}</span>
+                <span className="skr-hud-label">{item.label}</span>
+              </Link>
+            ))}
+          </div>
+        </nav>
+      )}
     </div>
   );
-};
+}
 
-function App() {
-  const [runtimeConfig, setRuntimeConfig] = useState({
-    apiBaseUrl: "",
-    cognito: {},
-  });
-  const [configReady, setConfigReady] = useState(false);
+/* ─── Routes ─── */
 
-  useEffect(() => {
-    let isMounted = true;
-    fetch("/config.json")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!isMounted || !data) return;
-        setRuntimeConfig({
-          apiBaseUrl: data.apiBaseUrl || "",
-          cognito: data.cognito || {},
-        });
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (isMounted) setConfigReady(true);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const envApiUrl = process.env.REACT_APP_API_URL || "";
-  const envCognito = {
-    domain: process.env.REACT_APP_COGNITO_DOMAIN || "",
-    clientId: process.env.REACT_APP_COGNITO_CLIENT_ID || "",
-    userPoolId: process.env.REACT_APP_COGNITO_USER_POOL_ID || "",
-    region: process.env.REACT_APP_COGNITO_REGION || "",
-  };
-
-  const resolvedApiBaseUrl = useMemo(() => {
-    if (envApiUrl && typeof window !== "undefined") {
-      if (window.location.hostname === "localhost") {
-        return envApiUrl;
-      }
-    }
-    return runtimeConfig.apiBaseUrl || envApiUrl || "";
-  }, [envApiUrl, runtimeConfig.apiBaseUrl]);
-
-  const resolvedCognito = useMemo(
-    () => mergeCognitoConfig(runtimeConfig.cognito, envCognito),
-    [envCognito, runtimeConfig.cognito]
+function AppRoutes() {
+  return (
+    <SakuraShell>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        {/* Primary routes */}
+        <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+        <Route path="/atelier" element={<ProtectedRoute><Forge /></ProtectedRoute>} />
+        <Route path="/chronicle" element={<ProtectedRoute><Story /></ProtectedRoute>} />
+        <Route path="/gallery" element={<ProtectedRoute><SharedLibrary /></ProtectedRoute>} />
+        <Route path="/sanctum" element={<ProtectedRoute><Director /></ProtectedRoute>} />
+        <Route path="/sanctum/sounds" element={<ProtectedRoute><StoryMusicLibrary /></ProtectedRoute>} />
+        <Route path="/sanctum/lora" element={<ProtectedRoute><LoraManagement /></ProtectedRoute>} />
+        <Route path="/about" element={<ProtectedRoute><AboutPage /></ProtectedRoute>} />
+        {/* Legacy redirects */}
+        <Route path="/whisk" element={<Navigate to="/atelier" replace />} />
+        <Route path="/forge" element={<Navigate to="/atelier" replace />} />
+        <Route path="/studio" element={<Navigate to="/atelier" replace />} />
+        <Route path="/videos" element={<Navigate to="/atelier?tab=videos" replace />} />
+        <Route path="/story" element={<Navigate to="/chronicle" replace />} />
+        <Route path="/storyboard" element={<Navigate to="/chronicle" replace />} />
+        <Route path="/shared" element={<Navigate to="/gallery" replace />} />
+        <Route path="/showcase" element={<Navigate to="/gallery" replace />} />
+        <Route path="/lora" element={<Navigate to="/sanctum/lora" replace />} />
+        <Route path="/director" element={<Navigate to="/sanctum" replace />} />
+        <Route path="/director/sounds" element={<Navigate to="/sanctum/sounds" replace />} />
+        <Route path="/director/lora" element={<Navigate to="/sanctum/lora" replace />} />
+        <Route path="/music-library" element={<Navigate to="/sanctum/sounds" replace />} />
+        <Route path="/admin" element={<Navigate to="/sanctum" replace />} />
+        <Route path="/admin/sounds" element={<Navigate to="/sanctum/sounds" replace />} />
+        <Route path="/admin/lora" element={<Navigate to="/sanctum/lora" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </SakuraShell>
   );
+}
 
-  const hasEnvConfig = Boolean(envCognito.domain && envCognito.clientId);
-  const isReady = configReady || hasEnvConfig;
+/* ─── App root ─── */
 
-  if (!isReady) {
+function ConfiguredApp() {
+  const { cognito, configReady } = useConfig();
+
+  if (!configReady) {
     return (
-      <div className="auth-shell">
-        <div className="auth-card glass-panel">
-          <p className="auth-loading">Loading configuration...</p>
-        </div>
+      <div className="skr-loading-screen">
+        <div className="skr-loading-emblem">✦</div>
+        <p className="skr-loading-text">Loading...</p>
       </div>
     );
   }
 
   return (
-    <AuthProvider cognito={resolvedCognito}>
-      <Router>
-        <AppShell apiBaseUrl={resolvedApiBaseUrl} />
-      </Router>
+    <AuthProvider cognito={cognito}>
+      <MusicProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </MusicProvider>
     </AuthProvider>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <ConfigProvider>
+      <ConfiguredApp />
+    </ConfigProvider>
+  );
+}
