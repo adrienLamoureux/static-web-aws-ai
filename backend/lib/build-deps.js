@@ -29,6 +29,7 @@ const {
   DEFAULT_GRADIO_NEGATIVE_PROMPT,
   imageModelConfig,
   replicateModelConfig,
+  civitaiModelConfig,
   gradioSpaceConfig,
   replicateVideoConfig,
 } = require("../config/models");
@@ -217,6 +218,7 @@ const createDeps = () => {
     DEFAULT_GRADIO_NEGATIVE_PROMPT,
     imageModelConfig,
     replicateModelConfig,
+    civitaiModelConfig,
     gradioSpaceConfig,
     replicateVideoConfig,
     storyCharacters,

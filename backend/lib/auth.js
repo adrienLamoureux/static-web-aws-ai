@@ -1,8 +1,24 @@
+const normalizeBoolean = (value, fallback = false) => {
+  if (typeof value !== "string") return fallback;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "true") return true;
+  if (normalized === "false") return false;
+  return fallback;
+};
+
+const isUnsignedFallbackAllowed = () =>
+  normalizeBoolean(process.env.ALLOW_UNSIGNED_JWT_FALLBACK, false) &&
+  String(process.env.NODE_ENV || "").trim().toLowerCase() !== "production";
+
 const decodeJwtPayload = (token = "") => {
   try {
     const payload = token.split(".")[1];
     if (!payload) return null;
-    const json = Buffer.from(payload, "base64").toString("utf-8");
+    const normalizedPayload = payload
+      .replace(/-/g, "+")
+      .replace(/_/g, "/")
+      .padEnd(payload.length + ((4 - (payload.length % 4)) % 4), "=");
+    const json = Buffer.from(normalizedPayload, "base64").toString("utf-8");
     return JSON.parse(json);
   } catch (error) {
     return null;
@@ -19,17 +35,20 @@ const getUserFromRequest = (req) => {
       email: claims.email,
     };
   }
-  const authHeader =
-    req.headers?.authorization || req.headers?.Authorization || "";
-  if (authHeader.startsWith("Bearer ")) {
-    const token = authHeader.slice(7);
-    const payload = decodeJwtPayload(token);
-    if (payload?.sub) {
-      return {
-        sub: payload.sub,
-        email: payload.email,
-      };
-    }
+  if (!isUnsignedFallbackAllowed()) {
+    return null;
+  }
+  const authHeader = req.headers?.authorization || req.headers?.Authorization || "";
+  if (!authHeader.startsWith("Bearer ")) {
+    return null;
+  }
+  const token = authHeader.slice(7);
+  const payload = decodeJwtPayload(token);
+  if (payload?.sub) {
+    return {
+      sub: payload.sub,
+      email: payload.email,
+    };
   }
   return null;
 };

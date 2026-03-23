@@ -276,7 +276,16 @@ app.post("/bedrock/image/generate", async (req, res) => {
               ContentType: "image/png",
             })
           );
-          await putMediaItem({ userId, type: "IMG", key });
+          await putMediaItem({
+            userId,
+            type: "IMG",
+            key,
+            extra: {
+              prompt,
+              negativePrompt: negativePrompt || "",
+              model: modelKey,
+            },
+          });
           const url = await getSignedUrl(
             s3Client,
             new GetObjectCommand({
