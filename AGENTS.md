@@ -143,17 +143,16 @@ Shared test credentials for the live stacks: `test@test.com` / `Test1234567@`
 ## Quality Gates
 Run from repo root:
 
-- Backend touched:
-`node -e "require('./backend/index')"`
-
-- Frontend touched:
+- Frontend touched (this branch only):
 `npm --prefix frontend run build`
 
-- CDK touched:
-`npm --prefix cdk run build`
+- Deploy (ui-only, uses shared dev backend — **always include `--backend-stage=dev`**):
+`npm --prefix cdk run idea:deploy -- --stage=design-kitsune --backend-stage=dev`
 
-- Cross-layer changes:
-run all applicable commands above before finalizing
+**Never omit `--backend-stage=dev` on design branches.** Omitting it deploys a duplicate full-stack
+with its own backend, violating the frontend-only scope contract.
+
+Do NOT run backend or CDK quality gates on this branch — those belong on `codex/dev`.
 
 ## Slice Templates For This Repo
 - `backend-api`: `backend/routes/**`, `backend/lib/**`, optional `backend/config/**`
