@@ -15,6 +15,7 @@ import { MusicProvider } from "./contexts/MusicContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import SakuraMusicBar from "./components/sakura/SakuraMusicBar";
 import ThemeSwitcher from "./components/sakura/ThemeSwitcher";
+import LoginModal from "./components/auth/LoginModal";
 
 // Pages
 import HomePage from "./pages/HomePage";
@@ -29,11 +30,11 @@ import AuthCallback from "./pages/AuthCallback";
 /* ─── Navigation (Bottom HUD) ─── */
 
 const NAV_ITEMS = [
-  { label: "Realm", path: "/", icon: "✦" },
-  { label: "Atelier", path: "/atelier", icon: "◈" },
-  { label: "Chronicle", path: "/chronicle", icon: "▤" },
-  { label: "Gallery", path: "/gallery", icon: "◻" },
-  { label: "Sanctum", path: "/sanctum", icon: "⚙" },
+  { label: "Realm",     path: "/",          icon: "✦", isPublic: true },
+  { label: "Atelier",   path: "/atelier",   icon: "◈", isPublic: false },
+  { label: "Chronicle", path: "/chronicle", icon: "▤", isPublic: false },
+  { label: "Gallery",   path: "/gallery",   icon: "◻", isPublic: true },
+  { label: "Sanctum",   path: "/sanctum",   icon: "⚙", requiredRole: "admin" },
 ];
 
 /* ─── Protected Route ─── */
@@ -41,7 +42,26 @@ const NAV_ITEMS = [
 function ProtectedRoute({ children }) {
   const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) return null;
+  if (!isAuthenticated) {
+    return (
+      <>
+        <div style={{ minHeight: "60vh" }} />
+        <LoginModal
+          isOpen
+          message="Sign in to access this feature"
+          onClose={() => window.history.back()}
+        />
+      </>
+    );
+  }
+  return children;
+}
+
+function AdminRoute({ children }) {
+  const { isAuthenticated, isLoading, user } = useAuth();
+  if (isLoading) return null;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!user?.isAdmin) return <Navigate to="/" replace />;
   return children;
 }
 
@@ -110,7 +130,7 @@ function LoginPage() {
 
 function SakuraShell({ children }) {
   const location = useLocation();
-  const { isAuthenticated, logout, user } = useAuth();
+  const { isAuthenticated, logout, user, startLogin } = useAuth();
   const [hudExpanded, setHudExpanded] = useState(false);
 
   const isActive = useCallback(
@@ -126,22 +146,32 @@ function SakuraShell({ children }) {
       {/* Gradient backdrop */}
       <div className="skr-backdrop" aria-hidden="true" />
 
-      {/* Top bar — only when authenticated */}
-      {isAuthenticated && (
-        <header className="skr-topbar">
-          <Link to="/" className="skr-topbar-brand">
-            <span className="skr-brand-emblem">✦</span>
-            <span className="skr-brand-name">Whisk Studio</span>
-          </Link>
-          <div className="skr-topbar-right">
-            <ThemeSwitcher />
-            <span className="skr-topbar-user">{user?.email || ""}</span>
-            <button type="button" className="skr-btn-ghost" onClick={logout}>
-              Sign out
+      {/* Top bar — always visible */}
+      <header className="skr-topbar">
+        <Link to="/" className="skr-topbar-brand">
+          <span className="skr-brand-emblem">✦</span>
+          <span className="skr-brand-name">Whisk Studio</span>
+        </Link>
+        <div className="skr-topbar-right">
+          <ThemeSwitcher />
+          {isAuthenticated ? (
+            <>
+              <span className="skr-topbar-user">{user?.email || ""}</span>
+              <button type="button" className="skr-btn-ghost" onClick={logout}>
+                Sign out
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="skr-btn-ghost"
+              onClick={() => startLogin(location.pathname)}
+            >
+              Sign in
             </button>
-          </div>
-        </header>
-      )}
+          )}
+        </div>
+      </header>
 
       {/* Main content */}
       <main className="skr-main">
@@ -162,23 +192,25 @@ function SakuraShell({ children }) {
       {/* Music bar */}
       <SakuraMusicBar />
 
-      {/* Bottom HUD navigation */}
-      {isAuthenticated && (
-        <nav className="skr-hud">
-          <div className="skr-hud-pill">
-            {NAV_ITEMS.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`skr-hud-item${isActive(item.path) ? " is-active" : ""}`}
-              >
-                <span className="skr-hud-icon">{item.icon}</span>
-                <span className="skr-hud-label">{item.label}</span>
-              </Link>
-            ))}
-          </div>
-        </nav>
-      )}
+      {/* Bottom HUD navigation — always visible, filtered by role */}
+      <nav className="skr-hud">
+        <div className="skr-hud-pill">
+          {NAV_ITEMS.filter((item) => {
+            if (item.requiredRole === "admin" && !user?.isAdmin) return false;
+            if (!item.isPublic && !isAuthenticated) return false;
+            return true;
+          }).map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`skr-hud-item${isActive(item.path) ? " is-active" : ""}`}
+            >
+              <span className="skr-hud-icon">{item.icon}</span>
+              <span className="skr-hud-label">{item.label}</span>
+            </Link>
+          ))}
+        </div>
+      </nav>
     </div>
   );
 }
@@ -192,14 +224,14 @@ function AppRoutes() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         {/* Primary routes */}
-        <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+        <Route path="/" element={<HomePage />} />
         <Route path="/atelier" element={<ProtectedRoute><Forge /></ProtectedRoute>} />
         <Route path="/chronicle" element={<ProtectedRoute><Story /></ProtectedRoute>} />
-        <Route path="/gallery" element={<ProtectedRoute><SharedLibrary /></ProtectedRoute>} />
-        <Route path="/sanctum" element={<ProtectedRoute><Director /></ProtectedRoute>} />
-        <Route path="/sanctum/sounds" element={<ProtectedRoute><StoryMusicLibrary /></ProtectedRoute>} />
-        <Route path="/sanctum/lora" element={<ProtectedRoute><LoraManagement /></ProtectedRoute>} />
-        <Route path="/about" element={<ProtectedRoute><AboutPage /></ProtectedRoute>} />
+        <Route path="/gallery" element={<SharedLibrary />} />
+        <Route path="/sanctum" element={<AdminRoute><Director /></AdminRoute>} />
+        <Route path="/sanctum/sounds" element={<AdminRoute><StoryMusicLibrary /></AdminRoute>} />
+        <Route path="/sanctum/lora" element={<AdminRoute><LoraManagement /></AdminRoute>} />
+        <Route path="/about" element={<AboutPage />} />
         {/* Legacy redirects */}
         <Route path="/whisk" element={<Navigate to="/atelier" replace />} />
         <Route path="/forge" element={<Navigate to="/atelier" replace />} />

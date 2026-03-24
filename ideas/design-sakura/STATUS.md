@@ -37,3 +37,9 @@
 - 2026-03-23T16:10:41.906Z | event=deploy | stack=StaticWebAWSAIStack-design-sakura / cloudfront=https://d2lepwk3t4buta.cloudfront.net / api=https://xu3rykdxfj.execute-api.us-east-1.amazonaws.com/prod/ / commit=75cd798 / sanity=passed / ui_smoke=passed
 - 2026-03-23T16:22:55.818Z | event=deploy | stack=StaticWebAWSAIStack-design-sakura / cloudfront=https://d2lepwk3t4buta.cloudfront.net / api=https://xu3rykdxfj.execute-api.us-east-1.amazonaws.com/prod/ / commit=6221dfb / sanity=passed / ui_smoke=passed
 - 2026-03-23T16:56:45.226Z | event=deploy | stack=StaticWebAWSAIStack-design-sakura / cloudfront=https://d2lepwk3t4buta.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=e5002d4 / sanity=passed / ui_smoke=passed
+- 2026-03-23T20:46:43.345Z | event=deploy | stack=StaticWebAWSAIStack-design-sakura / cloudfront=https://d2lepwk3t4buta.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=02a7643 / sanity=passed / ui_smoke=passed
+- 2026-03-23T21:00:04.144Z | event=deploy | stack=StaticWebAWSAIStack-design-sakura / cloudfront=https://d2lepwk3t4buta.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=7893fe4 / sanity=passed / ui_smoke=passed
+- 2026-03-23T21:29:14.503Z | event=deploy | stack=StaticWebAWSAIStack-design-sakura / cloudfront=https://d2lepwk3t4buta.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=bdf82c7 / sanity=passed / ui_smoke=passed
+- 2026-03-24T08:51:23.894Z | event=deploy | stack=StaticWebAWSAIStack-design-sakura / cloudfront=https://d2lepwk3t4buta.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=97f9bce / sanity=passed / ui_smoke=passed
+- 2026-03-24T18:39:37.814Z | event=init | Idea workspace initialized
+- 2026-03-24T18:50:19.504Z | event=ui-smoke | stage=design-sakura / result=passed

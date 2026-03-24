@@ -86,9 +86,12 @@ export const getUserFromIdToken = (idToken = "") => {
   const token = idToken || getIdToken();
   const payload = parseJwt(token);
   if (!payload) return null;
+  const groups = Array.isArray(payload["cognito:groups"]) ? payload["cognito:groups"] : [];
   return {
     sub: payload.sub,
     email: payload.email,
     name: payload.name,
+    groups,
+    isAdmin: groups.includes("admin"),
   };
 };

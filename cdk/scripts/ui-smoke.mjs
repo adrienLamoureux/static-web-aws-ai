@@ -40,17 +40,20 @@ if (!cloudfrontUrl) {
 const { chromium } = await loadPlaywright();
 const browser = await chromium.launch({ headless: true });
 /* ─── Sakura route model ───
-   Primary: /, /atelier, /chronicle, /gallery, /sanctum, /sanctum/sounds, /sanctum/lora, /about
+   3-tier permission model:
+   Public  (no auth): /, /gallery, /about
+   User    (auth required): /atelier, /chronicle — shows login modal if unauthenticated
+   Admin   (admin group required): /sanctum, /sanctum/sounds, /sanctum/lora
    Legacy paths redirect to primary routes.
 */
 const unauthenticatedChecks = [
-  { id: "login-page", path: "/login", expectLogin: true, expectPath: "/login" },
-  { id: "home-redirect", path: "/", expectLogin: true, expectPath: "/login" },
-  { id: "atelier-redirect", path: "/atelier", expectLogin: true, expectPath: "/login" },
-  { id: "chronicle-redirect", path: "/chronicle", expectLogin: true, expectPath: "/login" },
-  { id: "gallery-redirect", path: "/gallery", expectLogin: true, expectPath: "/login" },
-  { id: "sanctum-redirect", path: "/sanctum", expectLogin: true, expectPath: "/login" },
-  { id: "about-redirect", path: "/about", expectLogin: true, expectPath: "/login" },
+  { id: "login-page",        path: "/login",     expectLogin: true,  expectPath: "/login" },
+  { id: "home-redirect",     path: "/",          expectLogin: false, expectPath: "/" },
+  { id: "atelier-redirect",  path: "/atelier",   expectLogin: true,  expectPath: "/atelier" },
+  { id: "chronicle-redirect",path: "/chronicle", expectLogin: true,  expectPath: "/chronicle" },
+  { id: "gallery-redirect",  path: "/gallery",   expectLogin: false, expectPath: "/gallery" },
+  { id: "sanctum-redirect",  path: "/sanctum",   expectLogin: true,  expectPath: "/login" },
+  { id: "about-redirect",    path: "/about",     expectLogin: false, expectPath: "/about" },
 ];
 
 const authenticatedChecks = [
@@ -302,6 +305,7 @@ function createSyntheticJwtToken(stageValue) {
   const payload = {
     sub: `ui-smoke-${stageValue}`,
     email: `ui-smoke+${stageValue}@example.com`,
+    "cognito:groups": ["admin"],
     iat: nowSeconds,
     exp: nowSeconds + 60 * 60,
   };
