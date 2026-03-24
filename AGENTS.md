@@ -28,10 +28,11 @@ If a task appears to require a backend change, stop. Move that work to `codex/de
 
 ## Read Order
 1. `frontend/REQUIREMENTS.md`
-2. `frontend/src/App.js` (SakuraShell, bottom HUD, route map)
-3. `frontend/src/index.css` (Sakura Bloom design tokens — `skr-` prefix)
-4. The page or component you are about to touch
-5. The matching service file under `frontend/src/services/`
+2. `frontend/THEMES.md` (color palettes, brightness axis, CSS variable reference, how to add a theme)
+3. `frontend/src/App.js` (SakuraShell, bottom HUD, route map)
+4. `frontend/src/index.css` (Sakura Bloom design tokens — `skr-` prefix)
+5. The page or component you are about to touch
+6. The matching service file under `frontend/src/services/`
 
 ## Runtime Architecture
 - Provider chain (frozen): `ConfigProvider → AuthProvider → MusicProvider → Router`
