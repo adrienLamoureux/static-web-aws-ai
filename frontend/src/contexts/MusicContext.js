@@ -1,10 +1,31 @@
-import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
+import { useConfig } from './ConfigContext';
+import { listStoryMusicLibrary } from '../services/story';
+
 const MusicContext = createContext({});
+
 export function MusicProvider({ children }) {
+  const { apiBaseUrl, configReady } = useConfig();
   const [tracks, setTracks] = useState([]);
   const [currentTrack, setCurrentTrack] = useState(null);
   const autoPlayRequestRef = useRef({ requestId: 0, trackKey: null });
   const [autoPlayRequest, setAutoPlayRequest] = useState({ requestId: 0, trackKey: null });
+
+  useEffect(() => {
+    if (!configReady || !apiBaseUrl) return;
+    listStoryMusicLibrary(apiBaseUrl).then(data => {
+      const list = (data?.tracks || []).map(t => ({
+        url: t.url || t.musicUrl,
+        key: t.key || t.musicKey || t.url || t.musicUrl,
+        title: t.title || t.musicTitle || 'Untitled',
+        mood: t.mood || t.musicMood || '',
+        energy: t.energy || t.musicEnergy || '',
+        tempoBpm: t.tempoBpm || t.musicTempoBpm || null,
+        tags: t.tags || t.musicTags || [],
+      })).filter(t => t.url);
+      if (list.length > 0) setTracks(list);
+    }).catch(() => {});
+  }, [configReady, apiBaseUrl]);
 
   const pushTracks = useCallback((newTracks) => {
     setTracks(prev => {
@@ -34,4 +55,5 @@ export function MusicProvider({ children }) {
     </MusicContext.Provider>
   );
 }
+
 export const useMusic = () => useContext(MusicContext);

@@ -2,12 +2,14 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useMusic } from "../../contexts/MusicContext";
 
 export default function SakuraMusicBar() {
-  const { currentTrack, autoPlayRequest, dismissTrack } = useMusic();
+  const { tracks, currentTrack, autoPlayRequest, playTrack, dismissTrack } = useMusic();
   const audioRef = useRef(null);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [expanded, setExpanded] = useState(false);
   const lastRequestId = useRef(0);
+  const panelRef = useRef(null);
 
   useEffect(() => {
     if (currentTrack?.url && audioRef.current) {
@@ -30,6 +32,16 @@ export default function SakuraMusicBar() {
     }
   }, [autoPlayRequest, currentTrack?.url]);
 
+  // Close panel when clicking outside
+  useEffect(() => {
+    if (!expanded) return;
+    const handler = (e) => {
+      if (panelRef.current && !panelRef.current.contains(e.target)) setExpanded(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [expanded]);
+
   const togglePlay = useCallback(() => {
     if (!audioRef.current || !currentTrack?.url) return;
     if (playing) {
@@ -47,7 +59,7 @@ export default function SakuraMusicBar() {
     audioRef.current.currentTime = ratio * duration;
   }, [duration]);
 
-  const handleClose = useCallback(() => {
+  const handleStop = useCallback(() => {
     if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
     setPlaying(false);
     setCurrentTime(0);
@@ -55,31 +67,87 @@ export default function SakuraMusicBar() {
     dismissTrack();
   }, [dismissTrack]);
 
-  if (!currentTrack) return null;
+  const handlePickTrack = useCallback((track) => {
+    setExpanded(false);
+    playTrack(track);
+  }, [playTrack]);
 
   const progress = duration ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="skr-music-pill">
+    <div className="skr-music-pill" ref={panelRef}>
       <audio
         ref={audioRef}
         onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
         onLoadedMetadata={() => setDuration(audioRef.current?.duration || 0)}
         onEnded={() => setPlaying(false)}
       />
+
+      {/* EQ bars or note icon */}
       <div className={`skr-music-eq${playing ? " is-playing" : ""}`} aria-hidden="true">
-        <span /><span /><span />
+        {currentTrack ? <><span /><span /><span /></> : <span className="skr-music-note">♪</span>}
       </div>
-      <span className="skr-music-pill-title">{currentTrack.title || "Untitled"}</span>
-      <button type="button" className="skr-music-pill-btn" onClick={togglePlay} aria-label={playing ? "Pause" : "Play"}>
-        {playing ? "⏸" : "▶"}
+
+      {/* Track name or idle label */}
+      <span className="skr-music-pill-title">
+        {currentTrack ? (currentTrack.title || "Untitled") : "Music"}
+      </span>
+
+      {/* Play/pause — only when a track is loaded */}
+      {currentTrack && (
+        <button type="button" className="skr-music-pill-btn" onClick={togglePlay} aria-label={playing ? "Pause" : "Play"}>
+          {playing ? "⏸" : "▶"}
+        </button>
+      )}
+
+      {/* Stop — only when a track is loaded */}
+      {currentTrack && (
+        <button type="button" className="skr-music-pill-btn skr-music-pill-close" onClick={handleStop} aria-label="Stop">
+          ✕
+        </button>
+      )}
+
+      {/* Expand toggle */}
+      <button
+        type="button"
+        className={`skr-music-pill-btn skr-music-pill-expand${expanded ? " is-open" : ""}`}
+        onClick={() => setExpanded(v => !v)}
+        aria-label="Toggle track list"
+      >
+        ▾
       </button>
-      <button type="button" className="skr-music-pill-btn skr-music-pill-close" onClick={handleClose} aria-label="Close">
-        ✕
-      </button>
-      <div className="skr-music-pill-progress" onClick={handleSeek} role="progressbar">
-        <div className="skr-music-pill-progress-fill" style={{ width: `${progress}%` }} />
-      </div>
+
+      {/* Progress bar */}
+      {currentTrack && (
+        <div className="skr-music-pill-progress" onClick={handleSeek} role="progressbar">
+          <div className="skr-music-pill-progress-fill" style={{ width: `${progress}%` }} />
+        </div>
+      )}
+
+      {/* Track picker panel */}
+      {expanded && (
+        <div className="skr-music-pill-panel">
+          {tracks.length === 0 ? (
+            <p className="skr-music-pill-empty">No tracks available</p>
+          ) : (
+            <ul className="skr-music-pill-list">
+              {tracks.map((t) => (
+                <li
+                  key={t.key || t.url}
+                  className={`skr-music-pill-track${currentTrack?.key === t.key ? " is-active" : ""}`}
+                  onClick={() => handlePickTrack(t)}
+                >
+                  <span className="skr-music-pill-track-icon">
+                    {currentTrack?.key === t.key && playing ? "⏸" : "▶"}
+                  </span>
+                  <span className="skr-music-pill-track-name">{t.title || "Untitled"}</span>
+                  {t.mood && <span className="skr-music-pill-track-tag">{t.mood}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 }
