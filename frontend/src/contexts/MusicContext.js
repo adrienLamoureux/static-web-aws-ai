@@ -21,8 +21,15 @@ export function MusicProvider({ children }) {
     setAutoPlayRequest(req);
   }, []);
 
+  const dismissTrack = useCallback(() => {
+    setCurrentTrack(null);
+    const req = { requestId: 0, trackKey: null };
+    autoPlayRequestRef.current = req;
+    setAutoPlayRequest(req);
+  }, []);
+
   return (
-    <MusicContext.Provider value={{ tracks, currentTrack, autoPlayRequest, pushTracks, playTrack }}>
+    <MusicContext.Provider value={{ tracks, currentTrack, autoPlayRequest, pushTracks, playTrack, dismissTrack }}>
       {children}
     </MusicContext.Provider>
   );

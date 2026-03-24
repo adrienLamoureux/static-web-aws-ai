@@ -1,41 +1,44 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useMusic } from "../../contexts/MusicContext";
 
-function formatTime(sec) {
-  if (!sec || !isFinite(sec)) return "0:00";
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
-
 export default function SakuraMusicBar() {
-  const { activeTrack, setActiveTrack } = useMusic();
+  const { currentTrack, autoPlayRequest, dismissTrack } = useMusic();
   const audioRef = useRef(null);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(0.7);
-  const [muted, setMuted] = useState(false);
+  const lastRequestId = useRef(0);
 
   useEffect(() => {
-    if (activeTrack?.url && audioRef.current) {
-      audioRef.current.src = activeTrack.url;
-      audioRef.current.volume = muted ? 0 : volume;
-      audioRef.current.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
-    } else {
+    if (currentTrack?.url && audioRef.current) {
+      audioRef.current.src = currentTrack.url;
+      audioRef.current.volume = 0.7;
+    } else if (!currentTrack && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
       setPlaying(false);
+      setCurrentTime(0);
+      setDuration(0);
     }
-  }, [activeTrack?.url]); // eslint-disable-line
+  }, [currentTrack?.url]); // eslint-disable-line
+
+  useEffect(() => {
+    if (!autoPlayRequest?.requestId || autoPlayRequest.requestId === lastRequestId.current) return;
+    lastRequestId.current = autoPlayRequest.requestId;
+    if (audioRef.current && currentTrack?.url) {
+      audioRef.current.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+    }
+  }, [autoPlayRequest, currentTrack?.url]);
 
   const togglePlay = useCallback(() => {
-    if (!audioRef.current || !activeTrack?.url) return;
+    if (!audioRef.current || !currentTrack?.url) return;
     if (playing) {
       audioRef.current.pause();
       setPlaying(false);
     } else {
       audioRef.current.play().then(() => setPlaying(true)).catch(() => {});
     }
-  }, [playing, activeTrack?.url]);
+  }, [playing, currentTrack?.url]);
 
   const handleSeek = useCallback((e) => {
     if (!audioRef.current || !duration) return;
@@ -49,38 +52,33 @@ export default function SakuraMusicBar() {
     setPlaying(false);
     setCurrentTime(0);
     setDuration(0);
-    setActiveTrack(null);
-  }, [setActiveTrack]);
+    dismissTrack();
+  }, [dismissTrack]);
 
-  if (!activeTrack) return null;
+  if (!currentTrack) return null;
+
+  const progress = duration ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="skr-music-bar">
+    <div className="skr-music-pill">
       <audio
         ref={audioRef}
         onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
         onLoadedMetadata={() => setDuration(audioRef.current?.duration || 0)}
         onEnded={() => setPlaying(false)}
       />
-      <div className="skr-music-info">
-        <span className="skr-music-title">{activeTrack.title || "Untitled"}</span>
-        {activeTrack.mood && <span className="skr-music-mood">{activeTrack.mood}</span>}
+      <div className={`skr-music-eq${playing ? " is-playing" : ""}`} aria-hidden="true">
+        <span /><span /><span />
       </div>
-      <div className="skr-music-controls">
-        <button type="button" className="skr-music-btn" onClick={togglePlay}>
-          {playing ? "⏸" : "▶"}
-        </button>
-        <span className="skr-music-time">{formatTime(currentTime)}</span>
-        <div className="skr-music-progress" onClick={handleSeek}>
-          <div className="skr-music-progress-fill" style={{ width: duration ? `${(currentTime / duration) * 100}%` : "0%" }} />
-        </div>
-        <span className="skr-music-time">{formatTime(duration)}</span>
-      </div>
-      <div className="skr-music-right">
-        <button type="button" className="skr-music-btn" onClick={() => { setMuted(m => !m); if (audioRef.current) audioRef.current.volume = muted ? volume : 0; }}>
-          {muted || volume === 0 ? "🔇" : "🔊"}
-        </button>
-        <button type="button" className="skr-music-btn" onClick={handleClose}>✕</button>
+      <span className="skr-music-pill-title">{currentTrack.title || "Untitled"}</span>
+      <button type="button" className="skr-music-pill-btn" onClick={togglePlay} aria-label={playing ? "Pause" : "Play"}>
+        {playing ? "⏸" : "▶"}
+      </button>
+      <button type="button" className="skr-music-pill-btn skr-music-pill-close" onClick={handleClose} aria-label="Close">
+        ✕
+      </button>
+      <div className="skr-music-pill-progress" onClick={handleSeek} role="progressbar">
+        <div className="skr-music-pill-progress-fill" style={{ width: `${progress}%` }} />
       </div>
     </div>
   );
