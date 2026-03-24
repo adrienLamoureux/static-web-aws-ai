@@ -1417,7 +1417,7 @@ button { cursor: pointer; }
 .skr-character-walker svg {
   display: block;
   animation: skr-char-bob 0.45s ease-in-out infinite alternate;
-  filter: drop-shadow(0 0 6px rgba(192, 132, 252, 0.4));
+  filter: drop-shadow(0 0 8px rgba(192, 132, 252, 0.5));
 }
 
 @keyframes skr-char-bob {
@@ -1425,6 +1425,7 @@ button { cursor: pointer; }
   to   { transform: translateY(-3px); }
 }
 
+/* Legs */
 .skr-char-leg-l {
   transform-box: fill-box;
   transform-origin: top center;
@@ -1442,6 +1443,7 @@ button { cursor: pointer; }
   to   { transform: rotate(20deg); }
 }
 
+/* Arms */
 .skr-char-arm-l {
   transform-box: fill-box;
   transform-origin: top right;
@@ -1459,7 +1461,37 @@ button { cursor: pointer; }
   to   { transform: rotate(15deg); }
 }
 
-/* Pause all movement when idle at screen edges */
+/* Eye blink — cycles every 4s, briefly closes */
+.skr-char-eye-l,
+.skr-char-eye-r {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: skr-blink 4s ease-in-out infinite;
+}
+
+.skr-char-eye-r {
+  animation-delay: 0.05s;
+}
+
+@keyframes skr-blink {
+  0%, 88%, 100% { transform: scaleY(1); }
+  91%, 95%      { transform: scaleY(0.05); }
+}
+
+/* Idle breathing — robe body gently rises */
+.skr-character-walker.skr-char-idle .skr-char-robe {
+  animation: skr-breathe 2s ease-in-out infinite alternate;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes skr-breathe {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-1px); }
+}
+
+/* Pause locomotion animations when idle at screen edges */
+/* (blink + framer-motion hair/hem continue during idle) */
 .skr-character-walker.skr-char-idle svg,
 .skr-character-walker.skr-char-idle .skr-char-leg-l,
 .skr-character-walker.skr-char-idle .skr-char-leg-r,
