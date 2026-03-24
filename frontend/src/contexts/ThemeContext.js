@@ -14,6 +14,7 @@ export const THEMES = [
 ];
 
 const STORAGE_KEY = "skr-theme";
+const BRIGHTNESS_KEY = "skr-brightness";
 const DEFAULT_THEME = "sakura";
 
 const ThemeContext = createContext(null);
@@ -21,6 +22,10 @@ const ThemeContext = createContext(null);
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => {
     return localStorage.getItem(STORAGE_KEY) || DEFAULT_THEME;
+  });
+
+  const [brightness, setBrightnessState] = useState(() => {
+    return localStorage.getItem(BRIGHTNESS_KEY) || "dark";
   });
 
   useEffect(() => {
@@ -32,13 +37,27 @@ export function ThemeProvider({ children }) {
     }
   }, [theme]);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    if (brightness === "dark") {
+      root.removeAttribute("data-brightness");
+    } else {
+      root.setAttribute("data-brightness", brightness);
+    }
+  }, [brightness]);
+
   const setTheme = useCallback((id) => {
     localStorage.setItem(STORAGE_KEY, id);
     setThemeState(id);
   }, []);
 
+  const setBrightness = useCallback((mode) => {
+    localStorage.setItem(BRIGHTNESS_KEY, mode);
+    setBrightnessState(mode);
+  }, []);
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, themes: THEMES }}>
+    <ThemeContext.Provider value={{ theme, setTheme, themes: THEMES, brightness, setBrightness }}>
       {children}
     </ThemeContext.Provider>
   );

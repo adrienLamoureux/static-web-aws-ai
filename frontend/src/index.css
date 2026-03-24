@@ -793,6 +793,29 @@ button { cursor: pointer; }
 
 .skr-theme-check { margin-left: auto; font-size: 12px; color: var(--skr-accent); }
 
+.skr-theme-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.skr-brightness-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: var(--skr-elevated);
+  border: 1px solid var(--skr-border);
+  border-radius: 50%;
+  color: var(--skr-text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.skr-brightness-toggle:hover { border-color: var(--skr-accent); color: var(--skr-text); }
+
 /* ─── Themes ─── */
 
 /* Backdrop / ambient gradient per-theme */
@@ -1082,6 +1105,219 @@ button { cursor: pointer; }
 }
 
 /* ─── Responsive ─── */
+/* ─── Light mode — per-theme bg/surface/text overrides ─── */
+
+/* Sakura light — soft rose-white */
+[data-brightness="light"],
+[data-brightness="light"][data-theme="sakura"] {
+  color-scheme: light;
+  --skr-bg: #FEF0F6;
+  --skr-surface: #FFFFFF;
+  --skr-elevated: #FCE4EF;
+  --skr-card: #FFFFFF;
+  --skr-text: #1A0812;
+  --skr-text-primary: #1A0812;
+  --skr-text-inverse: #0D0B14;
+  --skr-text-secondary: #7A3055;
+  --skr-text-muted: #B06080;
+  --skr-text-tertiary: #C890A8;
+  --skr-border: rgba(255, 107, 157, 0.2);
+  --skr-border-strong: rgba(255, 107, 157, 0.45);
+  --skr-overlay: rgba(254, 240, 246, 0.92);
+  --skr-glow: 0 0 12px rgba(255, 107, 157, 0.18);
+  --skr-glow-strong: 0 0 20px rgba(255, 107, 157, 0.3), 0 0 6px rgba(192, 132, 252, 0.2);
+  --skr-glass: rgba(255, 255, 255, 0.8);
+}
+
+/* Moonrise light — sky-blue white */
+[data-brightness="light"][data-theme="moonrise"] {
+  color-scheme: light;
+  --skr-bg: #EDF6FE;
+  --skr-surface: #FFFFFF;
+  --skr-elevated: #DCEEFB;
+  --skr-card: #FFFFFF;
+  --skr-text: #081428;
+  --skr-text-primary: #081428;
+  --skr-text-inverse: #08101A;
+  --skr-text-secondary: #2A5880;
+  --skr-text-muted: #5A90B0;
+  --skr-text-tertiary: #90B8CC;
+  --skr-border: rgba(56, 189, 248, 0.2);
+  --skr-border-strong: rgba(56, 189, 248, 0.45);
+  --skr-overlay: rgba(237, 246, 254, 0.92);
+  --skr-glow: 0 0 12px rgba(56, 189, 248, 0.18);
+  --skr-glow-strong: 0 0 20px rgba(56, 189, 248, 0.3), 0 0 6px rgba(129, 140, 248, 0.2);
+  --skr-glass: rgba(255, 255, 255, 0.8);
+}
+
+/* Bamboo light — fresh mint-white */
+[data-brightness="light"][data-theme="bamboo"] {
+  color-scheme: light;
+  --skr-bg: #EDFAF2;
+  --skr-surface: #FFFFFF;
+  --skr-elevated: #DAFFE9;
+  --skr-card: #FFFFFF;
+  --skr-text: #041208;
+  --skr-text-primary: #041208;
+  --skr-text-inverse: #090F0B;
+  --skr-text-secondary: #1E6038;
+  --skr-text-muted: #489860;
+  --skr-text-tertiary: #80C099;
+  --skr-border: rgba(74, 222, 128, 0.2);
+  --skr-border-strong: rgba(74, 222, 128, 0.45);
+  --skr-overlay: rgba(237, 250, 242, 0.92);
+  --skr-glow: 0 0 12px rgba(74, 222, 128, 0.18);
+  --skr-glow-strong: 0 0 20px rgba(74, 222, 128, 0.3), 0 0 6px rgba(251, 191, 36, 0.2);
+  --skr-glass: rgba(255, 255, 255, 0.8);
+}
+
+/* Ember light — warm cream */
+[data-brightness="light"][data-theme="ember"] {
+  color-scheme: light;
+  --skr-bg: #FEF0EC;
+  --skr-surface: #FFFFFF;
+  --skr-elevated: #FCE4DC;
+  --skr-card: #FFFFFF;
+  --skr-text: #1A0804;
+  --skr-text-primary: #1A0804;
+  --skr-text-inverse: #120B08;
+  --skr-text-secondary: #8A3020;
+  --skr-text-muted: #C06050;
+  --skr-text-tertiary: #D89888;
+  --skr-border: rgba(248, 113, 113, 0.2);
+  --skr-border-strong: rgba(248, 113, 113, 0.45);
+  --skr-overlay: rgba(254, 240, 236, 0.92);
+  --skr-glow: 0 0 12px rgba(248, 113, 113, 0.18);
+  --skr-glow-strong: 0 0 20px rgba(248, 113, 113, 0.3), 0 0 6px rgba(251, 146, 60, 0.2);
+  --skr-glass: rgba(255, 255, 255, 0.8);
+}
+
+/* Void light — lavender-white */
+[data-brightness="light"][data-theme="void"] {
+  color-scheme: light;
+  --skr-bg: #F5EEFF;
+  --skr-surface: #FFFFFF;
+  --skr-elevated: #EDD8FF;
+  --skr-card: #FFFFFF;
+  --skr-text: #100820;
+  --skr-text-primary: #100820;
+  --skr-text-inverse: #06040F;
+  --skr-text-secondary: #5A2090;
+  --skr-text-muted: #9060C0;
+  --skr-text-tertiary: #B898D8;
+  --skr-border: rgba(168, 85, 247, 0.2);
+  --skr-border-strong: rgba(168, 85, 247, 0.45);
+  --skr-overlay: rgba(245, 238, 255, 0.92);
+  --skr-glow: 0 0 12px rgba(168, 85, 247, 0.18);
+  --skr-glow-strong: 0 0 20px rgba(168, 85, 247, 0.3), 0 0 6px rgba(34, 211, 238, 0.2);
+  --skr-glass: rgba(255, 255, 255, 0.8);
+}
+
+/* Glacier light — icy white */
+[data-brightness="light"][data-theme="glacier"] {
+  color-scheme: light;
+  --skr-bg: #ECF8F7;
+  --skr-surface: #FFFFFF;
+  --skr-elevated: #D4F2EF;
+  --skr-card: #FFFFFF;
+  --skr-text: #041210;
+  --skr-text-primary: #041210;
+  --skr-text-inverse: #08100F;
+  --skr-text-secondary: #0E6060;
+  --skr-text-muted: #449898;
+  --skr-text-tertiary: #78BCBC;
+  --skr-border: rgba(45, 212, 191, 0.2);
+  --skr-border-strong: rgba(45, 212, 191, 0.45);
+  --skr-overlay: rgba(236, 248, 247, 0.92);
+  --skr-glow: 0 0 12px rgba(45, 212, 191, 0.18);
+  --skr-glow-strong: 0 0 20px rgba(45, 212, 191, 0.3), 0 0 6px rgba(148, 163, 184, 0.15);
+  --skr-glass: rgba(255, 255, 255, 0.8);
+}
+
+/* Dusk light — warm parchment */
+[data-brightness="light"][data-theme="dusk"] {
+  color-scheme: light;
+  --skr-bg: #FFF4EB;
+  --skr-surface: #FFFFFF;
+  --skr-elevated: #FEE8D4;
+  --skr-card: #FFFFFF;
+  --skr-text: #1A0E04;
+  --skr-text-primary: #1A0E04;
+  --skr-text-inverse: #110D08;
+  --skr-text-secondary: #8A4018;
+  --skr-text-muted: #C07840;
+  --skr-text-tertiary: #D8A878;
+  --skr-border: rgba(251, 146, 60, 0.2);
+  --skr-border-strong: rgba(251, 146, 60, 0.45);
+  --skr-overlay: rgba(255, 244, 235, 0.92);
+  --skr-glow: 0 0 12px rgba(251, 146, 60, 0.18);
+  --skr-glow-strong: 0 0 20px rgba(251, 146, 60, 0.3), 0 0 6px rgba(244, 114, 182, 0.2);
+  --skr-glass: rgba(255, 255, 255, 0.8);
+}
+
+/* Aurora light — pale mint */
+[data-brightness="light"][data-theme="aurora"] {
+  color-scheme: light;
+  --skr-bg: #EAFAF4;
+  --skr-surface: #FFFFFF;
+  --skr-elevated: #D4F5E9;
+  --skr-card: #FFFFFF;
+  --skr-text: #041410;
+  --skr-text-primary: #041410;
+  --skr-text-inverse: #050E10;
+  --skr-text-secondary: #0E6048;
+  --skr-text-muted: #409878;
+  --skr-text-tertiary: #70BCA0;
+  --skr-border: rgba(52, 211, 153, 0.2);
+  --skr-border-strong: rgba(52, 211, 153, 0.45);
+  --skr-overlay: rgba(234, 250, 244, 0.92);
+  --skr-glow: 0 0 12px rgba(52, 211, 153, 0.18);
+  --skr-glow-strong: 0 0 20px rgba(52, 211, 153, 0.3), 0 0 6px rgba(34, 211, 238, 0.2);
+  --skr-glass: rgba(255, 255, 255, 0.8);
+}
+
+/* Crimson light — pale rose */
+[data-brightness="light"][data-theme="crimson"] {
+  color-scheme: light;
+  --skr-bg: #FEF0F2;
+  --skr-surface: #FFFFFF;
+  --skr-elevated: #FCD8DE;
+  --skr-card: #FFFFFF;
+  --skr-text: #1A0408;
+  --skr-text-primary: #1A0408;
+  --skr-text-inverse: #0F0608;
+  --skr-text-secondary: #8A1828;
+  --skr-text-muted: #C04858;
+  --skr-text-tertiary: #D88090;
+  --skr-border: rgba(244, 63, 94, 0.2);
+  --skr-border-strong: rgba(244, 63, 94, 0.45);
+  --skr-overlay: rgba(254, 240, 242, 0.92);
+  --skr-glow: 0 0 12px rgba(244, 63, 94, 0.18);
+  --skr-glow-strong: 0 0 20px rgba(244, 63, 94, 0.3), 0 0 6px rgba(245, 158, 11, 0.2);
+  --skr-glass: rgba(255, 255, 255, 0.8);
+}
+
+/* Storm light — yellow-tinted paper */
+[data-brightness="light"][data-theme="storm"] {
+  color-scheme: light;
+  --skr-bg: #F8F9EE;
+  --skr-surface: #FFFFFF;
+  --skr-elevated: #F0F2D4;
+  --skr-card: #FFFFFF;
+  --skr-text: #0A0E04;
+  --skr-text-primary: #0A0E04;
+  --skr-text-inverse: #090C10;
+  --skr-text-secondary: #406028;
+  --skr-text-muted: #789850;
+  --skr-text-tertiary: #A8C080;
+  --skr-border: rgba(253, 224, 71, 0.3);
+  --skr-border-strong: rgba(253, 224, 71, 0.55);
+  --skr-overlay: rgba(248, 249, 238, 0.92);
+  --skr-glow: 0 0 12px rgba(253, 224, 71, 0.15);
+  --skr-glow-strong: 0 0 20px rgba(253, 224, 71, 0.25), 0 0 6px rgba(148, 163, 184, 0.15);
+  --skr-glass: rgba(255, 255, 255, 0.8);
+}
+
 @media (max-width: 780px) {
   .skr-main { padding: 16px; }
   .skr-topbar { padding: 0 16px; }
