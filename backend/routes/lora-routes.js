@@ -250,7 +250,7 @@ const registerLoraRoutes = (app, deps) => {
     return new Map(catalogEntries.filter(([, item]) => Boolean(item)));
   };
 
-  app.post("/lora/catalog/sync/civitai", async (req, res) => {
+  app.post("/lora/catalog/sync/civitai", deps.requireUserMiddleware, async (req, res) => {
     const userId = req.user?.sub;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -332,7 +332,7 @@ const registerLoraRoutes = (app, deps) => {
     }
   });
 
-  app.get("/lora/catalog", async (req, res) => {
+  app.get("/lora/catalog", deps.requireUserMiddleware, async (req, res) => {
     const userId = req.user?.sub;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -385,7 +385,7 @@ const registerLoraRoutes = (app, deps) => {
     }
   });
 
-  app.get("/lora/profiles", async (req, res) => {
+  app.get("/lora/profiles", deps.requireUserMiddleware, async (req, res) => {
     const userId = req.user?.sub;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -425,7 +425,7 @@ const registerLoraRoutes = (app, deps) => {
   });
 
   // POST /lora/profiles — create a new LoRA profile (UUID id, linked to a character)
-  app.post("/lora/profiles", async (req, res) => {
+  app.post("/lora/profiles", deps.requireUserMiddleware, async (req, res) => {
     const userId = req.user?.sub;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -512,7 +512,7 @@ const registerLoraRoutes = (app, deps) => {
     }
   });
 
-  app.get("/lora/profiles/:characterId", async (req, res) => {
+  app.get("/lora/profiles/:characterId", deps.requireUserMiddleware, async (req, res) => {
     const userId = req.user?.sub;
     const characterId = normalizeString(req.params?.characterId);
     if (!userId) {
@@ -545,7 +545,7 @@ const registerLoraRoutes = (app, deps) => {
   });
 
   // DELETE /lora/profiles/:profileId
-  app.delete("/lora/profiles/:profileId", async (req, res) => {
+  app.delete("/lora/profiles/:profileId", deps.requireUserMiddleware, async (req, res) => {
     const userId = req.user?.sub;
     const profileId = normalizeString(req.params?.profileId);
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
@@ -568,7 +568,7 @@ const registerLoraRoutes = (app, deps) => {
     }
   });
 
-  app.put("/lora/profiles/:characterId", async (req, res) => {
+  app.put("/lora/profiles/:characterId", deps.requireUserMiddleware, async (req, res) => {
     const userId = req.user?.sub;
     const characterId = normalizeString(req.params?.characterId);
     // Support both `name` and legacy `displayName`

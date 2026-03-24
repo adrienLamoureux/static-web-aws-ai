@@ -83,7 +83,7 @@ const isImageKey = (key = "") => {
   return IMAGE_EXTENSIONS.has(extension);
 };
 
-app.post("/s3/image-upload-url", async (req, res) => {
+app.post("/s3/image-upload-url", deps.requireUserMiddleware, async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
   const userId = req.user?.sub;
   const fileName = req.body?.fileName || "upload";
@@ -116,7 +116,7 @@ app.post("/s3/image-upload-url", async (req, res) => {
   }
 });
 
-app.post("/images/video-ready", async (req, res) => {
+app.post("/images/video-ready", deps.requireUserMiddleware, async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
   const userId = req.user?.sub;
   const key = req.body?.key;
@@ -202,7 +202,7 @@ app.post("/images/video-ready", async (req, res) => {
   }
 });
 
-app.post("/s3/images/share", async (req, res) => {
+app.post("/s3/images/share", deps.requireUserMiddleware, async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
   const userId = req.user?.sub;
   const key = req.body?.key;
@@ -251,7 +251,7 @@ app.post("/s3/images/share", async (req, res) => {
   }
 });
 
-app.get("/s3/images", async (req, res) => {
+app.get("/s3/images", deps.requireUserMiddleware, async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
   const maxKeys = Number(req.query?.maxKeys) || 100;
   const urlExpirationSeconds = 900;
@@ -319,7 +319,7 @@ app.get("/s3/images", async (req, res) => {
   }
 });
 
-app.post("/s3/images/delete", async (req, res) => {
+app.post("/s3/images/delete", deps.requireUserMiddleware, async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
   const key = req.body?.key;
   const userId = req.user?.sub;
@@ -367,14 +367,10 @@ app.post("/s3/images/delete", async (req, res) => {
 
 app.get("/s3/shared/images", async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
-  const userId = req.user?.sub;
   const maxKeys = toSharedMaxKeys(req.query?.maxKeys);
 
   if (!bucket) {
     return res.status(500).json({ message: "MEDIA_BUCKET is not set" });
-  }
-  if (!userId) {
-    return res.status(401).json({ message: "Unauthorized" });
   }
 
   try {
@@ -427,7 +423,7 @@ app.get("/s3/shared/images", async (req, res) => {
   }
 });
 
-app.get("/s3/shared/images/favorites", async (req, res) => {
+app.get("/s3/shared/images/favorites", deps.requireUserMiddleware, async (req, res) => {
   const userId = req.user?.sub;
 
   if (!userId) {
@@ -451,7 +447,7 @@ app.get("/s3/shared/images/favorites", async (req, res) => {
   }
 });
 
-app.post("/s3/shared/images/favorites", async (req, res) => {
+app.post("/s3/shared/images/favorites", deps.requireUserMiddleware, async (req, res) => {
   const userId = req.user?.sub;
   const key = req.body?.key;
   const favorite = req.body?.favorite !== false;
@@ -492,7 +488,7 @@ app.post("/s3/shared/images/favorites", async (req, res) => {
   }
 });
 
-app.post("/s3/videos/delete", async (req, res) => {
+app.post("/s3/videos/delete", deps.requireUserMiddleware, async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
   const key = req.body?.key;
   const userId = req.user?.sub;
@@ -546,7 +542,7 @@ app.post("/s3/videos/delete", async (req, res) => {
   }
 });
 
-app.post("/s3/videos/share", async (req, res) => {
+app.post("/s3/videos/share", deps.requireUserMiddleware, async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
   const userId = req.user?.sub;
   const key = req.body?.key;
@@ -635,7 +631,7 @@ app.post("/s3/videos/share", async (req, res) => {
   }
 });
 
-app.get("/s3/videos", async (req, res) => {
+app.get("/s3/videos", deps.requireUserMiddleware, async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
   const maxKeys = Number(req.query?.maxKeys) || 100;
   const includeUrls = req.query?.includeUrls === "true";
@@ -728,16 +724,12 @@ app.get("/s3/videos", async (req, res) => {
 
 app.get("/s3/shared/videos", async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
-  const userId = req.user?.sub;
   const maxKeys = toSharedMaxKeys(req.query?.maxKeys);
   const includeUrls = req.query?.includeUrls !== "false";
   const includePosters = req.query?.includePosters !== "false";
 
   if (!bucket) {
     return res.status(500).json({ message: "MEDIA_BUCKET is not set" });
-  }
-  if (!userId) {
-    return res.status(401).json({ message: "Unauthorized" });
   }
 
   try {
@@ -808,7 +800,7 @@ app.get("/s3/shared/videos", async (req, res) => {
   }
 });
 
-app.get("/s3/video-url", async (req, res) => {
+app.get("/s3/video-url", deps.requireUserMiddleware, async (req, res) => {
   const bucket = process.env.MEDIA_BUCKET;
   const prefix = req.query?.prefix;
   const urlExpirationSeconds = 900;

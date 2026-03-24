@@ -54,7 +54,7 @@ const directorFallbackConfig = buildDirectorFallbackConfig({
   defaultNegativePrompt: "",
 });
 
-app.post("/replicate/video/generate", async (req, res) => {
+app.post("/replicate/video/generate", deps.requireUserMiddleware, async (req, res) => {
   const mediaBucket = process.env.MEDIA_BUCKET;
   const userId = req.user?.sub;
   const apiToken = process.env.REPLICATE_API_TOKEN;
@@ -318,7 +318,7 @@ app.post("/replicate/video/generate", async (req, res) => {
   }
 });
 
-app.get("/replicate/video/status", async (req, res) => {
+app.get("/replicate/video/status", deps.requireUserMiddleware, async (req, res) => {
   const mediaBucket = process.env.MEDIA_BUCKET;
   const userId = req.user?.sub;
   const apiToken = process.env.REPLICATE_API_TOKEN;

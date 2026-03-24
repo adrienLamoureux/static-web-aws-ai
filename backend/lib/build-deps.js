@@ -60,7 +60,7 @@ const {
   clampPromptTokens,
 } = require("./story-prompt");
 
-const { requireUserMiddleware } = require("./auth");
+const { requireUserMiddleware, optionalUserMiddleware, requireAdminMiddleware } = require("./auth");
 const {
   buildUserPrefix,
   ensureUserKey,
@@ -242,6 +242,8 @@ const createDeps = () => {
     MAX_REPLICATE_PROMPT_TOKENS,
     clampPromptTokens,
     requireUserMiddleware,
+    optionalUserMiddleware,
+    requireAdminMiddleware,
     buildUserPrefix,
     ensureUserKey,
     buildMediaPk,

@@ -14,7 +14,7 @@ module.exports = (app, deps) => {
     bedrockClient,
   } = deps;
 
-app.post("/bedrock/nova-reel/image-to-video-s3", async (req, res) => {
+app.post("/bedrock/nova-reel/image-to-video-s3", deps.requireUserMiddleware, async (req, res) => {
   const prompt = req.body?.prompt || "A cinematic push-in on the scene.";
   const mediaBucket = process.env.MEDIA_BUCKET;
   const inputKey = req.body?.inputKey;

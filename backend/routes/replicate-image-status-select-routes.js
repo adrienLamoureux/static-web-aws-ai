@@ -26,7 +26,7 @@ module.exports = (app, deps) => {
 const buildImageJobKey = (predictionId = "") =>
   `render/replicate/image/${predictionId || Date.now()}`;
 
-app.get("/replicate/image/status", async (req, res) => {
+app.get("/replicate/image/status", deps.requireUserMiddleware, async (req, res) => {
   const mediaBucket = process.env.MEDIA_BUCKET;
   const userId = req.user?.sub;
   const apiToken = process.env.REPLICATE_API_TOKEN;
@@ -193,7 +193,7 @@ app.get("/replicate/image/status", async (req, res) => {
   }
 });
 
-app.post("/images/select", async (req, res) => {
+app.post("/images/select", deps.requireUserMiddleware, async (req, res) => {
   const mediaBucket = process.env.MEDIA_BUCKET;
   const selectedKey = req.body?.key;
   const userId = req.user?.sub;

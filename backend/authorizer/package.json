@@ -1,0 +1,9 @@
+{
+  "name": "whisk-authorizer",
+  "version": "1.0.0",
+  "description": "API Gateway Request Authorizer Lambda for Whisk Studio",
+  "main": "index.js",
+  "dependencies": {
+    "aws-jwt-verify": "^4.0.1"
+  }
+}

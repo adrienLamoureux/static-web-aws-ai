@@ -126,7 +126,7 @@ module.exports = (app, deps) => {
   const defaultModelKey = civitaiModelKeys[0] || "";
   const imageLoraSupportedModels = getLoraSupportedModelKeys(civitaiModelConfig);
 
-  app.post("/civitai/image/generate", async (req, res) => {
+  app.post("/civitai/image/generate", deps.requireUserMiddleware, async (req, res) => {
     const mediaBucket = process.env.MEDIA_BUCKET;
     const userId = req.user?.sub;
     const apiToken = process.env.CIVITAI_API_TOKEN;
@@ -290,7 +290,7 @@ module.exports = (app, deps) => {
     }
   });
 
-  app.get("/civitai/image/status", async (req, res) => {
+  app.get("/civitai/image/status", deps.requireUserMiddleware, async (req, res) => {
     const mediaBucket = process.env.MEDIA_BUCKET;
     const userId = req.user?.sub;
     const apiToken = process.env.CIVITAI_API_TOKEN;

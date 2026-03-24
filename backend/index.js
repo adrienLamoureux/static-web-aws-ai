@@ -26,7 +26,7 @@ app.use((req, res, next) => {
 });
 
 const deps = createDeps();
-app.use(deps.requireUserMiddleware);
+app.use(deps.optionalUserMiddleware);
 
 registerRoutes(app, deps);
 

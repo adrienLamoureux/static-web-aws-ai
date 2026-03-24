@@ -63,7 +63,7 @@ const directorFallbackConfig = buildDirectorFallbackConfig({
   defaultNegativePrompt: DEFAULT_NEGATIVE_PROMPT,
 });
 
-app.post("/replicate/image/generate", async (req, res) => {
+app.post("/replicate/image/generate", deps.requireUserMiddleware, async (req, res) => {
   const mediaBucket = process.env.MEDIA_BUCKET;
   const userId = req.user?.sub;
   const apiToken = process.env.REPLICATE_API_TOKEN;

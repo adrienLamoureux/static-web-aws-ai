@@ -155,6 +155,13 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       },
     });
 
+    new cognito.CfnUserPoolGroup(this, "AdminGroup", {
+      groupName: "admin",
+      userPoolId: userPool.userPoolId,
+      description: "Administrators with access to Director/Sanctum",
+      precedence: 0,
+    });
+
     const baseDomainPrefixSource =
       process.env.COGNITO_DOMAIN_PREFIX_BASE ||
       process.env.COGNITO_DOMAIN_PREFIX ||
@@ -263,12 +270,48 @@ export class StaticWebAWSAIStack extends cdk.Stack {
         resourceId: "DefaultAdminUser",
         username: adminEmail,
       });
+      new cr.AwsCustomResource(this, "DefaultAdminGroupMembership", {
+        onCreate: {
+          service: "CognitoIdentityServiceProvider",
+          action: "adminAddUserToGroup",
+          parameters: {
+            UserPoolId: userPool.userPoolId,
+            Username: adminEmail,
+            GroupName: "admin",
+          },
+          physicalResourceId: cr.PhysicalResourceId.of(`admin-group-${adminEmail}`),
+        },
+        policy: cr.AwsCustomResourcePolicy.fromStatements([
+          new iam.PolicyStatement({
+            actions: ["cognito-idp:AdminAddUserToGroup"],
+            resources: [userPool.userPoolArn],
+          }),
+        ]),
+      });
     }
 
     if (canSeedAdminUsers && secondaryAdminEmail) {
       registerDefaultAdminUser({
         resourceId: "SecondaryAdminUser",
         username: secondaryAdminEmail,
+      });
+      new cr.AwsCustomResource(this, "SecondaryAdminGroupMembership", {
+        onCreate: {
+          service: "CognitoIdentityServiceProvider",
+          action: "adminAddUserToGroup",
+          parameters: {
+            UserPoolId: userPool.userPoolId,
+            Username: secondaryAdminEmail,
+            GroupName: "admin",
+          },
+          physicalResourceId: cr.PhysicalResourceId.of(`admin-group-${secondaryAdminEmail}`),
+        },
+        policy: cr.AwsCustomResourcePolicy.fromStatements([
+          new iam.PolicyStatement({
+            actions: ["cognito-idp:AdminAddUserToGroup"],
+            resources: [userPool.userPoolArn],
+          }),
+        ]),
       });
     }
 
@@ -358,6 +401,21 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       })
     );
 
+    const authorizerLambdaFn = new lambda.Function(this, "AuthorizerLambda", {
+      runtime: lambda.Runtime.NODEJS_22_X,
+      handler: "index.handler",
+      code: lambda.Code.fromAsset(path.join(__dirname, "../../backend/authorizer")),
+      environment: {
+        USER_POOL_ID: userPool.userPoolId,
+      },
+    });
+
+    const requestAuthorizer = new apigateway.RequestAuthorizer(this, "RequestAuthorizer", {
+      handler: authorizerLambdaFn,
+      identitySources: [],
+      resultsCacheTtl: cdk.Duration.seconds(0),
+    });
+
     // API Gateway
     const api = new apigateway.LambdaRestApi(this, "ApiGateway", {
       handler: apiLambda,
@@ -368,12 +426,8 @@ export class StaticWebAWSAIStack extends cdk.Stack {
         allowHeaders: ["*"],
       },
       defaultMethodOptions: {
-        authorizationType: apigateway.AuthorizationType.COGNITO,
-        authorizer: new apigateway.CognitoUserPoolsAuthorizer(
-          this,
-          "CognitoAuthorizer",
-          { cognitoUserPools: [userPool] }
-        ),
+        authorizationType: apigateway.AuthorizationType.CUSTOM,
+        authorizer: requestAuthorizer,
       },
     });
 

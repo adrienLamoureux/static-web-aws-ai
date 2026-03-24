@@ -62,3 +62,5 @@ Track rollouts of the same improvement across multiple idea stacks.
 - 2026-03-16T15:30:18.039Z | action=deploy | improvement=initial-scaffold | targets=design-solaris | succeeded=design-solaris | failed=- | commit=628b7c7
 - 2026-03-16T15:39:04.415Z | action=deploy | improvement=initial-scaffold | targets=design-kinetic | succeeded=design-kinetic | failed=- | commit=628b7c7
 - 2026-03-16T15:44:57.128Z | action=deploy | improvement=initial-scaffold | targets=design-atelier | succeeded=design-atelier | failed=- | commit=628b7c7
+- 2026-03-24T18:41:20.518Z | action=deploy | improvement=3-tier-permissions | targets=dev | succeeded=dev | failed=- | commit=e3751c4
+- 2026-03-24T18:47:26.475Z | action=deploy | improvement=fix-authorizer-deps | targets=dev | succeeded=dev | failed=- | commit=e3751c4

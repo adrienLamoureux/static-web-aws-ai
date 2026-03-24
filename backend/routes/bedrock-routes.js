@@ -24,7 +24,7 @@ module.exports = (app, deps) => {
     GetObjectCommand,
   } = deps;
 
-app.get("/bedrock/nova-reel/job-status", async (req, res) => {
+app.get("/bedrock/nova-reel/job-status", deps.requireUserMiddleware, async (req, res) => {
   const invocationArn = req.query?.invocationArn;
   const inputKey = req.query?.inputKey;
   const outputPrefix = req.query?.outputPrefix;
@@ -120,7 +120,7 @@ app.get("/bedrock/nova-reel/job-status", async (req, res) => {
   }
 });
 
-app.post("/bedrock/image/generate", async (req, res) => {
+app.post("/bedrock/image/generate", deps.requireUserMiddleware, async (req, res) => {
   const mediaBucket = process.env.MEDIA_BUCKET;
   const userId = req.user?.sub;
   const modelKey = req.body?.model || "titan";

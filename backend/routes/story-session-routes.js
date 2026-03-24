@@ -205,7 +205,7 @@ app.get("/story/characters", async (req, res) => {
   }
 });
 
-app.get("/story/sessions", async (req, res) => {
+app.get("/story/sessions", deps.requireUserMiddleware, async (req, res) => {
   const userId = req.user?.sub;
   if (!mediaTable) {
     return res.status(500).json({ message: "MEDIA_TABLE is not set" });
@@ -251,7 +251,7 @@ app.get("/story/sessions", async (req, res) => {
   }
 });
 
-app.delete("/story/sessions", async (req, res) => {
+app.delete("/story/sessions", deps.requireUserMiddleware, async (req, res) => {
   const userId = req.user?.sub;
   const mediaBucket = process.env.MEDIA_BUCKET;
   if (!mediaTable) {
@@ -312,7 +312,7 @@ app.delete("/story/sessions", async (req, res) => {
   }
 });
 
-app.patch("/story/sessions/:id/lora", async (req, res) => {
+app.patch("/story/sessions/:id/lora", deps.requireUserMiddleware, async (req, res) => {
   const userId = req.user?.sub;
   const sessionId = req.params?.id;
   if (!userId) return res.status(401).json({ message: "Unauthorized" });
@@ -348,7 +348,7 @@ app.patch("/story/sessions/:id/lora", async (req, res) => {
   }
 });
 
-app.post("/story/sessions", async (req, res) => {
+app.post("/story/sessions", deps.requireUserMiddleware, async (req, res) => {
   const userId = req.user?.sub;
   const presetId = req.body?.presetId;
   const title = req.body?.title?.trim();
@@ -546,7 +546,7 @@ app.post("/story/sessions", async (req, res) => {
   }
 });
 
-app.get("/story/sessions/:id", async (req, res) => {
+app.get("/story/sessions/:id", deps.requireUserMiddleware, async (req, res) => {
   const userId = req.user?.sub;
   const sessionId = req.params.id;
   const bucket = process.env.MEDIA_BUCKET;
@@ -695,7 +695,7 @@ app.get("/story/sessions/:id", async (req, res) => {
   }
 });
 
-app.delete("/story/sessions/:id", async (req, res) => {
+app.delete("/story/sessions/:id", deps.requireUserMiddleware, async (req, res) => {
   const mediaBucket = process.env.MEDIA_BUCKET;
   const mediaTableName = process.env.MEDIA_TABLE;
   const userId = req.user?.sub;

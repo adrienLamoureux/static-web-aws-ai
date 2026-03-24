@@ -37,7 +37,7 @@ module.exports = (app, deps) => {
     return false;
   };
 
-  app.post("/story/sessions/:id/message", async (req, res) => {
+  app.post("/story/sessions/:id/message", deps.requireUserMiddleware, async (req, res) => {
   const userId = req.user?.sub;
   const sessionId = req.params.id;
   const content = req.body?.content?.trim();

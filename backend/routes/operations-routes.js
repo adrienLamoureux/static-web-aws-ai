@@ -509,6 +509,9 @@ const registerOperationsRoutes = (app, deps) => {
     PutCommand,
   } = deps;
 
+  const { requireUserMiddleware, requireAdminMiddleware } = deps;
+  const adminGuard = [requireUserMiddleware, requireAdminMiddleware];
+
   const directorFallbackConfig = buildDirectorFallbackConfig({
     replicateModelConfig,
     replicateVideoConfig,
@@ -803,7 +806,7 @@ const registerOperationsRoutes = (app, deps) => {
     };
   };
 
-  app.get("/ops/dashboard", async (req, res) => {
+  app.get("/ops/dashboard", ...adminGuard, async (req, res) => {
     const requestStartedAt = Date.now();
     const userId = req.user?.sub;
 
@@ -837,7 +840,7 @@ const registerOperationsRoutes = (app, deps) => {
     }
   });
 
-  app.get("/ops/director/config", async (req, res) => {
+  app.get("/ops/director/config", ...adminGuard, async (req, res) => {
     const userId = req.user?.sub;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -861,7 +864,7 @@ const registerOperationsRoutes = (app, deps) => {
     }
   });
 
-  app.post("/ops/director/config", async (req, res) => {
+  app.post("/ops/director/config", ...adminGuard, async (req, res) => {
     const userId = req.user?.sub;
     const inputPatch = req.body?.config || req.body || {};
     if (!userId) {
@@ -882,7 +885,7 @@ const registerOperationsRoutes = (app, deps) => {
     }
   });
 
-  app.get("/ops/director/app-config", async (req, res) => {
+  app.get("/ops/director/app-config", ...adminGuard, async (req, res) => {
     const userId = req.user?.sub;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -904,7 +907,7 @@ const registerOperationsRoutes = (app, deps) => {
     }
   });
 
-  app.post("/ops/director/app-config", async (req, res) => {
+  app.post("/ops/director/app-config", ...adminGuard, async (req, res) => {
     const userId = req.user?.sub;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -923,7 +926,7 @@ const registerOperationsRoutes = (app, deps) => {
     }
   });
 
-  app.get("/ops/director/masonry/images", async (req, res) => {
+  app.get("/ops/director/masonry/images", ...adminGuard, async (req, res) => {
     const userId = req.user?.sub;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -943,7 +946,7 @@ const registerOperationsRoutes = (app, deps) => {
     }
   });
 
-  app.post("/ops/director/masonry/upload-url", async (req, res) => {
+  app.post("/ops/director/masonry/upload-url", ...adminGuard, async (req, res) => {
     const userId = req.user?.sub;
     const mediaBucket = process.env.MEDIA_BUCKET;
     const fileName = String(req.body?.fileName || "masonry-image").trim();
@@ -991,7 +994,7 @@ const registerOperationsRoutes = (app, deps) => {
     }
   });
 
-  app.post("/ops/director/masonry/images/delete", async (req, res) => {
+  app.post("/ops/director/masonry/images/delete", ...adminGuard, async (req, res) => {
     const userId = req.user?.sub;
     const mediaBucket = process.env.MEDIA_BUCKET;
     const key = String(req.body?.key || "").trim();
@@ -1023,7 +1026,7 @@ const registerOperationsRoutes = (app, deps) => {
     }
   });
 
-  app.get("/ops/director/overview", async (req, res) => {
+  app.get("/ops/director/overview", ...adminGuard, async (req, res) => {
     const userId = req.user?.sub;
     const requestStartedAt = Date.now();
     if (!userId) {
@@ -1040,7 +1043,7 @@ const registerOperationsRoutes = (app, deps) => {
     }
   });
 
-  app.post("/ops/director/jobs/prioritize", async (req, res) => {
+  app.post("/ops/director/jobs/prioritize", ...adminGuard, async (req, res) => {
     const userId = req.user?.sub;
     const jobKey = String(req.body?.jobKey || "").trim();
     const priorityRaw = String(req.body?.priority || DEFAULT_JOB_PRIORITY)
@@ -1098,7 +1101,7 @@ const registerOperationsRoutes = (app, deps) => {
     }
   });
 
-  app.post("/ops/director/story/sessions/pin", async (req, res) => {
+  app.post("/ops/director/story/sessions/pin", ...adminGuard, async (req, res) => {
     const userId = req.user?.sub;
     const sessionId = String(req.body?.sessionId || "").trim();
     const pinned = Boolean(req.body?.pinned);
@@ -1147,7 +1150,7 @@ const registerOperationsRoutes = (app, deps) => {
     }
   });
 
-  app.post("/ops/director/sound/normalize", async (req, res) => {
+  app.post("/ops/director/sound/normalize", ...adminGuard, async (req, res) => {
     const userId = req.user?.sub;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });

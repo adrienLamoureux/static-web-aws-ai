@@ -898,7 +898,7 @@ module.exports = (app, deps) => {
     return { updatedScene, musicKey, musicUrl, trackItem };
   };
 
-app.post("/story/sessions/:id/illustrations", async (req, res) => {
+app.post("/story/sessions/:id/illustrations", deps.requireUserMiddleware, async (req, res) => {
   const userId = req.user?.sub;
   const sessionId = req.params.id;
   let sceneId = req.body?.sceneId;
@@ -1346,7 +1346,7 @@ app.post("/story/sessions/:id/illustrations", async (req, res) => {
   }
 });
 
-app.post("/story/sessions/:id/scenes/:sceneId/animation", async (req, res) => {
+app.post("/story/sessions/:id/scenes/:sceneId/animation", deps.requireUserMiddleware, async (req, res) => {
   const userId = req.user?.sub;
   const sessionId = req.params.id;
   const sceneId = req.params.sceneId;
@@ -1481,7 +1481,7 @@ app.post("/story/sessions/:id/scenes/:sceneId/animation", async (req, res) => {
   }
 });
 
-app.get("/story/sessions/:id/scenes/:sceneId/animation", async (req, res) => {
+app.get("/story/sessions/:id/scenes/:sceneId/animation", deps.requireUserMiddleware, async (req, res) => {
   const userId = req.user?.sub;
   const sessionId = req.params.id;
   const sceneId = req.params.sceneId;
@@ -1599,7 +1599,7 @@ app.get("/story/sessions/:id/scenes/:sceneId/animation", async (req, res) => {
   }
 });
 
-app.post("/story/sessions/:id/scenes/:sceneId/music", async (req, res) => {
+app.post("/story/sessions/:id/scenes/:sceneId/music", deps.requireUserMiddleware, async (req, res) => {
   const userId = req.user?.sub;
   const sessionId = req.params.id;
   const sceneId = req.params.sceneId;
@@ -1767,7 +1767,7 @@ app.post("/story/sessions/:id/scenes/:sceneId/music", async (req, res) => {
   }
 });
 
-app.get("/story/sessions/:id/scenes/:sceneId/music", async (req, res) => {
+app.get("/story/sessions/:id/scenes/:sceneId/music", deps.requireUserMiddleware, async (req, res) => {
   const userId = req.user?.sub;
   const sessionId = req.params.id;
   const sceneId = req.params.sceneId;
@@ -1896,7 +1896,7 @@ app.get("/story/sessions/:id/scenes/:sceneId/music", async (req, res) => {
   }
 });
 
-app.post("/story/sessions/:id/scenes/:sceneId/music/favorite", async (req, res) => {
+app.post("/story/sessions/:id/scenes/:sceneId/music/favorite", deps.requireUserMiddleware, async (req, res) => {
   const userId = req.user?.sub;
   const sessionId = req.params.id;
   const sceneId = req.params.sceneId;
@@ -2063,7 +2063,7 @@ app.post("/story/sessions/:id/scenes/:sceneId/music/favorite", async (req, res) 
   }
 });
 
-app.get("/story/music-library", async (req, res) => {
+app.get("/story/music-library", deps.requireUserMiddleware, async (req, res) => {
   const userId = req.user?.sub;
   const bucket = process.env.MEDIA_BUCKET;
   const limit = parseLibraryLimit(req.query?.limit, 200);
@@ -2132,7 +2132,7 @@ app.get("/story/music-library", async (req, res) => {
   }
 });
 
-app.post("/story/music-library/upload-url", async (req, res) => {
+app.post("/story/music-library/upload-url", deps.requireUserMiddleware, async (req, res) => {
   const userId = req.user?.sub;
   const bucket = process.env.MEDIA_BUCKET;
   const fileName = req.body?.fileName || "track";
@@ -2182,7 +2182,7 @@ app.post("/story/music-library/upload-url", async (req, res) => {
   }
 });
 
-app.post("/story/music-library/upload", async (req, res) => {
+app.post("/story/music-library/upload", deps.requireUserMiddleware, async (req, res) => {
   const userId = req.user?.sub;
   const bucket = process.env.MEDIA_BUCKET;
   const providedTrackId = String(req.body?.trackId || "").trim();
@@ -2291,7 +2291,7 @@ app.post("/story/music-library/upload", async (req, res) => {
   }
 });
 
-app.post("/story/sessions/:id/scenes/:sceneId/music/recommend", async (req, res) => {
+app.post("/story/sessions/:id/scenes/:sceneId/music/recommend", deps.requireUserMiddleware, async (req, res) => {
   const userId = req.user?.sub;
   const sessionId = req.params.id;
   const sceneId = req.params.sceneId;
@@ -2405,7 +2405,7 @@ app.post("/story/sessions/:id/scenes/:sceneId/music/recommend", async (req, res)
   }
 });
 
-app.post("/story/sessions/:id/scenes/:sceneId/music/select", async (req, res) => {
+app.post("/story/sessions/:id/scenes/:sceneId/music/select", deps.requireUserMiddleware, async (req, res) => {
   const userId = req.user?.sub;
   const sessionId = req.params.id;
   const sceneId = req.params.sceneId;

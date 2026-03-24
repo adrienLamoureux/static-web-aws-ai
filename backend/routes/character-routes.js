@@ -58,7 +58,7 @@ const registerCharacterRoutes = (app, deps) => {
 
   // ─── GET /characters ────────────────────────────────────────────────────────
   // Returns system seed characters + user-created characters.
-  app.get("/characters", async (req, res) => {
+  app.get("/characters", deps.requireUserMiddleware, async (req, res) => {
     const userId = req.user?.sub;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
@@ -89,7 +89,7 @@ const registerCharacterRoutes = (app, deps) => {
 
   // ─── POST /characters ────────────────────────────────────────────────────────
   // Create a new user character.
-  app.post("/characters", async (req, res) => {
+  app.post("/characters", deps.requireUserMiddleware, async (req, res) => {
     const userId = req.user?.sub;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
@@ -128,7 +128,7 @@ const registerCharacterRoutes = (app, deps) => {
   });
 
   // ─── GET /characters/:id ─────────────────────────────────────────────────────
-  app.get("/characters/:id", async (req, res) => {
+  app.get("/characters/:id", deps.requireUserMiddleware, async (req, res) => {
     const userId = req.user?.sub;
     const charId = normalizeStr(req.params?.id || "");
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
@@ -155,7 +155,7 @@ const registerCharacterRoutes = (app, deps) => {
 
   // ─── PUT /characters/:id ─────────────────────────────────────────────────────
   // Merge-update a user character. System characters cannot be updated.
-  app.put("/characters/:id", async (req, res) => {
+  app.put("/characters/:id", deps.requireUserMiddleware, async (req, res) => {
     const userId = req.user?.sub;
     const charId = normalizeStr(req.params?.id || "");
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
@@ -205,7 +205,7 @@ const registerCharacterRoutes = (app, deps) => {
 
   // ─── DELETE /characters/:id ──────────────────────────────────────────────────
   // Only user-owned characters can be deleted.
-  app.delete("/characters/:id", async (req, res) => {
+  app.delete("/characters/:id", deps.requireUserMiddleware, async (req, res) => {
     const userId = req.user?.sub;
     const charId = normalizeStr(req.params?.id || "");
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
