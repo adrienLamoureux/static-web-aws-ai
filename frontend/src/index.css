@@ -1403,3 +1403,67 @@ button { cursor: pointer; }
   width: 100%;
   margin-top: 4px;
 }
+
+/* ── Character Walker ────────────────────────────────────── */
+.skr-character-walker {
+  position: fixed;
+  bottom: 72px; /* clear the bottom HUD */
+  left: 80px;
+  z-index: 50;
+  pointer-events: none;
+  will-change: left, transform;
+}
+
+.skr-character-walker svg {
+  display: block;
+  animation: skr-char-bob 0.45s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 6px rgba(192, 132, 252, 0.4));
+}
+
+@keyframes skr-char-bob {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-3px); }
+}
+
+.skr-char-leg-l {
+  transform-box: fill-box;
+  transform-origin: top center;
+  animation: skr-leg-fwd 0.45s ease-in-out infinite alternate;
+}
+
+.skr-char-leg-r {
+  transform-box: fill-box;
+  transform-origin: top center;
+  animation: skr-leg-fwd 0.45s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes skr-leg-fwd {
+  from { transform: rotate(-20deg); }
+  to   { transform: rotate(20deg); }
+}
+
+.skr-char-arm-l {
+  transform-box: fill-box;
+  transform-origin: top right;
+  animation: skr-arm-swing 0.45s ease-in-out infinite alternate-reverse;
+}
+
+.skr-char-arm-r {
+  transform-box: fill-box;
+  transform-origin: top left;
+  animation: skr-arm-swing 0.45s ease-in-out infinite alternate;
+}
+
+@keyframes skr-arm-swing {
+  from { transform: rotate(-15deg); }
+  to   { transform: rotate(15deg); }
+}
+
+/* Pause all movement when idle at screen edges */
+.skr-character-walker.skr-char-idle svg,
+.skr-character-walker.skr-char-idle .skr-char-leg-l,
+.skr-character-walker.skr-char-idle .skr-char-leg-r,
+.skr-character-walker.skr-char-idle .skr-char-arm-l,
+.skr-character-walker.skr-char-idle .skr-char-arm-r {
+  animation-play-state: paused;
+}

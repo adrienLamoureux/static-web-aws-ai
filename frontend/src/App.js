@@ -15,6 +15,7 @@ import { MusicProvider } from "./contexts/MusicContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import SakuraMusicBar from "./components/sakura/SakuraMusicBar";
 import ThemeSwitcher from "./components/sakura/ThemeSwitcher";
+import CharacterWalker from "./components/sakura/CharacterWalker";
 import LoginModal from "./components/auth/LoginModal";
 
 // Pages
@@ -191,6 +192,9 @@ function SakuraShell({ children }) {
 
       {/* Music bar */}
       <SakuraMusicBar />
+
+      {/* Walking character */}
+      <CharacterWalker />
 
       {/* Bottom HUD navigation — always visible, filtered by role */}
       <nav className="skr-hud">
