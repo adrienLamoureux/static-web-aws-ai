@@ -193,7 +193,7 @@ function SakuraShell({ children }) {
       {/* Music bar */}
       <SakuraMusicBar />
 
-      {/* Walking character */}
+      {/* Live2D companion character */}
       <CharacterWalker />
 
       {/* Bottom HUD navigation — always visible, filtered by role */}
