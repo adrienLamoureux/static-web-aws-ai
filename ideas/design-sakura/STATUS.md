@@ -27,9 +27,13 @@
 ## Open Risks
 - No REQUIREMENTS.md written yet for this variant
 - Legacy Solaris component file names (SolarisMasonry.js etc) still present — rename in follow-up
+- CDK `DeployWebsite` custom resource Lambda times out when syncing Live2D assets (>3MB total); workaround is manual `aws s3 sync` + CloudFront invalidation
+- `codex/dev` companion route not yet deployed to the sakura Lambda (different stack); companion dialog shows fallback until sakura stack merges backend from dev
 
 ## Next Actions
-- QA login flow with test credentials on https://d2lepwk3t4buta.cloudfront.net
+- Refine Hiyori: scale, position, idle motion tuning (un-hide canvas when ready)
+- Add expression changes to CompanionDialog once a model with .exp3.json files is available
+- Investigate CDK Lambda timeout fix (increase `memorySize`/`ephemeralStorageSize` on `BucketDeployment`)
 - Write frontend/REQUIREMENTS.md
 
 ## Activity Log
@@ -47,3 +51,4 @@
 - 2026-03-24T20:31:51.365Z | event=deploy | stack=StaticWebAWSAIStack-design-sakura / cloudfront=https://d2lepwk3t4buta.cloudfront.net / api=https://wl9d78lnf9.execute-api.us-east-1.amazonaws.com/prod/ / commit=d2ea574 / sanity=passed / ui_smoke=passed
 - 2026-03-24T21:15:02.547Z | event=deploy | stack=StaticWebAWSAIStack-design-sakura / cloudfront=https://d2lepwk3t4buta.cloudfront.net / api=https://wl9d78lnf9.execute-api.us-east-1.amazonaws.com/prod/ / commit=51c71cb / sanity=passed / ui_smoke=passed
 - 2026-03-25T07:42:53.374Z | event=deploy | stack=StaticWebAWSAIStack-design-sakura / cloudfront=https://d2lepwk3t4buta.cloudfront.net / api=https://wl9d78lnf9.execute-api.us-east-1.amazonaws.com/prod/ / commit=8fbe565 / sanity=passed / ui_smoke=passed
+- 2026-03-25T14:24:00.000Z | event=s3-sync | note=Manual sync of Live2D companion assets + full build (CDK Lambda timeout workaround) / commits=e58d3a8..a92e370 / live2d=hiyori_free_t08 / character=hidden-pending-refinement
