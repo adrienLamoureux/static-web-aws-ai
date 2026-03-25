@@ -13,6 +13,7 @@ const registerStoryIllustrationRoute = require("./story-illustration-route");
 const registerOperationsRoutes = require("./operations-routes");
 const registerLoraRoutes = require("./lora-routes");
 const registerCharacterRoutes = require("./character-routes");
+const registerCompanionRoute = require("./companion-route");
 
 const registerRoutes = (app, deps) => {
   registerCorePromptRoutes(app, deps);
@@ -30,6 +31,7 @@ const registerRoutes = (app, deps) => {
   registerOperationsRoutes(app, deps);
   registerLoraRoutes(app, deps);
   registerCharacterRoutes(app, deps);
+  registerCompanionRoute(app, deps);
 };
 
 module.exports = {
