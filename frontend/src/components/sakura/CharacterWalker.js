@@ -133,6 +133,7 @@ export default function CharacterWalker() {
           height: CANVAS_H,
           pointerEvents: "none",
           zIndex: 50,
+          display: "none", // TODO: re-enable after refinement
         }}
       />
       {dialog && (
