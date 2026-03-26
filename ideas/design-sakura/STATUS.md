@@ -52,3 +52,4 @@
 - 2026-03-24T21:15:02.547Z | event=deploy | stack=StaticWebAWSAIStack-design-sakura / cloudfront=https://d2lepwk3t4buta.cloudfront.net / api=https://wl9d78lnf9.execute-api.us-east-1.amazonaws.com/prod/ / commit=51c71cb / sanity=passed / ui_smoke=passed
 - 2026-03-25T07:42:53.374Z | event=deploy | stack=StaticWebAWSAIStack-design-sakura / cloudfront=https://d2lepwk3t4buta.cloudfront.net / api=https://wl9d78lnf9.execute-api.us-east-1.amazonaws.com/prod/ / commit=8fbe565 / sanity=passed / ui_smoke=passed
 - 2026-03-25T14:24:00.000Z | event=s3-sync | note=Manual sync of Live2D companion assets + full build (CDK Lambda timeout workaround) / commits=e58d3a8..a92e370 / live2d=hiyori_free_t08 / character=hidden-pending-refinement
+- 2026-03-26T18:22:00.000Z | event=s3-sync | note=VTuber companion panel redesign — CompanionPanel, Live2DEngine, emotion system, cursor tracking, multi-turn chat, model selector / commit=8abcc84 / invalidation=I628AE3O0LNBCPEKNLMGRCFBJL

@@ -46,8 +46,7 @@ export default function CompanionCanvas({ modelEntry, onEngineReady, style }) {
       engineRef.current = null;
       onEngineReady(null);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // intentional: runs once on mount; model entry handled in the effect below
 
   // Swap model when modelEntry changes
   useEffect(() => {
