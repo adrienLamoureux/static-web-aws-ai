@@ -17,6 +17,8 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useAuth } from "../../../contexts/AuthContext";
+import { useConfig } from "../../../contexts/ConfigContext";
+import { buildApiUrl } from "../../../services/apiClient";
 import { useCompanionEvent } from "../../../lib/companion/CompanionContext";
 import { REACTIONS } from "../../../lib/companion/reaction-map";
 import { getDefaultModel, getModelById } from "../../../lib/live2d/model-registry";
@@ -40,6 +42,7 @@ const STORAGE_KEY = "skr-companion-minimized";
 
 export default function CompanionPanel() {
   const { user } = useAuth();
+  const { apiBaseUrl } = useConfig();
   const isAdmin = user?.isAdmin || false;
 
   const engineRef = useRef(null);
@@ -62,8 +65,8 @@ export default function CompanionPanel() {
 
   // Fetch persisted model choice from backend (Director setting)
   useEffect(() => {
-    const API_BASE = process.env.REACT_APP_API_BASE_URL || "";
-    fetch(`${API_BASE}/api/admin/companion-model`)
+    if (!apiBaseUrl) return;
+    fetch(buildApiUrl(apiBaseUrl, "/api/admin/companion-model"))
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (data?.modelId) {
@@ -72,7 +75,7 @@ export default function CompanionPanel() {
         }
       })
       .catch(() => {}); // silent fallback
-  }, []);
+  }, [apiBaseUrl]);
 
   // Persist minimize state
   const toggleMinimized = useCallback(() => {

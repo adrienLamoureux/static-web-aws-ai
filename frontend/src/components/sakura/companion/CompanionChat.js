@@ -7,8 +7,8 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
-
-const API_BASE = process.env.REACT_APP_API_BASE_URL || "";
+import { useConfig } from "../../../contexts/ConfigContext";
+import { buildApiUrl } from "../../../services/apiClient";
 const MAX_HISTORY = 20;
 const REVEAL_DELAY_MS = 28; // ms per character
 
@@ -22,6 +22,7 @@ const PAGE_LABELS = {
 
 export default function CompanionChat({ engineRef, isOpen, onClose }) {
   const location = useLocation();
+  const { apiBaseUrl } = useConfig();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -100,7 +101,7 @@ export default function CompanionChat({ engineRef, isOpen, onClose }) {
     }));
 
     try {
-      const res = await fetch(`${API_BASE}/api/companion/chat`, {
+      const res = await fetch(buildApiUrl(apiBaseUrl, "/api/companion/chat"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: abortRef.current.signal,

@@ -6,14 +6,15 @@
 
 import { useState, useEffect, useRef } from "react";
 import { getAllModels } from "../../../lib/live2d/model-registry";
-
-const API_BASE = process.env.REACT_APP_API_BASE_URL || "";
+import { useConfig } from "../../../contexts/ConfigContext";
+import { buildApiUrl } from "../../../services/apiClient";
 
 export default function ModelSelector({ currentModel, onModelChange, isAdmin }) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const menuRef = useRef(null);
   const models = getAllModels();
+  const { apiBaseUrl } = useConfig();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -35,7 +36,7 @@ export default function ModelSelector({ currentModel, onModelChange, isAdmin }) 
     setSaving(true);
     onModelChange(model);
     try {
-      await fetch(`${API_BASE}/api/admin/companion-model`, {
+      await fetch(buildApiUrl(apiBaseUrl, "/api/admin/companion-model"), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ modelId: model.id }),
