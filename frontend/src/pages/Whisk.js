@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import SolarisImageWall from '../components/shared/SolarisImageWall';
 import { useWhiskImages } from './whisk/hooks/useWhiskImages';
 import { useImageStudio } from './whisk/hooks/useImageStudio';
@@ -10,6 +10,7 @@ import { listLoraCatalog, listLoraProfiles } from '../services/lora';
 import { fetchDirectorConfig } from '../services/operations';
 import { removeSessionCache } from '../utils/sessionCache';
 import CharacterLoraSelector from '../components/shared/CharacterLoraSelector';
+import { useCompanion, CompanionActions } from '../lib/companion/CompanionContext';
 
 const CACHE_MAX_AGE_MS = 5 * 60 * 1000;
 const IMAGE_CACHE_KEY = 'whisk_images_cache';
@@ -273,6 +274,7 @@ function CivitaiLoraPanel({ imageGenerationProps, loraProfiles, selectedLoraProf
 
 export default function Whisk() {
   const { apiBaseUrl } = useConfig();
+  const { dispatch } = useCompanion();
 
   const [error, setError] = useState('');
   const [activeModal, setActiveModal] = useState(''); // '' | 'generate' | 'video'
@@ -389,6 +391,18 @@ export default function Whisk() {
       setActiveModal('');
     },
   });
+
+  // ─── Companion reactions for generation events ──────────────────────────────
+
+  const prevGeneratingRef = useRef(false);
+  useEffect(() => {
+    if (isGeneratingImage && !prevGeneratingRef.current) {
+      dispatch(CompanionActions.GENERATION_START, { type: "image" });
+    } else if (!isGeneratingImage && prevGeneratingRef.current) {
+      dispatch(CompanionActions.GENERATION_DONE, { type: "image", success: true });
+    }
+    prevGeneratingRef.current = isGeneratingImage;
+  }, [isGeneratingImage, dispatch]);
 
   // ─── Load config on mount ───────────────────────────────────────────────────
 

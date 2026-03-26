@@ -40,6 +40,16 @@
 
   --skr-hud-height: 64px;
   --skr-topbar-height: 56px;
+
+  /* Companion panel */
+  --skr-companion-width: 240px;
+  --skr-companion-height: 280px;
+}
+
+/* ─── Companion animations ─── */
+@keyframes skr-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
 }
 
 /* ─── Reset ─── */

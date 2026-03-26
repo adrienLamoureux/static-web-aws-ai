@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   BrowserRouter as Router,
   Link,
@@ -15,8 +15,9 @@ import { MusicProvider } from "./contexts/MusicContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import SakuraMusicBar from "./components/sakura/SakuraMusicBar";
 import ThemeSwitcher from "./components/sakura/ThemeSwitcher";
-import CharacterWalker from "./components/sakura/CharacterWalker";
+import CompanionPanel from "./components/sakura/companion/CompanionPanel";
 import LoginModal from "./components/auth/LoginModal";
+import { CompanionProvider, useCompanion, CompanionActions } from "./lib/companion/CompanionContext";
 
 // Pages
 import HomePage from "./pages/HomePage";
@@ -132,6 +133,7 @@ function LoginPage() {
 function SakuraShell({ children }) {
   const location = useLocation();
   const { isAuthenticated, logout, user, startLogin } = useAuth();
+  const { dispatch } = useCompanion();
   const [hudExpanded, setHudExpanded] = useState(false);
 
   const isActive = useCallback(
@@ -141,6 +143,15 @@ function SakuraShell({ children }) {
     },
     [location.pathname]
   );
+
+  // Dispatch PAGE_NAVIGATE whenever the route changes
+  const prevPathRef = React.useRef(location.pathname);
+  useEffect(() => {
+    if (prevPathRef.current !== location.pathname) {
+      prevPathRef.current = location.pathname;
+      dispatch(CompanionActions.PAGE_NAVIGATE, { page: location.pathname });
+    }
+  }, [location.pathname, dispatch]);
 
   return (
     <div className="skr-shell">
@@ -193,8 +204,8 @@ function SakuraShell({ children }) {
       {/* Music bar */}
       <SakuraMusicBar />
 
-      {/* Live2D companion character */}
-      <CharacterWalker />
+      {/* Live2D companion panel */}
+      <CompanionPanel />
 
       {/* Bottom HUD navigation — always visible, filtered by role */}
       <nav className="skr-hud">
@@ -277,9 +288,11 @@ function ConfiguredApp() {
     <ThemeProvider>
       <AuthProvider cognito={cognito}>
         <MusicProvider>
-          <Router>
-            <AppRoutes />
-          </Router>
+          <CompanionProvider>
+            <Router>
+              <AppRoutes />
+            </Router>
+          </CompanionProvider>
         </MusicProvider>
       </AuthProvider>
     </ThemeProvider>
