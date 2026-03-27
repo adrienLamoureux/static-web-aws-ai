@@ -1,6 +1,6 @@
 # Architecture Overview
 
-> Last updated: 2026-03-19
+> Last updated: 2026-03-27
 
 This file is the current source of truth for the repo architecture, deployment modes, and branch/worktree model.
 
@@ -14,6 +14,8 @@ This file is the current source of truth for the repo architecture, deployment m
 | Runtime config | `frontend/public/config.json` at deploy time, `frontend/src/services/runtime-config.js` | Drives API and Cognito wiring |
 | Infrastructure | `cdk/bin/static-web-aws-ai-stack.ts`, `cdk/lib/*.ts`, `cdk/scripts/*.js` | Full-stack and UI-only deploy modes |
 | Idea metadata | `IDEAS.md`, `IMPROVEMENTS.md`, `ideas/<idea-id>/**` | Registry, status, decisions, runbooks |
+
+See [`docs/api-access.md`](./api-access.md) for the complete endpoint inventory with public / user / admin access levels.
 
 ## 2. Branch And Worktree Topology
 
