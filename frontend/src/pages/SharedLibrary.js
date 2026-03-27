@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import SolarisImageWall from '../components/shared/SolarisImageWall';
 import { useConfig } from '../contexts/ConfigContext';
+import { useAuth } from '../contexts/AuthContext';
 import { listSharedImages, listSharedVideos, listSharedImageFavorites, setSharedImageFavorite } from '../services/s3';
 
 export default function SharedLibrary() {
   const { apiBaseUrl } = useConfig();
+  const { isAuthenticated } = useAuth();
   const [images, setImages] = useState([]);
   const [videos, setVideos] = useState([]);
   const [loadingImages, setLoadingImages] = useState(true);
@@ -18,7 +20,7 @@ export default function SharedLibrary() {
     setLoadingImages(true);
     Promise.all([
       listSharedImages(apiBaseUrl),
-      listSharedImageFavorites(apiBaseUrl).catch(() => ({ keys: [] })),
+      isAuthenticated ? listSharedImageFavorites(apiBaseUrl).catch(() => ({ keys: [] })) : Promise.resolve({ keys: [] }),
     ])
       .then(([imgData, favData]) => {
         const favoriteKeys = new Set(favData?.keys || []);
@@ -30,7 +32,7 @@ export default function SharedLibrary() {
       })
       .catch(() => setImages([]))
       .finally(() => setLoadingImages(false));
-  }, [apiBaseUrl]);
+  }, [apiBaseUrl, isAuthenticated]);
 
   useEffect(() => {
     if (!apiBaseUrl) return;

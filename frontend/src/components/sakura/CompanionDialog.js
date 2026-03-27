@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useConfig } from "../../contexts/ConfigContext";
 
-const API_BASE = process.env.REACT_APP_API_BASE_URL || "";
 const AUTO_CLOSE_MS = 10000;
 
 /**
@@ -15,6 +15,7 @@ const AUTO_CLOSE_MS = 10000;
  *   onSpeakingChange(bool) — called to start/stop lipsync (Option B)
  */
 export default function CompanionDialog({ anchorX, canvasBottomOffset, onClose, onEmotion, onSpeakingChange }) {
+  const { apiBaseUrl } = useConfig();
   const [text, setText] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -35,7 +36,7 @@ export default function CompanionDialog({ anchorX, canvasBottomOffset, onClose, 
 
     (async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/companion/chat`, {
+        const res = await fetch(`${apiBaseUrl}/api/companion/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: "greet" }),
@@ -62,7 +63,7 @@ export default function CompanionDialog({ anchorX, canvasBottomOffset, onClose, 
       cancelled = true;
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [scheduleClose, onEmotion, onSpeakingChange]);
+  }, [apiBaseUrl, scheduleClose, onEmotion, onSpeakingChange]);
 
   // Position bubble above the character, clamped to viewport
   const BUBBLE_W = 240;
