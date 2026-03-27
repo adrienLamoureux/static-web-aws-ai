@@ -6,8 +6,15 @@ const AUTO_CLOSE_MS = 10000;
 /**
  * Speech bubble anchored above the Live2D character.
  * Calls POST /api/companion/chat and shows the response.
+ *
+ * Props:
+ *   anchorX          — character's current screen X
+ *   canvasBottomOffset — px from viewport bottom to position bubble
+ *   onClose          — called when dialog should close
+ *   onEmotion(str)   — called with emotion string when response arrives (Option A)
+ *   onSpeakingChange(bool) — called to start/stop lipsync (Option B)
  */
-export default function CompanionDialog({ anchorX, canvasBottomOffset, onClose }) {
+export default function CompanionDialog({ anchorX, canvasBottomOffset, onClose, onEmotion, onSpeakingChange }) {
   const [text, setText] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -17,6 +24,11 @@ export default function CompanionDialog({ anchorX, canvasBottomOffset, onClose }
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(onClose, AUTO_CLOSE_MS);
   }, [onClose]);
+
+  // Stop lipsync when this component unmounts (dialog closed)
+  useEffect(() => {
+    return () => onSpeakingChange?.(false);
+  }, [onSpeakingChange]);
 
   useEffect(() => {
     let cancelled = false;
@@ -33,6 +45,8 @@ export default function CompanionDialog({ anchorX, canvasBottomOffset, onClose }
         if (!cancelled) {
           setText(data.text);
           setLoading(false);
+          onEmotion?.(data.emotion);    // Option A: trigger emotion motion
+          onSpeakingChange?.(true);     // Option B: start lipsync
           scheduleClose();
         }
       } catch {
@@ -48,7 +62,7 @@ export default function CompanionDialog({ anchorX, canvasBottomOffset, onClose }
       cancelled = true;
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [scheduleClose]);
+  }, [scheduleClose, onEmotion, onSpeakingChange]);
 
   // Position bubble above the character, clamped to viewport
   const BUBBLE_W = 240;

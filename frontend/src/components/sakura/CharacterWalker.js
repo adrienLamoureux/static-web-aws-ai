@@ -13,12 +13,40 @@ const CHAR_SCALE_TARGET = 0.85;
 // Bottom offset matches SakuraShell nav height (px)
 const BOTTOM_OFFSET = 64;
 
+// Option A: emotion → motion group mapping
+const EMOTION_MOTION = {
+  happy: "Tap",
+  surprised: "Flick",
+  thinking: "FlickDown",
+  sad: "Flick@Body",
+  neutral: null, // don't interrupt idle
+};
+
 export default function CharacterWalker() {
   const canvasRef = useRef(null);
   const stateRef = useRef({ x: 120, dir: 1, walking: true, baseScale: 1, halfW: 60 });
+  const modelRef = useRef(null);       // shared model handle for callbacks
+  const speakingRef = useRef(false);   // Option B: lipsync gate
   const [dialog, setDialog] = useState(null);
 
-  const closeDialog = useCallback(() => setDialog(null), []);
+  // Option D: resume walk and idle when dialog closes
+  const closeDialog = useCallback(() => {
+    setDialog(null);
+    speakingRef.current = false;
+    stateRef.current.walking = true;
+    if (modelRef.current) modelRef.current.motion("Idle");
+  }, []);
+
+  // Option A: called by CompanionDialog with the emotion from the API
+  const onEmotion = useCallback((emotion) => {
+    const motionName = EMOTION_MOTION[emotion];
+    if (motionName && modelRef.current) modelRef.current.motion(motionName);
+  }, []);
+
+  // Option B: called by CompanionDialog to start/stop lipsync
+  const onSpeakingChange = useCallback((isSpeaking) => {
+    speakingRef.current = isSpeaking;
+  }, []);
 
   useEffect(() => {
     let app;
@@ -44,6 +72,8 @@ export default function CharacterWalker() {
       });
 
       try {
+        // Option C: keep autoInteract:false — we drive focus() manually from
+        // a document mousemove listener so pointerEvents:none stays intact
         model = await Live2DModel.from(MODEL_URL, { autoInteract: false });
       } catch (err) {
         console.error("[CharacterWalker] Model load failed:", err);
@@ -52,6 +82,7 @@ export default function CharacterWalker() {
       if (!alive) { model.destroy(); return; }
 
       app.stage.addChild(model);
+      modelRef.current = model;
 
       // Scale to fill CHAR_SCALE_TARGET of canvas height
       const baseScale = (CANVAS_H * CHAR_SCALE_TARGET) / model.height;
@@ -64,6 +95,19 @@ export default function CharacterWalker() {
 
       model.motion("Idle");
 
+      // Option C: manual mouse-follow — forward mousemove to model.focus()
+      // since the canvas has pointerEvents:none and can't receive mouse events itself
+      const onMouseMove = (e) => {
+        if (!alive || !model) return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        // focus() expects stage-space coords (pixels relative to canvas top-left)
+        model.focus(e.clientX - rect.left, e.clientY - rect.top);
+      };
+      document.addEventListener("mousemove", onMouseMove);
+      s._removeMouse = () => document.removeEventListener("mousemove", onMouseMove);
+
       // Click detection via document listener — canvas stays pointer-events:none
       // so it never blocks underlying app clicks; we manually hit-test
       const onDocumentClick = (e) => {
@@ -72,6 +116,7 @@ export default function CharacterWalker() {
         const relY = e.clientY - canvasTopY;
         if (relY < 0 || relY > CANVAS_H) return;
         if (Math.abs(e.clientX - s.x) < s.halfW) {
+          s.walking = false; // Option D: pause walk while chatting
           setDialog({ x: Math.round(s.x) });
           model.motion("Tap");
         }
@@ -81,6 +126,8 @@ export default function CharacterWalker() {
 
       const tick = () => {
         if (!alive) return;
+
+        // Walk loop
         if (s.walking && model) {
           s.x += SPEED * s.dir;
           const minX = s.halfW;
@@ -100,6 +147,19 @@ export default function CharacterWalker() {
           model.x = s.x;
           model.scale.x = s.baseScale * s.dir;
         }
+
+        // Option B: LipSync — drive ParamMouthOpenY with a sine wave while speaking
+        const core = model?.internalModel?.coreModel;
+        if (core) {
+          if (speakingRef.current) {
+            // ~3 syllables/sec oscillation, clamped to [0, 1]
+            const v = Math.max(0, Math.sin(performance.now() / 1000 * Math.PI * 3));
+            core.setParameterValueById("ParamMouthOpenY", v);
+          } else {
+            core.setParameterValueById("ParamMouthOpenY", 0);
+          }
+        }
+
         raf = requestAnimationFrame(tick);
       };
       raf = requestAnimationFrame(tick);
@@ -113,8 +173,10 @@ export default function CharacterWalker() {
 
     return () => {
       alive = false;
+      modelRef.current = null;
       if (raf) cancelAnimationFrame(raf);
       if (s._removeClick) { s._removeClick(); delete s._removeClick; }
+      if (s._removeMouse) { s._removeMouse(); delete s._removeMouse; }
       if (s._removeResize) { s._removeResize(); delete s._removeResize; }
       if (model) { model.destroy(); model = null; }
       if (app) { app.destroy(false); app = null; }
@@ -133,7 +195,6 @@ export default function CharacterWalker() {
           height: CANVAS_H,
           pointerEvents: "none",
           zIndex: 50,
-          display: "none", // TODO: re-enable after refinement
         }}
       />
       {dialog && (
@@ -141,6 +202,8 @@ export default function CharacterWalker() {
           anchorX={dialog.x}
           canvasBottomOffset={BOTTOM_OFFSET + CANVAS_H}
           onClose={closeDialog}
+          onEmotion={onEmotion}
+          onSpeakingChange={onSpeakingChange}
         />
       )}
     </>
