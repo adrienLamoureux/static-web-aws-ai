@@ -31,7 +31,7 @@
 - `codex/dev` companion route not yet deployed to the sakura Lambda (different stack); companion dialog shows fallback until sakura stack merges backend from dev
 
 ## Next Actions
-- Refine Hiyori: scale, position, idle motion tuning (un-hide canvas when ready)
+- Refine Hiyori: scale, position, idle motion tuning
 - Add expression changes to CompanionDialog once a model with .exp3.json files is available
 - Investigate CDK Lambda timeout fix (increase `memorySize`/`ephemeralStorageSize` on `BucketDeployment`)
 - Write frontend/REQUIREMENTS.md
@@ -53,3 +53,4 @@
 - 2026-03-25T07:42:53.374Z | event=deploy | stack=StaticWebAWSAIStack-design-sakura / cloudfront=https://d2lepwk3t4buta.cloudfront.net / api=https://wl9d78lnf9.execute-api.us-east-1.amazonaws.com/prod/ / commit=8fbe565 / sanity=passed / ui_smoke=passed
 - 2026-03-25T14:24:00.000Z | event=s3-sync | note=Manual sync of Live2D companion assets + full build (CDK Lambda timeout workaround) / commits=e58d3a8..a92e370 / live2d=hiyori_free_t08 / character=hidden-pending-refinement
 - 2026-03-26T18:22:00.000Z | event=s3-sync | note=VTuber companion panel redesign — CompanionPanel, Live2DEngine, emotion system, cursor tracking, multi-turn chat, model selector / commit=8abcc84 / invalidation=I628AE3O0LNBCPEKNLMGRCFBJL
+- 2026-03-27T00:00:00.000Z | event=s3-sync | note=Hiyori reactivity — emotion→motion mapping, simulated lipsync (ParamMouthOpenY), manual mouse-follow (model.focus), walk pause during chat, canvas unhidden / commit=4bd3db1 / invalidation=IARF14VHBO9F2CACCHO3MQLPTK
