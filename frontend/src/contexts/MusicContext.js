@@ -1,18 +1,21 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import { useConfig } from './ConfigContext';
+import { useAuth } from './AuthContext';
+import { getAuthToken } from '../utils/authTokens';
 import { listStoryMusicLibrary } from '../services/story';
 
 const MusicContext = createContext({});
 
 export function MusicProvider({ children }) {
   const { apiBaseUrl, configReady } = useConfig();
+  const { isAuthenticated } = useAuth();
   const [tracks, setTracks] = useState([]);
   const [currentTrack, setCurrentTrack] = useState(null);
   const autoPlayRequestRef = useRef({ requestId: 0, trackKey: null });
   const [autoPlayRequest, setAutoPlayRequest] = useState({ requestId: 0, trackKey: null });
 
   useEffect(() => {
-    if (!configReady || !apiBaseUrl) return;
+    if (!configReady || !apiBaseUrl || !isAuthenticated || !getAuthToken()) return;
     listStoryMusicLibrary(apiBaseUrl).then(data => {
       const list = (data?.tracks || []).map(t => ({
         url: t.url || t.musicUrl,
@@ -25,7 +28,7 @@ export function MusicProvider({ children }) {
       })).filter(t => t.url);
       if (list.length > 0) setTracks(list);
     }).catch(() => {});
-  }, [configReady, apiBaseUrl]);
+  }, [configReady, apiBaseUrl, isAuthenticated]);
 
   const pushTracks = useCallback((newTracks) => {
     setTracks(prev => {
