@@ -59,6 +59,16 @@ export const AuthProvider = ({ cognito, children }) => {
     bootstrapSession();
   }, [bootstrapSession]);
 
+  useEffect(() => {
+    const handler = () => {
+      clearAuthTokens();
+      setIsAuthenticated(false);
+      setUser(null);
+    };
+    window.addEventListener("whisk:auth:expired", handler);
+    return () => window.removeEventListener("whisk:auth:expired", handler);
+  }, []);
+
   const startLogin = useCallback(
     async (redirectTo = "/") => {
       if (!isConfigured) {

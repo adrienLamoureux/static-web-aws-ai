@@ -38,6 +38,9 @@ export const fetchJson = async (url, options = {}, errorMessage) => {
   } catch (err) {
     data = null;
   }
+  if (response.status === 401) {
+    window.dispatchEvent(new CustomEvent("whisk:auth:expired"));
+  }
   if (!response.ok) {
     throw new Error(data?.message || errorMessage || "Request failed.");
   }
