@@ -926,11 +926,7 @@ const registerOperationsRoutes = (app, deps) => {
     }
   });
 
-  app.get("/ops/director/masonry/images", ...adminGuard, async (req, res) => {
-    const userId = req.user?.sub;
-    if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+  app.get("/ops/director/masonry/images", async (req, res) => {
     try {
       const images = await listGlobalMasonryImages();
       return res.json({

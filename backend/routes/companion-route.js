@@ -1,5 +1,5 @@
 const { GetCommand } = require("@aws-sdk/lib-dynamodb");
-const { requireAdminMiddleware } = require("../lib/auth");
+const { requireUserMiddleware, requireAdminMiddleware } = require("../lib/auth");
 
 const SYSTEM_PROMPT = `You are Hiyori, a warm and slightly whimsical AI companion living inside Whisk Studio — a creative AI image and story app.
 You speak in short, expressive sentences (1–3 sentences max). You love art, imagination, and the stories people create here.
@@ -113,6 +113,7 @@ module.exports = (app, deps) => {
   // Admin-only. Persists the chosen model to DynamoDB.
   app.put(
     "/api/admin/companion-model",
+    requireUserMiddleware,
     requireAdminMiddleware,
     async (req, res) => {
       const modelId = String(req.body?.modelId || "").trim();
