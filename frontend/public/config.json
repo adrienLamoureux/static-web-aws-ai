@@ -1,5 +1,5 @@
 {
-  "apiBaseUrl": "https://qy5pzvatme.execute-api.us-east-1.amazonaws.com/prod/",
+  "apiBaseUrl": "https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/",
   "cognito": {
     "domain": "",
     "clientId": "",
