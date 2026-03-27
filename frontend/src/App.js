@@ -18,6 +18,7 @@ import ThemeSwitcher from "./components/sakura/ThemeSwitcher";
 import CompanionPanel from "./components/sakura/companion/CompanionPanel";
 import LoginModal from "./components/auth/LoginModal";
 import { CompanionProvider, useCompanion, CompanionActions } from "./lib/companion/CompanionContext";
+import { getAuthToken } from "./utils/authTokens";
 
 // Pages
 import HomePage from "./pages/HomePage";
@@ -44,7 +45,7 @@ const NAV_ITEMS = [
 function ProtectedRoute({ children }) {
   const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) return null;
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !getAuthToken()) {
     return (
       <>
         <div style={{ minHeight: "60vh" }} />
@@ -62,7 +63,7 @@ function ProtectedRoute({ children }) {
 function AdminRoute({ children }) {
   const { isAuthenticated, isLoading, user } = useAuth();
   if (isLoading) return null;
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!isAuthenticated || !getAuthToken()) return <Navigate to="/login" replace />;
   if (!user?.isAdmin) return <Navigate to="/" replace />;
   return children;
 }
