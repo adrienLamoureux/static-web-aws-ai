@@ -416,20 +416,35 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       resultsCacheTtl: cdk.Duration.seconds(0),
     });
 
-    // API Gateway
+    // API Gateway — proxy:false so we can mix authenticated catch-all with public companion routes
+    const lambdaInteg = new apigateway.LambdaIntegration(apiLambda);
+    const authOpts = {
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+      authorizer: requestAuthorizer,
+    };
+    const noAuthOpts = { authorizationType: apigateway.AuthorizationType.NONE };
+
     const api = new apigateway.LambdaRestApi(this, "ApiGateway", {
       handler: apiLambda,
-      proxy: true, // Direct all API Gateway traffic to Lambda
+      proxy: false, // Manual routing — allows mixing auth/no-auth routes
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: apigateway.Cors.ALL_METHODS,
         allowHeaders: ["*"],
       },
-      defaultMethodOptions: {
-        authorizationType: apigateway.AuthorizationType.CUSTOM,
-        authorizer: requestAuthorizer,
-      },
+      defaultMethodOptions: authOpts,
     });
+
+    // Authenticated catch-all (covers all routes not explicitly listed below)
+    api.root.addMethod("ANY", lambdaInteg, authOpts);
+    api.root.addProxy({ defaultIntegration: lambdaInteg, anyMethod: true });
+
+    // Public companion routes — no auth required
+    const apiRes = api.root.addResource("api");
+    const companionRes = apiRes.addResource("companion");
+    companionRes.addResource("chat").addMethod("POST", lambdaInteg, noAuthOpts);
+    const adminRes = apiRes.addResource("admin");
+    adminRes.addResource("companion-model").addMethod("GET", lambdaInteg, noAuthOpts);
 
     new apigateway.GatewayResponse(this, "ApiGatewayDefault4xx", {
       restApi: api,
