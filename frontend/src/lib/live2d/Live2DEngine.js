@@ -46,9 +46,14 @@ export class Live2DEngine {
     this._lipSyncStart    = 0;
     this._lipSyncDuration = 0;
 
-    // Reduce look-at influence while a motion plays
     this._motionPlaying = false;
     this._motionTimer   = null;
+
+    // Away / focus handlers (set after model load)
+    this._focusHandler     = null;
+    this._blurHandler      = null;
+    this._blurClearHandler = null;
+    this._blurTimer        = null;
 
     this._onVisibilityChange = () => {
       if (document.hidden) this.pause();
@@ -110,6 +115,27 @@ export class Live2DEngine {
     // AFTER the model's own motion update (which runs at NORMAL priority).
     this._app.ticker.add(this._tickOverrides, null, UPDATE_PRIORITY.LOW);
 
+    // On focus return from away — play greet then resume idle
+    this._focusHandler = () => {
+      if (sessionStorage.getItem("skr-companion-away") === "1") {
+        sessionStorage.removeItem("skr-companion-away");
+        this.playMotion("greet");
+      }
+    };
+    window.addEventListener("focus", this._focusHandler);
+
+    this._blurTimer = null;
+    this._blurHandler = () => {
+      this._blurTimer = setTimeout(() => {
+        sessionStorage.setItem("skr-companion-away", "1");
+      }, 30_000);
+    };
+    this._blurClearHandler = () => {
+      clearTimeout(this._blurTimer);
+    };
+    window.addEventListener("blur", this._blurHandler);
+    window.addEventListener("focus", this._blurClearHandler);
+
     // Mouse tracking (desktop only)
     if (!this._isMobile) {
       this._mouseHandler = (e) => {
@@ -126,9 +152,30 @@ export class Live2DEngine {
   setEmotion(emotionName, durationMs = 3000) {
     if (this._cancelEmotion) { this._cancelEmotion(); this._cancelEmotion = null; }
     if (!this._model || !this._manifest) return;
-    const core = this._model.internalModel?.coreModel;
-    if (!core) return;
-    this._cancelEmotion = applyEmotion(core, this._manifest.emotionMap, emotionName, durationMs);
+    const entry = this._manifest.emotionMap[emotionName]
+      ?? this._manifest.emotionMap.neutral
+      ?? {};
+
+    if (entry.expression !== undefined) {
+      // Expression-file dispatch (models with .exp3.json, e.g. Kagura)
+      this._model.expression(entry.expression);
+      const neutralExpr = this._manifest.emotionMap.neutral?.expression;
+      if (neutralExpr && durationMs > 0) {
+        const t = setTimeout(() => this._model.expression(neutralExpr), durationMs);
+        this._cancelEmotion = () => clearTimeout(t);
+      }
+    } else if (entry.motion !== undefined) {
+      // Motion-group dispatch (game models without expression files, e.g. Azur Lane)
+      this._model.motion(entry.motion);
+      this._motionPlaying = true;
+      if (this._motionTimer) clearTimeout(this._motionTimer);
+      this._motionTimer = setTimeout(() => { this._motionPlaying = false; }, 2000);
+    } else {
+      // Parameter-override dispatch (Hiyori free tier)
+      const core = this._model.internalModel?.coreModel;
+      if (!core) return;
+      this._cancelEmotion = applyEmotion(core, this._manifest.emotionMap, emotionName, durationMs);
+    }
   }
 
   playMotion(semanticName) {
@@ -184,21 +231,27 @@ export class Live2DEngine {
   _tickOverrides = () => {
     if (!this._model || !this._manifest) return;
     const cfg = this._manifest.lookAt;
-    const influence = this._motionPlaying ? 0.4 : 1.0;
     const s = cfg.smoothing;
 
-    // Lerp current look toward target
+    // Lerp current look toward target — full strength always (no reduction during motion)
     this._lookCurrent.x += (this._lookTarget.x - this._lookCurrent.x) * s;
     this._lookCurrent.y += (this._lookTarget.y - this._lookCurrent.y) * s;
 
     const core = this._model.internalModel?.coreModel;
     if (!core) return;
 
+    const lx = this._lookCurrent.x;
+    const ly = this._lookCurrent.y;
+
     try {
-      core.setParameterValueById("ParamAngleX",   this._lookCurrent.x *  cfg.headWeight.x * influence);
-      core.setParameterValueById("ParamAngleY",   this._lookCurrent.y * -cfg.headWeight.y * influence);
-      core.setParameterValueById("ParamEyeBallX", this._lookCurrent.x *  cfg.eyeWeight.x  * influence);
-      core.setParameterValueById("ParamEyeBallY", this._lookCurrent.y * -cfg.eyeWeight.y  * influence);
+      core.setParameterValueById("ParamAngleX",    lx *  cfg.headWeight.x);
+      core.setParameterValueById("ParamAngleY",    ly * -cfg.headWeight.y);
+      core.setParameterValueById("ParamEyeBallX",  lx *  cfg.eyeWeight.x);
+      core.setParameterValueById("ParamEyeBallY",  ly * -cfg.eyeWeight.y);
+      if (cfg.bodyWeight) {
+        core.setParameterValueById("ParamBodyAngleX", lx *  cfg.bodyWeight.x);
+        core.setParameterValueById("ParamBodyAngleY", ly * -cfg.bodyWeight.y);
+      }
     } catch {}
 
     // Lip sync — simple 6Hz sine wave for mouth opening
@@ -222,6 +275,19 @@ export class Live2DEngine {
       document.removeEventListener("mousemove", this._mouseHandler);
       this._mouseHandler = null;
     }
+    if (this._focusHandler) {
+      window.removeEventListener("focus", this._focusHandler);
+      this._focusHandler = null;
+    }
+    if (this._blurHandler) {
+      window.removeEventListener("blur", this._blurHandler);
+      this._blurHandler = null;
+    }
+    if (this._blurClearHandler) {
+      window.removeEventListener("focus", this._blurClearHandler);
+      this._blurClearHandler = null;
+    }
+    clearTimeout(this._blurTimer);
     if (this._model) {
       if (this._app) this._app.ticker.remove(this._tickOverrides, null);
       this._app?.stage.removeChild(this._model);

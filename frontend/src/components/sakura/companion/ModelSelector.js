@@ -7,7 +7,7 @@
 import { useState, useEffect, useRef } from "react";
 import { getAllModels } from "../../../lib/live2d/model-registry";
 import { useConfig } from "../../../contexts/ConfigContext";
-import { buildApiUrl } from "../../../services/apiClient";
+import { buildApiUrl, putJson } from "../../../services/apiClient";
 
 export default function ModelSelector({ currentModel, onModelChange, isAdmin }) {
   const [open, setOpen] = useState(false);
@@ -36,11 +36,7 @@ export default function ModelSelector({ currentModel, onModelChange, isAdmin }) 
     setSaving(true);
     onModelChange(model);
     try {
-      await fetch(buildApiUrl(apiBaseUrl, "/api/admin/companion-model"), {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ modelId: model.id }),
-      });
+      await putJson(buildApiUrl(apiBaseUrl, "/api/admin/companion-model"), { modelId: model.id });
     } catch (err) {
       console.warn("[ModelSelector] Failed to persist model choice:", err);
     } finally {

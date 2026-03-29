@@ -38,6 +38,15 @@ const EMOTION_LABELS = {
   neutral:   "",
 };
 
+// Short tip texts shown in the floating speech bubble for each event
+const BUBBLE_LINES = {
+  PAGE_NAVIGATE:       (p) => `You're on ${p?.page || "a new page"} ✦`,
+  GENERATION_DONE:     () => "Your image is ready! ✦",
+  GENERATION_STARTED:  () => "Working on it… ✦",
+  USER_IDLE:           () => "Still there? ✦",
+  USER_RETURN:         () => "Welcome back! ✦",
+};
+
 const STORAGE_KEY = "skr-companion-minimized";
 
 export default function CompanionPanel() {
@@ -54,6 +63,8 @@ export default function CompanionPanel() {
   const [currentEmotion, setCurrentEmotion] = useState("neutral");
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   const emotionTimerRef = useRef(null);
+  const [bubbleText, setBubbleText] = useState(null);
+  const bubbleTimerRef = useRef(null);
 
   // Track mobile breakpoint
   useEffect(() => {
@@ -94,13 +105,22 @@ export default function CompanionPanel() {
     emotionTimerRef.current = setTimeout(() => setCurrentEmotion("neutral"), durationMs);
   }, []);
 
+  const showBubble = useCallback((text, durationMs = 4000) => {
+    setBubbleText(text);
+    clearTimeout(bubbleTimerRef.current);
+    bubbleTimerRef.current = setTimeout(() => setBubbleText(null), durationMs);
+  }, []);
+
   // React to companion events (page navigation, generation, idle, etc.)
   useCompanionEvent(useCallback((action, payload) => {
     const reaction = REACTIONS[action];
-    if (!reaction) return;
-    if (reaction.motion) engineRef.current?.playMotion(reaction.motion);
-    if (reaction.emotion) triggerEmotion(reaction.emotion, 3000);
-  }, [triggerEmotion]));
+    if (reaction) {
+      if (reaction.motion) engineRef.current?.playMotion(reaction.motion);
+      if (reaction.emotion) triggerEmotion(reaction.emotion, 3000);
+    }
+    const lineBuilder = BUBBLE_LINES[action];
+    if (lineBuilder) showBubble(lineBuilder(payload));
+  }, [triggerEmotion, showBubble]));
 
   const handleEngineReady = useCallback((engine) => {
     engineRef.current = engine;
@@ -211,6 +231,13 @@ export default function CompanionPanel() {
         </button>
       </div>
 
+      {/* Floating speech bubble — appears above canvas */}
+      {bubbleText && (
+        <div style={styles.bubble} key={bubbleText}>
+          {bubbleText}
+        </div>
+      )}
+
       {/* Live2D canvas */}
       <div style={{ width: PANEL_W, height: PANEL_H, flexShrink: 0, position: "relative" }}>
         <CompanionCanvas
@@ -294,5 +321,26 @@ const styles = {
     minWidth: 48,
     textAlign: "right",
     opacity: 0.8,
+  },
+  bubble: {
+    position: "absolute",
+    bottom: "calc(100% + 8px)",
+    left: "50%",
+    transform: "translateX(-50%)",
+    background: "rgba(26, 23, 38, 0.95)",
+    border: "1px solid rgba(255, 107, 157, 0.4)",
+    borderRadius: 10,
+    padding: "6px 12px",
+    fontSize: 11,
+    color: "var(--skr-text)",
+    whiteSpace: "nowrap",
+    boxShadow: "0 2px 12px rgba(0,0,0,0.5), var(--skr-glow)",
+    animation: "skr-bubble-in 0.2s ease, skr-shake 3s ease-in-out 0.5s infinite",
+    pointerEvents: "none",
+    zIndex: 10,
+    maxWidth: 220,
+    whiteSpace: "normal",
+    textAlign: "center",
+    lineHeight: 1.4,
   },
 };
