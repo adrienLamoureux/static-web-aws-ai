@@ -77,7 +77,11 @@ const {
   buildStorySceneSk,
   storyMessagePrefix,
   storyScenePrefix,
+  buildCompanionMemorySk,
+  buildCompanionMsgSk,
+  companionMsgPrefix,
 } = require("./keys");
+const { createCompanionMemory } = require("./companion-memory");
 const { createMediaStore } = require("./media-store");
 const { createStorySeedStore } = require("./story-seed-store");
 const { getGradioSpaceClient } = require("./gradio-client");
@@ -152,6 +156,15 @@ const createDeps = () => {
     dynamoClient,
     mediaTable,
     queryBySkPrefix: mediaStore.queryBySkPrefix,
+  });
+
+  const companionMemory = createCompanionMemory({
+    dynamoClient,
+    mediaTable,
+    queryBySkPrefix: mediaStore.queryBySkPrefix,
+    bedrockClient,
+    InvokeModelCommand,
+    promptHelperModelId,
   });
 
   const aiCraftSceneContext = createAiCraftSceneContext({
@@ -259,6 +272,10 @@ const createDeps = () => {
     buildStorySceneSk,
     storyMessagePrefix,
     storyScenePrefix,
+    buildCompanionMemorySk,
+    buildCompanionMsgSk,
+    companionMsgPrefix,
+    companionMemory,
     putMediaItem: mediaStore.putMediaItem,
     deleteMediaItem: mediaStore.deleteMediaItem,
     queryMediaItems: mediaStore.queryMediaItems,

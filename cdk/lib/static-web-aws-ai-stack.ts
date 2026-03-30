@@ -443,6 +443,10 @@ export class StaticWebAWSAIStack extends cdk.Stack {
     const apiRes = api.root.addResource("api");
     const companionRes = apiRes.addResource("companion");
     companionRes.addResource("chat").addMethod("POST", lambdaInteg, noAuthOpts);
+    companionRes.addResource("proactive").addMethod("POST", lambdaInteg, noAuthOpts);
+    const companionMemoryRes = companionRes.addResource("memory");
+    companionMemoryRes.addResource("status").addMethod("GET", lambdaInteg, noAuthOpts);
+    companionMemoryRes.addMethod("DELETE", lambdaInteg, authOpts);
     const adminRes = apiRes.addResource("admin");
     adminRes.addResource("companion-model").addMethod("GET", lambdaInteg, noAuthOpts);
 
@@ -539,12 +543,15 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       refreshTokenValidity: cdk.Duration.days(30),
     });
 
-    // Deploy frontend to S3
+    // Deploy frontend to S3 (Live2D assets excluded — synced separately via aws s3 sync to avoid Lambda timeout)
+    const frontendBuildDir =
+      process.env.FRONTEND_BUILD_DIR ||
+      path.join(__dirname, "../../frontend/build");
     new s3Deployment.BucketDeployment(this, "DeployWebsite", {
       sources: [
-        s3Deployment.Source.asset(
-          path.join(__dirname, "../../frontend/build")
-        ),
+        s3Deployment.Source.asset(frontendBuildDir, {
+          exclude: ["live2d/**"],
+        }),
         s3Deployment.Source.data(
           "config.json",
           JSON.stringify({
@@ -561,6 +568,12 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       destinationBucket: websiteBucket,
       distribution,
       distributionPaths: ["/*"],
+      // prune: false — live2d assets are managed separately via aws s3 sync; letting CDK
+      // prune would delete them since they are excluded from the zip.
+      prune: false,
+      // 1024 MB gives proportionally more vCPU + network bandwidth so the Lambda can
+      // upload a full React bundle within the 900s timeout (128 MB < 2 KB/s = too slow).
+      memoryLimit: 1024,
     });
 
     // Outputs
@@ -602,6 +615,14 @@ export class StaticWebAWSAIStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, "StageName", {
       value: stage,
+    });
+
+    new cdk.CfnOutput(this, "WebsiteBucketName", {
+      value: websiteBucket.bucketName,
+    });
+
+    new cdk.CfnOutput(this, "CloudFrontDistributionId", {
+      value: distribution.distributionId,
     });
   }
 }
