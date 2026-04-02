@@ -3,12 +3,20 @@
  *
  * Sends messages to POST /api/companion/chat with conversation history and page context.
  * Reveals AI responses character-by-character and drives lip sync on the Live2D engine.
+ *
+ * Features:
+ * - Authenticated requests when logged in (enables per-user memory + generation)
+ * - Memory status indicator + clear memory button
+ * - Inline image generation via GenerationCard when Hiyori detects generation intent
  */
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "../../../contexts/AuthContext";
 import { useConfig } from "../../../contexts/ConfigContext";
-import { buildApiUrl } from "../../../services/apiClient";
+import { postJson, buildApiUrl, deleteJson } from "../../../services/apiClient";
+import GenerationCard from "./GenerationCard";
+
 const MAX_HISTORY = 20;
 const REVEAL_DELAY_MS = 28; // ms per character
 
@@ -22,16 +30,20 @@ const PAGE_LABELS = {
 
 export default function CompanionChat({ engineRef, isOpen, onClose }) {
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
   const { apiBaseUrl } = useConfig();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [revealText, setRevealText] = useState(""); // currently revealing text
   const [revealFull, setRevealFull] = useState("");  // target full text
+  const [hasMemory, setHasMemory] = useState(false);
   const listRef    = useRef(null);
   const inputRef   = useRef(null);
   const revealRef  = useRef(null);
   const abortRef   = useRef(null);
+  // Track pending generation to attach to the message being revealed
+  const pendingGenRef = useRef(null);
 
   const currentPage = PAGE_LABELS[location.pathname] || location.pathname;
 
@@ -67,10 +79,12 @@ export default function CompanionChat({ engineRef, isOpen, onClose }) {
         revealRef.current = setTimeout(charByChar, REVEAL_DELAY_MS);
       } else {
         // Reveal complete — commit to messages list
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", text: revealFull },
-        ]);
+        const finalMsg = { role: "assistant", text: revealFull };
+        if (pendingGenRef.current) {
+          finalMsg.generation = pendingGenRef.current;
+          pendingGenRef.current = null;
+        }
+        setMessages((prev) => [...prev, finalMsg]);
         setRevealText("");
         setRevealFull("");
         engineRef.current?.stopLipSync();
@@ -101,21 +115,28 @@ export default function CompanionChat({ engineRef, isOpen, onClose }) {
     }));
 
     try {
-      const res = await fetch(buildApiUrl(apiBaseUrl, "/api/companion/chat"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: abortRef.current.signal,
-        body: JSON.stringify({
+      const data = await postJson(
+        buildApiUrl(apiBaseUrl, "/api/companion/chat"),
+        {
           messages: history,
-          context: { page: currentPage },
-        }),
-      });
-
-      if (!res.ok) throw new Error(res.status);
-      const data = await res.json();
+          context: {
+            page: currentPage,
+            isAuthenticated,
+          },
+        }
+      );
 
       engineRef.current?.setEmotion(data.emotion || "neutral", 4000);
-      setRevealFull(data.text || "…");
+
+      // Track memory status
+      if (data.hasMemory !== undefined) setHasMemory(data.hasMemory);
+
+      // Store generation intent for when reveal completes
+      if (data.generation) {
+        pendingGenRef.current = data.generation;
+      }
+
+      setRevealFull(data.text || "...");
     } catch (err) {
       if (err.name !== "AbortError") {
         setMessages((prev) => [
@@ -126,7 +147,17 @@ export default function CompanionChat({ engineRef, isOpen, onClose }) {
     } finally {
       setLoading(false);
     }
-  }, [loading, messages, currentPage, engineRef]);
+  }, [loading, messages, currentPage, engineRef, apiBaseUrl, isAuthenticated]);
+
+  const handleClearMemory = useCallback(async () => {
+    if (!apiBaseUrl) return;
+    try {
+      await deleteJson(buildApiUrl(apiBaseUrl, "/api/companion/memory"));
+      setHasMemory(false);
+    } catch {
+      // silent
+    }
+  }, [apiBaseUrl]);
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -141,44 +172,72 @@ export default function CompanionChat({ engineRef, isOpen, onClose }) {
     <div style={styles.panel}>
       {/* Header */}
       <div style={styles.header}>
-        <span style={styles.headerLabel}>Chat with Hiyori</span>
-        <button type="button" onClick={onClose} style={styles.closeBtn} aria-label="Close chat">✕</button>
+        <div style={styles.headerLeft}>
+          <span style={styles.headerLabel}>Chat with Hiyori</span>
+          {hasMemory && (
+            <span style={styles.memoryBadge} title="Hiyori remembers you">
+              remembers you
+            </span>
+          )}
+        </div>
+        <div style={styles.headerRight}>
+          {hasMemory && (
+            <button
+              type="button"
+              onClick={handleClearMemory}
+              style={styles.clearMemBtn}
+              title="Clear Hiyori's memory of you"
+            >
+              forget
+            </button>
+          )}
+          <button type="button" onClick={onClose} style={styles.closeBtn} aria-label="Close chat">
+            ✕
+          </button>
+        </div>
       </div>
 
       {/* Message list */}
       <div ref={listRef} style={styles.list}>
         {messages.length === 0 && !loading && (
-          <p style={styles.empty}>Say something to Hiyori ✦</p>
+          <p style={styles.empty}>Say something to Hiyori</p>
         )}
         {messages.map((m, i) => (
-          <div
-            key={i}
-            style={{
-              ...styles.bubble,
-              ...(m.role === "user" ? styles.bubbleUser : styles.bubbleAssistant),
-              ...(m.isError ? styles.bubbleError : {}),
-            }}
-          >
-            {m.role === "assistant" && (
-              <span style={styles.name}>Hiyori ✦</span>
+          <div key={i}>
+            <div
+              style={{
+                ...styles.bubble,
+                ...(m.role === "user" ? styles.bubbleUser : styles.bubbleAssistant),
+                ...(m.isError ? styles.bubbleError : {}),
+              }}
+            >
+              {m.role === "assistant" && (
+                <span style={styles.name}>Hiyori</span>
+              )}
+              <span>{m.text}</span>
+            </div>
+            {/* Render generation card after assistant message if present */}
+            {m.generation && (
+              <div style={{ marginTop: 4, marginBottom: 4 }}>
+                <GenerationCard generation={m.generation} />
+              </div>
             )}
-            <span>{m.text}</span>
           </div>
         ))}
 
         {/* Currently revealing assistant message */}
         {revealText && (
           <div style={{ ...styles.bubble, ...styles.bubbleAssistant }}>
-            <span style={styles.name}>Hiyori ✦</span>
-            <span>{revealText}<span style={styles.cursor}>▌</span></span>
+            <span style={styles.name}>Hiyori</span>
+            <span>{revealText}<span style={styles.cursor}>|</span></span>
           </div>
         )}
 
         {/* Loading indicator */}
         {loading && !revealText && (
           <div style={{ ...styles.bubble, ...styles.bubbleAssistant }}>
-            <span style={styles.name}>Hiyori ✦</span>
-            <span style={styles.thinking}>thinking…</span>
+            <span style={styles.name}>Hiyori</span>
+            <span style={styles.thinking}>thinking...</span>
           </div>
         )}
       </div>
@@ -191,7 +250,7 @@ export default function CompanionChat({ engineRef, isOpen, onClose }) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Type a message…"
+          placeholder="Type a message..."
           disabled={loading}
           style={styles.input}
           maxLength={300}
@@ -203,7 +262,7 @@ export default function CompanionChat({ engineRef, isOpen, onClose }) {
           style={styles.sendBtn}
           aria-label="Send"
         >
-          ➤
+          Send
         </button>
       </div>
     </div>
@@ -223,7 +282,7 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
-    maxHeight: 320,
+    maxHeight: 380,
     zIndex: 10,
   },
   header: {
@@ -234,12 +293,42 @@ const styles = {
     borderBottom: "1px solid rgba(192, 132, 252, 0.15)",
     flexShrink: 0,
   },
+  headerLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+  },
+  headerRight: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+  },
   headerLabel: {
     fontSize: 11,
     fontWeight: 600,
     color: "var(--skr-accent)",
     letterSpacing: "0.06em",
     textTransform: "uppercase",
+  },
+  memoryBadge: {
+    fontSize: 9,
+    color: "var(--skr-text-secondary)",
+    background: "rgba(192, 132, 252, 0.12)",
+    border: "1px solid rgba(192, 132, 252, 0.2)",
+    borderRadius: 4,
+    padding: "1px 5px",
+    fontStyle: "italic",
+  },
+  clearMemBtn: {
+    background: "none",
+    border: "1px solid rgba(255, 100, 100, 0.2)",
+    borderRadius: 4,
+    color: "rgba(255, 100, 100, 0.7)",
+    cursor: "pointer",
+    fontSize: 9,
+    padding: "1px 5px",
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
   },
   closeBtn: {
     background: "none",
@@ -330,8 +419,9 @@ const styles = {
     borderRadius: 6,
     color: "var(--skr-accent)",
     cursor: "pointer",
-    fontSize: 13,
-    padding: "4px 10px",
+    fontSize: 12,
+    fontWeight: 600,
+    padding: "4px 12px",
     transition: "background 0.15s",
   },
 };

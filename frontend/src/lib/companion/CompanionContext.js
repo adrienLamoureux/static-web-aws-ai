@@ -27,9 +27,14 @@ export const CompanionActions = {
   GENERATION_ERROR: "generation_error", // { type, error }
   USER_IDLE:        "user_idle",        // {}
   USER_RETURN:      "user_return",      // {}
+  FIRST_VISIT:      "first_visit",      // {} — first time opening app this session
+  LONG_SESSION:     "long_session",     // {} — 10+ minutes of active use
+  STORY_TURN:       "story_turn",       // { sessionTitle? }
 };
 
 const IDLE_TIMEOUT_MS = 60_000;
+const LONG_SESSION_MS = 10 * 60_000; // 10 minutes
+const FIRST_VISIT_KEY = "skr-visited-session";
 const IDLE_EVENTS = ["mousemove", "click", "keydown", "scroll", "touchstart"];
 
 const CompanionContext = createContext({
@@ -55,6 +60,16 @@ export function CompanionProvider({ children }) {
     };
   }, []);
 
+  // First visit detection
+  useEffect(() => {
+    if (!sessionStorage.getItem(FIRST_VISIT_KEY)) {
+      sessionStorage.setItem(FIRST_VISIT_KEY, "1");
+      // Slight delay so the companion panel is mounted
+      const t = setTimeout(() => dispatch(CompanionActions.FIRST_VISIT, {}), 2000);
+      return () => clearTimeout(t);
+    }
+  }, [dispatch]);
+
   // Idle timer
   useEffect(() => {
     const resetIdle = () => {
@@ -78,6 +93,15 @@ export function CompanionProvider({ children }) {
       IDLE_EVENTS.forEach((ev) => document.removeEventListener(ev, resetIdle));
       clearTimeout(idleTimerRef.current);
     };
+  }, [dispatch]);
+
+  // Long session timer (10 minutes of total app usage)
+  useEffect(() => {
+    const t = setTimeout(
+      () => dispatch(CompanionActions.LONG_SESSION, {}),
+      LONG_SESSION_MS
+    );
+    return () => clearTimeout(t);
   }, [dispatch]);
 
   return (
