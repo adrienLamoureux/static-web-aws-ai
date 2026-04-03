@@ -270,8 +270,7 @@ export default function Story() {
       // Pre-fill a hint shown in the preset picker header
       setCompanionHint({ title: companionTitle || "", genre: companionGenre || "" });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // intentionally run once on mount to read URL params
 
   const handleNewSession = () => {
     setShowPresetPicker(true);
