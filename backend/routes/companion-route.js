@@ -23,6 +23,26 @@ If the user's message naturally calls for you to generate an image (they ask you
 
 Only use [GENERATE_IMAGE] when genuinely requested or when it strongly enhances the moment. Never use it for abstract concepts or as a default.
 
+## Navigation
+If the user wants to go to a page, add on its own line:
+[NAVIGATE: /path]
+Valid paths: / (Realm), /atelier (Atelier), /chronicle (Chronicle), /gallery (Gallery), /sanctum (Sanctum)
+Only use when the user clearly asks to go somewhere or open a page.
+
+## Story creation
+If the user wants to start a new story, add on its own line:
+[START_STORY: title | genre]
+Only use when the user explicitly asks to begin or create a story. Title and genre are short phrases.
+
+## Music generation
+If the user asks to create, generate, or play music, add on its own line:
+[GENERATE_MUSIC: mood | description]
+Mood is one word (e.g. melancholic, epic, peaceful, playful). Description is a short phrase.
+
+## Action rules
+- Use at most ONE action tag per response (GENERATE_IMAGE, NAVIGATE, START_STORY, or GENERATE_MUSIC).
+- Action tags go at the very end of your message, each on its own line, before the EMOTION tag.
+
 ## Emotion tag
 End EVERY response with exactly one emotion tag on its own line, chosen from:
 [EMOTION: happy]
@@ -33,8 +53,13 @@ End EVERY response with exactly one emotion tag on its own line, chosen from:
 
 const PROACTIVE_SYSTEM_ADDENDUM = `Keep it to 1 sentence, under 60 characters. Be warm and natural.`;
 
-const EMOTION_RE = /\[EMOTION:\s*(happy|sad|surprised|thinking|neutral)\]/i;
+const EMOTION_RE        = /\[EMOTION:\s*(happy|sad|surprised|thinking|neutral)\]/i;
 const GENERATE_IMAGE_RE = /\[GENERATE_IMAGE:\s*([^\]]+)\]/i;
+const NAVIGATE_RE       = /\[NAVIGATE:\s*([^\]]+)\]/i;
+const START_STORY_RE    = /\[START_STORY:\s*([^\]]+)\]/i;
+const GENERATE_MUSIC_RE = /\[GENERATE_MUSIC:\s*([^\]]+)\]/i;
+
+const VALID_NAV_PATHS = new Set(["/", "/atelier", "/chronicle", "/gallery", "/sanctum"]);
 
 const COMPANION_CONFIG_PK = "CONFIG#COMPANION";
 const COMPANION_CONFIG_SK = "CONFIG#COMPANION";
@@ -81,7 +106,11 @@ module.exports = (app, deps) => {
     // ── Build system prompt ───────────────────────────────────────────────
     let system = SYSTEM_PROMPT;
     if (ctx.page) {
-      system += `\n\nContext: The user is currently on the ${ctx.page} page.`;
+      let contextLine = `\n\nContext: The user is currently on the ${ctx.page} page.`;
+      if (ctx.activeStoryTitle) contextLine += ` They have an active story called "${ctx.activeStoryTitle}".`;
+      if (ctx.characterCount)   contextLine += ` They have ${ctx.characterCount} character(s) created.`;
+      if (ctx.recentGeneration) contextLine += ` They recently generated: ${ctx.recentGeneration}.`;
+      system += contextLine;
     }
     if (memory?.summary) {
       system += `\n\n<memory>${memory.summary}</memory>`;
@@ -115,7 +144,7 @@ module.exports = (app, deps) => {
       accept: "application/json",
       body: JSON.stringify({
         anthropic_version: "bedrock-2023-05-31",
-        max_tokens: 250,
+        max_tokens: 300,
         temperature: 0.85,
         system,
         messages: merged,
@@ -136,7 +165,7 @@ module.exports = (app, deps) => {
       return res.status(500).json({ error: "companion_unavailable" });
     }
 
-    // ── Parse emotion + generation tags ───────────────────────────────────
+    // ── Parse emotion + action tags ───────────────────────────────────────
     const emotionMatch = rawText.match(EMOTION_RE);
     const emotion = emotionMatch ? emotionMatch[1].toLowerCase() : "neutral";
 
@@ -145,16 +174,41 @@ module.exports = (app, deps) => {
       ? { type: "image", prompt: genMatch[1].trim() }
       : undefined;
 
+    const navMatch = rawText.match(NAVIGATE_RE);
+    const navigation = (() => {
+      if (!navMatch) return undefined;
+      const path = navMatch[1].trim().split(/\s/)[0]; // take first word only
+      return VALID_NAV_PATHS.has(path) ? { path } : undefined;
+    })();
+
+    const storyMatch = rawText.match(START_STORY_RE);
+    const storyAction = storyMatch ? (() => {
+      const parts = storyMatch[1].split("|").map((s) => s.trim());
+      return { type: "start_story", title: parts[0] || "", genre: parts[1] || "" };
+    })() : undefined;
+
+    const musicMatch = rawText.match(GENERATE_MUSIC_RE);
+    const musicAction = musicMatch ? (() => {
+      const parts = musicMatch[1].split("|").map((s) => s.trim());
+      return { type: "generate_music", mood: parts[0] || "", description: parts[1] || "" };
+    })() : undefined;
+
     const text = rawText
       .replace(EMOTION_RE, "")
       .replace(GENERATE_IMAGE_RE, "")
+      .replace(NAVIGATE_RE, "")
+      .replace(START_STORY_RE, "")
+      .replace(GENERATE_MUSIC_RE, "")
       .trim();
 
     // ── Respond ───────────────────────────────────────────────────────────
     res.json({
       text,
       emotion,
-      ...(generation ? { generation } : {}),
+      ...(generation  ? { generation }  : {}),
+      ...(navigation  ? { navigation }  : {}),
+      ...(storyAction ? { storyAction } : {}),
+      ...(musicAction ? { musicAction } : {}),
       ...(memory !== null ? { hasMemory: true } : {}),
     });
 
