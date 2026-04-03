@@ -3,19 +3,20 @@
  *
  * Layout:
  *   +-- Header -----------------------+
- *   |  [Model Name v]   [-] (min)    |
+ *   |  [Model Name v]   [⤢] [-] (min)|
  *   +--------------------------------+
- *   |      Live2D Canvas             |
+ *   |      Live2D Canvas             |   ← speech bubble floats LEFT of panel
  *   +--------------------------------+
  *   |  [Chat]              [mood]    |
  *   +-- CompanionChat (when open) ---+
  *
  * Position: fixed bottom-right, above the HUD nav bar.
  * On mobile (<768px): collapsed to a circular avatar button.
- * Minimize state persisted to localStorage.
+ * Minimize + size state persisted to localStorage.
  *
- * Proactive messages: AI-generated bubbles replace static BUBBLE_LINES,
- * fetched via useProactiveCompanion hook with cooldown management.
+ * Speech bubble: appears to the LEFT of the panel (manga-style, with tail pointing right).
+ *   - Proactive messages from the AI
+ *   - Live chat replies from Hiyori (fed via onSpeaking/onSpeakingEnd callbacks)
  */
 
 import { useState, useRef, useCallback, useEffect } from "react";
@@ -31,9 +32,15 @@ import CompanionCanvas from "./CompanionCanvas";
 import CompanionChat from "./CompanionChat";
 import ModelSelector from "./ModelSelector";
 
-const PANEL_W = 240;
-const PANEL_H = 280;
-const HUD_H   = 64; // matches --skr-hud-height
+const SIZES = {
+  normal: { w: 240, h: 280 },
+  large:  { w: 360, h: 440 },
+};
+const HUD_H          = 64; // matches --skr-hud-height
+const STORAGE_KEY    = "skr-companion-minimized";
+const SIZE_STORAGE_KEY = "skr-companion-size";
+const SPEAKING_LINGER_MS = 2200;
+const BUBBLE_MAX_CHARS = 110;
 
 const EMOTION_LABELS = {
   happy:     "happy",
@@ -43,7 +50,8 @@ const EMOTION_LABELS = {
   neutral:   "",
 };
 
-const STORAGE_KEY = "skr-companion-minimized";
+const truncate = (str, n) =>
+  str && str.length > n ? str.slice(0, n).trimEnd() + "…" : str;
 
 export default function CompanionPanel() {
   const { user } = useAuth();
@@ -51,19 +59,30 @@ export default function CompanionPanel() {
   const navigate = useNavigate();
   const isAdmin = user?.isAdmin || false;
 
-  const engineRef = useRef(null);
+  const engineRef       = useRef(null);
+  const speakingTimerRef = useRef(null);
+
   const [modelEntry, setModelEntry] = useState(getDefaultModel());
   const [minimized, setMinimized] = useState(
     () => localStorage.getItem(STORAGE_KEY) === "true"
   );
-  const [chatOpen, setChatOpen] = useState(false);
+  const [charSize, setCharSize] = useState(
+    () => localStorage.getItem(SIZE_STORAGE_KEY) || "normal"
+  );
+  const [chatOpen, setChatOpen]       = useState(false);
   const [chatExpanded, setChatExpanded] = useState(false);
   const [currentEmotion, setCurrentEmotion] = useState("neutral");
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  const [isMobile, setIsMobile]       = useState(() => window.innerWidth < 768);
+  const [speakingText, setSpeakingText] = useState(null);
   const emotionTimerRef = useRef(null);
 
-  // Proactive AI-generated messages (replaces static BUBBLE_LINES)
   const { proactiveText, proactiveEmotion, dismissProactive } = useProactiveCompanion();
+
+  const { w: panelW, h: panelH } = SIZES[charSize] || SIZES.normal;
+
+  // Active speech bubble text — proactive takes priority
+  const sideBubbleText        = proactiveText || speakingText;
+  const sideBubbleIsProactive = !!proactiveText;
 
   // Track mobile breakpoint
   useEffect(() => {
@@ -71,6 +90,12 @@ export default function CompanionPanel() {
     const handler = (e) => setIsMobile(e.matches);
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  // Cleanup timers on unmount
+  useEffect(() => () => {
+    clearTimeout(speakingTimerRef.current);
+    clearTimeout(emotionTimerRef.current);
   }, []);
 
   // Fetch persisted model choice from backend (Director setting)
@@ -84,10 +109,9 @@ export default function CompanionPanel() {
           if (found) setModelEntry(found);
         }
       })
-      .catch(() => {}); // silent fallback
+      .catch(() => {});
   }, [apiBaseUrl]);
 
-  // Persist minimize state
   const toggleMinimized = useCallback(() => {
     setMinimized((v) => {
       const next = !v;
@@ -96,12 +120,30 @@ export default function CompanionPanel() {
     });
   }, []);
 
-  // Trigger an emotion on the model and update the indicator
+  const toggleSize = useCallback(() => {
+    setCharSize((v) => {
+      const next = v === "normal" ? "large" : "normal";
+      localStorage.setItem(SIZE_STORAGE_KEY, next);
+      return next;
+    });
+  }, []);
+
   const triggerEmotion = useCallback((name, durationMs = 3000) => {
     engineRef.current?.setEmotion(name, durationMs);
     setCurrentEmotion(name);
     clearTimeout(emotionTimerRef.current);
     emotionTimerRef.current = setTimeout(() => setCurrentEmotion("neutral"), durationMs);
+  }, []);
+
+  // Callbacks for CompanionChat to feed Hiyori's speech into the side bubble
+  const handleSpeaking = useCallback((text) => {
+    clearTimeout(speakingTimerRef.current);
+    setSpeakingText(text);
+  }, []);
+
+  const handleSpeakingEnd = useCallback(() => {
+    clearTimeout(speakingTimerRef.current);
+    speakingTimerRef.current = setTimeout(() => setSpeakingText(null), SPEAKING_LINGER_MS);
   }, []);
 
   // Apply proactive emotion when a proactive message arrives
@@ -111,7 +153,7 @@ export default function CompanionPanel() {
     }
   }, [proactiveText, proactiveEmotion, triggerEmotion]);
 
-  // React to companion events (motion + emotion reactions, independent of proactive text)
+  // React to companion events (motion + emotion reactions)
   useCompanionEvent(useCallback((action) => {
     const reaction = REACTIONS[action];
     if (reaction) {
@@ -120,20 +162,14 @@ export default function CompanionPanel() {
     }
   }, [triggerEmotion]));
 
-  const handleEngineReady = useCallback((engine) => {
-    engineRef.current = engine;
-  }, []);
-
-  const handleModelChange = useCallback((newModel) => {
-    setModelEntry(newModel);
-  }, []);
-
-  const handleBubbleReply = useCallback(() => {
+  const handleEngineReady   = useCallback((engine) => { engineRef.current = engine; }, []);
+  const handleModelChange   = useCallback((m) => setModelEntry(m), []);
+  const handleBubbleReply   = useCallback(() => {
     dismissProactive();
     setChatOpen(true);
   }, [dismissProactive]);
 
-  // ---- Mobile: circular button ----
+  // ── Mobile: circular button ────────────────────────────────────────────────
   if (isMobile) {
     return (
       <button
@@ -162,11 +198,10 @@ export default function CompanionPanel() {
     );
   }
 
-  // ---- Minimized: small floating icon ----
+  // ── Minimized: small floating icon ────────────────────────────────────────
   if (minimized) {
     return (
       <>
-        {/* Show proactive bubble even when minimized */}
         {proactiveText && (
           <div
             style={{
@@ -177,11 +212,7 @@ export default function CompanionPanel() {
             }}
           >
             <span>{proactiveText}</span>
-            <button
-              type="button"
-              onClick={handleBubbleReply}
-              style={styles.replyBtn}
-            >
+            <button type="button" onClick={handleBubbleReply} style={styles.replyBtn}>
               Reply
             </button>
           </div>
@@ -213,14 +244,14 @@ export default function CompanionPanel() {
     );
   }
 
-  // ---- Full panel ----
+  // ── Full panel ─────────────────────────────────────────────────────────────
   return (
     <div
       style={{
         ...fixedBase,
         bottom: HUD_H + 12,
         right: 16,
-        width: PANEL_W,
+        width: panelW,
         display: "flex",
         flexDirection: "column",
         background: "rgba(13, 11, 20, 0.7)",
@@ -238,6 +269,8 @@ export default function CompanionPanel() {
         onClose={() => setChatOpen(false)}
         onNavigate={navigate}
         onExpandChange={setChatExpanded}
+        onSpeaking={handleSpeaking}
+        onSpeakingEnd={handleSpeakingEnd}
       />
 
       {/* Header */}
@@ -247,49 +280,67 @@ export default function CompanionPanel() {
           onModelChange={handleModelChange}
           isAdmin={isAdmin}
         />
-        <button
-          type="button"
-          onClick={toggleMinimized}
-          style={styles.minBtn}
-          aria-label="Minimize companion"
-          title="Minimize"
-        >
-          -
-        </button>
+        <div style={styles.headerActions}>
+          <button
+            type="button"
+            onClick={toggleSize}
+            style={styles.sizeBtn}
+            title={charSize === "normal" ? "Expand character" : "Shrink character"}
+            aria-label={charSize === "normal" ? "Expand character" : "Shrink character"}
+          >
+            {charSize === "normal" ? "⤢" : "⤡"}
+          </button>
+          <button
+            type="button"
+            onClick={toggleMinimized}
+            style={styles.minBtn}
+            aria-label="Minimize companion"
+            title="Minimize"
+          >
+            −
+          </button>
+        </div>
       </div>
 
-      {/* Floating proactive speech bubble — appears above canvas */}
-      {proactiveText && (
-        <div style={styles.bubbleContainer} key={proactiveText}>
-          <div style={styles.bubbleInner}>
-            <span>{proactiveText}</span>
-            <button
-              type="button"
-              onClick={handleBubbleReply}
-              style={styles.replyBtn}
-            >
-              Reply
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Live2D canvas — hidden when chat is in expanded mode */}
-      <div style={{ width: PANEL_W, height: PANEL_H, flexShrink: 0, position: "relative", display: chatExpanded ? "none" : undefined }}>
-        <CompanionCanvas
-          modelEntry={modelEntry}
-          onEngineReady={handleEngineReady}
-        />
+      <div
+        style={{
+          width: panelW,
+          height: panelH,
+          flexShrink: 0,
+          position: "relative",
+          display: chatExpanded ? "none" : undefined,
+        }}
+      >
+        <CompanionCanvas modelEntry={modelEntry} onEngineReady={handleEngineReady} />
+
+        {/* Side speech bubble — left of panel, with right-pointing tail */}
+        {sideBubbleText && (
+          <div style={styles.sideBubbleContainer} key={sideBubbleText}>
+            <div style={styles.sideBubbleInner}>
+              <p style={styles.sideBubbleText}>
+                {sideBubbleIsProactive
+                  ? sideBubbleText
+                  : truncate(sideBubbleText, BUBBLE_MAX_CHARS)}
+              </p>
+              {sideBubbleIsProactive && (
+                <button type="button" onClick={handleBubbleReply} style={styles.replyBtn}>
+                  Reply
+                </button>
+              )}
+            </div>
+            {/* Tail — two overlapping triangles to create a bordered arrow */}
+            <div style={styles.tailOuter} />
+            <div style={styles.tailInner} />
+          </div>
+        )}
       </div>
 
       {/* Footer */}
       <div style={styles.footer}>
         <button
           type="button"
-          style={{
-            ...styles.chatBtn,
-            ...(chatOpen ? styles.chatBtnActive : {}),
-          }}
+          style={{ ...styles.chatBtn, ...(chatOpen ? styles.chatBtnActive : {}) }}
           onClick={() => setChatOpen((v) => !v)}
           aria-label="Toggle chat"
         >
@@ -317,13 +368,29 @@ const styles = {
     borderBottom: "1px solid rgba(192, 132, 252, 0.12)",
     flexShrink: 0,
   },
+  headerActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+  },
+  sizeBtn: {
+    background: "none",
+    border: "none",
+    color: "var(--skr-text-muted)",
+    cursor: "pointer",
+    fontSize: 14,
+    padding: "0 3px",
+    lineHeight: 1,
+    opacity: 0.7,
+    transition: "opacity 0.15s",
+  },
   minBtn: {
     background: "none",
     border: "none",
     color: "var(--skr-text-muted)",
     cursor: "pointer",
-    fontSize: 12,
-    padding: "0 2px",
+    fontSize: 14,
+    padding: "0 3px",
     lineHeight: 1,
     letterSpacing: 1,
   },
@@ -358,32 +425,62 @@ const styles = {
     textAlign: "right",
     opacity: 0.8,
   },
-  // Proactive bubble container (above the panel)
-  bubbleContainer: {
+
+  // ── Side speech bubble ────────────────────────────────────────────────────
+  sideBubbleContainer: {
     position: "absolute",
-    bottom: "calc(100% + 8px)",
-    left: "50%",
-    transform: "translateX(-50%)",
+    right: "calc(100% + 14px)",
+    top: "50%",
+    transform: "translateY(-50%)",
     zIndex: 10,
-    maxWidth: 220,
-    animation: "skr-bubble-in 0.2s ease",
+    width: 220,
+    animation: "skr-bubble-in 0.25s ease",
     pointerEvents: "auto",
   },
-  bubbleInner: {
-    background: "rgba(26, 23, 38, 0.95)",
+  sideBubbleInner: {
+    background: "rgba(22, 18, 36, 0.96)",
     border: "1px solid rgba(255, 107, 157, 0.4)",
     borderRadius: 10,
-    padding: "8px 12px",
-    fontSize: 11,
-    color: "var(--skr-text)",
-    boxShadow: "0 2px 12px rgba(0,0,0,0.5), var(--skr-glow)",
-    textAlign: "center",
-    lineHeight: 1.4,
+    padding: "10px 14px",
+    boxShadow: "0 4px 20px rgba(0,0,0,0.55), var(--skr-glow)",
+    lineHeight: 1.45,
     display: "flex",
     flexDirection: "column",
-    gap: 6,
+    gap: 7,
   },
-  // Standalone bubble (used in minimized mode)
+  sideBubbleText: {
+    margin: 0,
+    fontSize: 12,
+    color: "var(--skr-text)",
+  },
+  // Outer triangle (border color)
+  tailOuter: {
+    position: "absolute",
+    right: -9,
+    top: "50%",
+    transform: "translateY(-50%)",
+    width: 0,
+    height: 0,
+    borderTop: "8px solid transparent",
+    borderBottom: "8px solid transparent",
+    borderLeft: "9px solid rgba(255, 107, 157, 0.4)",
+    pointerEvents: "none",
+  },
+  // Inner triangle (background fill, slightly offset to cover border)
+  tailInner: {
+    position: "absolute",
+    right: -7,
+    top: "50%",
+    transform: "translateY(-50%)",
+    width: 0,
+    height: 0,
+    borderTop: "7px solid transparent",
+    borderBottom: "7px solid transparent",
+    borderLeft: "8px solid rgba(22, 18, 36, 0.96)",
+    pointerEvents: "none",
+  },
+
+  // ── Standalone bubble (minimized mode) ───────────────────────────────────
   bubble: {
     background: "rgba(26, 23, 38, 0.95)",
     border: "1px solid rgba(255, 107, 157, 0.4)",
@@ -401,7 +498,7 @@ const styles = {
     animation: "skr-bubble-in 0.2s ease",
   },
   replyBtn: {
-    alignSelf: "center",
+    alignSelf: "flex-start",
     background: "rgba(255, 107, 157, 0.15)",
     border: "1px solid rgba(255, 107, 157, 0.3)",
     borderRadius: 4,

@@ -30,7 +30,7 @@ const PAGE_LABELS = {
   "/sanctum":   "Sanctum (Director)",
 };
 
-export default function CompanionChat({ engineRef, isOpen, onClose, onNavigate, onExpandChange }) {
+export default function CompanionChat({ engineRef, isOpen, onClose, onNavigate, onExpandChange, onSpeaking, onSpeakingEnd }) {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   const { apiBaseUrl } = useConfig();
@@ -47,6 +47,11 @@ export default function CompanionChat({ engineRef, isOpen, onClose, onNavigate, 
   const abortRef   = useRef(null);
   // Pending actions to attach to the message being revealed
   const pendingActionsRef = useRef(null);
+  // Stable refs so reveal effect can call parent callbacks without re-triggering
+  const onSpeakingRef    = useRef(onSpeaking);
+  const onSpeakingEndRef = useRef(onSpeakingEnd);
+  useEffect(() => { onSpeakingRef.current    = onSpeaking;    }, [onSpeaking]);
+  useEffect(() => { onSpeakingEndRef.current = onSpeakingEnd; }, [onSpeakingEnd]);
 
   const currentPage = PAGE_LABELS[location.pathname] || location.pathname;
 
@@ -80,6 +85,9 @@ export default function CompanionChat({ engineRef, isOpen, onClose, onNavigate, 
     let i = 0;
     setRevealText("");
 
+    // Feed the full text to the side bubble on the companion panel
+    onSpeakingRef.current?.(revealFull);
+
     const charByChar = () => {
       i += 1;
       setRevealText(revealFull.slice(0, i));
@@ -95,6 +103,7 @@ export default function CompanionChat({ engineRef, isOpen, onClose, onNavigate, 
         setRevealText("");
         setRevealFull("");
         engineRef.current?.stopLipSync();
+        onSpeakingEndRef.current?.();
       }
     };
 
