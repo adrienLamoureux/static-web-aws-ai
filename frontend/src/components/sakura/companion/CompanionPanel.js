@@ -19,6 +19,7 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useConfig } from "../../../contexts/ConfigContext";
 import { buildApiUrl } from "../../../services/apiClient";
@@ -47,6 +48,7 @@ const STORAGE_KEY = "skr-companion-minimized";
 export default function CompanionPanel() {
   const { user } = useAuth();
   const { apiBaseUrl } = useConfig();
+  const navigate = useNavigate();
   const isAdmin = user?.isAdmin || false;
 
   const engineRef = useRef(null);
@@ -55,6 +57,7 @@ export default function CompanionPanel() {
     () => localStorage.getItem(STORAGE_KEY) === "true"
   );
   const [chatOpen, setChatOpen] = useState(false);
+  const [chatExpanded, setChatExpanded] = useState(false);
   const [currentEmotion, setCurrentEmotion] = useState("neutral");
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   const emotionTimerRef = useRef(null);
@@ -233,6 +236,8 @@ export default function CompanionPanel() {
         engineRef={engineRef}
         isOpen={chatOpen}
         onClose={() => setChatOpen(false)}
+        onNavigate={navigate}
+        onExpandChange={setChatExpanded}
       />
 
       {/* Header */}
@@ -269,8 +274,8 @@ export default function CompanionPanel() {
         </div>
       )}
 
-      {/* Live2D canvas */}
-      <div style={{ width: PANEL_W, height: PANEL_H, flexShrink: 0, position: "relative" }}>
+      {/* Live2D canvas — hidden when chat is in expanded mode */}
+      <div style={{ width: PANEL_W, height: PANEL_H, flexShrink: 0, position: "relative", display: chatExpanded ? "none" : undefined }}>
         <CompanionCanvas
           modelEntry={modelEntry}
           onEngineReady={handleEngineReady}

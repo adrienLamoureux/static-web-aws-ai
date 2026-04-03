@@ -7,7 +7,8 @@
  * Features:
  * - Authenticated requests when logged in (enables per-user memory + generation)
  * - Memory status indicator + clear memory button
- * - Inline image generation via GenerationCard when Hiyori detects generation intent
+ * - Action cards via ActionCard dispatcher (image, navigate, story, music)
+ * - Expandable mode: docked (240px) ↔ expanded (420px wide, taller)
  */
 
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -15,10 +16,11 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useConfig } from "../../../contexts/ConfigContext";
 import { postJson, buildApiUrl, deleteJson } from "../../../services/apiClient";
-import GenerationCard from "./GenerationCard";
+import ActionCard from "./ActionCard";
 
 const MAX_HISTORY = 20;
 const REVEAL_DELAY_MS = 28; // ms per character
+const HUD_H = 64; // matches --skr-hud-height
 
 const PAGE_LABELS = {
   "/":          "Realm (Home)",
@@ -28,24 +30,30 @@ const PAGE_LABELS = {
   "/sanctum":   "Sanctum (Director)",
 };
 
-export default function CompanionChat({ engineRef, isOpen, onClose }) {
+export default function CompanionChat({ engineRef, isOpen, onClose, onNavigate, onExpandChange }) {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   const { apiBaseUrl } = useConfig();
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [revealText, setRevealText] = useState(""); // currently revealing text
-  const [revealFull, setRevealFull] = useState("");  // target full text
-  const [hasMemory, setHasMemory] = useState(false);
+  const [messages, setMessages]     = useState([]);
+  const [input, setInput]           = useState("");
+  const [loading, setLoading]       = useState(false);
+  const [revealText, setRevealText] = useState("");
+  const [revealFull, setRevealFull] = useState("");
+  const [hasMemory, setHasMemory]   = useState(false);
+  const [expanded, setExpanded]     = useState(false);
   const listRef    = useRef(null);
   const inputRef   = useRef(null);
   const revealRef  = useRef(null);
   const abortRef   = useRef(null);
-  // Track pending generation to attach to the message being revealed
-  const pendingGenRef = useRef(null);
+  // Pending actions to attach to the message being revealed
+  const pendingActionsRef = useRef(null);
 
   const currentPage = PAGE_LABELS[location.pathname] || location.pathname;
+
+  // Notify parent when expanded state changes (so it can hide the canvas)
+  useEffect(() => {
+    onExpandChange?.(expanded);
+  }, [expanded, onExpandChange]);
 
   // Auto-scroll when messages update
   useEffect(() => {
@@ -65,7 +73,7 @@ export default function CompanionChat({ engineRef, isOpen, onClose }) {
     clearTimeout(revealRef.current);
   }, []);
 
-  // Start character-by-character reveal when revealFull changes
+  // Character-by-character reveal
   useEffect(() => {
     if (!revealFull) return;
     clearTimeout(revealRef.current);
@@ -78,11 +86,10 @@ export default function CompanionChat({ engineRef, isOpen, onClose }) {
       if (i < revealFull.length) {
         revealRef.current = setTimeout(charByChar, REVEAL_DELAY_MS);
       } else {
-        // Reveal complete — commit to messages list
         const finalMsg = { role: "assistant", text: revealFull };
-        if (pendingGenRef.current) {
-          finalMsg.generation = pendingGenRef.current;
-          pendingGenRef.current = null;
+        if (pendingActionsRef.current) {
+          finalMsg.actions = pendingActionsRef.current;
+          pendingActionsRef.current = null;
         }
         setMessages((prev) => [...prev, finalMsg]);
         setRevealText("");
@@ -108,7 +115,6 @@ export default function CompanionChat({ engineRef, isOpen, onClose }) {
     setInput("");
     setLoading(true);
 
-    // Build messages array for backend (last 10 turns)
     const history = nextMessages.slice(-10).map((m) => ({
       role: m.role,
       content: m.text,
@@ -128,13 +134,15 @@ export default function CompanionChat({ engineRef, isOpen, onClose }) {
 
       engineRef.current?.setEmotion(data.emotion || "neutral", 4000);
 
-      // Track memory status
       if (data.hasMemory !== undefined) setHasMemory(data.hasMemory);
 
-      // Store generation intent for when reveal completes
-      if (data.generation) {
-        pendingGenRef.current = data.generation;
-      }
+      // Collect all action types into a single array
+      const actions = [];
+      if (data.generation)  actions.push({ ...data.generation });
+      if (data.navigation)  actions.push({ type: "navigate",       ...data.navigation });
+      if (data.storyAction) actions.push({ ...data.storyAction });
+      if (data.musicAction) actions.push({ ...data.musicAction });
+      if (actions.length > 0) pendingActionsRef.current = actions;
 
       setRevealFull(data.text || "...");
     } catch (err) {
@@ -166,10 +174,14 @@ export default function CompanionChat({ engineRef, isOpen, onClose }) {
     }
   };
 
+  const handleToggleExpand = () => setExpanded((v) => !v);
+
   if (!isOpen) return null;
 
+  const panelStyle = expanded ? styles.panelExpanded : styles.panelDocked;
+
   return (
-    <div style={styles.panel}>
+    <div style={panelStyle}>
       {/* Header */}
       <div style={styles.header}>
         <div style={styles.headerLeft}>
@@ -191,6 +203,15 @@ export default function CompanionChat({ engineRef, isOpen, onClose }) {
               forget
             </button>
           )}
+          <button
+            type="button"
+            onClick={handleToggleExpand}
+            style={styles.expandBtn}
+            title={expanded ? "Collapse chat" : "Expand chat"}
+            aria-label={expanded ? "Collapse chat" : "Expand chat"}
+          >
+            {expanded ? "⊡" : "⊞"}
+          </button>
           <button type="button" onClick={onClose} style={styles.closeBtn} aria-label="Close chat">
             ✕
           </button>
@@ -216,12 +237,12 @@ export default function CompanionChat({ engineRef, isOpen, onClose }) {
               )}
               <span>{m.text}</span>
             </div>
-            {/* Render generation card after assistant message if present */}
-            {m.generation && (
-              <div style={{ marginTop: 4, marginBottom: 4 }}>
-                <GenerationCard generation={m.generation} />
+            {/* Render action cards after the assistant message */}
+            {m.actions?.map((action, j) => (
+              <div key={j} style={styles.actionWrapper}>
+                <ActionCard action={action} onNavigate={onNavigate} />
               </div>
-            )}
+            ))}
           </div>
         ))}
 
@@ -269,21 +290,33 @@ export default function CompanionChat({ engineRef, isOpen, onClose }) {
   );
 }
 
+const sharedPanel = {
+  background: "rgba(26, 23, 38, 0.97)",
+  border: "1px solid rgba(192, 132, 252, 0.3)",
+  borderRadius: 12,
+  boxShadow: "0 -4px 24px rgba(0,0,0,0.5)",
+  display: "flex",
+  flexDirection: "column",
+  overflow: "hidden",
+  zIndex: 950,
+};
+
 const styles = {
-  panel: {
+  panelDocked: {
+    ...sharedPanel,
     position: "absolute",
     bottom: "calc(100% + 8px)",
     left: 0,
     right: 0,
-    background: "rgba(26, 23, 38, 0.97)",
-    border: "1px solid rgba(192, 132, 252, 0.3)",
-    borderRadius: 12,
-    boxShadow: "0 -4px 24px rgba(0,0,0,0.5)",
-    display: "flex",
-    flexDirection: "column",
-    overflow: "hidden",
-    maxHeight: 380,
-    zIndex: 10,
+    maxHeight: 420,
+  },
+  panelExpanded: {
+    ...sharedPanel,
+    position: "fixed",
+    bottom: HUD_H + 12,
+    right: 16,
+    width: 420,
+    height: 540,
   },
   header: {
     display: "flex",
@@ -330,6 +363,15 @@ const styles = {
     textTransform: "uppercase",
     letterSpacing: "0.04em",
   },
+  expandBtn: {
+    background: "none",
+    border: "none",
+    color: "var(--skr-text-muted)",
+    cursor: "pointer",
+    fontSize: 14,
+    padding: "0 2px",
+    lineHeight: 1,
+  },
   closeBtn: {
     background: "none",
     border: "none",
@@ -362,7 +404,7 @@ const styles = {
     gap: 2,
     padding: "6px 10px",
     borderRadius: 8,
-    fontSize: 12,
+    fontSize: 13,
     lineHeight: 1.5,
     maxWidth: "90%",
   },
@@ -395,6 +437,10 @@ const styles = {
   cursor: {
     animation: "skr-blink 1s step-end infinite",
     color: "var(--skr-accent)",
+  },
+  actionWrapper: {
+    marginTop: 4,
+    marginBottom: 4,
   },
   inputRow: {
     display: "flex",

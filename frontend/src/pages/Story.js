@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { useLocation } from 'react-router-dom';
 import { useConfig } from '../contexts/ConfigContext';
 import { useMusic } from '../contexts/MusicContext';
 import {
@@ -18,6 +19,7 @@ import StorySceneCard from '../components/story/StorySceneCard';
 
 export default function Story() {
   const { apiBaseUrl } = useConfig();
+  const location = useLocation();
   const [sessions, setSessions] = useState([]);
   const [activeSessionId, setActiveSessionId] = useState('');
   const [messages, setMessages] = useState([]);
@@ -42,6 +44,8 @@ export default function Story() {
   const [allCharacters, setAllCharacters] = useState([]);
   // Set of message indices currently waiting for an on-demand illustration
   const [illustratingMessages, setIllustratingMessages] = useState(new Set());
+  // Hint from companion chat (pre-fills the preset picker)
+  const [companionHint, setCompanionHint] = useState(null);
   const { triggerAnimation, triggerMusic, getSceneMedia, clearAllPolls, mediaMap } = useSceneMedia(apiBaseUrl);
   const { pushTracks, playTrack } = useMusic();
   const bottomRef = useRef(null);
@@ -255,6 +259,19 @@ export default function Story() {
   useEffect(() => {
     if (apiBaseUrl) bootstrapSessions();
   }, [apiBaseUrl, bootstrapSessions]);
+
+  // Open preset picker with companion-suggested values when arriving from chat
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const companionTitle = params.get("companionTitle");
+    const companionGenre = params.get("companionGenre");
+    if (companionTitle || companionGenre) {
+      setShowPresetPicker(true);
+      // Pre-fill a hint shown in the preset picker header
+      setCompanionHint({ title: companionTitle || "", genre: companionGenre || "" });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleNewSession = () => {
     setShowPresetPicker(true);
@@ -529,6 +546,11 @@ export default function Story() {
       {showPresetPicker && (
         <div style={{ background: 'var(--skr-elevated)', border: '1px solid var(--skr-border)', borderRadius: 12, padding: 24, marginBottom: 16 }}>
           <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>Choose a Story Preset</h3>
+          {companionHint && (
+            <div style={{ background: 'rgba(96, 165, 250, 0.08)', border: '1px solid rgba(96, 165, 250, 0.25)', borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: 12, color: 'rgba(96, 165, 250, 0.9)' }}>
+              <strong>Hiyori suggests:</strong>{companionHint.title && ` "${companionHint.title}"`}{companionHint.genre && ` — ${companionHint.genre}`}
+            </div>
+          )}
           <p style={{ fontSize: 12, color: 'var(--skr-text-tertiary)', marginBottom: 16 }}>Select the narrative universe for your new session.</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
             {presets.map(p => (
