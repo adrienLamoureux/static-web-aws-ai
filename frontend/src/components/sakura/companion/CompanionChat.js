@@ -30,7 +30,7 @@ const PAGE_LABELS = {
   "/sanctum":   "Sanctum (Director)",
 };
 
-export default function CompanionChat({ engineRef, isOpen, onClose, onNavigate, onExpandChange, onSpeaking, onSpeakingEnd }) {
+export default function CompanionChat({ engineRef, isOpen, onClose, onNavigate, onExpandChange, onThinking, onSpeaking, onSpeakingEnd }) {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   const { apiBaseUrl } = useConfig();
@@ -48,8 +48,10 @@ export default function CompanionChat({ engineRef, isOpen, onClose, onNavigate, 
   // Pending actions to attach to the message being revealed
   const pendingActionsRef = useRef(null);
   // Stable refs so reveal effect can call parent callbacks without re-triggering
+  const onThinkingRef    = useRef(onThinking);
   const onSpeakingRef    = useRef(onSpeaking);
   const onSpeakingEndRef = useRef(onSpeakingEnd);
+  useEffect(() => { onThinkingRef.current    = onThinking;    }, [onThinking]);
   useEffect(() => { onSpeakingRef.current    = onSpeaking;    }, [onSpeaking]);
   useEffect(() => { onSpeakingEndRef.current = onSpeakingEnd; }, [onSpeakingEnd]);
 
@@ -123,6 +125,7 @@ export default function CompanionChat({ engineRef, isOpen, onClose, onNavigate, 
     setMessages(nextMessages);
     setInput("");
     setLoading(true);
+    onThinkingRef.current?.(true);
 
     const history = nextMessages.slice(-10).map((m) => ({
       role: m.role,
@@ -162,6 +165,7 @@ export default function CompanionChat({ engineRef, isOpen, onClose, onNavigate, 
         ]);
       }
     } finally {
+      onThinkingRef.current?.(false);
       setLoading(false);
     }
   }, [loading, messages, currentPage, engineRef, apiBaseUrl, isAuthenticated]);

@@ -26,11 +26,11 @@ Live2DModel.registerTicker(Ticker);
 
 export class Live2DEngine {
   constructor(canvas) {
-    this._canvas    = canvas;
-    this._app       = null;
-    this._model     = null;
-    this._manifest  = null;
-    this._alive     = false;
+    this._canvas     = canvas;
+    this._app        = null;
+    this._model      = null;
+    this._manifest   = null;
+    this._generation = 0; // incremented on every loadModel call; guards stale async completions
 
     // Emotion
     this._cancelEmotion = null;
@@ -49,6 +49,10 @@ export class Live2DEngine {
     this._motionPlaying = false;
     this._motionTimer   = null;
 
+    // Idle variety cycling
+    this._idleTimer         = null;
+    this._idleVariantIndex  = 0;
+
     // Away / focus handlers (set after model load)
     this._focusHandler     = null;
     this._blurHandler      = null;
@@ -64,10 +68,26 @@ export class Live2DEngine {
 
   get isLoaded() { return this._model !== null; }
 
+  /**
+   * Returns true when the current model supports the given Capability constant.
+   * Mirrors the Capability contract defined in character-interactions.js.
+   */
+  hasCapability(cap) {
+    if (!this._manifest) return false;
+    switch (cap) {
+      case "look_at":      return !!this._manifest.lookAt;
+      case "idle_variety": return Array.isArray(this._manifest.idleVariants) && this._manifest.idleVariants.length > 0;
+      case "hit_test":     return Array.isArray(this._manifest.hitZones)     && this._manifest.hitZones.length > 0;
+      default:             return false;
+    }
+  }
+
   // ─── Public API ───────────────────────────────────────────────
 
   async loadModel(manifest) {
     this._disposeModel();
+
+    const gen = ++this._generation; // capture before the await
 
     const rect = this._canvas.getBoundingClientRect();
     const W = rect.width  || this._canvas.offsetWidth  || 240;
@@ -87,8 +107,6 @@ export class Live2DEngine {
       this._app.renderer.resize(W, H);
     }
 
-    this._alive = true;
-
     let model;
     try {
       model = await Live2DModel.from(manifest.modelPath, { autoInteract: false });
@@ -96,10 +114,12 @@ export class Live2DEngine {
       console.error("[Live2DEngine] Model load failed:", err);
       return;
     }
-    if (!this._alive) { model.destroy(); return; }
+    // Another loadModel call happened while we were awaiting — discard this result
+    if (gen !== this._generation) { model.destroy(); return; }
 
     this._manifest = manifest;
     this._model    = model;
+    this._alive2   = true;
     this._app.stage.addChild(model);
 
     // Scale to fill manifest.scale of canvas height, anchor at bottom-center
@@ -110,6 +130,7 @@ export class Live2DEngine {
     model.y = H;
 
     model.motion(manifest.motionMap.idle);
+    if (manifest.idleVariants?.length) this._startIdleCycle();
 
     // Register our look-at + lip sync ticker at LOW priority so it runs
     // AFTER the model's own motion update (which runs at NORMAL priority).
@@ -136,8 +157,8 @@ export class Live2DEngine {
     window.addEventListener("blur", this._blurHandler);
     window.addEventListener("focus", this._blurClearHandler);
 
-    // Mouse tracking (desktop only)
-    if (!this._isMobile) {
+    // Mouse tracking — only for models that declare the LOOK_AT capability
+    if (!this._isMobile && manifest.lookAt) {
       this._mouseHandler = (e) => {
         const rect = this._canvas.getBoundingClientRect();
         const cx = rect.left + rect.width  / 2;
@@ -200,6 +221,50 @@ export class Live2DEngine {
     if (core) {
       try { core.setParameterValueById("ParamMouthOpenY", 0); } catch {}
     }
+  }
+
+  /**
+   * High-level interaction dispatcher.
+   * Looks up `semanticName` in the current model's interactionMap and fires
+   * the appropriate motion and/or emotion. Falls back to playMotion() when
+   * no interactionMap entry exists (backward-compat with old callers).
+   */
+  interact(semanticName) {
+    if (!this._model || !this._manifest) return;
+    const action = this._manifest.interactionMap?.[semanticName];
+    if (!action) {
+      // Graceful fallback: try motion map directly
+      this.playMotion(semanticName);
+      return;
+    }
+    if (action.motion) {
+      this._model.motion(action.motion);
+      this._motionPlaying = true;
+      clearTimeout(this._motionTimer);
+      this._motionTimer = setTimeout(() => {
+        this._motionPlaying = false;
+        // Return to idle after the interaction completes
+        if (semanticName !== "idle" && semanticName !== "idle_variant") {
+          this._model?.motion(this._manifest.motionMap.idle);
+        }
+      }, 3500);
+    }
+    if (action.emotion) {
+      this.setEmotion(action.emotion, 3000);
+    }
+  }
+
+  /**
+   * Maps a canvas-relative click position to a hit zone name defined in the
+   * current model's hitZones config. Returns null if no zone matches.
+   * @param {number} canvasY  Y pixels relative to the canvas top edge.
+   * @param {number} canvasH  Total canvas height in pixels.
+   */
+  hitTest(canvasY, canvasH) {
+    const zones = this._manifest?.hitZones;
+    if (!zones?.length || canvasH <= 0) return null;
+    const ny = canvasY / canvasH; // normalised 0–1
+    return zones.find((z) => ny >= z.yMin && ny < z.yMax)?.name ?? null;
   }
 
   setLookAtTarget(x, y) {
@@ -267,8 +332,42 @@ export class Live2DEngine {
     }
   };
 
+  /**
+   * Periodically plays an idle variant motion to keep the character feeling
+   * alive. Schedules itself recursively so the interval is randomised each time.
+   */
+  _startIdleCycle() {
+    clearTimeout(this._idleTimer);
+    const variants = this._manifest?.idleVariants;
+    if (!variants?.length) return;
+
+    const scheduleNext = () => {
+      const delay = 10_000 + Math.random() * 15_000; // 10–25 s
+      this._idleTimer = setTimeout(() => {
+        if (!this._alive2) return; // engine disposed
+        if (this._motionPlaying || !this._model) {
+          scheduleNext(); // busy — try again later
+          return;
+        }
+        const v = variants[this._idleVariantIndex % variants.length];
+        this._idleVariantIndex += 1;
+        this._model.motion(v);
+        this._motionPlaying = true;
+        clearTimeout(this._motionTimer);
+        this._motionTimer = setTimeout(() => {
+          this._motionPlaying = false;
+          this._model?.motion(this._manifest?.motionMap?.idle);
+          scheduleNext();
+        }, 4000);
+      }, delay);
+    };
+    scheduleNext();
+  }
+
   _disposeModel() {
-    this._alive = false;
+    this._alive2 = false; // stop idle cycle
+    clearTimeout(this._idleTimer);
+    this._idleTimer = null;
     if (this._cancelEmotion) { this._cancelEmotion(); this._cancelEmotion = null; }
     if (this._motionTimer)   { clearTimeout(this._motionTimer); this._motionTimer = null; }
     if (this._mouseHandler) {
