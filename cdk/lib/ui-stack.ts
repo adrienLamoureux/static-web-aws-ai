@@ -115,12 +115,17 @@ export class UiOnlyStack extends cdk.Stack {
       }
     );
 
+    const frontendBuildDir =
+      process.env.FRONTEND_BUILD_DIR ||
+      path.join(__dirname, "../../frontend/build");
+
     // Deploy frontend build + config.json pointing at the shared backend
+    // Live2D assets are excluded — synced separately via aws s3 sync to avoid Lambda timeout
     new s3Deployment.BucketDeployment(this, "DeployWebsite", {
       sources: [
-        s3Deployment.Source.asset(
-          path.join(__dirname, "../../frontend/build")
-        ),
+        s3Deployment.Source.asset(frontendBuildDir, {
+          exclude: ["live2d/**"],
+        }),
         s3Deployment.Source.data(
           "config.json",
           JSON.stringify({
@@ -137,6 +142,8 @@ export class UiOnlyStack extends cdk.Stack {
       destinationBucket: websiteBucket,
       distribution,
       distributionPaths: ["/*"],
+      prune: false,
+      memoryLimit: 1024,
     });
 
     // Outputs — CloudFrontURL and APIEndpoint follow the same keys as the full
@@ -155,6 +162,14 @@ export class UiOnlyStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, "StageName", {
       value: stage,
+    });
+
+    new cdk.CfnOutput(this, "WebsiteBucketName", {
+      value: websiteBucket.bucketName,
+    });
+
+    new cdk.CfnOutput(this, "CloudFrontDistributionId", {
+      value: distribution.distributionId,
     });
   }
 }

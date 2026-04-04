@@ -1,0 +1,10 @@
+{
+  "StaticWebAWSAIStack-design-sakura": {
+    "UserPoolClientId": "n4os4hpl8pct2tddslb76uqjc",
+    "CloudFrontURL": "d2lepwk3t4buta.cloudfront.net",
+    "WebsiteBucketName": "staticwebawsaistack-design-s-websitebucket75c24d94-nv6hxy7m40tp",
+    "StageName": "design-sakura",
+    "APIEndpoint": "https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/",
+    "CloudFrontDistributionId": "EN8YVYQMSTGUH"
+  }
+}

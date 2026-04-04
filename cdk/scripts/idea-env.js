@@ -7,6 +7,19 @@ const path = require("node:path");
 
 const ROOT_DIR = path.resolve(__dirname, "..", "..");
 const CDK_DIR = path.resolve(__dirname, "..");
+
+// Ensure common binary locations (Homebrew, nvm, system) are on PATH so that
+// spawnSync calls for `aws`, `npm`, etc. succeed when launched via npm --prefix.
+const EXTRA_PATH = [
+  "/opt/homebrew/bin",
+  "/opt/homebrew/sbin",
+  "/usr/local/bin",
+  "/usr/bin",
+  "/bin",
+].join(":");
+if (!process.env.PATH || !process.env.PATH.includes("/opt/homebrew/bin")) {
+  process.env.PATH = `${EXTRA_PATH}:${process.env.PATH || ""}`;
+}
 const IDEAS_DIR = path.join(ROOT_DIR, "ideas");
 const TEMPLATE_DIR_NAME = "_template";
 const TEMPLATE_DIR = path.join(IDEAS_DIR, TEMPLATE_DIR_NAME);
@@ -118,7 +131,7 @@ if (command === "deploy") {
     ? resolveRequiredStage(options.backendStage)
     : null;
   const frontendBuildDir = options.frontendBuildDir
-    ? path.resolve(options.frontendBuildDir)
+    ? path.resolve(ROOT_DIR, options.frontendBuildDir)
     : null;
   const contextArgs = buildCdkContextArgs({
     stage,
