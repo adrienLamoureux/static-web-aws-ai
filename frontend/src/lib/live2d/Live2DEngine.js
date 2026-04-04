@@ -129,7 +129,7 @@ export class Live2DEngine {
     model.x = W / 2;
     model.y = H;
 
-    model.motion(manifest.motionMap.idle);
+    model.motion(manifest.interactionMap?.idle?.motion);
     if (manifest.idleVariants?.length) this._startIdleCycle();
 
     // Register our look-at + lip sync ticker at LOW priority so it runs
@@ -201,7 +201,7 @@ export class Live2DEngine {
 
   playMotion(semanticName) {
     if (!this._model || !this._manifest) return;
-    const group = this._manifest.motionMap[semanticName];
+    const group = this._manifest.interactionMap?.[semanticName]?.motion;
     if (!group) return;
     this._model.motion(group);
     this._motionPlaying = true;
@@ -245,7 +245,7 @@ export class Live2DEngine {
         this._motionPlaying = false;
         // Return to idle after the interaction completes
         if (semanticName !== "idle" && semanticName !== "idle_variant") {
-          this._model?.motion(this._manifest.motionMap.idle);
+          this._model?.motion(this._manifest.interactionMap?.idle?.motion);
         }
       }, 3500);
     }
@@ -356,7 +356,7 @@ export class Live2DEngine {
         clearTimeout(this._motionTimer);
         this._motionTimer = setTimeout(() => {
           this._motionPlaying = false;
-          this._model?.motion(this._manifest?.motionMap?.idle);
+          this._model?.motion(this._manifest?.interactionMap?.idle?.motion);
           scheduleNext();
         }, 4000);
       }, delay);
