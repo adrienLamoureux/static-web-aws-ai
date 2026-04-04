@@ -56,7 +56,7 @@ const usage = `
 Usage:
   npm --prefix cdk run idea:list
   npm --prefix cdk run idea:init -- --stage=<idea-id> [--title="<idea title>"]
-  npm --prefix cdk run idea:deploy -- --stage=<idea-id> [--improvement="<name>"] [--owner="<owner>"] [--ttl-days=<days>] [--skip-build] [--skip-sanity] [--dry-run]
+  npm --prefix cdk run idea:deploy -- --stage=<idea-id> [--improvement="<name>"] [--owner="<owner>"] [--ttl-days=<days>] [--frontend-build-dir=<path>] [--skip-build] [--skip-sanity] [--dry-run]
   npm --prefix cdk run idea:ui-local -- --stage=<idea-id> [--port=<port>] [--open] [--print-env] [--dry-run]
   npm --prefix cdk run idea:sanity -- --stage=<idea-id>
   npm --prefix cdk run idea:ui-smoke -- --stage=<idea-id>
@@ -117,6 +117,9 @@ if (command === "deploy") {
   const backendStage = options.backendStage
     ? resolveRequiredStage(options.backendStage)
     : null;
+  const frontendBuildDir = options.frontendBuildDir
+    ? path.resolve(options.frontendBuildDir)
+    : null;
   const contextArgs = buildCdkContextArgs({
     stage,
     owner,
@@ -144,7 +147,12 @@ if (command === "deploy") {
       runOrFail("npm", ["--prefix", "backend", "install"], ROOT_DIR);
     }
     if (!options.skipBuild) {
-      runOrFail("npm", ["--prefix", "frontend", "run", "build"], ROOT_DIR);
+      if (frontendBuildDir) {
+        // Build the frontend from the specified directory directly
+        runOrFail("npm", ["run", "build"], path.dirname(frontendBuildDir));
+      } else {
+        runOrFail("npm", ["--prefix", "frontend", "run", "build"], ROOT_DIR);
+      }
     }
     const deployResult = deployStage({
       stage,
@@ -153,6 +161,7 @@ if (command === "deploy") {
       contextArgs,
       skipSanity: options.skipSanity,
       skipUiSmoke: options.skipUiSmoke,
+      frontendBuildDir,
     });
     if (improvement) {
       appendGlobalImprovementLog({
@@ -434,6 +443,7 @@ function parseArgs(args) {
     owner: "",
     ttlDays: "",
     port: "",
+    frontendBuildDir: "",
     skipBuild: false,
     skipSanity: false,
     skipUiSmoke: false,
@@ -556,6 +566,15 @@ function parseArgs(args) {
     }
     if (arg === "--port") {
       parsed.port = String(args[index + 1] || "");
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith("--frontend-build-dir=")) {
+      parsed.frontendBuildDir = arg.slice("--frontend-build-dir=".length);
+      continue;
+    }
+    if (arg === "--frontend-build-dir") {
+      parsed.frontendBuildDir = String(args[index + 1] || "");
       index += 1;
       continue;
     }
@@ -802,6 +821,7 @@ function deployStage({
   contextArgs,
   skipSanity,
   skipUiSmoke,
+  frontendBuildDir,
 }) {
   const stackId = buildStackId(stage);
   const ideaContext = ensureIdeaContext({
@@ -809,6 +829,9 @@ function deployStage({
     title: stage,
     stackId,
   });
+  const extraEnv = frontendBuildDir
+    ? { FRONTEND_BUILD_DIR: frontendBuildDir }
+    : undefined;
   runCdkOrFail(
     [
       "deploy",
@@ -818,13 +841,50 @@ function deployStage({
       "--outputs-file",
       ideaContext.outputsPath,
     ],
-    CDK_DIR
+    CDK_DIR,
+    extraEnv
   );
 
   const outputs = readCdkOutputs({
     outputsPath: ideaContext.outputsPath,
     stackId,
   });
+
+  // Sync Live2D assets separately — excluded from BucketDeployment to avoid Lambda timeout
+  const live2dSrcDir = path.join(
+    frontendBuildDir || path.join(ROOT_DIR, "frontend", "build"),
+    "live2d"
+  );
+  if (fs.existsSync(live2dSrcDir) && outputs.websiteBucketName) {
+    info("Syncing Live2D assets to S3...");
+    runOrFail(
+      "aws",
+      [
+        "s3",
+        "sync",
+        live2dSrcDir,
+        `s3://${outputs.websiteBucketName}/live2d`,
+        "--delete",
+      ],
+      ROOT_DIR
+    );
+    if (outputs.cloudfrontDistributionId) {
+      info("Invalidating Live2D CloudFront cache...");
+      runOrFail(
+        "aws",
+        [
+          "cloudfront",
+          "create-invalidation",
+          "--distribution-id",
+          outputs.cloudfrontDistributionId,
+          "--paths",
+          "/live2d/*",
+        ],
+        ROOT_DIR
+      );
+    }
+  }
+
   if (!skipSanity) {
     runSanityChecks({
       stage,
@@ -1144,6 +1204,8 @@ function readCdkOutputs({ outputsPath, stackId }) {
   return {
     cloudfrontUrl,
     apiEndpoint: stackOutputs.APIEndpoint || "-",
+    websiteBucketName: stackOutputs.WebsiteBucketName || null,
+    cloudfrontDistributionId: stackOutputs.CloudFrontDistributionId || null,
   };
 }
 
@@ -1499,15 +1561,15 @@ function extractStageFromCdkArgs(args) {
   return "";
 }
 
-function runCdkOrFail(args, cwd) {
+function runCdkOrFail(args, cwd, extraEnv) {
   const stage = extractStageFromCdkArgs(args);
-  let commandEnv = process.env;
+  let commandEnv = { ...process.env, ...extraEnv };
   if (stage) {
     const stackId = buildStackId(stage);
     const persistedBase = resolvePersistedCognitoDomainBase({ stage, stackId });
     if (persistedBase) {
       const configuredBase = String(
-        process.env.COGNITO_DOMAIN_PREFIX_BASE || process.env.COGNITO_DOMAIN_PREFIX || ""
+        commandEnv.COGNITO_DOMAIN_PREFIX_BASE || commandEnv.COGNITO_DOMAIN_PREFIX || ""
       ).trim();
       if (configuredBase && configuredBase !== persistedBase) {
         info(
@@ -1515,7 +1577,7 @@ function runCdkOrFail(args, cwd) {
         );
       }
       commandEnv = {
-        ...process.env,
+        ...commandEnv,
         COGNITO_DOMAIN_PREFIX_BASE: persistedBase,
         COGNITO_DOMAIN_PREFIX: persistedBase,
       };
