@@ -53,6 +53,8 @@ End EVERY response with exactly one emotion tag on its own line, chosen from:
 
 const PROACTIVE_SYSTEM_ADDENDUM = `Keep it to 1 sentence, under 60 characters. Be warm and natural.`;
 
+const INITIATIVE_SYSTEM_ADDENDUM = `The user has gone quiet for a while. Pick up a conversation thread naturally — reference something from your shared history, ask a curious or creative question, or make a small warm observation. Keep it to 2–3 sentences. Do NOT suggest the user talk to you or ask "how can I help". Just speak as a friend would.`;
+
 const EMOTION_RE        = /\[EMOTION:\s*(happy|sad|surprised|thinking|neutral)\]/i;
 const GENERATE_IMAGE_RE = /\[GENERATE_IMAGE:\s*([^\]]+)\]/i;
 const NAVIGATE_RE       = /\[NAVIGATE:\s*([^\]]+)\]/i;
@@ -277,6 +279,96 @@ module.exports = (app, deps) => {
     const text = rawText
       .replace(EMOTION_RE, "")
       .replace(GENERATE_IMAGE_RE, "")
+      .trim();
+
+    return res.json({ text, emotion });
+  });
+
+  // ─── POST /api/companion/initiative ──────────────────────────────────────
+  // Generates a character-initiated conversation message based on history/memory.
+  // No auth required; uses DynamoDB memory for auth users, client session for anon.
+  // Body: { messages?: [{role, content}], context?: { page, isAuthenticated }, modelId? }
+  app.post("/api/companion/initiative", async (req, res) => {
+    const body    = req.body || {};
+    const userId  = req.user?.sub || null;
+    const modelId = String(body.modelId || "hiyori_free");
+    const ctx     = body.context || {};
+
+    // ── Load memory if authenticated ──────────────────────────────────────
+    let memory = null;
+    if (userId && companionMemory) {
+      memory = await companionMemory.loadMemory(userId, modelId).catch(() => null);
+    }
+
+    // ── Build system prompt ───────────────────────────────────────────────
+    let system = `${SYSTEM_PROMPT}\n\n${INITIATIVE_SYSTEM_ADDENDUM}`;
+    if (ctx.page) {
+      system += `\n\nContext: The user is currently on the ${ctx.page} page.`;
+    }
+    if (memory?.summary) {
+      system += `\n\n<memory>${memory.summary}</memory>`;
+    }
+
+    // ── Build history — prefer DynamoDB, fall back to client session ──────
+    let historyMsgs = [];
+    if (memory?.messages?.length) {
+      historyMsgs = memory.messages.slice(-8).map((m) => ({
+        role:    m.role === "assistant" ? "assistant" : "user",
+        content: [{ type: "text", text: String(m.content || "").trim() }],
+      }));
+    } else if (Array.isArray(body.messages) && body.messages.length > 0) {
+      historyMsgs = body.messages.slice(-8).map((m) => ({
+        role:    m.role === "assistant" ? "assistant" : "user",
+        content: [{ type: "text", text: String(m.content || m.text || "").trim() }],
+      }));
+    }
+
+    // Cue message appended after history to trigger the initiative
+    const cueMsgText = historyMsgs.length > 0
+      ? "The user went quiet. Continue the conversation naturally — pick a thread or share a thought."
+      : "Greet the user warmly and ask them something creative or curious about what they might be working on.";
+
+    const messages = [
+      ...historyMsgs,
+      { role: "user", content: [{ type: "text", text: cueMsgText }] },
+    ];
+
+    // ── Call Bedrock ──────────────────────────────────────────────────────
+    const command = new InvokeModelCommand({
+      modelId: promptHelperModelId,
+      contentType: "application/json",
+      accept: "application/json",
+      body: JSON.stringify({
+        anthropic_version: "bedrock-2023-05-31",
+        max_tokens: 120,
+        temperature: 0.92,
+        system,
+        messages,
+      }),
+    });
+
+    let rawText;
+    try {
+      const response = await bedrockClient.send(command);
+      const responseBody = JSON.parse(new TextDecoder().decode(response.body));
+      rawText = (responseBody?.content || [])
+        .map((item) => item?.text)
+        .filter(Boolean)
+        .join("")
+        .trim();
+    } catch (err) {
+      console.error("[companion-route] initiative Bedrock error:", err);
+      return res.status(500).json({ error: "companion_unavailable" });
+    }
+
+    const emotionMatch = rawText.match(EMOTION_RE);
+    const emotion = emotionMatch ? emotionMatch[1].toLowerCase() : "neutral";
+    const text = rawText
+      .replace(EMOTION_RE, "")
+      .replace(GENERATE_IMAGE_RE, "")
+      .replace(NAVIGATE_RE, "")
+      .replace(START_STORY_RE, "")
+      .replace(GENERATE_MUSIC_RE, "")
       .trim();
 
     return res.json({ text, emotion });
