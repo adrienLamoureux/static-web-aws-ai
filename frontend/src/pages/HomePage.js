@@ -1,49 +1,30 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import SolarisMasonry from '../components/SolarisMasonry';
+import SolarisImageWall from '../components/shared/SolarisImageWall';
 import { useConfig } from '../contexts/ConfigContext';
+import { useAuth } from '../contexts/AuthContext';
 import { listDirectorMasonryImages } from '../services/operations';
-import { listSharedImages } from '../services/s3';
-
-const NAV_CARDS = [
-  {
-    label: 'Atelier',
-    path: '/atelier',
-    description: 'Generate images and animate videos.',
-    emoji: '◈',
-  },
-  {
-    label: 'Chronicle',
-    path: '/chronicle',
-    description: 'Write interactive illustrated stories.',
-    emoji: '▤',
-  },
-  {
-    label: 'Gallery',
-    path: '/gallery',
-    description: 'Browse the community image and video gallery.',
-    emoji: '◻',
-  },
-  {
-    label: 'Sanctum',
-    path: '/sanctum',
-    description: 'Characters, LoRA profiles and settings.',
-    emoji: '⚙',
-  },
-  {
-    label: 'Sound Vault',
-    path: '/sanctum/sounds',
-    description: 'Upload and manage soundtracks.',
-    emoji: '♫',
-  },
-];
+import { listSharedImages, listSharedVideos, listSharedImageFavorites, setSharedImageFavorite } from '../services/s3';
 
 export default function HomePage() {
   const { apiBaseUrl } = useConfig();
-  const [masonryApiImages, setMasonryApiImages] = useState([]);
-  const [recentImages, setRecentImages] = useState([]);
+  const { isAuthenticated } = useAuth();
 
-  // Fetch masonry portrait images for the hero
+  // Hero
+  const [masonryApiImages, setMasonryApiImages] = useState([]);
+
+  // Gallery — images
+  const [images, setImages]               = useState([]);
+  const [loadingImages, setLoadingImages] = useState(true);
+  const [search, setSearch]               = useState('');
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState(null);
+
+  // Gallery — videos
+  const [videos, setVideos]               = useState([]);
+  const [loadingVideos, setLoadingVideos] = useState(true);
+  const [playingVideoKey, setPlayingVideoKey] = useState('');
+
   useEffect(() => {
     if (!apiBaseUrl) return;
     listDirectorMasonryImages(apiBaseUrl)
@@ -56,18 +37,55 @@ export default function HomePage() {
       .catch(() => setMasonryApiImages([]));
   }, [apiBaseUrl]);
 
-  // Fetch recent shared images for the activity strip (non-blocking)
   useEffect(() => {
     if (!apiBaseUrl) return;
-    listSharedImages(apiBaseUrl)
-      .then(data => {
-        const imgs = (data?.images || []).slice(0, 4);
-        setRecentImages(imgs);
+    setLoadingImages(true);
+    Promise.all([
+      listSharedImages(apiBaseUrl),
+      isAuthenticated
+        ? listSharedImageFavorites(apiBaseUrl).catch(() => ({ keys: [] }))
+        : Promise.resolve({ keys: [] }),
+    ])
+      .then(([imgData, favData]) => {
+        const favoriteKeys = new Set(favData?.keys || []);
+        setImages((imgData.images || []).map(img => ({
+          ...img,
+          favorite: img.favorite || favoriteKeys.has(img.key),
+        })));
       })
-      .catch(() => setRecentImages([]));
+      .catch(() => setImages([]))
+      .finally(() => setLoadingImages(false));
+  }, [apiBaseUrl, isAuthenticated]);
+
+  useEffect(() => {
+    if (!apiBaseUrl) return;
+    setLoadingVideos(true);
+    listSharedVideos(apiBaseUrl)
+      .then(data => setVideos(data.videos || []))
+      .catch(() => setVideos([]))
+      .finally(() => setLoadingVideos(false));
   }, [apiBaseUrl]);
 
+  const filtered = useMemo(() => images.filter(img => {
+    if (favoritesOnly && !img.favorite) return false;
+    if (search && !(img.prompt || '').toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  }), [images, favoritesOnly, search]);
+
   const masonryImages = useMemo(() => masonryApiImages, [masonryApiImages]);
+
+  const handleFavorite = useCallback((image) => {
+    if (!apiBaseUrl) return;
+    const newFav = !image.favorite;
+    setImages(prev => prev.map(img => img.key === image.key ? { ...img, favorite: newFav } : img));
+    setSharedImageFavorite(apiBaseUrl, image.key, newFav).catch(() => {
+      setImages(prev => prev.map(img => img.key === image.key ? { ...img, favorite: !newFav } : img));
+    });
+  }, [apiBaseUrl]);
+
+  const toggleVideoPlay = (video) => {
+    setPlayingVideoKey(prev => prev === video.key ? '' : video.key);
+  };
 
   return (
     <div>
@@ -78,102 +96,98 @@ export default function HomePage() {
         subtitle="Anime-first creative workspace — generate, direct, tell stories."
       />
 
-      {/* Navigation cards */}
-      <div style={{ padding: '28px 0 8px' }}>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-            gap: 12,
-          }}
-        >
-          {NAV_CARDS.map(card => (
-            <Link
-              key={card.path}
-              to={card.path}
-              style={{ textDecoration: 'none' }}
-            >
-              <div
-                className="skr-card"
-                style={{
-                  padding: '18px 16px',
-                  cursor: 'pointer',
-                  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 8,
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.18)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '';
-                }}
-              >
-                <span style={{ fontSize: 22, lineHeight: 1 }}>{card.emoji}</span>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--skr-text-primary)' }}>
-                    {card.label}
-                  </span>
-                  <span style={{ fontSize: 12, color: 'var(--skr-accent, var(--skr-text-tertiary))' }}>→</span>
-                </div>
-                <p style={{ fontSize: 12, color: 'var(--skr-text-secondary)', margin: 0, lineHeight: 1.4 }}>
-                  {card.description}
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* Recent activity strip (only shown when images are available) */}
-      {recentImages.length > 0 && (
-        <div style={{ marginTop: 28 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--skr-text-tertiary)' }}>
-              Recently generated
-            </span>
-            <Link
-              to="/gallery"
-              style={{ fontSize: 12, color: 'var(--skr-text-secondary)', textDecoration: 'none' }}
-            >
-              View all →
-            </Link>
+      {/* Gallery — shared images */}
+      <div style={{ marginTop: 32 }}>
+        <div className="skr-page-header" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <h2 className="skr-page-title">Shared Images</h2>
+            <p className="skr-page-subtitle">Community shared images</p>
           </div>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: 8,
-            }}
+          <input
+            className="skr-input"
+            style={{ width: 180 }}
+            placeholder="Search by prompt…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          <button
+            className={favoritesOnly ? 'skr-btn-primary' : 'skr-btn-secondary'}
+            onClick={() => setFavoritesOnly(v => !v)}
+            title="Show favorites only"
           >
-            {recentImages.map((img, i) => (
-              <Link key={img.key || i} to="/gallery" style={{ textDecoration: 'none' }}>
-                <div
-                  className="skr-card"
-                  style={{
-                    padding: 0,
-                    overflow: 'hidden',
-                    aspectRatio: '3/4',
-                    cursor: 'pointer',
-                    transition: 'transform 0.15s ease',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-                >
-                  <img
-                    src={img.url}
-                    alt={img.prompt || ''}
-                    loading="lazy"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                  />
-                </div>
-              </Link>
+            ★ Favorites
+          </button>
+        </div>
+
+        {loadingImages ? (
+          <div className="skr-masonry">
+            {Array.from({ length: 9 }).map((_, i) => (
+              <div key={i} className="skr-card skr-placeholder" style={{ aspectRatio: i % 3 === 0 ? '3/4' : i % 3 === 1 ? '1/1' : '4/3' }} />
             ))}
           </div>
+        ) : filtered.length === 0 ? (
+          <div className="skr-card" style={{ textAlign: 'center', padding: 40, color: 'var(--skr-text-tertiary)' }}>
+            {favoritesOnly ? 'No favorite images yet.' : 'No shared images yet.'}
+          </div>
+        ) : (
+          <SolarisImageWall
+            images={filtered}
+            onOpenLightbox={setLightboxImage}
+            onToggleFavorite={handleFavorite}
+            canLoadMore={false}
+            totalCount={filtered.length}
+          />
+        )}
+      </div>
+
+      {lightboxImage && (
+        <div className="skr-lightbox" onClick={() => setLightboxImage(null)}>
+          <button className="skr-lightbox-close" onClick={() => setLightboxImage(null)}>✕</button>
+          <img src={lightboxImage.url} alt={lightboxImage.prompt || ''} onClick={e => e.stopPropagation()} />
+        </div>
+      )}
+
+      {/* Gallery — shared videos */}
+      <div className="skr-page-header" style={{ marginTop: 32 }}>
+        <h2 className="skr-page-title">Shared Videos</h2>
+        <p className="skr-page-subtitle">Community shared video clips</p>
+      </div>
+
+      {loadingVideos ? (
+        <div className="skr-masonry">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="skr-card skr-placeholder" style={{ aspectRatio: '16/9' }} />
+          ))}
+        </div>
+      ) : videos.length === 0 ? (
+        <div className="skr-card" style={{ textAlign: 'center', padding: 40, color: 'var(--skr-text-tertiary)' }}>
+          No shared videos yet.
+        </div>
+      ) : (
+        <div className="skr-masonry">
+          {videos.map((video, i) => {
+            const isPlaying = playingVideoKey === video.key;
+            return (
+              <div key={video.key || i} className="skr-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
+                <div style={{ position: 'relative', aspectRatio: '16/9', background: 'var(--skr-elevated)' }}>
+                  {isPlaying && video.url ? (
+                    <video src={video.url} controls autoPlay style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : video.posterUrl ? (
+                    <img src={video.posterUrl} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--skr-text-tertiary)', fontSize: 13 }}>
+                      No preview
+                    </div>
+                  )}
+                  <div style={{ position: 'absolute', top: 8, right: 8 }}>
+                    <button className="skr-icon-btn" onClick={() => toggleVideoPlay(video)} title={isPlaying ? 'Stop' : 'Play'}>
+                      {isPlaying ? '⏸' : '▶'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

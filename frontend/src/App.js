@@ -36,9 +36,9 @@ const NAV_ITEMS = [
   { label: "Realm",     path: "/",          icon: "✦", isPublic: true },
   { label: "Atelier",   path: "/atelier",   icon: "◈", isPublic: false },
   { label: "Chronicle", path: "/chronicle", icon: "▤", isPublic: false },
-  { label: "Gallery",   path: "/gallery",   icon: "◻", isPublic: true },
   { label: "Sanctum",   path: "/sanctum",   icon: "⚙", requiredRole: "admin" },
 ];
+
 
 /* ─── Protected Route ─── */
 
@@ -243,7 +243,7 @@ function AppRoutes() {
         <Route path="/" element={<HomePage />} />
         <Route path="/atelier" element={<ProtectedRoute><Forge /></ProtectedRoute>} />
         <Route path="/chronicle" element={<ProtectedRoute><Story /></ProtectedRoute>} />
-        <Route path="/gallery" element={<SharedLibrary />} />
+        <Route path="/gallery" element={<Navigate to="/" replace />} />
         <Route path="/sanctum" element={<AdminRoute><Director /></AdminRoute>} />
         <Route path="/sanctum/sounds" element={<AdminRoute><StoryMusicLibrary /></AdminRoute>} />
         <Route path="/sanctum/lora" element={<AdminRoute><LoraManagement /></AdminRoute>} />
@@ -255,8 +255,8 @@ function AppRoutes() {
         <Route path="/videos" element={<Navigate to="/atelier?tab=videos" replace />} />
         <Route path="/story" element={<Navigate to="/chronicle" replace />} />
         <Route path="/storyboard" element={<Navigate to="/chronicle" replace />} />
-        <Route path="/shared" element={<Navigate to="/gallery" replace />} />
-        <Route path="/showcase" element={<Navigate to="/gallery" replace />} />
+        <Route path="/shared" element={<Navigate to="/" replace />} />
+        <Route path="/showcase" element={<Navigate to="/" replace />} />
         <Route path="/lora" element={<Navigate to="/sanctum/lora" replace />} />
         <Route path="/director" element={<Navigate to="/sanctum" replace />} />
         <Route path="/director/sounds" element={<Navigate to="/sanctum/sounds" replace />} />
