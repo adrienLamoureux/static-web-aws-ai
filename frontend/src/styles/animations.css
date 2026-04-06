@@ -1,0 +1,140 @@
+/* ─── Companion animations ─── */
+/* skr-blink (opacity) — defined first; overridden below by character walker scaleY version */
+@keyframes skr-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* Thinking dots — stagger via animation-delay on each dot */
+@keyframes skr-thinking-dot {
+  0%, 60%, 100% { opacity: 0.2; transform: scale(0.65); }
+  30%           { opacity: 1;   transform: scale(1.15); }
+}
+
+/* Side speech bubble entry — slides in from right (toward the character) */
+@keyframes skr-bubble-in-side {
+  from { opacity: 0; transform: translateX(8px) scale(0.96); }
+  to   { opacity: 1; transform: translateX(0)   scale(1);    }
+}
+
+/* Character click ripple */
+@keyframes skr-ripple {
+  from { opacity: 0.8; transform: scale(0.5); }
+  to   { opacity: 0;   transform: scale(2.2); }
+}
+
+@keyframes skr-shake {
+  0%   { transform: rotate(0deg)      translate(0, 0); }
+  25%  { transform: rotate(1.5deg)    translate(2.5px, 0); }
+  50%  { transform: rotate(0deg)      translate(0, 0); }
+  75%  { transform: rotate(-1.5deg)   translate(-2.5px, 0); }
+  100% { transform: rotate(0deg)      translate(0, 0); }
+}
+
+@keyframes skr-bubble-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+/* ─── Character walker animations ─── */
+@keyframes skr-char-bob {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-3px); }
+}
+
+@keyframes skr-leg-fwd {
+  from { transform: rotate(-20deg); }
+  to   { transform: rotate(20deg); }
+}
+
+@keyframes skr-arm-swing {
+  from { transform: rotate(-15deg); }
+  to   { transform: rotate(15deg); }
+}
+
+/* skr-blink (scaleY) — overrides companion opacity version above */
+@keyframes skr-blink {
+  0%, 88%, 100% { transform: scaleY(1); }
+  91%, 95%      { transform: scaleY(0.05); }
+}
+
+@keyframes skr-breathe {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-1px); }
+}
+
+/* ── Character Walker ────────────────────────────────────── */
+.skr-character-walker {
+  position: fixed;
+  bottom: 72px; /* clear the bottom HUD */
+  left: 80px;
+  z-index: 50;
+  pointer-events: none;
+  will-change: left, transform;
+}
+
+.skr-character-walker svg {
+  display: block;
+  animation: skr-char-bob 0.45s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 8px rgba(192, 132, 252, 0.5));
+}
+
+/* Legs */
+.skr-char-leg-l {
+  transform-box: fill-box;
+  transform-origin: top center;
+  animation: skr-leg-fwd 0.45s ease-in-out infinite alternate;
+}
+
+.skr-char-leg-r {
+  transform-box: fill-box;
+  transform-origin: top center;
+  animation: skr-leg-fwd 0.45s ease-in-out infinite alternate-reverse;
+}
+
+/* Arms */
+.skr-char-arm-l {
+  transform-box: fill-box;
+  transform-origin: top right;
+  animation: skr-arm-swing 0.45s ease-in-out infinite alternate-reverse;
+}
+
+.skr-char-arm-r {
+  transform-box: fill-box;
+  transform-origin: top left;
+  animation: skr-arm-swing 0.45s ease-in-out infinite alternate;
+}
+
+/* Eye blink — cycles every 4s, briefly closes */
+.skr-char-eye-l,
+.skr-char-eye-r {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: skr-blink 4s ease-in-out infinite;
+}
+
+.skr-char-eye-r {
+  animation-delay: 0.05s;
+}
+
+/* Idle breathing — robe body gently rises */
+.skr-character-walker.skr-char-idle .skr-char-robe {
+  animation: skr-breathe 2s ease-in-out infinite alternate;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* Pause locomotion animations when idle at screen edges */
+/* (blink + framer-motion hair/hem continue during idle) */
+.skr-character-walker.skr-char-idle svg,
+.skr-character-walker.skr-char-idle .skr-char-leg-l,
+.skr-character-walker.skr-char-idle .skr-char-leg-r,
+.skr-character-walker.skr-char-idle .skr-char-arm-l,
+.skr-character-walker.skr-char-idle .skr-char-arm-r {
+  animation-play-state: paused;
+}
+
+/* ─── prefers-reduced-motion ─── */
+@media (prefers-reduced-motion: reduce) {
+  .skr-masonry-column { animation: none; }
+}

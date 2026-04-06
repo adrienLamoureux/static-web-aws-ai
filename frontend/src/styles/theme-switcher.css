@@ -1,0 +1,162 @@
+/* ─── Masonry Hero (animated scroll) ─── */
+.skr-masonry-hero {
+  position: relative;
+  height: 360px;
+  overflow: hidden;
+  border-radius: 20px;
+  margin-bottom: 24px;
+}
+
+.skr-masonry-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+}
+
+.skr-masonry-column {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transform: translateY(var(--skr-masonry-start, 0%));
+  animation: skr-masonry-scroll var(--skr-masonry-duration, 90s) linear infinite;
+}
+
+.skr-masonry-card {
+  margin: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.skr-masonry-card img {
+  width: 100%;
+  aspect-ratio: 2/3;
+  object-fit: cover;
+  display: block;
+}
+
+.skr-masonry-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(rgba(13,11,20,0.3), rgba(13,11,20,0.5));
+  z-index: 1;
+}
+
+.skr-masonry-title {
+  font-family: var(--skr-font-display);
+  font-size: 36px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--skr-text);
+  margin: 0;
+  text-shadow: 0 2px 12px rgba(255, 107, 157, 0.4);
+}
+
+.skr-masonry-subtitle {
+  font-size: 14px;
+  color: var(--skr-text-secondary);
+  margin: 0;
+  text-align: center;
+  max-width: 400px;
+}
+
+@keyframes skr-masonry-scroll {
+  from { transform: translateY(var(--skr-masonry-start, 0%)); }
+  to   { transform: translateY(calc(var(--skr-masonry-start, 0%) - 33.33%)); }
+}
+
+/* ─── Theme Switcher ─── */
+.skr-theme-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: var(--skr-elevated);
+  border: 1px solid var(--skr-border);
+  border-radius: 20px;
+  color: var(--skr-text-secondary);
+  font-size: 12px;
+  font-family: var(--skr-font-body);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.skr-theme-trigger:hover { border-color: var(--skr-accent); color: var(--skr-text); }
+
+.skr-theme-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.skr-theme-trigger-label { font-weight: 600; }
+.skr-theme-caret { font-size: 10px; opacity: 0.6; }
+
+.skr-theme-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 140px;
+  background: var(--skr-surface);
+  border: 1px solid var(--skr-border);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.skr-theme-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: var(--skr-text-secondary);
+  font-size: 13px;
+  font-family: var(--skr-font-body);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.skr-theme-option:hover { background: var(--skr-elevated); color: var(--skr-text); }
+.skr-theme-option.is-active { color: var(--skr-accent); }
+
+.skr-theme-check { margin-left: auto; font-size: 12px; color: var(--skr-accent); }
+
+.skr-theme-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.skr-brightness-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: var(--skr-elevated);
+  border: 1px solid var(--skr-border);
+  border-radius: 50%;
+  color: var(--skr-text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.skr-brightness-toggle:hover { border-color: var(--skr-accent); color: var(--skr-text); }

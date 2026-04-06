@@ -14,6 +14,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useCompanionEvent, CompanionActions } from "./CompanionContext";
 import { useConfig } from "../../contexts/ConfigContext";
 import { buildApiUrl, postJson } from "../../services/apiClient";
+import { COMPANION_PROACTIVE } from "../../constants/api-routes";
 
 const GLOBAL_COOLDOWN_MS   = 90_000;  // 90s between any proactive message
 const TRIGGER_COOLDOWN_MS  = 5 * 60_000; // 5min same trigger
@@ -89,7 +90,7 @@ export default function useProactiveCompanion() {
 
     try {
       const data = await postJson(
-        buildApiUrl(apiBaseUrl, "/api/companion/proactive"),
+        buildApiUrl(apiBaseUrl, COMPANION_PROACTIVE),
         { trigger, context }
       );
 

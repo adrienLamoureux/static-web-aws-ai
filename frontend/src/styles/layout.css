@@ -1,0 +1,137 @@
+/* ─── Shell ─── */
+.skr-shell {
+  min-height: 100vh;
+  position: relative;
+  padding-bottom: calc(var(--skr-hud-height) + 16px);
+}
+
+.skr-backdrop {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255, 107, 157, 0.06), transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(192, 132, 252, 0.05), transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── Top Bar ─── */
+.skr-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--skr-topbar-height);
+  padding: 0 24px;
+  background: var(--skr-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--skr-border);
+}
+
+.skr-topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.skr-brand-emblem {
+  font-size: 20px;
+  color: var(--skr-accent);
+  filter: drop-shadow(0 0 6px rgba(255, 107, 157, 0.4));
+}
+
+.skr-brand-name {
+  font-family: var(--skr-font-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.skr-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.skr-topbar-user {
+  font-size: 12px;
+  color: var(--skr-text-secondary);
+}
+
+/* ─── Main Content ─── */
+.skr-main {
+  position: relative;
+  z-index: 1;
+  padding: 24px;
+  min-width: 0;
+}
+
+/* ─── Bottom HUD ─── */
+.skr-hud {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+}
+
+.skr-hud-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  background: var(--skr-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--skr-border);
+  border-radius: 999px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.skr-hud-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  color: var(--skr-text-muted);
+  transition: color 0.15s, background 0.15s, transform 0.15s;
+}
+.skr-hud-item:hover { color: var(--skr-text); }
+.skr-hud-item.is-active {
+  color: var(--skr-accent);
+  background: rgba(255, 107, 157, 0.12);
+  transform: scale(1.05);
+}
+
+.skr-hud-icon { font-size: 16px; line-height: 1; display: flex; align-items: center; justify-content: center; }
+.skr-hud-label { font-size: 10px; font-weight: 600; letter-spacing: 0.04em; }
+
+/* ─── Page Header ─── */
+.skr-page-header { margin-bottom: 24px; }
+
+.skr-page-title {
+  margin: 0;
+  font-family: var(--skr-font-display);
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.skr-page-subtitle {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--skr-text-secondary);
+}
+
+.skr-section-title {
+  font-family: var(--skr-font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--skr-accent);
+  margin: 24px 0 12px;
+}

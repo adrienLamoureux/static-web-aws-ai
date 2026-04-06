@@ -16,6 +16,7 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useConfig } from "../../../contexts/ConfigContext";
 import { postJson, buildApiUrl, deleteJson } from "../../../services/apiClient";
+import { COMPANION_CHAT, COMPANION_MEMORY } from "../../../constants/api-routes";
 import ActionCard from "./ActionCard";
 
 const MAX_HISTORY = 20;
@@ -134,7 +135,7 @@ export default function CompanionChat({ engineRef, isOpen, onClose, onNavigate, 
 
     try {
       const data = await postJson(
-        buildApiUrl(apiBaseUrl, "/api/companion/chat"),
+        buildApiUrl(apiBaseUrl, COMPANION_CHAT),
         {
           messages: history,
           context: {
@@ -173,7 +174,7 @@ export default function CompanionChat({ engineRef, isOpen, onClose, onNavigate, 
   const handleClearMemory = useCallback(async () => {
     if (!apiBaseUrl) return;
     try {
-      await deleteJson(buildApiUrl(apiBaseUrl, "/api/companion/memory"));
+      await deleteJson(buildApiUrl(apiBaseUrl, COMPANION_MEMORY));
       setHasMemory(false);
     } catch {
       // silent

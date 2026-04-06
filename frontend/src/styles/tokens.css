@@ -1,0 +1,47 @@
+/* ═══════════════════════════════════════════════════════════
+   SAKURA BLOOM — Maximalist Immersive Design System
+   Prefix: skr-
+   Inspiration: Genshin Impact, Fate/Grand Order, VN engines
+   ═══════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Noto+Sans+JP:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
+/* ─── Tokens ─── */
+:root {
+  color-scheme: dark;
+
+  --skr-bg: #0D0B14;
+  --skr-surface: #1A1726;
+  --skr-elevated: #251F35;
+  --skr-card: #1E1830;
+  --skr-accent: #FF6B9D;
+  --skr-accent-hover: #FF8AB5;
+  --skr-accent-secondary: #C084FC;
+  --skr-accent-info: #38BDF8;
+  --skr-accent-success: #4ADE80;
+  --skr-accent-warning: #FBBF24;
+  --skr-text: #F0E6FF;
+  --skr-text-inverse: #0D0B14;
+  --skr-text-secondary: #A78BDB;
+  --skr-text-muted: #6B5A8A;
+  --skr-border: rgba(168, 139, 219, 0.15);
+  --skr-border-strong: rgba(255, 107, 157, 0.3);
+  --skr-overlay: rgba(13, 11, 20, 0.85);
+  --skr-glow: 0 0 12px rgba(255, 107, 157, 0.25);
+  --skr-glow-strong: 0 0 20px rgba(255, 107, 157, 0.4), 0 0 6px rgba(192, 132, 252, 0.3);
+  --skr-glass: rgba(26, 23, 38, 0.65);
+
+  --skr-text-primary: #F0E6FF;
+  --skr-text-tertiary: #4A3D6A;
+
+  --skr-font-display: "Zen Kaku Gothic New", sans-serif;
+  --skr-font-body: "Noto Sans JP", -apple-system, sans-serif;
+  --skr-font-mono: "JetBrains Mono", monospace;
+
+  --skr-hud-height: 64px;
+  --skr-topbar-height: 56px;
+
+  /* Companion panel */
+  --skr-companion-width: 240px;
+  --skr-companion-height: 280px;
+}

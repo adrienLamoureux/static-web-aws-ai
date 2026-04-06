@@ -1,4 +1,6 @@
 import React from "react";
+import "./story-scenes.css";
+import "./story-illustrations.css";
 import {
   ILLUSTRATION_CONTEXT_OPTIONS,
   STORY_GROUP_TYPES,

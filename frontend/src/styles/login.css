@@ -1,0 +1,154 @@
+/* ─── Login Page ─── */
+.skr-login-page {
+  min-height: calc(100vh - 40px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+}
+
+.skr-login-petals {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 25% 30%, rgba(255, 107, 157, 0.1), transparent 50%),
+    radial-gradient(ellipse at 75% 70%, rgba(192, 132, 252, 0.08), transparent 50%);
+  pointer-events: none;
+}
+
+.skr-login-card {
+  width: min(420px, 100%);
+  padding: 40px 32px;
+  background: var(--skr-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--skr-border);
+  border-radius: 24px;
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.skr-login-emblem {
+  font-size: 40px;
+  color: var(--skr-accent);
+  filter: drop-shadow(0 0 12px rgba(255, 107, 157, 0.4));
+  margin-bottom: 16px;
+}
+
+.skr-login-title {
+  font-family: var(--skr-font-display);
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin: 0 0 8px;
+}
+
+.skr-login-subtitle {
+  font-size: 14px;
+  color: var(--skr-text-secondary);
+  margin: 0;
+}
+
+/* ─── Loading Screen ─── */
+.skr-loading-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: var(--skr-bg);
+}
+
+.skr-loading-emblem {
+  font-size: 40px;
+  color: var(--skr-accent);
+  animation: skr-pulse 1.5s ease-in-out infinite;
+}
+
+.skr-loading-text { font-size: 14px; color: var(--skr-text-secondary); }
+
+@keyframes skr-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.95); }
+}
+
+/* ─── Auth callback ─── */
+.skr-auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+.skr-auth-card { padding: 24px; background: var(--skr-glass); backdrop-filter: blur(16px); border: 1px solid var(--skr-border); border-radius: 20px; }
+
+/* ─── Login Modal ─── */
+.skr-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  padding: 16px;
+}
+
+.skr-modal-card {
+  position: relative;
+  background: var(--skr-surface, #1a1a2e);
+  border: 1px solid var(--skr-border, rgba(255, 255, 255, 0.1));
+  border-radius: 16px;
+  padding: 40px 32px 32px;
+  max-width: 380px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  animation: skr-modal-in 0.2s ease-out;
+}
+
+@keyframes skr-modal-in {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.skr-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: var(--skr-text-secondary, rgba(255, 255, 255, 0.5));
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.skr-modal-close:hover {
+  color: var(--skr-text, rgba(255, 255, 255, 0.9));
+}
+
+.skr-modal-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--skr-text, rgba(255, 255, 255, 0.9));
+  text-align: center;
+}
+
+.skr-modal-message {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--skr-text-secondary, rgba(255, 255, 255, 0.5));
+  text-align: center;
+}
+
+.skr-modal-action {
+  width: 100%;
+  margin-top: 4px;
+}

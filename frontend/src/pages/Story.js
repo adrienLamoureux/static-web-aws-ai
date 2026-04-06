@@ -16,6 +16,8 @@ import { listLoraProfilesForCharacter } from '../services/lora';
 import { listCharacters } from '../services/characters';
 import useSceneMedia from './story/useSceneMedia';
 import StorySceneCard from '../components/story/StorySceneCard';
+import StorySessionList from './story/StorySessionList';
+import StoryComposer from './story/StoryComposer';
 
 export default function Story() {
   const { apiBaseUrl } = useConfig();
@@ -277,10 +279,6 @@ export default function Story() {
   };
 
   // Auto-illustrate the opening scene after session creation.
-  // Prefers illustrating the known opening scene by ID so the result lands on
-  // the same sceneId that was pre-populated in the UI. Falls back to
-  // forceCurrent=true when no sceneId is known (the backend would otherwise
-  // create a new scene with a different ID, causing a key mismatch).
   const autoIllustrateOpening = useCallback(async (sessionId, knownSceneId = null) => {
     if (!sessionId || !apiBaseUrl) return;
     const payload = knownSceneId ? { sceneId: knownSceneId } : { forceCurrent: true };
@@ -290,9 +288,7 @@ export default function Story() {
       const scene = data?.scene || null;
       const sceneId = data?.sceneId || scene?.sceneId || null;
       if (!sceneId) return;
-      // Merge scene data and clear illustrating flag
       mergeScenes([{ ...(scene || {}), sceneId, imageUrl: imageUrl || scene?.imageUrl, illustrating: false }]);
-      // Attach scene to the first assistant message that has no sceneId yet
       setMessages(prev => {
         const idx = prev.findIndex(m => m.role === 'assistant' && !m.sceneId);
         if (idx === -1) return prev;
@@ -336,12 +332,10 @@ export default function Story() {
         const openingSceneId = openingScenes[0]?.sceneId;
         if (openingSceneId) {
           mergeScenes(openingScenes);
-          // Mark as illustrating so the card shows "Generating…" during the API call
           setScenes(prev => ({
             ...prev,
             [openingSceneId]: { ...(prev[openingSceneId] || openingScenes[0]), illustrating: true },
           }));
-          // Attach scene to the first assistant message in chat
           setMessages(prev => {
             const idx = prev.findIndex(m => m.role === 'assistant' && !m.sceneId);
             if (idx === -1) return prev;
@@ -352,8 +346,6 @@ export default function Story() {
         }
 
         // Auto-generate opening scene illustration in background (non-blocking).
-        // Pass openingSceneId so the backend illustrates the existing scene
-        // (not a new one) — avoids sceneId mismatch in the scenes map.
         autoIllustrateOpening(sessionId, openingSceneId || null);
       }
     } catch (e) {
@@ -420,7 +412,6 @@ export default function Story() {
   }, [apiBaseUrl, activeSessionId]);
 
   // On-demand illustration for any assistant message that has no scene yet.
-  // Uses forceCurrent=true — backend derives prompt from current story state.
   const handleIllustrateMessage = useCallback(async (msgIndex) => {
     if (!activeSessionId || !apiBaseUrl) return;
     setIllustratingMessages(prev => new Set([...prev, msgIndex]));
@@ -449,12 +440,6 @@ export default function Story() {
     }
   }, [apiBaseUrl, activeSessionId, mergeScenes]);
 
-  const handleKey = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-  };
-
-  const sessionLabel = (s) => s.title || s.name || s.sessionId?.slice(0, 8) || 'Session';
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 112px)' }}>
       {/* Header with session selector */}
@@ -464,18 +449,11 @@ export default function Story() {
             <h2 className="skr-page-title">Storytelling Studio</h2>
             <p className="skr-page-subtitle">AI-assisted narrative creation</p>
           </div>
-          {sessions.length > 0 && (
-            <select
-              className="skr-input"
-              style={{ width: 200 }}
-              value={activeSessionId}
-              onChange={e => selectSession(e.target.value)}
-            >
-              {sessions.map(s => (
-                <option key={s.sessionId} value={s.sessionId}>{sessionLabel(s)}</option>
-              ))}
-            </select>
-          )}
+          <StorySessionList
+            sessions={sessions}
+            activeSessionId={activeSessionId}
+            onSelect={selectSession}
+          />
           <button className="skr-btn-secondary" style={{ whiteSpace: 'nowrap' }} onClick={handleNewSession}>
             + New Session
           </button>
@@ -667,26 +645,14 @@ export default function Story() {
       </div>
 
       {/* Input area */}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <textarea
-          className="skr-input"
-          style={{ flex: 1, resize: 'none', minHeight: 42 }}
-          rows={2}
-          placeholder={activeSessionId ? 'What do you do or say?' : 'Loading session…'}
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKey}
-          disabled={sending || loadingSession || !activeSessionId}
-        />
-        <button
-          className="skr-btn-primary"
-          onClick={sendMessage}
-          disabled={sending || !input.trim() || loadingSession || !activeSessionId}
-          style={{ alignSelf: 'flex-end' }}
-        >
-          Send
-        </button>
-      </div>
+      <StoryComposer
+        input={input}
+        onInputChange={setInput}
+        onSend={sendMessage}
+        isLoading={loadingSession}
+        isSending={sending}
+        activeSessionId={activeSessionId}
+      />
     </div>
   );
 }

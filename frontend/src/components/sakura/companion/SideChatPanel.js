@@ -9,6 +9,7 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useConfig } from "../../../contexts/ConfigContext";
 import { postJson, buildApiUrl, deleteJson } from "../../../services/apiClient";
+import { COMPANION_CHAT, COMPANION_INITIATIVE, COMPANION_MEMORY } from "../../../constants/api-routes";
 import ActionCard from "./ActionCard";
 
 const MAX_HISTORY              = 20;
@@ -166,7 +167,7 @@ export default function SideChatPanel({
 
     try {
       const data = await postJson(
-        buildApiUrl(apiBaseUrl, "/api/companion/chat"),
+        buildApiUrl(apiBaseUrl, COMPANION_CHAT),
         {
           messages: history,
           context: { page: currentPage, isAuthenticated },
@@ -218,7 +219,7 @@ export default function SideChatPanel({
 
     try {
       const data = await postJson(
-        buildApiUrl(apiBaseUrl, "/api/companion/initiative"),
+        buildApiUrl(apiBaseUrl, COMPANION_INITIATIVE),
         {
           messages: sessionMsgs,
           context: { page: currentPage, isAuthenticated },
@@ -252,7 +253,7 @@ export default function SideChatPanel({
   const handleClearMemory = useCallback(async () => {
     if (!apiBaseUrl) return;
     try {
-      await deleteJson(buildApiUrl(apiBaseUrl, "/api/companion/memory"));
+      await deleteJson(buildApiUrl(apiBaseUrl, COMPANION_MEMORY));
       setHasMemory(false);
     } catch {}
   }, [apiBaseUrl]);
