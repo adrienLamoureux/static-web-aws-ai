@@ -1,6 +1,6 @@
 # Architecture Overview
 
-> Last updated: 2026-03-27
+> Last updated: 2026-04-06
 
 This file is the current source of truth for the repo architecture, deployment modes, and branch/worktree model.
 
@@ -94,32 +94,73 @@ The CDK app chooses between the two modes using the `stackMode` context in `cdk/
 
 ### 5.2 Route Registration
 - Route registration hub: `backend/routes/index.js`
-- Registered route modules: 15
-- Total endpoints: 73
+- All route modules now use the **Express Router** pattern — each module exports a function that returns a `Router`, which `index.js` mounts via `app.use()`.
+- Registered route modules: 25 (after subdirectory split)
+- Total endpoints: 73+
 
-| Route File | Domain | Endpoint Count |
-|------------|--------|----------------|
-| `core-prompt.js` | health, hello, prompt helper | 5 |
-| `media-routes.js` | user/shared images/videos, upload/delete/share | 13 |
-| `bedrock-routes.js` | prompt helper and image generation | 2 |
-| `bedrock-image-video-route.js` | Nova Reel image-to-video | 1 |
-| `replicate-image-routes.js` | image generation | 1 |
-| `replicate-image-status-select-routes.js` | image polling and selection | 2 |
-| `replicate-video-routes.js` | video generation and polling | 2 |
-| `civitai-image-routes.js` | CivitAI image generation and polling | 2 |
-| `gradio-routes.js` | Gradio image generation | 1 |
-| `story-session-routes.js` | presets, characters, session CRUD | 8 |
-| `story-message-route.js` | story messaging | 1 |
-| `story-illustration-route.js` | illustrations, animation, music, library | 11 |
-| `operations-routes.js` | director ops, config, masonry, jobs | 12 |
-| `lora-routes.js` | catalog and profiles | 7 |
-| `character-routes.js` | character CRUD | 5 |
+#### Dependency flow
+```
+backend/index.js
+  └── build-deps.js          (composition root — assembles all deps)
+       └── routes/index.js   (registerRoutes — mounts all Routers)
+            ├── core-prompt.js
+            ├── bedrock-routes.js  /  bedrock-image-video-route.js
+            ├── replicate-image-routes.js  /  replicate-image-status-select-routes.js
+            ├── replicate-video-routes.js
+            ├── civitai-image-routes.js
+            ├── gradio-routes.js
+            ├── story-message-route.js
+            ├── character-routes.js
+            ├── companion-route.js
+            ├── operations-routes.js
+            ├── media/              (user-media, user-video, shared-media)
+            ├── story/              (seed, session, session-item, illustration, animation, music, music-library, music-selection)
+            └── lora/               (catalog, profile)
+```
 
-### 5.3 Critical Backend Contracts
+| Route File | Domain | Mount Prefix |
+|------------|--------|--------------|
+| `core-prompt.js` | health, hello, prompt helper | `/` |
+| `media/user-media-routes.js` | user image list/upload/share/delete | `/` |
+| `media/user-video-routes.js` | user video list/stream/share/delete | `/` |
+| `media/shared-media-routes.js` | public shared images and videos | `/` |
+| `bedrock-routes.js` | Bedrock prompt helper | `/` |
+| `bedrock-image-video-route.js` | Nova Reel image-to-video | `/` |
+| `replicate-image-routes.js` | Replicate image generation | `/` |
+| `replicate-image-status-select-routes.js` | Replicate image polling + selection | `/` |
+| `replicate-video-routes.js` | Replicate video generation + polling | `/` |
+| `civitai-image-routes.js` | CivitAI generation + polling | `/` |
+| `gradio-routes.js` | Gradio image generation | `/` |
+| `story/seed-routes.js` | story presets and characters | `/story` |
+| `story/session-routes.js` | session CRUD | `/story` |
+| `story/session-item-routes.js` | per-session item ops | `/story` |
+| `story-message-route.js` | story messaging | `/` |
+| `story/illustration-routes.js` | scene illustrations | `/story` |
+| `story/animation-routes.js` | scene animation | `/story` |
+| `story/music-routes.js` | scene music generation | `/story` |
+| `story/music-library-routes.js` | music library CRUD | `/story` |
+| `story/music-selection-routes.js` | assign library track to scene | `/story` |
+| `operations-routes.js` | director ops, masonry, jobs | `/` |
+| `lora/catalog-routes.js` | LoRA catalog | `/` |
+| `lora/profile-routes.js` | LoRA profiles | `/` |
+| `character-routes.js` | character CRUD | `/` |
+| `companion-route.js` | companion AI chat + memory | `/` |
+
+### 5.3 Design-Sakura Frontend (Active Overlay)
+The design-sakura variant is the most feature-complete overlay:
+- Live2D companion (Hiyori) rendered via `pixi-live2d-display@0.4.0` + `pixi.js@6`
+- Bottom HUD navigation (Realm / Atelier / Chronicle / Sanctum)
+- 10 themes (sakura, moonrise, bamboo, ember, void, glacier, dusk, aurora, crimson, storm) with dark/light brightness variants
+- Companion memory via DynamoDB, proactive companion via AI-generated messages
+
+See [`frontend/ARCHITECTURE.md`](../wt/design-sakura/code/frontend/ARCHITECTURE.md) in the design-sakura worktree for component and CSS design system details.
+
+### 5.4 Critical Backend Contracts
 - Auth middleware: `backend/lib/auth.js`
 - Storage keys: `backend/lib/keys.js`
 - Story seed data and prompt-helper options: `backend/config/story-seed-data.js`
 - Model/provider definitions: `backend/config/models.js`
+- Companion memory: `backend/lib/companion-memory.js`
 
 ## 6. Data And Storage Model
 
@@ -138,13 +179,14 @@ The CDK app chooses between the two modes using the `stackMode` context in `cdk/
 
 ## 7. Frontend Comparison
 
-| Concern | `codex/dev` | `design-fusion` | `design-pixnovel` |
-|---------|-------------|-----------------|-------------------|
-| Auth | placeholder session tokens | real Cognito via ConfigContext + AuthContext | real Cognito via App runtime config + AuthContext |
-| Runtime config | `runtime-config.js` only | `ConfigContext` loads `/config.json` | App loads `/config.json` and merges env fallbacks |
-| Music state | none | `MusicContext` + `SolarisMusicDock` | `GlobalNowPlayingDock` managed at App level |
-| Navigation | simple placeholder links | grouped Solaris nav + legacy redirects | pane map from `PIXNOVEL_PANE_META` |
-| CSS system | minimal neutral placeholder | monolithic Solaris CSS in `frontend/src/index.css` | theme CSS in `frontend/src/themes/pixnovel.css` plus supporting styles |
+| Concern | `codex/dev` | `design-sakura` | `design-fusion` | `design-pixnovel` |
+|---------|-------------|-----------------|-----------------|-------------------|
+| Auth | placeholder session tokens | real Cognito via ConfigContext + AuthContext | real Cognito via ConfigContext + AuthContext | real Cognito via App runtime config + AuthContext |
+| Runtime config | `runtime-config.js` only | `ConfigContext` loads `/config.json` | `ConfigContext` loads `/config.json` | App loads `/config.json` and merges env fallbacks |
+| Music state | none | `MusicContext` + `SakuraMusicBar` | `MusicContext` + `SolarisMusicDock` | `GlobalNowPlayingDock` managed at App level |
+| Navigation | simple placeholder links | bottom HUD (Realm / Atelier / Chronicle / Sanctum) | grouped Solaris nav + legacy redirects | pane map from `PIXNOVEL_PANE_META` |
+| CSS system | minimal neutral placeholder | `skr-` prefix system with 10 themes + dark/light variants | monolithic Solaris CSS in `frontend/src/index.css` | theme CSS in `frontend/src/themes/pixnovel.css` plus supporting styles |
+| Companion | none | Live2D Hiyori + chat panel + memory | none | none |
 
 ## 8. Design Overlay Invariants
 
@@ -186,6 +228,8 @@ The CDK app chooses between the two modes using the `stackMode` context in `cdk/
 - Backend/CDK changes are only complete after deploy + sanity + UI smoke.
 
 ## 11. Current Risks
-- Backend test coverage is still minimal.
+- Backend test coverage is still minimal (~5% of source files).
 - Route contracts are consumed by multiple overlay branches, so silent drift is expensive.
+- `story/illustration-routes.js` is still very large (2,494 lines) and needs decomposition.
+- `design-fusion` and `design-pixnovel` config.json may still point to their own old APIs rather than `dev` — migrate on next deploy.
 - Some idea docs lagged behind live deployments until the 2026-03-19 documentation refresh.

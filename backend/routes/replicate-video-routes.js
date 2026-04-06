@@ -470,7 +470,9 @@ app.get("/replicate/video/status", deps.requireUserMiddleware, async (req, res) 
           errorMessage: error?.message || String(error),
         },
       });
-    } catch (_ignored) {}
+    } catch (_ignored) {
+      // intentionally swallowed — cleanup failure should not affect error reporting
+    }
     console.error("Replicate video status error details:", {
       name: error?.name,
       message: error?.message,

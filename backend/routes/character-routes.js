@@ -1,4 +1,6 @@
 const { randomUUID } = require("crypto");
+const { requireAuth, requireParam } = require("../lib/route-guards");
+const { handleRouteError } = require("../lib/error-handler");
 
 const CHARACTER_TYPE = "CHARACTER";
 
@@ -60,7 +62,7 @@ const registerCharacterRoutes = (app, deps) => {
   // Returns system seed characters + user-created characters.
   app.get("/characters", deps.requireUserMiddleware, async (req, res) => {
     const userId = req.user?.sub;
-    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    if (!requireAuth(res, userId)) return;
 
     try {
       const [rawUser, systemChars] = await Promise.all([
@@ -82,8 +84,7 @@ const registerCharacterRoutes = (app, deps) => {
 
       return res.json({ characters: [...systemCharacters, ...userCharacters] });
     } catch (error) {
-      console.error("Character list error:", error?.message);
-      return res.status(500).json({ message: "Failed to list characters", error: error?.message });
+      return handleRouteError(res, "list characters", error);
     }
   });
 
@@ -91,10 +92,10 @@ const registerCharacterRoutes = (app, deps) => {
   // Create a new user character.
   app.post("/characters", deps.requireUserMiddleware, async (req, res) => {
     const userId = req.user?.sub;
-    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    if (!requireAuth(res, userId)) return;
 
     const name = normalizeStr(req.body?.name || "");
-    if (!name) return res.status(400).json({ message: "name is required" });
+    if (!requireParam(res, "name", name)) return;
 
     const id = randomUUID();
     const now = new Date().toISOString();
@@ -122,8 +123,7 @@ const registerCharacterRoutes = (app, deps) => {
       await putMediaItem({ userId, type: CHARACTER_TYPE, key: id, extra: data });
       return res.status(201).json({ character: normalizeCharacterItem(data) });
     } catch (error) {
-      console.error("Character create error:", error?.message);
-      return res.status(500).json({ message: "Failed to create character", error: error?.message });
+      return handleRouteError(res, "create character", error);
     }
   });
 
@@ -131,8 +131,8 @@ const registerCharacterRoutes = (app, deps) => {
   app.get("/characters/:id", deps.requireUserMiddleware, async (req, res) => {
     const userId = req.user?.sub;
     const charId = normalizeStr(req.params?.id || "");
-    if (!userId) return res.status(401).json({ message: "Unauthorized" });
-    if (!charId) return res.status(400).json({ message: "id is required" });
+    if (!requireAuth(res, userId)) return;
+    if (!requireParam(res, "id", charId)) return;
 
     try {
       const item = await getItem({
@@ -148,8 +148,7 @@ const registerCharacterRoutes = (app, deps) => {
 
       return res.status(404).json({ message: "Character not found" });
     } catch (error) {
-      console.error("Character get error:", error?.message);
-      return res.status(500).json({ message: "Failed to get character", error: error?.message });
+      return handleRouteError(res, "get character", error);
     }
   });
 
@@ -158,8 +157,8 @@ const registerCharacterRoutes = (app, deps) => {
   app.put("/characters/:id", deps.requireUserMiddleware, async (req, res) => {
     const userId = req.user?.sub;
     const charId = normalizeStr(req.params?.id || "");
-    if (!userId) return res.status(401).json({ message: "Unauthorized" });
-    if (!charId) return res.status(400).json({ message: "id is required" });
+    if (!requireAuth(res, userId)) return;
+    if (!requireParam(res, "id", charId)) return;
 
     try {
       const existing = await getItem({
@@ -198,8 +197,7 @@ const registerCharacterRoutes = (app, deps) => {
       await putMediaItem({ userId, type: CHARACTER_TYPE, key: charId, extra: updated });
       return res.json({ character: normalizeCharacterItem(updated) });
     } catch (error) {
-      console.error("Character update error:", error?.message);
-      return res.status(500).json({ message: "Failed to update character", error: error?.message });
+      return handleRouteError(res, "update character", error);
     }
   });
 
@@ -208,8 +206,8 @@ const registerCharacterRoutes = (app, deps) => {
   app.delete("/characters/:id", deps.requireUserMiddleware, async (req, res) => {
     const userId = req.user?.sub;
     const charId = normalizeStr(req.params?.id || "");
-    if (!userId) return res.status(401).json({ message: "Unauthorized" });
-    if (!charId) return res.status(400).json({ message: "id is required" });
+    if (!requireAuth(res, userId)) return;
+    if (!requireParam(res, "id", charId)) return;
 
     try {
       const existing = await getItem({
@@ -222,8 +220,7 @@ const registerCharacterRoutes = (app, deps) => {
       await deleteMediaItem({ userId, type: CHARACTER_TYPE, key: charId });
       return res.json({ deleted: true, id: charId });
     } catch (error) {
-      console.error("Character delete error:", error?.message);
-      return res.status(500).json({ message: "Failed to delete character", error: error?.message });
+      return handleRouteError(res, "delete character", error);
     }
   });
 };
