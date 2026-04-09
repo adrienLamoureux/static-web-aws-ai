@@ -19,7 +19,7 @@ const MODELS = [
     id: "xuefeng_3",
     name: "Xuefeng (雪枫·婚礼)",
     thumbnail: null,
-    modelPath: "live2d/xuefeng_3/runtime/xuefeng_3.model3.json",
+    modelPath: "/live2d/xuefeng_3/runtime/xuefeng_3.model3.json",
     cubismVersion: 3,
     scale: 0.85,
     anchor: { x: 0.5, y: 1 },
@@ -82,7 +82,7 @@ const MODELS = [
     id: "hiyori_free",
     name: "Hiyori Momose",
     thumbnail: null,
-    modelPath: "live2d/hiyori/runtime/hiyori_free_t08.model3.json",
+    modelPath: "/live2d/hiyori/runtime/hiyori_free_t08.model3.json",
     scale: 0.85,
     anchor: { x: 0.5, y: 1 },
 
