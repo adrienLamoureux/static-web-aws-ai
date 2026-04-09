@@ -13,6 +13,7 @@ const {
   normalizeStringArray,
   parseBooleanLike,
 } = require("../../lib/lora-utils");
+const { getFlags } = require("../../lib/feature-flags");
 
 const CIVITAI_ERROR_STATUS_PATTERN = /CivitAI request failed \((\d{3})\):/i;
 const CIVITAI_MODEL_URL_ID_PATTERN = /civitai\.com\/models\/(\d+)/i;
@@ -155,6 +156,11 @@ module.exports = function registerLoraCatalogRoutes(deps) {
   const router = Router();
 
   router.post("/lora/catalog/sync/civitai", deps.requireUserMiddleware, async (req, res) => {
+    const { enableCivitaiSync } = await getFlags(deps);
+    if (!enableCivitaiSync) {
+      return res.status(503).json({ error: "Feature disabled" });
+    }
+
     const userId = req.user?.sub;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });

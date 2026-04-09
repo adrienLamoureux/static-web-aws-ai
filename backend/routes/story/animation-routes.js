@@ -6,6 +6,7 @@ const {
   buildStorySceneVideoKey,
   buildDataUrl,
 } = require("./illustration-helpers");
+const { getFlags } = require("../../lib/feature-flags");
 
 module.exports = function registerStoryAnimationRoutes(deps) {
   const {
@@ -81,6 +82,11 @@ module.exports = function registerStoryAnimationRoutes(deps) {
   const router = Router();
 
   router.post("/sessions/:id/scenes/:sceneId/animation", deps.requireUserMiddleware, async (req, res) => {
+    const { enableStoryAnimations } = await getFlags(deps);
+    if (!enableStoryAnimations) {
+      return res.status(503).json({ error: "Feature disabled" });
+    }
+
     const userId = req.user?.sub;
     const sessionId = req.params.id;
     const sceneId = req.params.sceneId;

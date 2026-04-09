@@ -7,6 +7,8 @@ const {
   isMasonryImageKey,
   buildDashboardData,
 } = require("./ops-helpers");
+const { ScanCommand } = require("@aws-sdk/lib-dynamodb");
+const { parseUsageWindow, aggregateUsage } = require("./usage-helpers");
 
 module.exports = function registerDashboardRoutes(deps) {
   const {
@@ -201,6 +203,106 @@ module.exports = function registerDashboardRoutes(deps) {
     }
   });
 
+  router.post("/director/jobs/retry", ...adminGuard, async (req, res) => {
+    const userId = req.user?.sub;
+    const jobKey = String(req.body?.jobKey || "").trim();
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    if (!jobKey) {
+      return res.status(400).json({ message: "jobKey is required" });
+    }
+    try {
+      const existingItem = await getItem({
+        pk: buildMediaPk(userId),
+        sk: buildMediaSk("JOB", jobKey),
+      });
+      if (!existingItem) {
+        return res.status(404).json({ message: "Job not found" });
+      }
+      if (existingItem.status !== "failed") {
+        return res.status(409).json({
+          message: "Only failed jobs can be retried",
+          status: existingItem.status,
+        });
+      }
+      const nowIso = new Date().toISOString();
+      const existingExtra = { ...existingItem };
+      delete existingExtra.pk;
+      delete existingExtra.sk;
+      delete existingExtra.type;
+      delete existingExtra.key;
+      delete existingExtra.errorMessage;
+      await putMediaItem({
+        userId,
+        type: "JOB",
+        key: jobKey,
+        extra: {
+          ...existingExtra,
+          status: "queued",
+          createdAt: existingItem.createdAt || nowIso,
+          updatedAt: nowIso,
+        },
+      });
+      return res.json({ updatedAt: nowIso, job: { jobKey, status: "queued" } });
+    } catch (error) {
+      return res.status(500).json({
+        message: "Failed to retry job",
+        error: error?.message || String(error),
+      });
+    }
+  });
+
+  router.post("/director/jobs/cancel", ...adminGuard, async (req, res) => {
+    const userId = req.user?.sub;
+    const jobKey = String(req.body?.jobKey || "").trim();
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    if (!jobKey) {
+      return res.status(400).json({ message: "jobKey is required" });
+    }
+    try {
+      const existingItem = await getItem({
+        pk: buildMediaPk(userId),
+        sk: buildMediaSk("JOB", jobKey),
+      });
+      if (!existingItem) {
+        return res.status(404).json({ message: "Job not found" });
+      }
+      const cancellableStatuses = new Set(["queued", "pending", "running"]);
+      if (!cancellableStatuses.has(existingItem.status)) {
+        return res.status(409).json({
+          message: "Only queued, pending, or running jobs can be cancelled",
+          status: existingItem.status,
+        });
+      }
+      const nowIso = new Date().toISOString();
+      const existingExtra = { ...existingItem };
+      delete existingExtra.pk;
+      delete existingExtra.sk;
+      delete existingExtra.type;
+      delete existingExtra.key;
+      await putMediaItem({
+        userId,
+        type: "JOB",
+        key: jobKey,
+        extra: {
+          ...existingExtra,
+          status: "cancelled",
+          createdAt: existingItem.createdAt || nowIso,
+          updatedAt: nowIso,
+        },
+      });
+      return res.json({ updatedAt: nowIso, job: { jobKey, status: "cancelled" } });
+    } catch (error) {
+      return res.status(500).json({
+        message: "Failed to cancel job",
+        error: error?.message || String(error),
+      });
+    }
+  });
+
   router.post("/director/story/sessions/pin", ...adminGuard, async (req, res) => {
     const userId = req.user?.sub;
     const sessionId = String(req.body?.sessionId || "").trim();
@@ -234,6 +336,48 @@ module.exports = function registerDashboardRoutes(deps) {
     } catch (error) {
       return res.status(500).json({
         message: "Failed to update story session",
+        error: error?.message || String(error),
+      });
+    }
+  });
+
+  // ── A4: GET /ops/director/usage?window=24h|7d|30d ───────────────────────
+  router.get("/director/usage", ...adminGuard, async (req, res) => {
+    const window = String(req.query?.window || "24h").trim();
+    const since = parseUsageWindow(window);
+
+    if (!mediaTable) {
+      return res.status(500).json({ message: "MEDIA_TABLE is not set" });
+    }
+
+    try {
+      const response = await dynamoClient.send(
+        new ScanCommand({
+          TableName: mediaTable,
+          FilterExpression: "begins_with(sk, :prefix) AND createdAt >= :since",
+          ExpressionAttributeValues: {
+            ":prefix": "JOB#",
+            ":since": since,
+          },
+          ProjectionExpression: "provider, entityType, #mdl, #st, createdAt",
+          ExpressionAttributeNames: {
+            "#mdl": "model",
+            "#st": "status",
+          },
+        })
+      );
+
+      const items = response.Items || [];
+      const aggregated = aggregateUsage(items);
+
+      return res.json({
+        window,
+        since,
+        ...aggregated,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        message: "Failed to load usage data",
         error: error?.message || String(error),
       });
     }

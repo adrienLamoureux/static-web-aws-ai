@@ -96,6 +96,18 @@ Shared test credentials for the live stacks: `test@test.com` / `Test1234567@`
 - Merge order:
 `codex/<idea-id>/plan -> codex/<idea-id>/code -> codex/<idea-id>/integrate -> main`
 
+## Cognito Ownership — CRITICAL
+
+**Cognito is provisioned exclusively by `codex/dev`.** Design variant stacks (UI-only) NEVER get their own Cognito user pool.
+
+- The one and only user pool is `us-east-1_KGfmw3Ykn` (dev stack).
+- The one and only admin group is `admin` inside that pool.
+- All users for all design variants must be created in `us-east-1_KGfmw3Ykn`.
+- Each design variant gets its own **app client** inside the dev pool — not its own pool.
+- **TRAP**: A variant's browser login URL may still show an old domain (e.g. `whiskstudio-alx-design-sakura-*`) if its `config.json` was never migrated from a legacy full-stack deploy. That URL belongs to a stale pool — do NOT create users there.
+- To verify which pool a variant is using: `aws s3 cp s3://<websiteBucket>/config.json -` and check `cognito.userPoolId`. It must always be `us-east-1_KGfmw3Ykn`.
+- If it isn't, migrate: create a new app client in the dev pool for the variant's CloudFront callback URL, rewrite `config.json` in S3, invalidate CloudFront.
+
 ## Idea Environment Policy
 - Every prototype uses a unique idea ID and a dedicated stack name `StaticWebAWSAIStack-<idea-id>`.
 - Each idea folder must keep `README.md`, `DECISIONS.md`, `RUNBOOK.md`, `STATUS.md`, and `IMPROVEMENTS.md`.

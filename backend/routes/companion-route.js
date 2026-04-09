@@ -1,5 +1,6 @@
 const { GetCommand } = require("@aws-sdk/lib-dynamodb");
 const { requireUserMiddleware, requireAdminMiddleware } = require("../lib/auth");
+const { getFlags } = require("../lib/feature-flags");
 
 // ─── System prompt ────────────────────────────────────────────────────────────
 const SYSTEM_PROMPT = `You are Hiyori, a warm, slightly whimsical AI companion living inside Whisk Studio — a creative AI image and story app.
@@ -289,6 +290,11 @@ module.exports = (app, deps) => {
   // No auth required; uses DynamoDB memory for auth users, client session for anon.
   // Body: { messages?: [{role, content}], context?: { page, isAuthenticated }, modelId? }
   app.post("/api/companion/initiative", async (req, res) => {
+    const { enableCompanionInitiative } = await getFlags(deps);
+    if (!enableCompanionInitiative) {
+      return res.status(503).json({ error: "Feature disabled" });
+    }
+
     const body    = req.body || {};
     const userId  = req.user?.sub || null;
     const modelId = String(body.modelId || "hiyori_free");

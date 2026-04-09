@@ -1,3 +1,5 @@
+const { getFlags } = require("../lib/feature-flags");
+
 module.exports = (app, deps) => {
   const {
     buildUserPrefix,
@@ -15,6 +17,11 @@ module.exports = (app, deps) => {
   } = deps;
 
 app.post("/bedrock/nova-reel/image-to-video-s3", deps.requireUserMiddleware, async (req, res) => {
+  const { enableNovaReelVideos } = await getFlags(deps);
+  if (!enableNovaReelVideos) {
+    return res.status(503).json({ error: "Feature disabled" });
+  }
+
   const prompt = req.body?.prompt || "A cinematic push-in on the scene.";
   const mediaBucket = process.env.MEDIA_BUCKET;
   const inputKey = req.body?.inputKey;

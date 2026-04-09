@@ -1,5 +1,8 @@
 const registerDirectorRoutes = require("./ops/director-routes");
 const registerDashboardRoutes = require("./ops/dashboard-routes");
+const registerDirectorAdminRoutes = require("./ops/director-admin-routes");
+const registerModerationRoutes = require("./ops/moderation-routes");
+const registerFeatureFlagsRoutes = require("./ops/feature-flags-routes");
 const {
   buildDirectorOptions,
   GLOBAL_MASONRY_PREFIX,
@@ -59,6 +62,9 @@ const registerOperationsRoutes = (app, deps) => {
 
   app.use("/ops", registerDashboardRoutes(extendedDeps));
   app.use("/ops", registerDirectorRoutes(extendedDeps));
+  app.use("/ops", registerDirectorAdminRoutes(extendedDeps));
+  app.use("/ops/director/media", registerModerationRoutes(extendedDeps));
+  app.use("/ops", registerFeatureFlagsRoutes(extendedDeps));
 };
 
 module.exports = registerOperationsRoutes;
