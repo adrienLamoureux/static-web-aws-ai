@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import SolarisTrackCard from '../components/music/SolarisTrackCard';
 import { useConfig } from '../contexts/ConfigContext';
+import SanctumSubNav from '../components/sakura/sanctum/SanctumSubNav';
 import { useMusic } from '../contexts/MusicContext';
 import { putFileToUrl } from '../services/s3';
 import { listStoryMusicLibrary, requestStoryMusicUploadUrl, saveUploadedStoryMusicTrack } from '../services/story';
@@ -134,6 +135,7 @@ export default function StoryMusicLibrary() {
 
   return (
     <div>
+      <SanctumSubNav />
       <div className="skr-page-header">
         <h2 className="skr-page-title">Story Music Library</h2>
         <p className="skr-page-subtitle">Upload and categorize soundtracks</p>

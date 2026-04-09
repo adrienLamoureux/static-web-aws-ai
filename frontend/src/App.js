@@ -18,6 +18,7 @@ import ThemeSwitcher from "./components/sakura/ThemeSwitcher";
 import CompanionPanel from "./components/sakura/companion/CompanionPanel";
 import LoginModal from "./components/auth/LoginModal";
 import { CompanionProvider, useCompanion, CompanionActions } from "./lib/companion/CompanionContext";
+import { NotificationProvider } from "./components/sakura/NotificationStack";
 import { getAuthToken } from "./utils/authTokens";
 
 // Pages
@@ -290,9 +291,11 @@ function ConfiguredApp() {
       <AuthProvider cognito={cognito}>
         <MusicProvider>
           <CompanionProvider>
-            <Router>
-              <AppRoutes />
-            </Router>
+            <NotificationProvider>
+              <Router>
+                <AppRoutes />
+              </Router>
+            </NotificationProvider>
           </CompanionProvider>
         </MusicProvider>
       </AuthProvider>

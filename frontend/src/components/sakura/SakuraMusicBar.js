@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useMusic } from "../../contexts/MusicContext";
+import useAudioBars from "../music/useAudioBars";
 
 export default function SakuraMusicBar() {
   const { tracks, currentTrack, autoPlayRequest, playTrack, dismissTrack } = useMusic();
@@ -10,6 +11,20 @@ export default function SakuraMusicBar() {
   const [expanded, setExpanded] = useState(false);
   const lastRequestId = useRef(0);
   const panelRef = useRef(null);
+
+  const { bars, isPeak } = useAudioBars({
+    audioRef,
+    isPlaying: playing,
+    tempoBpm: currentTrack?.tempoBpm,
+    trackKey: currentTrack?.key,
+  });
+
+  // 24 bars from the hook is too many for the compact pill — sample 10 from the
+  // mid frequency range so the visualizer reads cleanly at this size.
+  const visibleBars = useMemo(
+    () => bars.filter((_, i) => i % 2 === 0).slice(2, 12),
+    [bars]
+  );
 
   useEffect(() => {
     if (currentTrack?.url && audioRef.current) {
@@ -74,18 +89,27 @@ export default function SakuraMusicBar() {
 
   const progress = duration ? (currentTime / duration) * 100 : 0;
 
+  const pillClass = `skr-music-pill${playing ? " is-playing" : ""}${isPeak ? " is-peak" : ""}`;
+
   return (
-    <div className="skr-music-pill" ref={panelRef}>
+    <div className={pillClass} ref={panelRef}>
       <audio
         ref={audioRef}
+        crossOrigin="anonymous"
         onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
         onLoadedMetadata={() => setDuration(audioRef.current?.duration || 0)}
         onEnded={() => setPlaying(false)}
       />
 
-      {/* EQ bars or note icon */}
+      {/* Audio-reactive spectrum or idle note */}
       <div className={`skr-music-eq${playing ? " is-playing" : ""}`} aria-hidden="true">
-        {currentTrack ? <><span /><span /><span /></> : <span className="skr-music-note">♪</span>}
+        {currentTrack ? (
+          visibleBars.map((h, i) => (
+            <span key={i} style={{ "--skr-bar-h": h }} />
+          ))
+        ) : (
+          <span className="skr-music-note">♪</span>
+        )}
       </div>
 
       {/* Track name or idle label */}

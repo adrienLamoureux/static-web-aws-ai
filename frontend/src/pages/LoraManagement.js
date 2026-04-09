@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useConfig } from "../contexts/ConfigContext";
 import { fetchDirectorConfig } from "../services/operations";
+import SanctumSubNav from "../components/sakura/sanctum/SanctumSubNav";
 import { listCharacters } from "../services/characters";
 import {
   getLoraProfile,
@@ -343,6 +344,7 @@ export default function LoraManagement() {
 
   return (
     <div>
+      <SanctumSubNav />
       <div className="skr-page-header">
         <h2 className="skr-page-title">LoRA Management</h2>
         <p className="skr-page-subtitle">Character LoRA Profile</p>

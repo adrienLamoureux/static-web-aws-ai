@@ -1,0 +1,53 @@
+/* Stat cards */
+.skr-stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.skr-stat-card { padding: 16px 20px; }
+.skr-stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--skr-text-tertiary); margin-bottom: 6px; }
+.skr-stat-value { font-size: 28px; font-weight: 700; color: var(--skr-text-primary); }
+
+/* Module panels grid */
+.skr-module-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.skr-module-title { font-size: 13px; font-weight: 700; color: var(--skr-text-primary); margin-bottom: 12px; }
+
+/* Info lists inside module cards */
+.skr-info-list { font-size: 12px; color: var(--skr-text-secondary); display: flex; flex-direction: column; gap: 6px; }
+.skr-info-row strong { color: var(--skr-text-primary); }
+
+/* Section headers */
+.skr-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.skr-section-title { font-size: 15px; font-weight: 700; color: var(--skr-text-primary); margin: 0; }
+.skr-section-subtitle { font-size: 12px; color: var(--skr-text-tertiary); margin: 3px 0 0; }
+
+/* Empty state row */
+.skr-empty-row { padding: 24px 20px; text-align: center; color: var(--skr-text-tertiary); font-size: 13px; }
+
+/* Sanctum sub-nav tabs */
+.skr-sanctum-tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid var(--skr-border); padding-bottom: 0; }
+.skr-sanctum-tab { padding: 8px 16px; font-size: 13px; font-weight: 500; color: var(--skr-text-secondary); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: color 0.15s, border-color 0.15s; margin-bottom: -1px; }
+.skr-sanctum-tab:hover { color: var(--skr-text-primary); }
+.skr-sanctum-tab.is-active { color: var(--skr-accent); border-bottom-color: var(--skr-accent); font-weight: 600; }
+
+/* Notification stack */
+.skr-notification-stack { position: fixed; bottom: 72px; right: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 9999; pointer-events: none; }
+.skr-notification { padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; pointer-events: all; animation: skr-slide-in 0.2s ease; max-width: 320px; }
+.skr-notification.success { background: var(--skr-accent-subtle, rgba(217,119,6,0.12)); color: var(--skr-accent); border: 1px solid var(--skr-accent); }
+.skr-notification.error { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid #ef4444; }
+@keyframes skr-slide-in { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+/* Feature flag toggles */
+.skr-flag-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--skr-border); gap: 12px; }
+.skr-flag-row:last-child { border-bottom: none; }
+.skr-flag-toggle { width: 36px; height: 20px; border-radius: 10px; border: none; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+.skr-flag-toggle.on { background: var(--skr-accent); }
+.skr-flag-toggle.off { background: var(--skr-border); }
+
+/* Usage bars */
+.skr-usage-bar-row { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 6px; }
+.skr-usage-bar-label { width: 140px; color: var(--skr-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.skr-usage-bar-track { flex: 1; height: 6px; background: var(--skr-elevated); border-radius: 3px; overflow: hidden; }
+.skr-usage-bar-fill { height: 100%; background: var(--skr-accent); border-radius: 3px; }
+.skr-usage-bar-value { width: 60px; text-align: right; color: var(--skr-text-tertiary); }
+
+/* Config editor disclosures */
+.skr-disclosure { border: 1px solid var(--skr-border); border-radius: 8px; overflow: hidden; margin-bottom: 10px; }
+.skr-disclosure-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; cursor: pointer; background: var(--skr-elevated); font-size: 13px; font-weight: 600; color: var(--skr-text-primary); }
+.skr-disclosure-body { padding: 14px; display: flex; flex-direction: column; gap: 10px; }

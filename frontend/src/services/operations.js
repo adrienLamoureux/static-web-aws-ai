@@ -1,4 +1,4 @@
-import { buildApiUrl, fetchJson, postJson } from "./apiClient";
+import { buildApiUrl, buildUrlWithQuery, fetchJson, postJson, putJson, deleteJson } from "./apiClient";
 
 export const fetchOperationalDashboard = async (apiBaseUrl) => {
   const url = buildApiUrl(apiBaseUrl, "/ops/dashboard");
@@ -58,4 +58,79 @@ export const requestDirectorMasonryUploadUrl = async (apiBaseUrl, payload) => {
 export const deleteDirectorMasonryImage = async (apiBaseUrl, payload) => {
   const url = buildApiUrl(apiBaseUrl, "/ops/director/masonry/images/delete");
   return postJson(url, payload, "Failed to delete masonry image.");
+};
+
+export const fetchDashboard = async (apiBaseUrl) => {
+  const url = buildApiUrl(apiBaseUrl, "/ops/dashboard");
+  return fetchJson(url, {}, "Failed to load dashboard.");
+};
+
+export const fetchCompanionModel = async (apiBaseUrl) => {
+  const url = buildApiUrl(apiBaseUrl, "/api/admin/companion-model");
+  return fetchJson(url, {}, "Failed to load companion model.");
+};
+
+export const saveCompanionModel = async (apiBaseUrl, { modelId }) => {
+  const url = buildApiUrl(apiBaseUrl, "/api/admin/companion-model");
+  return putJson(url, { modelId }, "Failed to save companion model.");
+};
+
+export const retryDirectorJob = async (apiBaseUrl, { jobKey }) => {
+  const url = buildApiUrl(apiBaseUrl, "/ops/director/jobs/retry");
+  return postJson(url, { jobKey }, "Failed to retry job.");
+};
+
+export const cancelDirectorJob = async (apiBaseUrl, { jobKey }) => {
+  const url = buildApiUrl(apiBaseUrl, "/ops/director/jobs/cancel");
+  return postJson(url, { jobKey }, "Failed to cancel job.");
+};
+
+export const fetchAllStorySessions = async (apiBaseUrl, { limit = 100 } = {}) => {
+  const url = buildUrlWithQuery(apiBaseUrl, "/ops/director/story/sessions/all", { limit });
+  return fetchJson(url, {}, "Failed to load all story sessions.");
+};
+
+export const fetchCompanionMemory = async (apiBaseUrl, { userId, modelId }) => {
+  const url = buildUrlWithQuery(apiBaseUrl, "/ops/director/companion/memory", { userId, modelId });
+  return fetchJson(url, {}, "Failed to load companion memory.");
+};
+
+export const clearCompanionMemoryAdmin = async (apiBaseUrl, { userId, modelId }) => {
+  const url = buildUrlWithQuery(apiBaseUrl, "/ops/director/companion/memory", { userId, modelId });
+  return deleteJson(url, "Failed to clear companion memory.");
+};
+
+export const fetchDirectorUsage = async (apiBaseUrl, { window: w = '24h' } = {}) => {
+  const url = buildUrlWithQuery(apiBaseUrl, "/ops/director/usage", { window: w });
+  return fetchJson(url, {}, "Failed to load usage data.");
+};
+
+export const listSharedImagesAdmin = async (apiBaseUrl, { limit = 120, continuationToken } = {}) => {
+  const url = buildUrlWithQuery(apiBaseUrl, "/ops/director/media/shared/images", { limit, continuationToken });
+  return fetchJson(url, {}, "Failed to list shared images.");
+};
+
+export const deleteSharedImageAdmin = async (apiBaseUrl, { key }) => {
+  const url = buildApiUrl(apiBaseUrl, "/ops/director/media/shared/images/delete");
+  return postJson(url, { key }, "Failed to delete shared image.");
+};
+
+export const listSharedVideosAdmin = async (apiBaseUrl, { limit = 120, continuationToken } = {}) => {
+  const url = buildUrlWithQuery(apiBaseUrl, "/ops/director/media/shared/videos", { limit, continuationToken });
+  return fetchJson(url, {}, "Failed to list shared videos.");
+};
+
+export const deleteSharedVideoAdmin = async (apiBaseUrl, { key }) => {
+  const url = buildApiUrl(apiBaseUrl, "/ops/director/media/shared/videos/delete");
+  return postJson(url, { key }, "Failed to delete shared video.");
+};
+
+export const fetchFeatureFlags = async (apiBaseUrl) => {
+  const url = buildApiUrl(apiBaseUrl, "/ops/director/features");
+  return fetchJson(url, {}, "Failed to load feature flags.");
+};
+
+export const saveFeatureFlags = async (apiBaseUrl, { flags }) => {
+  const url = buildApiUrl(apiBaseUrl, "/ops/director/features");
+  return putJson(url, { flags }, "Failed to save feature flags.");
 };
