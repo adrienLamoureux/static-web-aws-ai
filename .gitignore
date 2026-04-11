@@ -142,3 +142,4 @@ ai/__pycache__/
 ai/data/
 
 .DS_Store
+.cdk-idea-lock

@@ -50,7 +50,6 @@ const LOCAL_AUTH_HOSTS = ["localhost", "127.0.0.1"] as const;
  * their callback / logout URLs must be registered here.
  */
 const DESIGN_VARIANT_CLOUDFRONT_DOMAINS = [
-  "d2lepwk3t4buta.cloudfront.net", // design-sakura
   "d3ei9r5awjyzzr.cloudfront.net", // design-fusion
   "d1ulh0ke4fvnqg.cloudfront.net", // design-kinetic
   "d21j30h6jj4n2k.cloudfront.net", // design-pixnovel
