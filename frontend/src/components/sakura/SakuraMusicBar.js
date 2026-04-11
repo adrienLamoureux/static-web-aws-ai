@@ -98,7 +98,7 @@ export default function SakuraMusicBar() {
         crossOrigin="anonymous"
         onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
         onLoadedMetadata={() => setDuration(audioRef.current?.duration || 0)}
-        onEnded={() => setPlaying(false)}
+        loop
       />
 
       {/* Audio-reactive spectrum or idle note */}
