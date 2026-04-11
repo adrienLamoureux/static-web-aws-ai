@@ -1,6 +1,6 @@
 # Codex Collaboration Instructions
 
-> Last updated: 2026-03-19
+> Last updated: 2026-04-11
 
 ## Core Engineering Rules
 - Follow `SOLID`, `DRY`, and `KISS`.
@@ -10,42 +10,36 @@
 - Reuse existing constant/config modules before creating new literals.
 
 ## Repo Reality
-- `codex/dev` is the source-of-truth branch for backend, CDK, shared contracts, registries, and cross-branch documentation.
-- The `codex/dev` frontend is intentionally a minimal placeholder shell used for deploy validation and baseline route coverage.
-- Rich user-facing React experiences live in design overlay worktrees, not in `codex/dev`.
+- `main` is the single source-of-truth branch for the full stack: backend, frontend (Sakura Bloom design), CDK, shared contracts, registries, and documentation.
+- The Sakura frontend (Live2D companion, bottom HUD, 10 themes) is the primary UI — it lives in `frontend/src/` on `main`.
 - Future agents should read `REQUIREMENTS.md` and `docs/architecture.md` before changing contracts.
 
 ## Stack Map
 - Backend API: Node.js + Express in `backend/`, Lambda adapter in `backend/lambda.js`.
 - Backend composition root: `backend/lib/build-deps.js` (manual DI, no framework).
-- Backend routes: `backend/routes/index.js` registers 15 route modules exposing 73 HTTP endpoints.
+- Backend routes: `backend/routes/index.js` registers 25 route modules exposing 73+ HTTP endpoints.
 - Backend domain/helpers: `backend/lib/*.js` plus `backend/lib/story-state/`.
 - Backend config: `backend/config/models.js`, `backend/config/story-seed-data.js`, `backend/config/lora.js`.
-- Frontend baseline on `codex/dev`: `frontend/src/App.js`, `frontend/src/index.js`, `frontend/src/index.css`, `frontend/src/services/runtime-config.js`.
-- Design overlay frontends: branch-local React apps under `frontend/src/` in the UI worktrees.
+- Frontend: `frontend/src/` — full Sakura Bloom React app (Live2D companion, `skr-` CSS system, 10 themes, bottom HUD).
 - Infra: AWS CDK 2.x in `cdk/`, with both full-stack and UI-only deployment modes.
 - AI scripts: Python notebooks/scripts in `ai/` only; they are not part of runtime execution paths.
 
-## Active Worktrees and Branches
+## Active Branch
 
-| Worktree Path | Branch | Role |
-|---------------|--------|------|
-| `/Users/adrienlamoureux/Documents/code/static-web-aws-ai` | `codex/dev` | Full-stack integration branch |
-| `/Users/adrienlamoureux/Documents/code/wt/design-fusion/code` | `codex/design-fusion/code` | Solaris UI overlay branch |
-| `/Users/adrienlamoureux/Documents/code/wt/design-pixnovel/code` | `codex/design-pixnovel/code` | Pixnovel UI overlay branch |
+`main` is the only active development branch. All backend, frontend, and CDK changes go here.
 
-Additional idea directories exist for `design-atelier`, `design-kinetic`, and `design-solaris`, but they do not currently have active `code` worktrees checked out.
+Other design variant branches (`codex/design-fusion/code`, `codex/design-pixnovel/code`) remain alive as UI-only overlays pointing at the `main` backend — they are not under active development.
 
 ## Live Idea Stacks
 
 | Idea ID | Status | CloudFront | API |
 |---------|--------|------------|-----|
-| `dev` | LIVE | `d2l9b1xmucsb19.cloudfront.net` | `k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/` |
-| `design-fusion` | LIVE | `d3ei9r5awjyzzr.cloudfront.net` | `luu3x0m826.execute-api.us-east-1.amazonaws.com/prod/` |
-| `design-pixnovel` | LIVE | `d21j30h6jj4n2k.cloudfront.net` | `5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/` |
-| `design-atelier` | LIVE | `d3mv9zsmbqsn48.cloudfront.net` | `6g0ug8ef7l.execute-api.us-east-1.amazonaws.com/prod/` |
-| `design-kinetic` | LIVE | `d1ulh0ke4fvnqg.cloudfront.net` | `ebd594ulg4.execute-api.us-east-1.amazonaws.com/prod/` |
-| `design-solaris` | LIVE | `d17qd3rx45vcxl.cloudfront.net` | `u3a3qlhk2h.execute-api.us-east-1.amazonaws.com/prod/` |
+| `dev` | LIVE — Sakura UI on main | `d2l9b1xmucsb19.cloudfront.net` | `k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/` |
+| `design-fusion` | LIVE — UI-only overlay | `d3ei9r5awjyzzr.cloudfront.net` | (points to `dev` API) |
+| `design-pixnovel` | LIVE — UI-only overlay | `d21j30h6jj4n2k.cloudfront.net` | (points to `dev` API) |
+| `design-atelier` | LIVE — UI-only overlay | `d3mv9zsmbqsn48.cloudfront.net` | (points to `dev` API) |
+| `design-kinetic` | LIVE — UI-only overlay | `d1ulh0ke4fvnqg.cloudfront.net` | (points to `dev` API) |
+| `design-solaris` | LIVE — UI-only overlay | `d17qd3rx45vcxl.cloudfront.net` | (points to `dev` API) |
 
 Shared test credentials for the live stacks: `test@test.com` / `Test1234567@`
 
@@ -54,51 +48,10 @@ Shared test credentials for the live stacks: `test@test.com` / `Test1234567@`
 2. `REQUIREMENTS.md`
 3. `docs/architecture.md`
 4. Relevant `ideas/<idea-id>/*.md`
-5. Branch-local `frontend/REQUIREMENTS.md` when working inside a UI overlay worktree
-
-## Branch Scope Contract
-- `codex/dev` may change `backend/**`, `cdk/**`, `ideas/**`, shared docs, and the minimal baseline frontend.
-- `codex/dev` must keep frontend styling minimal and functionality-first. Do not build rich themed UX here.
-- Design branches (`codex/design-*/code`) are frontend overlay branches rebased on top of `codex/dev`.
-- Design branches may change only:
-  - `frontend/**`
-  - optional stack wiring in `cdk/lib/static-web-aws-ai-stack.ts`, `cdk/lib/ui-stack.ts`, or `cdk/scripts/idea-env.js`
-  - branch-local context docs that exist to help future agents on that specific design branch (`AGENTS.md`, `README.md`, `frontend/REQUIREMENTS.md`)
-- Do not commit backend route/lib changes, shared idea registry edits, or generic cross-repo architecture rewrites on design branches.
-- Before pushing a design branch, verify scope with:
-`git diff --name-only codex/dev..codex/<design-branch>`
-
-## Parallel Workflow Policy
-- Use single-thread execution for small changes that touch one area.
-- Use `planner -> workers -> integrator` for medium/large tasks.
-- Run each worker in a separate Git worktree and branch.
-- Branch naming: `codex/<idea-id>-<slice>`.
-- Freeze contracts before workers start.
-- Default long-lived working branch: `codex/dev`.
-- Human workflow: open PR from `codex/dev` to `main` and merge manually.
-- When creating worktrees, branch from `codex/dev` unless a task explicitly requires another base.
-- Standard worktree layout:
-  - `../wt/<idea-id>/plan`
-  - `../wt/<idea-id>/code`
-  - `../wt/<idea-id>/integrate`
-- Standard branch layout:
-  - `codex/<idea-id>/plan`
-  - `codex/<idea-id>/code`
-  - `codex/<idea-id>/integrate`
-- Bootstrap commands:
-`git worktree add ../wt/<idea-id>/plan -b codex/<idea-id>/plan codex/dev`
-`git worktree add ../wt/<idea-id>/code -b codex/<idea-id>/code codex/dev`
-`git worktree add ../wt/<idea-id>/integrate -b codex/<idea-id>/integrate codex/dev`
-- Worktree responsibilities:
-  - `plan`: freeze contracts, split slices, update `ideas/<idea-id>/README.md` and `DECISIONS.md`
-  - `code`: implement isolated slices only, no cross-slice refactors
-  - `integrate`: merge validated slices, run gates, deploy/seed, update `STATUS.md`
-- Merge order:
-`codex/<idea-id>/plan -> codex/<idea-id>/code -> codex/<idea-id>/integrate -> main`
 
 ## Cognito Ownership — CRITICAL
 
-**Cognito is provisioned exclusively by `codex/dev`.** Design variant stacks (UI-only) NEVER get their own Cognito user pool.
+**Cognito is provisioned exclusively by the `dev` stack (deployed from `main`).** UI-only overlay stacks NEVER get their own Cognito user pool.
 
 - The one and only user pool is `us-east-1_KGfmw3Ykn` (dev stack).
 - The one and only admin group is `admin` inside that pool.
@@ -131,6 +84,34 @@ Shared test credentials for the live stacks: `test@test.com` / `Test1234567@`
 - Completion policy:
   - frontend-only: run `idea:ui-local` for the target stage and `npm --prefix frontend run build`
   - backend or cdk touched: deploy the target stage and confirm both `idea:sanity` and `idea:ui-smoke`
+
+## Parallel Workflow Policy
+- Use single-thread execution for small changes that touch one area.
+- Use `planner -> workers -> integrator` for medium/large tasks.
+- Run each worker in a separate Git worktree and branch from `main`.
+- Branch naming: `codex/<idea-id>-<slice>`.
+- Freeze contracts before workers start.
+- Default long-lived working branch: `main`.
+- Human workflow: open PR from feature branch to `main` and merge manually.
+- When creating worktrees, branch from `main`.
+- Standard worktree layout:
+  - `../wt/<idea-id>/plan`
+  - `../wt/<idea-id>/code`
+  - `../wt/<idea-id>/integrate`
+- Standard branch layout:
+  - `codex/<idea-id>/plan`
+  - `codex/<idea-id>/code`
+  - `codex/<idea-id>/integrate`
+- Bootstrap commands:
+`git worktree add ../wt/<idea-id>/plan -b codex/<idea-id>/plan main`
+`git worktree add ../wt/<idea-id>/code -b codex/<idea-id>/code main`
+`git worktree add ../wt/<idea-id>/integrate -b codex/<idea-id>/integrate main`
+- Worktree responsibilities:
+  - `plan`: freeze contracts, split slices, update `ideas/<idea-id>/README.md` and `DECISIONS.md`
+  - `code`: implement isolated slices only, no cross-slice refactors
+  - `integrate`: merge validated slices, run gates, deploy/seed, update `STATUS.md`
+- Merge order:
+`codex/<idea-id>/plan -> codex/<idea-id>/code -> codex/<idea-id>/integrate -> main`
 
 ## Planner Required Output
 1. Problem statement and non-goals.

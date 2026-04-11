@@ -1,8 +1,8 @@
-# Frontend Architecture — design-sakura (Sakura Bloom)
+# Frontend Architecture — Sakura Bloom
 
-> Last updated: 2026-04-06
+> Last updated: 2026-04-11
 
-This document covers the component hierarchy, context providers, hook graph, CSS design system, and API communication layer for the **design-sakura** frontend overlay.
+This document covers the component hierarchy, context providers, hook graph, CSS design system, and API communication layer for the Whisk Studio frontend (Sakura Bloom design system, living on `main`).
 
 ---
 

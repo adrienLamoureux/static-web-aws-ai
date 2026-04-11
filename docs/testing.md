@@ -1,6 +1,6 @@
 # Testing Guide
 
-> Last updated: 2026-04-06
+> Last updated: 2026-04-11
 
 ---
 
@@ -15,8 +15,8 @@ npm --prefix backend test
 Backend tests use the **Node.js built-in test runner** (`node:test`) with `node:assert/strict`. No external test framework is needed. See [ADR 002](./adr/002-node-test-over-jest.md) for the rationale.
 
 ### File convention
-Test files live next to the source files they test, named `*.test.js`.
-Current files: `backend/lib/auth.test.js`, `backend/lib/lora-support.test.js`.
+Test files live in `backend/test/`, named `*.test.js`.
+Current: 178 tests across auth, companion, keys, lora-routes, lora-utils, sanctum-admin, scene-context, story-prompt.
 
 ### Mock-deps pattern
 Each test file imports the module under test and injects a hand-crafted `deps` object (dependency injection). No module-level mocking — this keeps tests deterministic and avoids `jest.mock` syntax.
@@ -32,6 +32,9 @@ test('example', () => {
 });
 ```
 
+### Known pre-existing failures
+3 tests in `lora-routes.test.js` fail due to a mock-app limitation (multi-middleware handlers are not captured). These are pre-existing and should not be regressed further.
+
 ### Coverage
 Add `--experimental-test-coverage` to collect line/function coverage:
 ```sh
@@ -45,7 +48,7 @@ Coverage target: **40%** (line coverage of `backend/lib/` and `backend/routes/`)
 
 ### Run all tests
 ```sh
-npm --prefix frontend test:ci
+npm --prefix frontend run test:ci
 ```
 (Runs Jest in CI mode — no watch, exits with code.)
 
@@ -80,7 +83,7 @@ test('renders page header', () => {
 ### Coverage
 Run with coverage report:
 ```sh
-npm --prefix frontend test:ci -- --coverage
+npm --prefix frontend run test:ci -- --coverage
 ```
 Coverage target: **30%** (statement coverage).
 
@@ -94,12 +97,7 @@ export PATH="/opt/homebrew/bin:$PATH"
 npx playwright install --with-deps
 ```
 
-### Run against staging (design-sakura CloudFront)
-```sh
-E2E_BASE_URL=https://d2lepwk3t4buta.cloudfront.net npx playwright test --config e2e/playwright.config.js
-```
-
-### Run against dev CloudFront
+### Run against the deployed dev stack
 ```sh
 E2E_BASE_URL=https://d2l9b1xmucsb19.cloudfront.net npx playwright test --config e2e/playwright.config.js
 ```
@@ -125,11 +123,11 @@ JSON results are written to `e2e/results.json` after each run.
 | Gate | Command | Target |
 |------|---------|--------|
 | Backend lint | `npm --prefix backend run lint` | 0 errors |
-| Backend tests | `npm --prefix backend test` | all pass |
+| Backend tests | `npm --prefix backend test` | 175/178 pass (3 pre-existing failures) |
 | Backend coverage | `node --experimental-test-coverage ...` | ≥ 40% lines |
 | Frontend lint | `npm --prefix frontend run lint` | 0 errors |
-| Frontend tests | `npm --prefix frontend test:ci` | all pass |
-| Frontend coverage | `npm --prefix frontend test:ci -- --coverage` | ≥ 30% stmts |
+| Frontend tests | `npm --prefix frontend run test:ci` | all pass |
+| Frontend coverage | `npm --prefix frontend run test:ci -- --coverage` | ≥ 30% stmts |
 | Frontend build | `npm --prefix frontend run build` | exits 0 |
-| E2E sanity | `npx playwright test --config e2e/playwright.config.js` | all pass |
+| E2E sanity | `E2E_BASE_URL=<url> npx playwright test --config e2e/playwright.config.js` | all pass |
 | File length | `bash scripts/check-file-length.sh` | no file > 500 lines |

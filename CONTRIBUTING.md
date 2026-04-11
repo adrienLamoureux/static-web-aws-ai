@@ -1,20 +1,19 @@
 # Contributing to Whisk Studio
 
-> Last updated: 2026-04-06
+> Last updated: 2026-04-11
 
 ---
 
-## Branch Scope Rules
+## Branch Model
 
-| Branch | What you may change |
-|--------|---------------------|
-| `codex/dev` | Backend (`backend/**`), CDK (`cdk/**`), shared docs (`docs/**`), root config files |
-| `codex/design-*/code` | Frontend only (`frontend/**`) |
+`main` is the single development branch. Backend, frontend, and CDK all live here together.
 
-**Never** add backend or CDK files in a design branch. Design branches are UI-only overlays.
-All design variants share the `codex/dev` backend — do not deploy a separate Lambda/API GW/DynamoDB from a design branch.
+To work on a feature or fix:
+1. Branch from `main`: `git checkout -b codex/<idea-id>-<slice> main`
+2. Implement your changes
+3. Open a PR back to `main`
 
-When adding a new design variant, register its CloudFront URL in the `dev` Cognito client's allowed callback and logout URLs.
+Other design variant branches (`codex/design-fusion/code`, `codex/design-pixnovel/code`) are UI-only overlays pointing at the `dev` backend — do not use them for new development.
 
 ---
 
@@ -41,7 +40,7 @@ ESLint + Prettier are the enforced formatters. Do not submit PRs with unformatte
 - Each route module returns an Express `Router`; do not mutate `app` directly
 - Do not bypass DI by requiring modules at the top of route files (three known exceptions: `civitai-client`, `director-config`, `lora-utils` — do not add more)
 
-### Frontend style notes (design-sakura)
+### Frontend style notes
 - Use the `skr-` CSS class prefix for new components
 - Add new CSS custom properties to `src/styles/tokens.css` under the `:root` block
 - Do not use inline styles for theming — use CSS custom properties only
@@ -69,12 +68,11 @@ Before opening a pull request, verify all of the following pass:
 - [ ] `npm --prefix backend run lint` exits 0
 - [ ] `npm --prefix frontend run lint` exits 0
 - [ ] `npm --prefix backend test` — all tests pass
-- [ ] `npm --prefix frontend test:ci` — all tests pass
+- [ ] `npm --prefix frontend run test:ci` — all tests pass
 - [ ] `bash scripts/check-file-length.sh` — no file over 500 lines
 - [ ] `node -e "require('./backend/index')"` — backend loads without errors (if backend touched)
 - [ ] `npm --prefix frontend run build` — build succeeds (if frontend touched)
 - [ ] `npm --prefix cdk run build` — CDK compiles (if CDK touched)
-- [ ] Design branches: only `frontend/**` files are modified
 
 ---
 
@@ -87,7 +85,7 @@ Before opening a pull request, verify all of the following pass:
 | Backend tests | `npm --prefix backend test` | all pass |
 | Frontend lint | `npm --prefix frontend run lint` | 0 errors |
 | Frontend build | `npm --prefix frontend run build` | exits 0 |
-| Frontend tests | `npm --prefix frontend test:ci` | all pass |
+| Frontend tests | `npm --prefix frontend run test:ci` | all pass |
 | File length | `bash scripts/check-file-length.sh` | exits 0 |
 | CDK build | `npm --prefix cdk run build` | exits 0 (if CDK touched) |
 | E2E sanity | `E2E_BASE_URL=<url> npx playwright test --config e2e/playwright.config.js` | all pass (post-deploy) |
@@ -96,12 +94,12 @@ Before opening a pull request, verify all of the following pass:
 
 ## Deployment Notes
 
-Full-stack deploy (dev backend):
+Full-stack deploy (backend + Sakura frontend together from `main`):
 ```sh
 npm --prefix cdk run idea:deploy -- --stage=dev
 ```
 
-UI-only design variant deploy:
+UI-only design variant deploy (for fusion, pixnovel, etc.):
 ```sh
 npm --prefix cdk run idea:deploy -- --stage=<design-id> --backend-stage=dev
 ```
@@ -121,11 +119,11 @@ Follow conventional commits format:
 <optional body>
 ```
 Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `ci`
-Scope: `backend`, `frontend`, `cdk`, `e2e`, `docs`, or the design variant (`sakura`, `fusion`, `pixnovel`)
+Scope: `backend`, `frontend`, `cdk`, `e2e`, `docs`
 
 Examples:
 ```
 feat(backend): add /api/companion/initiative endpoint
-fix(sakura): correct HUD z-index on mobile viewport
+fix(frontend): correct HUD z-index on mobile viewport
 docs: update architecture.md with route subdirectory structure
 ```
