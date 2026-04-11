@@ -5,5 +5,13 @@
     "react-hooks/exhaustive-deps": "warn",
     "no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
     "eqeqeq": ["error", "always", { "null": "ignore" }]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.js", "**/*.test.jsx"],
+      "rules": {
+        "import/first": "off"
+      }
+    }
+  ]
 }

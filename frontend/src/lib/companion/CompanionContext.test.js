@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, renderHook, act } from '@testing-library/react';
+import { render, renderHook, act, screen } from '@testing-library/react';
 import {
   CompanionProvider,
   CompanionActions,
@@ -14,12 +14,12 @@ function wrapper({ children }) {
 
 describe('CompanionProvider', () => {
   it('renders children without crashing', () => {
-    const { getByText } = render(
+    render(
       <CompanionProvider>
         <div>Hello companion</div>
       </CompanionProvider>
     );
-    expect(getByText('Hello companion')).toBeInTheDocument();
+    expect(screen.getByText('Hello companion')).toBeInTheDocument();
   });
 });
 
