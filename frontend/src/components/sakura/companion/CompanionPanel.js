@@ -34,6 +34,7 @@ export default function CompanionPanel() {
   const engineRef = useRef(null);
 
   const [modelEntry, setModelEntry] = useState(getDefaultModel());
+  const characterName = modelEntry.name.split(/[\s(]/)[0];
   const [minimized, setMinimized]   = useState(
     () => localStorage.getItem(STORAGE_KEY) === "true"
   );
@@ -103,7 +104,7 @@ export default function CompanionPanel() {
     return (
       <button
         type="button"
-        aria-label="Open Hiyori companion"
+        aria-label={`Open ${characterName} companion`}
         onClick={() => setMinimized((v) => !v)}
         style={{
           ...fixedBase, bottom: HUD_H + 12, right: 12,
@@ -136,7 +137,7 @@ export default function CompanionPanel() {
         )}
         <button
           type="button"
-          aria-label="Expand Hiyori companion"
+          aria-label={`Expand ${characterName} companion`}
           onClick={toggleMinimized}
           style={{
             ...fixedBase, bottom: HUD_H + 12, right: 16,
@@ -199,6 +200,7 @@ export default function CompanionPanel() {
             onNavigate={navigate}
             proactiveText={proactiveText}
             onProactiveDismiss={dismissProactive}
+            characterName={characterName}
           />
         ) : proactiveText ? (
           /* Simple speech bubble when chat is hidden */

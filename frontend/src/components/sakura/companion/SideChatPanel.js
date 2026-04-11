@@ -51,6 +51,7 @@ export default function SideChatPanel({
   onNavigate,
   proactiveText,
   onProactiveDismiss,
+  characterName,
 }) {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
@@ -280,7 +281,7 @@ export default function SideChatPanel({
       {/* Message list */}
       <div ref={listRef} style={styles.list}>
         {messages.length === 0 && !loading && (
-          <p style={styles.empty}>Say something to Hiyori…</p>
+          <p style={styles.empty}>Say something to {characterName}…</p>
         )}
         {messages.map((m, i) => (
           <div key={i}>
@@ -291,7 +292,7 @@ export default function SideChatPanel({
             }}>
               {m.role === "assistant" && (
                 <span style={styles.name}>
-                  {m.isInitiative ? "✦ " : ""}Hiyori
+                  {m.isInitiative ? "✦ " : ""}{characterName}
                 </span>
               )}
               <span>{m.text}</span>
@@ -307,7 +308,7 @@ export default function SideChatPanel({
         {/* Currently revealing */}
         {revealText && (
           <div style={{ ...styles.bubble, ...styles.bubbleHiyori }}>
-            <span style={styles.name}>Hiyori</span>
+            <span style={styles.name}>{characterName}</span>
             <span>{revealText}<span style={styles.cursor}>|</span></span>
           </div>
         )}
