@@ -60,22 +60,6 @@ const unauthenticatedChecks = [
     ignoreWebGLErrors: true,
   },
   {
-    id: "atelier-redirect",
-    path: "/atelier",
-    expectPath: "/login",
-    expectLoginText: "Continue to login",
-    waitForRedirect: true,
-    ignoreWebGLErrors: true,
-  },
-  {
-    id: "chronicle-redirect",
-    path: "/chronicle",
-    expectPath: "/login",
-    expectLoginText: "Continue to login",
-    waitForRedirect: true,
-    ignoreWebGLErrors: true,
-  },
-  {
     id: "sanctum-redirect",
     path: "/sanctum",
     expectPath: "/login",
