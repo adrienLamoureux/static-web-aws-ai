@@ -20,3 +20,4 @@
 - 2026-03-27T11:33:21.248Z | event=deploy | stack=StaticWebAWSAIStack-design-sakura / cloudfront=https://d2lepwk3t4buta.cloudfront.net / api=https://wl9d78lnf9.execute-api.us-east-1.amazonaws.com/prod/ / commit=e20a358 / sanity=skipped / ui_smoke=passed
 - 2026-04-04T20:59:33.617Z | event=deploy | stack=StaticWebAWSAIStack-design-sakura / cloudfront=https://d2lepwk3t4buta.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=9a18711 / sanity=passed / ui_smoke=passed
 - 2026-04-06T20:07:54.901Z | event=sanity | stage=design-sakura / result=passed
+- 2026-04-11T20:32:14.672Z | event=destroy | stack=StaticWebAWSAIStack-design-sakura / commit=d4cfb99
