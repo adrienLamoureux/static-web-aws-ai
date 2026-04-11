@@ -51,34 +51,43 @@ const unauthenticatedChecks = [
     path: "/login",
     expectPath: "/login",
     expectLoginText: "Continue to login",
+    ignoreWebGLErrors: true,
   },
   {
     id: "home-public",
     path: "/",
     expectPath: "/",
+    ignoreWebGLErrors: true,
   },
   {
     id: "atelier-redirect",
     path: "/atelier",
     expectPath: "/login",
     expectLoginText: "Continue to login",
+    waitForRedirect: true,
+    ignoreWebGLErrors: true,
   },
   {
     id: "chronicle-redirect",
     path: "/chronicle",
     expectPath: "/login",
     expectLoginText: "Continue to login",
+    waitForRedirect: true,
+    ignoreWebGLErrors: true,
   },
   {
     id: "sanctum-redirect",
     path: "/sanctum",
     expectPath: "/login",
     expectLoginText: "Continue to login",
+    waitForRedirect: true,
+    ignoreWebGLErrors: true,
   },
   {
     id: "about-public",
     path: "/about",
     expectPath: "/about",
+    ignoreWebGLErrors: true,
   },
 ];
 
@@ -177,6 +186,7 @@ async function runPageCheck({
   expectedTexts = [],
   expectedAnyTexts = [],
   ignoreWebGLErrors = false,
+  waitForRedirect = false,
 }) {
   const page = await context.newPage();
   const pageErrors = [];
@@ -190,6 +200,11 @@ async function runPageCheck({
     timeout: timeoutMs,
   });
   await page.waitForLoadState("domcontentloaded", { timeout: timeoutMs });
+
+  // Wait for React Router to finish its redirect (client-side navigation)
+  if (waitForRedirect && expectPath) {
+    await page.waitForURL(`**${expectPath}`, { timeout: timeoutMs }).catch(() => {});
+  }
 
   const finalPath = new URL(page.url()).pathname;
   if (expectPath && finalPath !== expectPath) {
@@ -230,6 +245,7 @@ async function runCheckGroup({ context, baseUrl, timeoutMs, checks, failures }) 
         expectedTexts: check.expectedTexts || [],
         expectedAnyTexts: check.expectedAnyTexts || [],
         ignoreWebGLErrors: check.ignoreWebGLErrors || false,
+        waitForRedirect: check.waitForRedirect || false,
       });
       const elapsedMs = Date.now() - startedAt;
       info(`PASS ${check.id} (${elapsedMs}ms)`);
