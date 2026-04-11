@@ -1,0 +1,46 @@
+flowchart LR
+  subgraph CLIENT["Client"]
+    USER["User Browser"]
+    SPA["React SPA (frontend/src)"]
+    CFG["Runtime config (/config.json)"]
+  end
+
+  subgraph AWS_STACK["Per-Idea AWS Stack (StaticWebAWSAIStack-<idea-id>)"]
+    CF["CloudFront Distribution"]
+    WEB_S3["S3 Website Bucket"]
+    COG["Cognito User Pool + Hosted UI"]
+    API_GW["API Gateway (Cognito Authorizer)"]
+    LAMBDA["Lambda (backend/lambda.js -> Express app)"]
+    DATA_DDB[("DynamoDB (metadata)")]
+    MEDIA_S3[("S3 Media Bucket (assets)")]
+  end
+
+  subgraph AI["AI Providers"]
+    BEDROCK["Amazon Bedrock"]
+    REPLICATE["Replicate"]
+    GRADIO["Gradio / HF Spaces"]
+  end
+
+  subgraph REPO["Repo Controls"]
+    CDK["CDK Stack (cdk/lib/static-web-aws-ai-stack.ts)"]
+    IDEA_DOCS["Idea Context (ideas/<idea-id>/*.md)"]
+  end
+
+  USER --> CF
+  CF --> WEB_S3
+  WEB_S3 --> SPA
+  SPA --> CFG
+
+  SPA -. OAuth2 PKCE .-> COG
+  SPA -- "Bearer JWT (Authorization)" --> API_GW
+  API_GW --> LAMBDA
+
+  LAMBDA --> DATA_DDB
+  LAMBDA --> MEDIA_S3
+
+  LAMBDA --> BEDROCK
+  LAMBDA --> REPLICATE
+  LAMBDA --> GRADIO
+
+  CDK --> AWS_STACK
+  IDEA_DOCS --> CDK

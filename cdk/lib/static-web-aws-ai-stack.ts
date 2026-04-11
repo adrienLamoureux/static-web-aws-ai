@@ -11,14 +11,138 @@ import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as cr from "aws-cdk-lib/custom-resources";
 import * as path from "path";
+import { resolveStageName } from "./stage";
+
+const COGNITO_DOMAIN_PREFIX_BASE_MAX_LENGTH = 20;
+const COGNITO_DOMAIN_STAGE_MAX_LENGTH = 28;
+const COGNITO_DOMAIN_FALLBACK_PREFIX = "ws";
+const STAGE_FALLBACK_PREFIX = "idea";
+const DEFAULT_COGNITO_DOMAIN_BASE = "whisk-studio";
+const ADMIN_OUTPUT_NOT_CONFIGURED = "not-configured";
+const ADMIN_TEMP_PASSWORD_MIN_LENGTH = 10;
+const AWS_ACCOUNT_ID_PATTERN = /\b\d{12}\b/;
+const API_GATEWAY_CORS_ERROR_ALLOW_METHODS = "'GET,POST,PUT,PATCH,DELETE,OPTIONS'";
+const LOCAL_COGNITO_PORT_START = 3000;
+const LOCAL_COGNITO_PORT_COUNT = 10;
+const TCP_PORT_MIN = 1;
+const TCP_PORT_MAX = 65535;
+const DEFAULT_LOCAL_COGNITO_PORT_RANGE = Array.from(
+  { length: LOCAL_COGNITO_PORT_COUNT },
+  (_value, index) => String(LOCAL_COGNITO_PORT_START + index)
+);
+const VITE_PREVIEW_LOCAL_PORT = "4173";
+const VITE_DEV_LOCAL_PORT = "5173";
+const COMMON_ALT_LOCAL_COGNITO_PORTS = [
+  VITE_PREVIEW_LOCAL_PORT,
+  VITE_DEV_LOCAL_PORT,
+] as const;
+const DEFAULT_LOCAL_COGNITO_PORTS = Array.from(
+  new Set([
+    ...DEFAULT_LOCAL_COGNITO_PORT_RANGE,
+    ...COMMON_ALT_LOCAL_COGNITO_PORTS,
+  ])
+);
+const LOCAL_AUTH_HOSTS = ["localhost", "127.0.0.1"] as const;
+
+/**
+ * CloudFront domains of design-variant stacks that share this backend's
+ * Cognito User Pool.  Each variant's config.json points at *this* client, so
+ * their callback / logout URLs must be registered here.
+ */
+const DESIGN_VARIANT_CLOUDFRONT_DOMAINS = [
+  "d2lepwk3t4buta.cloudfront.net", // design-sakura
+  "d3ei9r5awjyzzr.cloudfront.net", // design-fusion
+  "d1ulh0ke4fvnqg.cloudfront.net", // design-kinetic
+  "d21j30h6jj4n2k.cloudfront.net", // design-pixnovel
+  "d3mv9zsmbqsn48.cloudfront.net", // design-atelier
+  "d17qd3rx45vcxl.cloudfront.net", // design-solaris
+] as const;
+
+const sanitizeDomainPrefix = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+/, "")
+    .replace(/-+$/, "");
+
+const resolveLocalCognitoPorts = (value: string) => {
+  const rawPorts = value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  if (!rawPorts.length) {
+    return [...DEFAULT_LOCAL_COGNITO_PORTS];
+  }
+  const deduped = Array.from(
+    new Set(
+      rawPorts
+        .map((item) => Number(item))
+        .filter(
+          (item) =>
+            Number.isInteger(item) && item >= TCP_PORT_MIN && item <= TCP_PORT_MAX
+        )
+        .map((item) => String(item))
+    )
+  );
+  return deduped.length ? deduped : [...DEFAULT_LOCAL_COGNITO_PORTS];
+};
+
+const trimCognitoDomainSegment = ({
+  value,
+  maxLength,
+  fallbackValue,
+  ensureLeadingLetter = true,
+}: {
+  value: string;
+  maxLength: number;
+  fallbackValue: string;
+  ensureLeadingLetter?: boolean;
+}) => {
+  let normalized = sanitizeDomainPrefix(value);
+  if (normalized.length > maxLength) {
+    normalized = normalized.slice(0, maxLength).replace(/-+$/, "");
+  }
+  if (!normalized) {
+    normalized = sanitizeDomainPrefix(fallbackValue);
+  }
+  if (ensureLeadingLetter && !/^[a-z]/.test(normalized)) {
+    normalized = `${COGNITO_DOMAIN_FALLBACK_PREFIX}-${normalized}`;
+  }
+  if (normalized.length > maxLength) {
+    normalized = normalized
+      .slice(0, maxLength)
+      .replace(/-+$/, "");
+  }
+  if (!normalized) {
+    normalized = sanitizeDomainPrefix(fallbackValue);
+  }
+  if (!normalized) {
+    normalized = COGNITO_DOMAIN_FALLBACK_PREFIX;
+  }
+  return normalized;
+};
+
+export interface StaticWebAWSAIStackProps extends cdk.StackProps {
+  stage: string;
+}
 
 export class StaticWebAWSAIStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: StaticWebAWSAIStackProps) {
     super(scope, id, props);
+    const stage = resolveStageName(props.stage);
 
-    const adminEmail = "vergil1534@gmail.com";
-    const secondaryAdminEmail = "kirito153464@gmail.com";
-    const adminTempPassword = "WhiskStudio!2026";
+    const adminEmail = String(process.env.ADMIN_EMAIL || "").trim();
+    const secondaryAdminEmailRaw = String(
+      process.env.SECONDARY_ADMIN_EMAIL || ""
+    ).trim();
+    const secondaryAdminEmail =
+      secondaryAdminEmailRaw && secondaryAdminEmailRaw !== adminEmail
+        ? secondaryAdminEmailRaw
+        : "";
+    const adminTempPassword = String(
+      process.env.ADMIN_TEMP_PASSWORD || ""
+    ).trim();
 
     const mediaTable = new dynamodb.Table(this, "MediaTable", {
       partitionKey: { name: "pk", type: dynamodb.AttributeType.STRING },
@@ -45,133 +169,165 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       },
     });
 
-    const uniqueSuffix = cdk.Names.uniqueId(this).slice(-8).toLowerCase();
-    const overrideDomainPrefix = (process.env.COGNITO_DOMAIN_PREFIX || "").toLowerCase();
-    let domainPrefix = overrideDomainPrefix ||
-      `whisk-studio-${cdk.Stack.of(this).account}-${cdk.Stack.of(this).region}-${uniqueSuffix}`;
-    domainPrefix = domainPrefix
-      .toLowerCase()
-      .replace(/[^a-z0-9-]/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-+/, "")
-      .replace(/-+$/, "");
-    if (!/^[a-z]/.test(domainPrefix)) {
-      domainPrefix = `ws-${domainPrefix}`;
-    }
-    if (domainPrefix.length > 63) {
-      domainPrefix = domainPrefix.slice(0, 63).replace(/-+$/, "");
-    }
-    if (!domainPrefix) {
-      domainPrefix = `ws-${uniqueSuffix}`;
-    }
-    const userPoolDomain = userPool.addDomain("UserPoolDomain", {
+    new cognito.CfnUserPoolGroup(this, "AdminGroup", {
+      groupName: "admin",
+      userPoolId: userPool.userPoolId,
+      description: "Administrators with access to Director/Sanctum",
+      precedence: 0,
+    });
+
+    const baseDomainPrefixSource =
+      process.env.COGNITO_DOMAIN_PREFIX_BASE ||
+      process.env.COGNITO_DOMAIN_PREFIX ||
+      DEFAULT_COGNITO_DOMAIN_BASE;
+    const baseDomainPrefix = trimCognitoDomainSegment({
+      value: baseDomainPrefixSource,
+      maxLength: COGNITO_DOMAIN_PREFIX_BASE_MAX_LENGTH,
+      fallbackValue: DEFAULT_COGNITO_DOMAIN_BASE,
+    });
+    const stageDomainPrefix = trimCognitoDomainSegment({
+      value: stage,
+      maxLength: COGNITO_DOMAIN_STAGE_MAX_LENGTH,
+      fallbackValue: STAGE_FALLBACK_PREFIX,
+    });
+    const accountDomainPrefixSource = String(
+      process.env.CDK_DEFAULT_ACCOUNT ||
+        process.env.AWS_ACCOUNT_ID ||
+        cdk.Stack.of(this).account
+    );
+    const accountIdFromSource =
+      accountDomainPrefixSource.match(AWS_ACCOUNT_ID_PATTERN)?.[0] ||
+      accountDomainPrefixSource;
+    const accountDomainPrefix = trimCognitoDomainSegment({
+      value: accountIdFromSource,
+      maxLength: 12,
+      fallbackValue: "000000000000",
+      ensureLeadingLetter: false,
+    });
+    const domainPrefix = `${baseDomainPrefix}-${stageDomainPrefix}-${accountDomainPrefix}`;
+    userPool.addDomain("UserPoolDomain", {
       cognitoDomain: { domainPrefix },
     });
     const cognitoDomainBaseUrl = `https://${domainPrefix}.auth.${cdk.Stack.of(this).region}.amazoncognito.com`;
 
-    new cr.AwsCustomResource(this, "DefaultAdminUser", {
-      onCreate: {
-        service: "CognitoIdentityServiceProvider",
-        action: "adminCreateUser",
-        parameters: {
-          UserPoolId: userPool.userPoolId,
-          Username: adminEmail,
-          TemporaryPassword: adminTempPassword,
-          MessageAction: "SUPPRESS",
-          UserAttributes: [
-            { Name: "email", Value: adminEmail },
-            { Name: "email_verified", Value: "true" },
-          ],
+    const registerDefaultAdminUser = ({
+      resourceId,
+      username,
+    }: {
+      resourceId: string;
+      username: string;
+    }) =>
+      new cr.AwsCustomResource(this, resourceId, {
+        onCreate: {
+          service: "CognitoIdentityServiceProvider",
+          action: "adminCreateUser",
+          parameters: {
+            UserPoolId: userPool.userPoolId,
+            Username: username,
+            TemporaryPassword: adminTempPassword,
+            MessageAction: "SUPPRESS",
+            UserAttributes: [
+              { Name: "email", Value: username },
+              { Name: "email_verified", Value: "true" },
+            ],
+          },
+          physicalResourceId: cr.PhysicalResourceId.of(`default-admin-${username}`),
         },
-        physicalResourceId: cr.PhysicalResourceId.of(
-          `default-admin-${adminEmail}`
-        ),
-      },
-      onUpdate: {
-        service: "CognitoIdentityServiceProvider",
-        action: "adminUpdateUserAttributes",
-        parameters: {
-          UserPoolId: userPool.userPoolId,
-          Username: adminEmail,
-          UserAttributes: [
-            { Name: "email", Value: adminEmail },
-            { Name: "email_verified", Value: "true" },
-          ],
+        onUpdate: {
+          service: "CognitoIdentityServiceProvider",
+          action: "adminUpdateUserAttributes",
+          parameters: {
+            UserPoolId: userPool.userPoolId,
+            Username: username,
+            UserAttributes: [
+              { Name: "email", Value: username },
+              { Name: "email_verified", Value: "true" },
+            ],
+          },
+          physicalResourceId: cr.PhysicalResourceId.of(`default-admin-${username}`),
         },
-        physicalResourceId: cr.PhysicalResourceId.of(
-          `default-admin-${adminEmail}`
-        ),
-      },
-      onDelete: {
-        service: "CognitoIdentityServiceProvider",
-        action: "adminDeleteUser",
-        parameters: {
-          UserPoolId: userPool.userPoolId,
-          Username: adminEmail,
+        onDelete: {
+          service: "CognitoIdentityServiceProvider",
+          action: "adminDeleteUser",
+          parameters: {
+            UserPoolId: userPool.userPoolId,
+            Username: username,
+          },
         },
-      },
-      policy: cr.AwsCustomResourcePolicy.fromStatements([
-        new iam.PolicyStatement({
-          actions: [
-            "cognito-idp:AdminCreateUser",
-            "cognito-idp:AdminDeleteUser",
-          ],
-          resources: [userPool.userPoolArn],
-        }),
-      ]),
-    });
+        policy: cr.AwsCustomResourcePolicy.fromStatements([
+          new iam.PolicyStatement({
+            actions: [
+              "cognito-idp:AdminCreateUser",
+              "cognito-idp:AdminDeleteUser",
+              "cognito-idp:AdminUpdateUserAttributes",
+            ],
+            resources: [userPool.userPoolArn],
+          }),
+        ]),
+      });
 
-    new cr.AwsCustomResource(this, "SecondaryAdminUser", {
-      onCreate: {
-        service: "CognitoIdentityServiceProvider",
-        action: "adminCreateUser",
-        parameters: {
-          UserPoolId: userPool.userPoolId,
-          Username: secondaryAdminEmail,
-          TemporaryPassword: adminTempPassword,
-          MessageAction: "SUPPRESS",
-          UserAttributes: [
-            { Name: "email", Value: secondaryAdminEmail },
-            { Name: "email_verified", Value: "true" },
-          ],
+    if (adminTempPassword && adminTempPassword.length < ADMIN_TEMP_PASSWORD_MIN_LENGTH) {
+      cdk.Annotations.of(this).addWarning(
+        `ADMIN_TEMP_PASSWORD should be at least ${ADMIN_TEMP_PASSWORD_MIN_LENGTH} characters to meet pool policy.`
+      );
+    }
+
+    const canSeedAdminUsers = Boolean(adminTempPassword);
+    if (!canSeedAdminUsers && (adminEmail || secondaryAdminEmail)) {
+      cdk.Annotations.of(this).addWarning(
+        "ADMIN_TEMP_PASSWORD is missing; default admin users will not be created."
+      );
+    }
+
+    if (canSeedAdminUsers && adminEmail) {
+      registerDefaultAdminUser({
+        resourceId: "DefaultAdminUser",
+        username: adminEmail,
+      });
+      new cr.AwsCustomResource(this, "DefaultAdminGroupMembership", {
+        onCreate: {
+          service: "CognitoIdentityServiceProvider",
+          action: "adminAddUserToGroup",
+          parameters: {
+            UserPoolId: userPool.userPoolId,
+            Username: adminEmail,
+            GroupName: "admin",
+          },
+          physicalResourceId: cr.PhysicalResourceId.of(`admin-group-${adminEmail}`),
         },
-        physicalResourceId: cr.PhysicalResourceId.of(
-          `default-admin-${secondaryAdminEmail}`
-        ),
-      },
-      onUpdate: {
-        service: "CognitoIdentityServiceProvider",
-        action: "adminUpdateUserAttributes",
-        parameters: {
-          UserPoolId: userPool.userPoolId,
-          Username: secondaryAdminEmail,
-          UserAttributes: [
-            { Name: "email", Value: secondaryAdminEmail },
-            { Name: "email_verified", Value: "true" },
-          ],
+        policy: cr.AwsCustomResourcePolicy.fromStatements([
+          new iam.PolicyStatement({
+            actions: ["cognito-idp:AdminAddUserToGroup"],
+            resources: [userPool.userPoolArn],
+          }),
+        ]),
+      });
+    }
+
+    if (canSeedAdminUsers && secondaryAdminEmail) {
+      registerDefaultAdminUser({
+        resourceId: "SecondaryAdminUser",
+        username: secondaryAdminEmail,
+      });
+      new cr.AwsCustomResource(this, "SecondaryAdminGroupMembership", {
+        onCreate: {
+          service: "CognitoIdentityServiceProvider",
+          action: "adminAddUserToGroup",
+          parameters: {
+            UserPoolId: userPool.userPoolId,
+            Username: secondaryAdminEmail,
+            GroupName: "admin",
+          },
+          physicalResourceId: cr.PhysicalResourceId.of(`admin-group-${secondaryAdminEmail}`),
         },
-        physicalResourceId: cr.PhysicalResourceId.of(
-          `default-admin-${secondaryAdminEmail}`
-        ),
-      },
-      onDelete: {
-        service: "CognitoIdentityServiceProvider",
-        action: "adminDeleteUser",
-        parameters: {
-          UserPoolId: userPool.userPoolId,
-          Username: secondaryAdminEmail,
-        },
-      },
-      policy: cr.AwsCustomResourcePolicy.fromStatements([
-        new iam.PolicyStatement({
-          actions: [
-            "cognito-idp:AdminCreateUser",
-            "cognito-idp:AdminDeleteUser",
-          ],
-          resources: [userPool.userPoolArn],
-        }),
-      ]),
-    });
+        policy: cr.AwsCustomResourcePolicy.fromStatements([
+          new iam.PolicyStatement({
+            actions: ["cognito-idp:AdminAddUserToGroup"],
+            resources: [userPool.userPoolArn],
+          }),
+        ]),
+      });
+    }
 
     // Lambda Function for API
     const apiLambda = new lambda.Function(this, "ApiLambda", {
@@ -220,6 +376,10 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       process.env.REPLICATE_API_TOKEN || ""
     );
     apiLambda.addEnvironment(
+      "CIVITAI_API_TOKEN",
+      process.env.CIVITAI_API_TOKEN || ""
+    );
+    apiLambda.addEnvironment(
       "HUGGING_FACE_TOKEN",
       process.env.HUGGING_FACE_TOKEN || ""
     );
@@ -255,24 +415,54 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       })
     );
 
-    // API Gateway
+    const authorizerLambdaFn = new lambda.Function(this, "AuthorizerLambda", {
+      runtime: lambda.Runtime.NODEJS_22_X,
+      handler: "index.handler",
+      code: lambda.Code.fromAsset(path.join(__dirname, "../../backend/authorizer")),
+      environment: {
+        USER_POOL_ID: userPool.userPoolId,
+      },
+    });
+
+    const requestAuthorizer = new apigateway.RequestAuthorizer(this, "RequestAuthorizer", {
+      handler: authorizerLambdaFn,
+      identitySources: [],
+      resultsCacheTtl: cdk.Duration.seconds(0),
+    });
+
+    // API Gateway — proxy:false so we can mix authenticated catch-all with public companion routes
+    const lambdaInteg = new apigateway.LambdaIntegration(apiLambda);
+    const authOpts = {
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+      authorizer: requestAuthorizer,
+    };
+    const noAuthOpts = { authorizationType: apigateway.AuthorizationType.NONE };
+
     const api = new apigateway.LambdaRestApi(this, "ApiGateway", {
       handler: apiLambda,
-      proxy: true, // Direct all API Gateway traffic to Lambda
+      proxy: false, // Manual routing — allows mixing auth/no-auth routes
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: apigateway.Cors.ALL_METHODS,
         allowHeaders: ["*"],
       },
-      defaultMethodOptions: {
-        authorizationType: apigateway.AuthorizationType.COGNITO,
-        authorizer: new apigateway.CognitoUserPoolsAuthorizer(
-          this,
-          "CognitoAuthorizer",
-          { cognitoUserPools: [userPool] }
-        ),
-      },
+      defaultMethodOptions: authOpts,
     });
+
+    // Authenticated catch-all (covers all routes not explicitly listed below)
+    api.root.addMethod("ANY", lambdaInteg, authOpts);
+    api.root.addProxy({ defaultIntegration: lambdaInteg, anyMethod: true });
+
+    // Public companion routes — no auth required
+    const apiRes = api.root.addResource("api");
+    const companionRes = apiRes.addResource("companion");
+    companionRes.addResource("chat").addMethod("POST", lambdaInteg, noAuthOpts);
+    companionRes.addResource("proactive").addMethod("POST", lambdaInteg, noAuthOpts);
+    const companionMemoryRes = companionRes.addResource("memory");
+    companionMemoryRes.addResource("status").addMethod("GET", lambdaInteg, noAuthOpts);
+    companionMemoryRes.addMethod("DELETE", lambdaInteg, authOpts);
+    const adminRes = apiRes.addResource("admin");
+    adminRes.addResource("companion-model").addMethod("GET", lambdaInteg, noAuthOpts);
 
     new apigateway.GatewayResponse(this, "ApiGatewayDefault4xx", {
       restApi: api,
@@ -280,7 +470,7 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       responseHeaders: {
         "Access-Control-Allow-Origin": "'*'",
         "Access-Control-Allow-Headers": "'*'",
-        "Access-Control-Allow-Methods": "'GET,POST,OPTIONS'",
+        "Access-Control-Allow-Methods": API_GATEWAY_CORS_ERROR_ALLOW_METHODS,
       },
     });
 
@@ -290,7 +480,7 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       responseHeaders: {
         "Access-Control-Allow-Origin": "'*'",
         "Access-Control-Allow-Headers": "'*'",
-        "Access-Control-Allow-Methods": "'GET,POST,OPTIONS'",
+        "Access-Control-Allow-Methods": API_GATEWAY_CORS_ERROR_ALLOW_METHODS,
       },
     });
 
@@ -331,10 +521,20 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       ],
     });
 
-    const frontendApiUrl = process.env.REACT_APP_API_URL || api.url || "";
+    const frontendApiUrl =
+      process.env.FRONTEND_API_URL_OVERRIDE || api.url || "";
+    const localCognitoPorts = resolveLocalCognitoPorts(
+      String(process.env.COGNITO_LOCALHOST_PORTS || "")
+    );
+    const localCallbackUrls = localCognitoPorts.flatMap((port) =>
+      LOCAL_AUTH_HOSTS.map((host) => `http://${host}:${port}/auth/callback`)
+    );
+    const localLogoutUrls = localCognitoPorts.flatMap((port) =>
+      LOCAL_AUTH_HOSTS.map((host) => `http://${host}:${port}/login`)
+    );
 
     const userPoolClient = userPool.addClient("UserPoolClient", {
-      authFlows: { userPassword: true },
+      authFlows: { userPassword: true, userSrp: true },
       oAuth: {
         flows: { authorizationCodeGrant: true },
         scopes: [
@@ -343,12 +543,18 @@ export class StaticWebAWSAIStack extends cdk.Stack {
           cognito.OAuthScope.PROFILE,
         ],
         callbackUrls: [
-          "http://localhost:3000/auth/callback",
+          ...localCallbackUrls,
           `https://${distribution.domainName}/auth/callback`,
+          ...DESIGN_VARIANT_CLOUDFRONT_DOMAINS.map(
+            (d) => `https://${d}/auth/callback`
+          ),
         ],
         logoutUrls: [
-          "http://localhost:3000/login",
+          ...localLogoutUrls,
           `https://${distribution.domainName}/login`,
+          ...DESIGN_VARIANT_CLOUDFRONT_DOMAINS.map(
+            (d) => `https://${d}/login`
+          ),
         ],
       },
       supportedIdentityProviders: [
@@ -357,12 +563,15 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       refreshTokenValidity: cdk.Duration.days(30),
     });
 
-    // Deploy frontend to S3
+    // Deploy frontend to S3 (Live2D assets excluded — synced separately via aws s3 sync to avoid Lambda timeout)
+    const frontendBuildDir =
+      process.env.FRONTEND_BUILD_DIR ||
+      path.join(__dirname, "../../frontend/build");
     new s3Deployment.BucketDeployment(this, "DeployWebsite", {
       sources: [
-        s3Deployment.Source.asset(
-          path.join(__dirname, "../../frontend/build")
-        ),
+        s3Deployment.Source.asset(frontendBuildDir, {
+          exclude: ["live2d/**"],
+        }),
         s3Deployment.Source.data(
           "config.json",
           JSON.stringify({
@@ -379,6 +588,12 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       destinationBucket: websiteBucket,
       distribution,
       distributionPaths: ["/*"],
+      // prune: false — live2d assets are managed separately via aws s3 sync; letting CDK
+      // prune would delete them since they are excluded from the zip.
+      prune: false,
+      // 1024 MB gives proportionally more vCPU + network bandwidth so the Lambda can
+      // upload a full React bundle within the 900s timeout (128 MB < 2 KB/s = too slow).
+      memoryLimit: 1024,
     });
 
     // Outputs
@@ -411,11 +626,23 @@ export class StaticWebAWSAIStack extends cdk.Stack {
     });
 
     new cdk.CfnOutput(this, "AdminUserEmail", {
-      value: adminEmail,
+      value: adminEmail || ADMIN_OUTPUT_NOT_CONFIGURED,
     });
 
     new cdk.CfnOutput(this, "SecondaryAdminUserEmail", {
-      value: secondaryAdminEmail,
+      value: secondaryAdminEmail || ADMIN_OUTPUT_NOT_CONFIGURED,
+    });
+
+    new cdk.CfnOutput(this, "StageName", {
+      value: stage,
+    });
+
+    new cdk.CfnOutput(this, "WebsiteBucketName", {
+      value: websiteBucket.bucketName,
+    });
+
+    new cdk.CfnOutput(this, "CloudFrontDistributionId", {
+      value: distribution.distributionId,
     });
   }
 }

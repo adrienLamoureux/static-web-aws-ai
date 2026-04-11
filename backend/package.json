@@ -2,6 +2,19 @@
   "name": "backend",
   "version": "1.0.0",
   "main": "lambda.js",
+  "scripts": {
+    "idea:masonry-seed": "node scripts/seed-global-masonry.js",
+    "lint": "eslint .",
+    "lint:syntax": "node --check index.js && node --check lambda.js && node --check lib/*.js && node --check routes/*.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.2",
+    "prettier": "^3.8.1"
+  },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.624.0",
     "@aws-sdk/client-dynamodb": "^3.624.0",

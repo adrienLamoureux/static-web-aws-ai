@@ -1,6 +1,20 @@
+const { buildDirectorFallbackConfig } = require("../lib/director-config");
+const {
+  LORA_MODALITY_IMAGE,
+  LORA_PROFILE_TYPE,
+} = require("../config/lora");
+const {
+  buildLoraUnsupportedModelError,
+  getLoraSupportedModelKeys,
+  hasLoraInjectionSupport,
+  normalizeString,
+  applyCharacterProfileToReplicateInput,
+} = require("../lib/lora-utils");
+
 module.exports = (app, deps) => {
   const {
     replicateModelConfig,
+    replicateVideoConfig,
     replicateClient,
     buildSeedList,
     buildImageBatchId,
@@ -18,27 +32,68 @@ module.exports = (app, deps) => {
     runReplicateWithRetry,
     getReplicateOutputUrl,
     buildReplicatePredictionRequest,
+    DEFAULT_NEGATIVE_PROMPT,
+    getItem,
+    buildMediaPk,
+    buildMediaSk,
   } = deps;
 
-app.post("/replicate/image/generate", async (req, res) => {
+const imageLoraSupportedModels = getLoraSupportedModelKeys(replicateModelConfig);
+
+const buildImageJobKey = (predictionId = "") =>
+  `render/replicate/image/${predictionId || Date.now()}`;
+
+const parseOptionalInteger = (value, fallback) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.round(parsed) : fallback;
+};
+
+const resolveModelDefault = (requestedModel, fallbackModel) => {
+  const candidate = String(requestedModel || "").trim();
+  if (!candidate) return fallbackModel;
+  return candidate;
+};
+
+const hasBodyField = (body, key) =>
+  Boolean(body && Object.prototype.hasOwnProperty.call(body, key));
+
+const directorFallbackConfig = buildDirectorFallbackConfig({
+  replicateModelConfig,
+  replicateVideoConfig,
+  defaultNegativePrompt: DEFAULT_NEGATIVE_PROMPT,
+});
+
+app.post("/replicate/image/generate", deps.requireUserMiddleware, async (req, res) => {
   const mediaBucket = process.env.MEDIA_BUCKET;
   const userId = req.user?.sub;
   const apiToken = process.env.REPLICATE_API_TOKEN;
-  const modelKey = req.body?.model || "animagine";
+  const modelKey = resolveModelDefault(
+    req.body?.model,
+    directorFallbackConfig.generation.imageModel
+  );
   const imageName = req.body?.imageName?.trim();
   const prompt = req.body?.prompt?.trim();
-  const negativePrompt = req.body?.negativePrompt?.trim();
+  const negativePrompt = hasBodyField(req.body, "negativePrompt")
+    ? req.body?.negativePrompt?.trim()
+    : directorFallbackConfig.generation.negativePrompt;
   const maxPromptLength = 900;
-  const width = Number(req.body?.width) || 1024;
-  const height = Number(req.body?.height) || 1024;
-  const scheduler = req.body?.scheduler;
+  const width = parseOptionalInteger(
+    req.body?.width,
+    directorFallbackConfig.generation.imageWidth
+  );
+  const height = parseOptionalInteger(
+    req.body?.height,
+    directorFallbackConfig.generation.imageHeight
+  );
+  const requestedScheduler = String(req.body?.scheduler || "").trim();
   const requestedImages = Number(req.body?.numImages) || 1;
-  const isDiffScheduler = scheduler === "diff";
+  const isDiffScheduler = requestedScheduler === "diff";
   const numImages = Math.min(
     Math.max(isDiffScheduler ? 2 : requestedImages, 1),
     2
   );
   const seed = req.body?.seed;
+  const characterId = normalizeString(req.body?.characterId);
   const seeds = isDiffScheduler
     ? Array.from({ length: numImages }, () =>
         Number.isFinite(Number(seed))
@@ -116,6 +171,7 @@ app.post("/replicate/image/generate", async (req, res) => {
       message: `Replicate modelId is not configured for ${modelKey}`,
     });
   }
+  const scheduler = requestedScheduler || modelConfig.schedulers?.[0];
   const sizeAllowed = modelConfig.sizes?.some(
     (size) => size.width === width && size.height === height
   );
@@ -135,19 +191,66 @@ app.post("/replicate/image/generate", async (req, res) => {
     }
   }
 
+  let profileModality = {};
+  if (characterId) {
+    if (!hasLoraInjectionSupport(modelConfig)) {
+      return res.status(400).json(
+        buildLoraUnsupportedModelError({
+          modality: LORA_MODALITY_IMAGE,
+          modelKey,
+          supportedModels: imageLoraSupportedModels,
+        })
+      );
+    }
+    const profileItem = await getItem({
+      pk: buildMediaPk(userId),
+      sk: buildMediaSk(LORA_PROFILE_TYPE, characterId),
+    });
+    if (!profileItem) {
+      return res.status(400).json({
+        message: `No LoRA profile found for characterId: ${characterId}`,
+      });
+    }
+    profileModality = profileItem?.[LORA_MODALITY_IMAGE] || {};
+    const profileModelKey = normalizeString(profileModality?.modelKey);
+    if (profileModelKey && profileModelKey !== modelKey) {
+      return res.status(400).json({
+        message: `Character profile ${characterId} is configured for model ${profileModelKey}, not ${modelKey}`,
+      });
+    }
+  }
+
   try {
+    const promptWithProfile = applyCharacterProfileToReplicateInput({
+      input: {},
+      prompt: trimmedPrompt,
+      modelConfig,
+      profileModality,
+    }).prompt;
+    const finalTrimmedPrompt = clampPromptTokens(promptWithProfile);
+    const loraProfileNotice = characterId
+      ? `Character LoRA profile ${characterId} applied.`
+      : "";
+
     if (modelConfig.usePredictions) {
+      let prediction = null;
       const resolvedSeed = Number.isFinite(Number(seed))
         ? Number(seed)
         : undefined;
-      const input = modelConfig.buildInput({
-        prompt: trimmedPrompt,
+      const rawInput = modelConfig.buildInput({
+        prompt: finalTrimmedPrompt,
         negativePrompt: trimmedNegativePrompt,
         width,
         height,
         numOutputs: numImages,
         seed: resolvedSeed,
         scheduler,
+      });
+      const { input } = applyCharacterProfileToReplicateInput({
+        input: rawInput,
+        prompt: finalTrimmedPrompt,
+        modelConfig,
+        profileModality,
       });
       console.log("Replicate image prediction create:", {
         modelId: modelConfig.modelId,
@@ -157,7 +260,7 @@ app.post("/replicate/image/generate", async (req, res) => {
         modelId: modelConfig.modelId,
         input,
       });
-      const prediction = await replicateClient.predictions.create(
+      prediction = await replicateClient.predictions.create(
         predictionRequest,
         {
           headers: {
@@ -171,7 +274,26 @@ app.post("/replicate/image/generate", async (req, res) => {
           message: "No prediction returned from Replicate",
         });
       }
+      const jobKey = buildImageJobKey(prediction.id);
       if (prediction.status !== "succeeded") {
+        await putMediaItem({
+          userId,
+          type: "JOB",
+          key: jobKey,
+          extra: {
+            provider: "replicate",
+            entityType: "image",
+            predictionId: prediction.id,
+            imageName,
+            batchId,
+            characterId,
+            status: prediction.status,
+            progressPct: prediction.status === "starting" ? 18 : 42,
+            etaSeconds: 75,
+            startedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+        });
         return res.json({
           modelId: modelConfig.modelId,
           provider: "replicate",
@@ -181,6 +303,7 @@ app.post("/replicate/image/generate", async (req, res) => {
           notice: [
             "Replicate is generating the image. We'll keep checking.",
             promptNotice,
+            loraProfileNotice,
           ]
             .filter(Boolean)
             .join(" "),
@@ -211,7 +334,16 @@ app.post("/replicate/image/generate", async (req, res) => {
               ContentType: contentType,
             })
           );
-          await putMediaItem({ userId, type: "IMG", key });
+          await putMediaItem({
+            userId,
+            type: "IMG",
+            key,
+            extra: {
+              prompt: trimmedPrompt,
+              negativePrompt: trimmedNegativePrompt,
+              model: modelKey,
+            },
+          });
           const signedUrl = await getSignedUrl(
             s3Client,
             new GetObjectCommand({
@@ -223,11 +355,31 @@ app.post("/replicate/image/generate", async (req, res) => {
           return { key, url: signedUrl };
         })
       );
+      await putMediaItem({
+        userId,
+        type: "JOB",
+        key: jobKey,
+        extra: {
+          provider: "replicate",
+          entityType: "image",
+          predictionId: prediction.id,
+          imageName,
+          batchId,
+          characterId,
+          status: "completed",
+          progressPct: 100,
+          etaSeconds: 0,
+          startedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      });
       return res.json({
         modelId: modelConfig.modelId,
         provider: "replicate",
         batchId,
-        notice: promptNotice,
+        notice: [promptNotice, loraProfileNotice].filter(Boolean).join(" "),
+        characterId,
         images,
       });
     }
@@ -241,14 +393,20 @@ app.post("/replicate/image/generate", async (req, res) => {
           const resolvedScheduler = isDiffScheduler
             ? modelConfig.schedulers?.[index % modelConfig.schedulers.length]
             : scheduler;
-          const input = modelConfig.buildInput({
-            prompt: trimmedPrompt,
+          const rawInput = modelConfig.buildInput({
+            prompt: finalTrimmedPrompt,
             negativePrompt: trimmedNegativePrompt,
             width,
             height,
             numOutputs: 1,
             seed: currentSeed,
             scheduler: resolvedScheduler,
+          });
+          const { input } = applyCharacterProfileToReplicateInput({
+            input: rawInput,
+            prompt: finalTrimmedPrompt,
+            modelConfig,
+            profileModality,
           });
           console.log("Replicate image generate invoke:", {
             modelId: modelConfig.modelId,
@@ -281,7 +439,16 @@ app.post("/replicate/image/generate", async (req, res) => {
               ContentType: contentType,
             })
           );
-          await putMediaItem({ userId, type: "IMG", key });
+          await putMediaItem({
+            userId,
+            type: "IMG",
+            key,
+            extra: {
+              prompt: trimmedPrompt,
+              negativePrompt: trimmedNegativePrompt,
+              model: modelKey,
+            },
+          });
           const signedUrl = await getSignedUrl(
             s3Client,
             new GetObjectCommand({
@@ -302,9 +469,11 @@ app.post("/replicate/image/generate", async (req, res) => {
       notice: [
         `Generating ${numImages} images with a staggered start. This can take a bit.`,
         promptNotice,
+        loraProfileNotice,
       ]
         .filter(Boolean)
         .join(" "),
+      characterId,
       images,
     });
   } catch (error) {

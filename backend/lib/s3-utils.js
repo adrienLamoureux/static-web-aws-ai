@@ -127,6 +127,30 @@ const copyS3Object = async ({ s3Client, bucket, sourceKey, destinationKey }) => 
   );
 };
 
+/**
+ * Sign a single S3 object for reading.
+ * Returns the signed URL string, or empty string on error.
+ *
+ * @param {object} s3Client
+ * @param {function} GetObjectCommand - constructor from @aws-sdk/client-s3
+ * @param {function} getSignedUrl - from @aws-sdk/s3-request-presigner
+ * @param {string} bucket
+ * @param {string} key
+ * @param {number} [expiresIn=900]
+ */
+const signObjectUrl = async (s3Client, GetObjectCommand, getSignedUrl, bucket, key, expiresIn = 900) => {
+  if (!bucket || !key) return "";
+  try {
+    return await getSignedUrl(
+      s3Client,
+      new GetObjectCommand({ Bucket: bucket, Key: key }),
+      { expiresIn }
+    );
+  } catch (error) {
+    return "";
+  }
+};
+
 module.exports = {
   streamToBuffer,
   deleteS3ObjectsByPrefix,
@@ -138,4 +162,5 @@ module.exports = {
   buildFolderPosterKeyFromVideoKey,
   resolveVideoPosterKey,
   copyS3Object,
+  signObjectUrl,
 };

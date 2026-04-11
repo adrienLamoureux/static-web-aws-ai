@@ -29,6 +29,7 @@ const {
   DEFAULT_GRADIO_NEGATIVE_PROMPT,
   imageModelConfig,
   replicateModelConfig,
+  civitaiModelConfig,
   gradioSpaceConfig,
   replicateVideoConfig,
 } = require("../config/models");
@@ -59,7 +60,7 @@ const {
   clampPromptTokens,
 } = require("./story-prompt");
 
-const { requireUserMiddleware } = require("./auth");
+const { requireUserMiddleware, optionalUserMiddleware, requireAdminMiddleware } = require("./auth");
 const {
   buildUserPrefix,
   ensureUserKey,
@@ -76,7 +77,11 @@ const {
   buildStorySceneSk,
   storyMessagePrefix,
   storyScenePrefix,
+  buildCompanionMemorySk,
+  buildCompanionMsgSk,
+  companionMsgPrefix,
 } = require("./keys");
+const { createCompanionMemory } = require("./companion-memory");
 const { createMediaStore } = require("./media-store");
 const { createStorySeedStore } = require("./story-seed-store");
 const { getGradioSpaceClient } = require("./gradio-client");
@@ -153,6 +158,15 @@ const createDeps = () => {
     queryBySkPrefix: mediaStore.queryBySkPrefix,
   });
 
+  const companionMemory = createCompanionMemory({
+    dynamoClient,
+    mediaTable,
+    queryBySkPrefix: mediaStore.queryBySkPrefix,
+    bedrockClient,
+    InvokeModelCommand,
+    promptHelperModelId,
+  });
+
   const aiCraftSceneContext = createAiCraftSceneContext({
     bedrockClient,
     promptHelperModelId,
@@ -217,6 +231,7 @@ const createDeps = () => {
     DEFAULT_GRADIO_NEGATIVE_PROMPT,
     imageModelConfig,
     replicateModelConfig,
+    civitaiModelConfig,
     gradioSpaceConfig,
     replicateVideoConfig,
     storyCharacters,
@@ -240,6 +255,8 @@ const createDeps = () => {
     MAX_REPLICATE_PROMPT_TOKENS,
     clampPromptTokens,
     requireUserMiddleware,
+    optionalUserMiddleware,
+    requireAdminMiddleware,
     buildUserPrefix,
     ensureUserKey,
     buildMediaPk,
@@ -255,6 +272,10 @@ const createDeps = () => {
     buildStorySceneSk,
     storyMessagePrefix,
     storyScenePrefix,
+    buildCompanionMemorySk,
+    buildCompanionMsgSk,
+    companionMsgPrefix,
+    companionMemory,
     putMediaItem: mediaStore.putMediaItem,
     deleteMediaItem: mediaStore.deleteMediaItem,
     queryMediaItems: mediaStore.queryMediaItems,

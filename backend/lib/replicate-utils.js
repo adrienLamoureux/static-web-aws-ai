@@ -2,7 +2,7 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const REPLICATE_VERSION_ID_REGEX = /^[0-9a-f]{64}$/i;
 
 const extractRetryAfterSeconds = (errorMessage = "") => {
-  const match = errorMessage.match(/retry_after\":\s*(\d+)/i);
+  const match = errorMessage.match(/retry_after":\s*(\d+)/i);
   if (match?.[1]) {
     const value = Number(match[1]);
     return Number.isFinite(value) ? value : null;

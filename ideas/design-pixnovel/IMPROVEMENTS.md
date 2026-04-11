@@ -1,0 +1,56 @@
+# Improvements - design-pixnovel
+
+## Purpose
+- Track shared improvements rolled out to this idea stack.
+
+## Log
+- 2026-02-24T23:00:07.057Z | improvement=pixnovel-hybrid-ui | result=deployed | commit=7201f1a | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-25T09:34:50.143Z | improvement=pixnovel-masonry-image-stream | result=deployed | commit=6a09f97 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-25T09:45:18.141Z | improvement=pixnovel-surface-unification | result=deployed | commit=5c65c89 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-25T10:09:59.058Z | improvement=pixnovel-hard-unify-shell | result=deployed | commit=3f6aedf | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-25T10:28:16.916Z | improvement=pixnovel-fullscreen-main-shell | result=deployed | commit=437450d | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-25T11:23:49.380Z | improvement=pixnovel-hero-top-auth-and-cool-bg | result=deployed | commit=b6a7c68 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-25T11:36:11.927Z | improvement=pixnovel-remove-hero-visual-cool-bg-v2 | result=deployed | commit=8d87a6d | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-25T11:50:26.699Z | improvement=pixnovel-enforce-body-theme-override | result=deployed | commit=303067b | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-25T12:06:16.661Z | improvement=pixnovel-dialog-contrast-and-text-pass | result=deployed | commit=a59fddd | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-25T13:54:41.017Z | improvement=pixnovel-whisk-text-contrast-boost | result=deployed | commit=af4e7de | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-25T14:15:31.636Z | improvement=pixnovel-whisk-key-text-contrast-v2 | result=deployed | commit=d809a8c | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-25T14:29:18.807Z | improvement=pixnovel-masonry-color-calibration | result=deployed | commit=d90f6d3 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-25T14:37:30.618Z | improvement=pixnovel-only-masonry-animation-white-text-force | result=deployed | commit=5fc4036 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-25T14:42:00.509Z | improvement=pixnovel-masonry-only-white-text-hard-override | result=deployed | commit=5fc4036 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-25T15:03:21.054Z | improvement=pixnovel-remove-all-motion-keep-masonry-only | result=deployed | commit=1680cc6 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-25T15:42:43.469Z | improvement=pixnovel-portrait-fancy-image-wall | result=deployed | commit=a9ceb12 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-25T15:59:11.419Z | improvement=pixnovel-oblique-touching-portrait-wall | result=deployed | commit=887fe46 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-25T16:24:02.960Z | improvement=pixnovel-stronger-oblique-touching-wall | result=deployed | commit=66cd013 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-26T09:24:34.822Z | improvement=ops-dashboard-quick-generate-panel | result=deployed | commit=6639653 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-26T09:28:30.002Z | improvement=ops-dashboard-dropdown-shortcuts | result=deployed | commit=6639653 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-26T09:33:14.565Z | improvement=quick-panel-js-prompt-payload | result=deployed | commit=6639653 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-26T09:34:44.393Z | improvement=quick-panel-hidden-prompts | result=deployed | commit=6639653 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-26T09:37:36.845Z | improvement=remove-redundant-whisk-hero-copy | result=deployed | commit=6639653 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-26T09:44:08.412Z | improvement=separate-videos-page | result=deployed | commit=6639653 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-26T09:47:05.500Z | improvement=separate-videos-page-finalize | result=deployed | commit=6639653 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-26T10:04:51.771Z | improvement=pane-aware-side-rails-and-cool-tone-story-music | result=deployed | commit=6639653 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-26T11:00:38.827Z | improvement=story-soundlab-no-side-panels | result=deployed | commit=6639653 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-26T11:03:52.145Z | improvement=story-soundlab-no-side-panels | result=deployed | commit=6639653 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-26T11:15:13.660Z | improvement=add-global-director-page-and-video-title-cleanup | result=deployed | commit=6639653 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-26T11:42:58.175Z | improvement=director-scope-1-4 | result=deployed | commit=6639653 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-26T11:47:48.065Z | improvement=director-remove-yellow-warn | result=deployed | commit=6639653 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-26T17:21:19.668Z | improvement=director-hero-remove-yellow-glass | result=deployed | commit=6639653 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-26T21:37:51.287Z | improvement=whisk-create-plus-alignment | result=deployed | commit=6639653 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-26T22:36:14.975Z | improvement=cognito-localhost-multiport-callbacks | result=deployed | commit=39dab2d | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-02-27T09:33:56.733Z | improvement=cognito-localhost-ports-3000-3009 | result=deployed | commit=39dab2d | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-02T22:17:31.244Z | improvement=lora-management | result=deployed | commit=1618965 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-02T22:20:01.461Z | improvement=lora-management | result=deployed | commit=1618965 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-02T22:20:54.735Z | improvement=lora-management-smoke | result=deployed | commit=1618965 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-02T22:25:05.902Z | improvement=full-stack-lora-shared-library | result=deployed | commit=ef28baa | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-09T09:41:13.012Z | improvement=consistency-hygiene | result=deployed | commit=4f01342 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-10T10:51:00.928Z | improvement=full-audit-apply | result=deployed | commit=f1201d4 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-11T08:59:19.823Z | improvement=lora-discoverability-capability-enforcement | result=deployed | commit=f1201d4 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-14T10:51:59.043Z | improvement=civitai-lora-provider-runtime | result=deployed | commit=c297b2b | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-14T11:21:45.683Z | improvement=whisk-civitai-quick-lora-and-dialog-contrast | result=deployed | commit=3f7e5e6 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-15T11:22:44.947Z | improvement=redeploy-design-worktree | result=deployed | commit=4410016 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-15T11:37:54.568Z | improvement=civitai-id-sync-support | result=deployed | commit=4410016 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-15T11:40:21.319Z | improvement=civitai-id-sync-sortless | result=deployed | commit=4410016 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-15T11:42:22.435Z | improvement=civitai-query-id-support | result=deployed | commit=4410016 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-15T16:14:06.640Z | improvement=civitai-term-search-fallback | result=deployed | commit=4410016 | detail=stack=StaticWebAWSAIStack-design-pixnovel
+- 2026-03-15T17:40:17.013Z | improvement=prepush-rebase-ui-validate-resume | result=deployed | commit=19337c2 | detail=stack=StaticWebAWSAIStack-design-pixnovel

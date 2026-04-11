@@ -23,6 +23,17 @@ const buildStorySceneSk = (sessionId = "", sceneId = "") =>
 const storyMessagePrefix = (sessionId = "") => `SESSION#${sessionId}#MSG#`;
 const storyScenePrefix = (sessionId = "") => `SESSION#${sessionId}#SCENE#`;
 
+// ─── Companion memory keys ────────────────────────────────────────────────────
+// pk = USER#{userId}
+// sk = COMPANION#{modelId}                    → memory record (summary, turnCount, updatedAt)
+// sk = COMPANION#{modelId}#MSG#{timestamp13}  → individual message turn
+const buildCompanionMemorySk = (modelId = "hiyori_free") =>
+  `COMPANION#${modelId}`;
+const buildCompanionMsgSk = (modelId = "hiyori_free", timestamp = Date.now()) =>
+  `COMPANION#${modelId}#MSG#${String(timestamp).padStart(13, "0")}`;
+const companionMsgPrefix = (modelId = "hiyori_free") =>
+  `COMPANION#${modelId}#MSG#`;
+
 module.exports = {
   buildUserPrefix,
   ensureUserKey,
@@ -39,4 +50,7 @@ module.exports = {
   buildStorySceneSk,
   storyMessagePrefix,
   storyScenePrefix,
+  buildCompanionMemorySk,
+  buildCompanionMsgSk,
+  companionMsgPrefix,
 };

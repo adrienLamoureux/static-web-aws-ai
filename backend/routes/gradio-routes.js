@@ -13,7 +13,7 @@ module.exports = (app, deps) => {
     GetObjectCommand,
   } = deps;
 
-app.post("/gradio/image/generate", async (req, res) => {
+app.post("/gradio/image/generate", deps.requireUserMiddleware, async (req, res) => {
   const mediaBucket = process.env.MEDIA_BUCKET;
   const userId = req.user?.sub;
   const modelKey = req.body?.model || "wainsfw";
@@ -169,7 +169,16 @@ app.post("/gradio/image/generate", async (req, res) => {
         ContentType: contentType || "image/png",
       })
     );
-    await putMediaItem({ userId, type: "IMG", key });
+    await putMediaItem({
+      userId,
+      type: "IMG",
+      key,
+      extra: {
+        prompt,
+        negativePrompt: resolvedNegativePrompt || "",
+        model: modelKey,
+      },
+    });
     const signedUrl = await getSignedUrl(
       s3Client,
       new GetObjectCommand({

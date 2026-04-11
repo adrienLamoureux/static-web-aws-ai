@@ -24,7 +24,7 @@ module.exports = (app, deps) => {
     GetObjectCommand,
   } = deps;
 
-app.get("/bedrock/nova-reel/job-status", async (req, res) => {
+app.get("/bedrock/nova-reel/job-status", deps.requireUserMiddleware, async (req, res) => {
   const invocationArn = req.query?.invocationArn;
   const inputKey = req.query?.inputKey;
   const outputPrefix = req.query?.outputPrefix;
@@ -120,7 +120,7 @@ app.get("/bedrock/nova-reel/job-status", async (req, res) => {
   }
 });
 
-app.post("/bedrock/image/generate", async (req, res) => {
+app.post("/bedrock/image/generate", deps.requireUserMiddleware, async (req, res) => {
   const mediaBucket = process.env.MEDIA_BUCKET;
   const userId = req.user?.sub;
   const modelKey = req.body?.model || "titan";
@@ -276,7 +276,16 @@ app.post("/bedrock/image/generate", async (req, res) => {
               ContentType: "image/png",
             })
           );
-          await putMediaItem({ userId, type: "IMG", key });
+          await putMediaItem({
+            userId,
+            type: "IMG",
+            key,
+            extra: {
+              prompt,
+              negativePrompt: negativePrompt || "",
+              model: modelKey,
+            },
+          });
           const url = await getSignedUrl(
             s3Client,
             new GetObjectCommand({

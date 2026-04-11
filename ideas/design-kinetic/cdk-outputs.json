@@ -1,0 +1,15 @@
+{
+  "StaticWebAWSAIStack-design-kinetic": {
+    "MediaBucketName": "staticwebawsaistack-design-kin-mediabucketbcbb02ba-mm1ld7r0ibtv",
+    "UserPoolClientId": "65hobv7drgrk6bm9q5rj6pb0mv",
+    "CloudFrontURL": "d1ulh0ke4fvnqg.cloudfront.net",
+    "UserPoolId": "us-east-1_8wDw4BAI9",
+    "StageName": "design-kinetic",
+    "APIEndpoint": "https://ebd594ulg4.execute-api.us-east-1.amazonaws.com/prod/",
+    "SecondaryAdminUserEmail": "not-configured",
+    "AdminUserEmail": "not-configured",
+    "ApiGatewayEndpoint5AA8EC3A": "https://ebd594ulg4.execute-api.us-east-1.amazonaws.com/prod/",
+    "CognitoDomainPrefix": "whiskstudio-alx-design-kinetic-761593662432",
+    "CognitoDomain": "https://whiskstudio-alx-design-kinetic-761593662432.auth.us-east-1.amazoncognito.com"
+  }
+}
