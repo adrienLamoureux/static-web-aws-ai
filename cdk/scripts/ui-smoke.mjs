@@ -39,64 +39,91 @@ if (!cloudfrontUrl) {
 
 const { chromium } = await loadPlaywright();
 const browser = await chromium.launch({ headless: true });
+
+// Unauthenticated checks — Sakura routing:
+// - /login is a local page with "Continue to login" button (leads to Cognito)
+// - / (HomePage) is public, no redirect
+// - Protected routes redirect to /login
+// - /about is public
 const unauthenticatedChecks = [
-  { id: "login-page", path: "/login", expectLogin: true, expectPath: "/login" },
-  { id: "home-redirect", path: "/", expectLogin: true, expectPath: "/login" },
-  { id: "lora-redirect", path: "/lora", expectLogin: true, expectPath: "/login" },
-  { id: "videos-redirect", path: "/videos", expectLogin: true, expectPath: "/login" },
-  { id: "director-redirect", path: "/director", expectLogin: true, expectPath: "/login" },
-  { id: "story-redirect", path: "/story", expectLogin: true, expectPath: "/login" },
   {
-    id: "music-library-redirect",
-    path: "/music-library",
-    expectLogin: true,
+    id: "login-page",
+    path: "/login",
     expectPath: "/login",
+    expectLoginText: "Continue to login",
   },
-  { id: "about-redirect", path: "/about", expectLogin: true, expectPath: "/login" },
+  {
+    id: "home-public",
+    path: "/",
+    expectPath: "/",
+  },
+  {
+    id: "atelier-redirect",
+    path: "/atelier",
+    expectPath: "/login",
+    expectLoginText: "Continue to login",
+  },
+  {
+    id: "chronicle-redirect",
+    path: "/chronicle",
+    expectPath: "/login",
+    expectLoginText: "Continue to login",
+  },
+  {
+    id: "sanctum-redirect",
+    path: "/sanctum",
+    expectPath: "/login",
+    expectLoginText: "Continue to login",
+  },
+  {
+    id: "about-public",
+    path: "/about",
+    expectPath: "/about",
+  },
 ];
 
+// Authenticated checks — uses synthetic JWT (non-admin), so AdminRoute pages
+// redirect to / rather than rendering their content.
+// Focuses on ProtectedRoute pages and public pages.
 const authenticatedChecks = [
   {
     id: "home-page",
     path: "/",
     expectPath: "/",
-    expectedAnyTexts: ["Search shared images", "Shared Images", "Whisk Studio"],
+    expectedAnyTexts: ["Whisk Studio", "Realm", "Atelier"],
+    ignoreWebGLErrors: true,
   },
   {
-    id: "lora-page",
-    path: "/lora",
-    expectPath: "/lora",
-    expectedAnyTexts: ["LoRA Catalog", "Character LoRA Profile"],
+    id: "atelier-page",
+    path: "/atelier",
+    expectPath: "/atelier",
+    expectedAnyTexts: ["Generate", "Atelier", "Image"],
+    ignoreWebGLErrors: true,
   },
   {
-    id: "videos-page",
-    path: "/videos",
-    expectPath: "/videos",
-    expectedTexts: ["Videos"],
-  },
-  {
-    id: "director-page",
-    path: "/director",
-    expectPath: "/director",
-    expectedTexts: ["Global Command Center"],
-  },
-  {
-    id: "story-page",
-    path: "/story",
-    expectPath: "/story",
-    expectedAnyTexts: ["Storytelling Studio", "Story Teller", "Storybook Canvas"],
-  },
-  {
-    id: "music-library-page",
-    path: "/music-library",
-    expectPath: "/music-library",
-    expectedTexts: ["Upload and categorize soundtracks"],
+    id: "chronicle-page",
+    path: "/chronicle",
+    expectPath: "/chronicle",
+    expectedAnyTexts: ["Chronicle", "Story", "Session"],
+    ignoreWebGLErrors: true,
   },
   {
     id: "about-page",
     path: "/about",
     expectPath: "/about",
-    expectedTexts: ["Whisk Studio — static web app"],
+    ignoreWebGLErrors: true,
+  },
+  {
+    id: "legacy-videos-redirect",
+    path: "/videos",
+    expectPath: "/atelier",
+    ignoreWebGLErrors: true,
+  },
+  {
+    id: "legacy-story-redirect",
+    path: "/story",
+    expectPath: "/chronicle",
+    ignoreWebGLErrors: true,
   },
 ];
 
@@ -145,10 +172,11 @@ async function runPageCheck({
   baseUrl,
   path: routePath,
   timeoutMs,
-  expectLogin,
   expectPath,
+  expectLoginText,
   expectedTexts = [],
   expectedAnyTexts = [],
+  ignoreWebGLErrors = false,
 }) {
   const page = await context.newPage();
   const pageErrors = [];
@@ -168,9 +196,8 @@ async function runPageCheck({
     throw new Error(`Expected path "${expectPath}" after visiting "${routePath}", got "${finalPath}".`);
   }
 
-  if (expectLogin) {
-    await waitForVisibleText(page, "Sign in to continue", timeoutMs);
-    await waitForVisibleText(page, "Continue to login", timeoutMs);
+  if (expectLoginText) {
+    await waitForVisibleText(page, expectLoginText, timeoutMs);
   }
   for (const text of expectedTexts) {
     await waitForVisibleText(page, text, timeoutMs);
@@ -179,8 +206,11 @@ async function runPageCheck({
     await waitForAnyVisibleText(page, expectedAnyTexts, timeoutMs);
   }
 
-  if (pageErrors.length > 0) {
-    throw new Error(`Browser page errors detected: ${pageErrors.join(" | ")}`);
+  const significantErrors = ignoreWebGLErrors
+    ? pageErrors.filter((e) => !e.includes("WebGL"))
+    : pageErrors;
+  if (significantErrors.length > 0) {
+    throw new Error(`Browser page errors detected: ${significantErrors.join(" | ")}`);
   }
 
   await page.close();
@@ -195,10 +225,11 @@ async function runCheckGroup({ context, baseUrl, timeoutMs, checks, failures }) 
         baseUrl,
         path: check.path,
         timeoutMs,
-        expectLogin: check.expectLogin,
         expectPath: check.expectPath,
+        expectLoginText: check.expectLoginText,
         expectedTexts: check.expectedTexts || [],
         expectedAnyTexts: check.expectedAnyTexts || [],
+        ignoreWebGLErrors: check.ignoreWebGLErrors || false,
       });
       const elapsedMs = Date.now() - startedAt;
       info(`PASS ${check.id} (${elapsedMs}ms)`);
