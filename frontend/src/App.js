@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   BrowserRouter as Router,
   Link,
@@ -6,329 +6,307 @@ import {
   Route,
   Routes,
   useLocation,
+  useNavigate,
 } from "react-router-dom";
-import { fetchRuntimeConfig, resolveApiBaseUrl } from "./services/runtime-config";
+import { motion, AnimatePresence } from "framer-motion";
+import { ConfigProvider, useConfig } from "./contexts/ConfigContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { MusicProvider } from "./contexts/MusicContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import SakuraMusicBar from "./components/sakura/SakuraMusicBar";
+import ThemeSwitcher from "./components/sakura/ThemeSwitcher";
+import CompanionPanel from "./components/sakura/companion/CompanionPanel";
+import LoginModal from "./components/auth/LoginModal";
+import { CompanionProvider, useCompanion, CompanionActions } from "./lib/companion/CompanionContext";
+import { NotificationProvider } from "./components/sakura/NotificationStack";
+import { getAuthToken } from "./utils/authTokens";
 
-const TOKEN_STORAGE_KEY = "whisk_auth_tokens";
+// Pages
+import HomePage from "./pages/HomePage";
+import SharedLibrary from "./pages/SharedLibrary";
+import Forge from "./pages/Forge";
+import LoraManagement from "./pages/LoraManagement";
+import Director from "./pages/Director";
+import Story from "./pages/Story";
+import StoryMusicLibrary from "./pages/StoryMusicLibrary";
+import AuthCallback from "./pages/AuthCallback";
+
+/* ─── Navigation (Bottom HUD) ─── */
 
 const NAV_ITEMS = [
-  { label: "Shared", path: "/" },
-  { label: "Whisk", path: "/whisk" },
-  { label: "LoRA", path: "/lora" },
-  { label: "Videos", path: "/videos" },
-  { label: "Director", path: "/director" },
-  { label: "Story", path: "/story" },
-  { label: "Music", path: "/music-library" },
-  { label: "About", path: "/about" },
+  { label: "Realm",     path: "/",          icon: "✦", isPublic: true },
+  { label: "Atelier",   path: "/atelier",   icon: "◈", isPublic: false },
+  { label: "Chronicle", path: "/chronicle", icon: "▤", isPublic: false },
+  { label: "Sanctum",   path: "/sanctum",   icon: "⚙", requiredRole: "admin" },
 ];
 
-const PAGE_DEFINITIONS = {
-  "/": {
-    title: "Shared Images",
-    lines: [
-      "Search shared images",
-      "Placeholder surface for codex/dev. Design UX is maintained in design worktrees.",
-    ],
-  },
-  "/shared": {
-    title: "Shared Images",
-    lines: [
-      "Search shared images",
-      "Placeholder surface for codex/dev. Design UX is maintained in design worktrees.",
-    ],
-  },
-  "/whisk": {
-    title: "Whisk Generator Placeholder",
-    lines: [
-      "This route is intentionally minimal in codex/dev.",
-      "Generation business logic remains available through backend APIs.",
-    ],
-  },
-  "/lora": {
-    title: "LoRA Catalog",
-    lines: [
-      "Character LoRA Profile",
-      "Catalog management UI lives in design branches.",
-    ],
-  },
-  "/videos": {
-    title: "Videos",
-    lines: [
-      "Video workflows are active at API level.",
-      "codex/dev keeps a placeholder interface only.",
-    ],
-  },
-  "/director": {
-    title: "Director Placeholder",
-    lines: [
-      "Global Command Center",
-      "Use design worktrees for full orchestration UX.",
-    ],
-  },
-  "/story": {
-    title: "Storytelling Studio",
-    lines: [
-      "Story route is available but intentionally simplified in codex/dev.",
-      "Use design branches for production-grade storytelling UX.",
-    ],
-  },
-  "/music-library": {
-    title: "Music Library Placeholder",
-    lines: [
-      "Upload and categorize soundtracks",
-      "codex/dev keeps only baseline deployment scaffolding for this route.",
-    ],
-  },
-  "/about": {
-    title: "About",
-    lines: [
-      "Whisk Studio — static web app",
-      "codex/dev is a functional baseline branch; rich UI variants live outside this branch.",
-    ],
-  },
-};
 
-function parseSessionTokens() {
-  if (typeof window === "undefined") {
-    return null;
+/* ─── Protected Route ─── */
+
+function ProtectedRoute({ children }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return null;
+  if (!isAuthenticated || !getAuthToken()) {
+    return (
+      <>
+        <div style={{ minHeight: "60vh" }} />
+        <LoginModal
+          isOpen
+          message="Sign in to access this feature"
+          onClose={() => window.history.back()}
+        />
+      </>
+    );
   }
-
-  const rawValue = window.sessionStorage.getItem(TOKEN_STORAGE_KEY);
-  if (!rawValue) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(rawValue);
-    if (parsed && typeof parsed === "object") {
-      return parsed;
-    }
-  } catch (error) {
-    return null;
-  }
-
-  return null;
-}
-
-function hasSessionAuth() {
-  const tokens = parseSessionTokens();
-  return Boolean(tokens?.accessToken || tokens?.idToken);
-}
-
-function writePlaceholderSession() {
-  if (typeof window === "undefined") return;
-
-  const payload = {
-    accessToken: "placeholder-access-token",
-    idToken: "placeholder-id-token",
-    refreshToken: "",
-    tokenType: "Bearer",
-    expiresIn: 3600,
-    savedAt: Date.now(),
-  };
-
-  window.sessionStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(payload));
-}
-
-function clearSessionAuth() {
-  if (typeof window === "undefined") return;
-  window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
-}
-
-function usePlaceholderAuth() {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => hasSessionAuth());
-
-  useEffect(() => {
-    const refreshState = () => {
-      setIsAuthenticated(hasSessionAuth());
-    };
-
-    window.addEventListener("storage", refreshState);
-    return () => {
-      window.removeEventListener("storage", refreshState);
-    };
-  }, []);
-
-  const signIn = () => {
-    writePlaceholderSession();
-    setIsAuthenticated(true);
-  };
-
-  const signOut = () => {
-    clearSessionAuth();
-    setIsAuthenticated(false);
-  };
-
-  return {
-    isAuthenticated,
-    signIn,
-    signOut,
-  };
-}
-
-function ProtectedRoute({ isAuthenticated, children }) {
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
   return children;
 }
 
-function PlaceholderPage({ title, lines = [], apiBaseUrl = "" }) {
+function AdminRoute({ children }) {
+  const { isAuthenticated, isLoading, user } = useAuth();
+  if (isLoading) return null;
+  if (!isAuthenticated || !getAuthToken()) return <Navigate to="/login" replace />;
+  if (!user?.isAdmin) return <Navigate to="/" replace />;
+  return children;
+}
+
+/* ─── About Page ─── */
+
+function AboutPage() {
   return (
-    <section className="placeholder-page">
-      <p className="placeholder-kicker">codex/dev placeholder</p>
-      <h1>{title}</h1>
-      {lines.map((line) => (
-        <p key={line} className="placeholder-line">
-          {line}
+    <div>
+      <div className="skr-page-header">
+        <h2 className="skr-page-title">About</h2>
+        <p className="skr-page-subtitle">Whisk Studio — Sakura Bloom variant</p>
+      </div>
+      <div className="skr-card" style={{ padding: 24 }}>
+        <p style={{ color: "var(--skr-text-secondary)" }}>
+          A maximalist immersive creative workspace inspired by visual novel aesthetics.
         </p>
-      ))}
-      <p className="placeholder-line">
-        API endpoint: <code>{apiBaseUrl || "not configured"}</code>
-      </p>
-    </section>
+      </div>
+    </div>
   );
 }
 
-function Shell({ isAuthenticated, onSignOut, children }) {
-  const location = useLocation();
+/* ─── Login Page ─── */
+
+function LoginPage() {
+  const { isAuthenticated, isLoading, startLogin, isConfigured } = useAuth();
+  const navigate = useNavigate();
+
+  if (!isLoading && isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
+  const handleContinue = async () => {
+    if (!isConfigured) {
+      navigate("/");
+      return;
+    }
+    try {
+      await startLogin("/");
+    } catch (e) {
+      console.error("Login failed:", e);
+    }
+  };
 
   return (
-    <div className="app-shell">
-      <header className="app-header">
-        <div className="app-header-title">
-          <strong>Whisk Studio (Base Placeholder)</strong>
-          <span>UI/UX variants are intentionally maintained in dedicated design worktrees.</span>
+    <div className="skr-login-page">
+      <div className="skr-login-petals" aria-hidden="true" />
+      <div className="skr-login-card">
+        <div className="skr-login-emblem">✦</div>
+        <h1 className="skr-login-title">Whisk Studio</h1>
+        <p className="skr-login-subtitle">Creative workspace awaits</p>
+        <button
+          type="button"
+          className="skr-btn-primary"
+          style={{ width: "100%", marginTop: 20 }}
+          onClick={handleContinue}
+          disabled={isLoading}
+        >
+          Continue to login
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Sakura Shell ─── */
+
+function SakuraShell({ children }) {
+  const location = useLocation();
+  const { isAuthenticated, logout, user, startLogin } = useAuth();
+  const { dispatch } = useCompanion();
+  const [hudExpanded, setHudExpanded] = useState(false);
+
+  const isActive = useCallback(
+    (path) => {
+      if (path === "/") return location.pathname === "/";
+      return location.pathname === path || location.pathname.startsWith(path + "/");
+    },
+    [location.pathname]
+  );
+
+  // Dispatch PAGE_NAVIGATE whenever the route changes
+  const prevPathRef = React.useRef(location.pathname);
+  useEffect(() => {
+    if (prevPathRef.current !== location.pathname) {
+      prevPathRef.current = location.pathname;
+      dispatch(CompanionActions.PAGE_NAVIGATE, { page: location.pathname });
+    }
+  }, [location.pathname, dispatch]);
+
+  return (
+    <div className="skr-shell">
+      {/* Gradient backdrop */}
+      <div className="skr-backdrop" aria-hidden="true" />
+
+      {/* Top bar — always visible */}
+      <header className="skr-topbar">
+        <Link to="/" className="skr-topbar-brand">
+          <span className="skr-brand-emblem">✦</span>
+          <span className="skr-brand-name">Whisk Studio</span>
+        </Link>
+        <div className="skr-topbar-right">
+          <ThemeSwitcher />
+          {isAuthenticated ? (
+            <>
+              <span className="skr-topbar-user">{user?.email || ""}</span>
+              <button type="button" className="skr-btn-ghost" onClick={logout}>
+                Sign out
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="skr-btn-ghost"
+              onClick={() => startLogin(location.pathname)}
+            >
+              Sign in
+            </button>
+          )}
         </div>
-        {isAuthenticated ? (
-          <button type="button" className="app-ghost-button" onClick={onSignOut}>
-            Sign out
-          </button>
-        ) : null}
       </header>
 
-      {isAuthenticated ? (
-        <nav className="app-nav" aria-label="Placeholder routes">
-          {NAV_ITEMS.map((item) => (
+      {/* Main content */}
+      <main className="skr-main">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            style={{ width: "100%" }}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
+      </main>
+
+      {/* Music bar */}
+      <SakuraMusicBar />
+
+      {/* Live2D companion panel */}
+      <CompanionPanel />
+
+      {/* Bottom HUD navigation — always visible, filtered by role */}
+      <nav className="skr-hud">
+        <div className="skr-hud-pill">
+          {NAV_ITEMS.filter((item) => {
+            if (item.requiredRole === "admin" && !user?.isAdmin) return false;
+            if (!item.isPublic && !isAuthenticated) return false;
+            return true;
+          }).map((item) => (
             <Link
               key={item.path}
               to={item.path}
-              className={`app-nav-link${location.pathname === item.path ? " is-active" : ""}`}
+              className={`skr-hud-item${isActive(item.path) ? " is-active" : ""}`}
             >
-              {item.label}
+              <span className="skr-hud-icon">{item.icon}</span>
+              <span className="skr-hud-label">{item.label}</span>
             </Link>
           ))}
-        </nav>
-      ) : null}
-
-      <main className="app-content">{children}</main>
+        </div>
+      </nav>
     </div>
   );
 }
 
-function LoginPage({ isAuthenticated, onContinue }) {
-  if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+/* ─── Routes ─── */
+
+function AppRoutes() {
+  return (
+    <SakuraShell>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        {/* Primary routes */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/atelier" element={<ProtectedRoute><Forge /></ProtectedRoute>} />
+        <Route path="/chronicle" element={<ProtectedRoute><Story /></ProtectedRoute>} />
+        <Route path="/gallery" element={<Navigate to="/" replace />} />
+        <Route path="/sanctum" element={<AdminRoute><Director /></AdminRoute>} />
+        <Route path="/sanctum/sounds" element={<AdminRoute><StoryMusicLibrary /></AdminRoute>} />
+        <Route path="/sanctum/lora" element={<AdminRoute><LoraManagement /></AdminRoute>} />
+        <Route path="/about" element={<AboutPage />} />
+        {/* Legacy redirects */}
+        <Route path="/whisk" element={<Navigate to="/atelier" replace />} />
+        <Route path="/forge" element={<Navigate to="/atelier" replace />} />
+        <Route path="/studio" element={<Navigate to="/atelier" replace />} />
+        <Route path="/videos" element={<Navigate to="/atelier?tab=videos" replace />} />
+        <Route path="/story" element={<Navigate to="/chronicle" replace />} />
+        <Route path="/storyboard" element={<Navigate to="/chronicle" replace />} />
+        <Route path="/shared" element={<Navigate to="/" replace />} />
+        <Route path="/showcase" element={<Navigate to="/" replace />} />
+        <Route path="/lora" element={<Navigate to="/sanctum/lora" replace />} />
+        <Route path="/director" element={<Navigate to="/sanctum" replace />} />
+        <Route path="/director/sounds" element={<Navigate to="/sanctum/sounds" replace />} />
+        <Route path="/director/lora" element={<Navigate to="/sanctum/lora" replace />} />
+        <Route path="/music-library" element={<Navigate to="/sanctum/sounds" replace />} />
+        <Route path="/admin" element={<Navigate to="/sanctum" replace />} />
+        <Route path="/admin/sounds" element={<Navigate to="/sanctum/sounds" replace />} />
+        <Route path="/admin/lora" element={<Navigate to="/sanctum/lora" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </SakuraShell>
+  );
+}
+
+/* ─── App root ─── */
+
+function ConfiguredApp() {
+  const { cognito, configReady } = useConfig();
+
+  if (!configReady) {
+    return (
+      <div className="skr-loading-screen">
+        <div className="skr-loading-emblem">✦</div>
+        <p className="skr-loading-text">Loading...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="auth-shell">
-      <section className="auth-card">
-        <p className="auth-kicker">whisk studio</p>
-        <h1>Sign in to continue</h1>
-        <p>
-          codex/dev intentionally serves a minimal placeholder website. Use design worktrees for
-          full UX variants.
-        </p>
-        <button type="button" className="app-primary-button" onClick={onContinue}>
-          Continue to login
-        </button>
-      </section>
-    </div>
-  );
-}
-
-function AuthCallbackPage({ onComplete }) {
-  const [isCompleted, setIsCompleted] = useState(false);
-
-  useEffect(() => {
-    onComplete();
-    setIsCompleted(true);
-  }, [onComplete]);
-
-  if (isCompleted) {
-    return <Navigate to="/" replace />;
-  }
-
-  return (
-    <div className="auth-shell">
-      <section className="auth-card">
-        <h1>Completing sign in...</h1>
-      </section>
-    </div>
-  );
-}
-
-function AppShell({ apiBaseUrl }) {
-  const { isAuthenticated, signIn, signOut } = usePlaceholderAuth();
-
-  return (
-    <Router>
-      <Shell isAuthenticated={isAuthenticated} onSignOut={signOut}>
-        <Routes>
-          <Route
-            path="/login"
-            element={<LoginPage isAuthenticated={isAuthenticated} onContinue={signIn} />}
-          />
-          <Route path="/auth/callback" element={<AuthCallbackPage onComplete={signIn} />} />
-          {Object.entries(PAGE_DEFINITIONS).map(([route, definition]) => (
-            <Route
-              key={route}
-              path={route}
-              element={
-                <ProtectedRoute isAuthenticated={isAuthenticated}>
-                  <PlaceholderPage
-                    title={definition.title}
-                    lines={definition.lines}
-                    apiBaseUrl={apiBaseUrl}
-                  />
-                </ProtectedRoute>
-              }
-            />
-          ))}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Shell>
-    </Router>
+    <ThemeProvider>
+      <AuthProvider cognito={cognito}>
+        <MusicProvider>
+          <CompanionProvider>
+            <NotificationProvider>
+              <Router>
+                <AppRoutes />
+              </Router>
+            </NotificationProvider>
+          </CompanionProvider>
+        </MusicProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
 export default function App() {
-  const [runtimeApiBaseUrl, setRuntimeApiBaseUrl] = useState("");
-
-  useEffect(() => {
-    let isMounted = true;
-
-    fetchRuntimeConfig()
-      .then((payload) => {
-        if (!isMounted || !payload) return;
-        setRuntimeApiBaseUrl(String(payload.apiBaseUrl || ""));
-      })
-      .catch(() => {});
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const apiBaseUrl = useMemo(() => {
-    return resolveApiBaseUrl({
-      runtimeApiBaseUrl,
-      envApiBaseUrl: String(process.env.REACT_APP_API_URL || ""),
-      hostname: typeof window !== "undefined" ? window.location.hostname : "",
-    });
-  }, [runtimeApiBaseUrl]);
-
-  return <AppShell apiBaseUrl={apiBaseUrl} />;
+  return (
+    <ConfigProvider>
+      <ConfiguredApp />
+    </ConfigProvider>
+  );
 }

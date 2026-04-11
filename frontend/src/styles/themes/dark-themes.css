@@ -1,0 +1,287 @@
+/* ─── Themes ─── */
+
+/* Backdrop / ambient gradient per-theme */
+[data-theme="moonrise"] .skr-backdrop,
+[data-theme="moonrise"] .skr-login-petals {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(56, 189, 248, 0.06), transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(129, 140, 248, 0.05), transparent 50%);
+}
+[data-theme="bamboo"] .skr-backdrop,
+[data-theme="bamboo"] .skr-login-petals {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(74, 222, 128, 0.06), transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(251, 191, 36, 0.04), transparent 50%);
+}
+[data-theme="ember"] .skr-backdrop,
+[data-theme="ember"] .skr-login-petals {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(248, 113, 113, 0.07), transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(251, 146, 60, 0.05), transparent 50%);
+}
+[data-theme="void"] .skr-backdrop,
+[data-theme="void"] .skr-login-petals {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(168, 85, 247, 0.08), transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(34, 211, 238, 0.05), transparent 50%);
+}
+[data-theme="glacier"] .skr-backdrop,
+[data-theme="glacier"] .skr-login-petals {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(45, 212, 191, 0.06), transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(148, 163, 184, 0.04), transparent 50%);
+}
+[data-theme="dusk"] .skr-backdrop,
+[data-theme="dusk"] .skr-login-petals {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(251, 146, 60, 0.07), transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(244, 114, 182, 0.05), transparent 50%);
+}
+[data-theme="aurora"] .skr-backdrop,
+[data-theme="aurora"] .skr-login-petals {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(52, 211, 153, 0.07), transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(34, 211, 238, 0.05), transparent 50%);
+}
+[data-theme="crimson"] .skr-backdrop,
+[data-theme="crimson"] .skr-login-petals {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(244, 63, 94, 0.07), transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(245, 158, 11, 0.04), transparent 50%);
+}
+[data-theme="storm"] .skr-backdrop,
+[data-theme="storm"] .skr-login-petals {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(253, 224, 71, 0.05), transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(148, 163, 184, 0.04), transparent 50%);
+}
+
+/* Moonrise — deep navy with ocean blue + indigo */
+[data-theme="moonrise"] {
+  --skr-bg: #08101A;
+  --skr-surface: #0D1825;
+  --skr-elevated: #142030;
+  --skr-card: #0F1C2C;
+  --skr-accent: #38BDF8;
+  --skr-accent-hover: #7DD3FC;
+  --skr-accent-secondary: #818CF8;
+  --skr-accent-info: #38BDF8;
+  --skr-text: #E0F0FF;
+  --skr-text-primary: #E0F0FF;
+  --skr-text-inverse: #08101A;
+  --skr-text-secondary: #7DB8D8;
+  --skr-text-muted: #4A6A88;
+  --skr-text-tertiary: #2A4A66;
+  --skr-border: rgba(56, 189, 248, 0.15);
+  --skr-border-strong: rgba(56, 189, 248, 0.3);
+  --skr-overlay: rgba(8, 16, 26, 0.85);
+  --skr-glow: 0 0 12px rgba(56, 189, 248, 0.25);
+  --skr-glow-strong: 0 0 20px rgba(56, 189, 248, 0.4), 0 0 6px rgba(129, 140, 248, 0.3);
+  --skr-glass: rgba(13, 24, 37, 0.65);
+}
+
+/* Bamboo — dark forest with jade green + golden amber */
+[data-theme="bamboo"] {
+  --skr-bg: #090F0B;
+  --skr-surface: #111A13;
+  --skr-elevated: #19261B;
+  --skr-card: #142018;
+  --skr-accent: #4ADE80;
+  --skr-accent-hover: #86EFAC;
+  --skr-accent-secondary: #FBBF24;
+  --skr-accent-info: #38BDF8;
+  --skr-text: #E0F5E8;
+  --skr-text-primary: #E0F5E8;
+  --skr-text-inverse: #090F0B;
+  --skr-text-secondary: #7ABD8A;
+  --skr-text-muted: #4A7057;
+  --skr-text-tertiary: #2A4F32;
+  --skr-border: rgba(74, 222, 128, 0.15);
+  --skr-border-strong: rgba(74, 222, 128, 0.3);
+  --skr-overlay: rgba(9, 15, 11, 0.85);
+  --skr-glow: 0 0 12px rgba(74, 222, 128, 0.25);
+  --skr-glow-strong: 0 0 20px rgba(74, 222, 128, 0.4), 0 0 6px rgba(251, 191, 36, 0.3);
+  --skr-glass: rgba(17, 26, 19, 0.65);
+}
+
+/* Ember — volcanic dark with coral red + orange */
+[data-theme="ember"] {
+  --skr-bg: #120B08;
+  --skr-surface: #1E1210;
+  --skr-elevated: #2C1A16;
+  --skr-card: #24140F;
+  --skr-accent: #F87171;
+  --skr-accent-hover: #FCA5A5;
+  --skr-accent-secondary: #FB923C;
+  --skr-accent-info: #38BDF8;
+  --skr-accent-success: #4ADE80;
+  --skr-accent-warning: #FBBF24;
+  --skr-text: #FFF0EC;
+  --skr-text-primary: #FFF0EC;
+  --skr-text-inverse: #120B08;
+  --skr-text-secondary: #D4897A;
+  --skr-text-muted: #7A4A40;
+  --skr-text-tertiary: #4A2820;
+  --skr-border: rgba(248, 113, 113, 0.15);
+  --skr-border-strong: rgba(248, 113, 113, 0.3);
+  --skr-overlay: rgba(18, 11, 8, 0.85);
+  --skr-glow: 0 0 12px rgba(248, 113, 113, 0.25);
+  --skr-glow-strong: 0 0 20px rgba(248, 113, 113, 0.4), 0 0 6px rgba(251, 146, 60, 0.3);
+  --skr-glass: rgba(30, 18, 16, 0.65);
+}
+
+/* Void — ultraviolet dark with electric violet + neon cyan */
+[data-theme="void"] {
+  --skr-bg: #06040F;
+  --skr-surface: #100B1E;
+  --skr-elevated: #180F2C;
+  --skr-card: #120D22;
+  --skr-accent: #A855F7;
+  --skr-accent-hover: #C084FC;
+  --skr-accent-secondary: #22D3EE;
+  --skr-accent-info: #22D3EE;
+  --skr-accent-success: #4ADE80;
+  --skr-accent-warning: #FBBF24;
+  --skr-text: #F0EAFF;
+  --skr-text-primary: #F0EAFF;
+  --skr-text-inverse: #06040F;
+  --skr-text-secondary: #9070CC;
+  --skr-text-muted: #4A3370;
+  --skr-text-tertiary: #2A1D40;
+  --skr-border: rgba(168, 85, 247, 0.15);
+  --skr-border-strong: rgba(168, 85, 247, 0.3);
+  --skr-overlay: rgba(6, 4, 15, 0.85);
+  --skr-glow: 0 0 12px rgba(168, 85, 247, 0.3);
+  --skr-glow-strong: 0 0 20px rgba(168, 85, 247, 0.5), 0 0 6px rgba(34, 211, 238, 0.3);
+  --skr-glass: rgba(16, 11, 30, 0.65);
+}
+
+/* Glacier — arctic dark with icy teal + slate */
+[data-theme="glacier"] {
+  --skr-bg: #08100F;
+  --skr-surface: #0D1A19;
+  --skr-elevated: #142524;
+  --skr-card: #101E1D;
+  --skr-accent: #2DD4BF;
+  --skr-accent-hover: #5EEAD4;
+  --skr-accent-secondary: #94A3B8;
+  --skr-accent-info: #38BDF8;
+  --skr-accent-success: #4ADE80;
+  --skr-accent-warning: #FBBF24;
+  --skr-text: #E0F4F4;
+  --skr-text-primary: #E0F4F4;
+  --skr-text-inverse: #08100F;
+  --skr-text-secondary: #68B8B8;
+  --skr-text-muted: #3A7070;
+  --skr-text-tertiary: #1E4848;
+  --skr-border: rgba(45, 212, 191, 0.15);
+  --skr-border-strong: rgba(45, 212, 191, 0.3);
+  --skr-overlay: rgba(8, 16, 15, 0.85);
+  --skr-glow: 0 0 12px rgba(45, 212, 191, 0.25);
+  --skr-glow-strong: 0 0 20px rgba(45, 212, 191, 0.4), 0 0 6px rgba(148, 163, 184, 0.2);
+  --skr-glass: rgba(13, 26, 25, 0.65);
+}
+
+/* Dusk — warm twilight with amber orange + warm rose */
+[data-theme="dusk"] {
+  --skr-bg: #110D08;
+  --skr-surface: #1C1510;
+  --skr-elevated: #281D14;
+  --skr-card: #211810;
+  --skr-accent: #FB923C;
+  --skr-accent-hover: #FDBA74;
+  --skr-accent-secondary: #F472B6;
+  --skr-accent-info: #38BDF8;
+  --skr-accent-success: #4ADE80;
+  --skr-accent-warning: #FBBF24;
+  --skr-text: #FFF5EC;
+  --skr-text-primary: #FFF5EC;
+  --skr-text-inverse: #110D08;
+  --skr-text-secondary: #C8956A;
+  --skr-text-muted: #7A5530;
+  --skr-text-tertiary: #4A3020;
+  --skr-border: rgba(251, 146, 60, 0.15);
+  --skr-border-strong: rgba(251, 146, 60, 0.3);
+  --skr-overlay: rgba(17, 13, 8, 0.85);
+  --skr-glow: 0 0 12px rgba(251, 146, 60, 0.25);
+  --skr-glow-strong: 0 0 20px rgba(251, 146, 60, 0.4), 0 0 6px rgba(244, 114, 182, 0.3);
+  --skr-glass: rgba(28, 21, 16, 0.65);
+}
+
+/* Aurora — northern lights with aurora green + cyan */
+[data-theme="aurora"] {
+  --skr-bg: #050E10;
+  --skr-surface: #0A1A1E;
+  --skr-elevated: #10262C;
+  --skr-card: #0C1E24;
+  --skr-accent: #34D399;
+  --skr-accent-hover: #6EE7B7;
+  --skr-accent-secondary: #22D3EE;
+  --skr-accent-info: #22D3EE;
+  --skr-accent-success: #34D399;
+  --skr-accent-warning: #FBBF24;
+  --skr-text: #E0F7F4;
+  --skr-text-primary: #E0F7F4;
+  --skr-text-inverse: #050E10;
+  --skr-text-secondary: #6ABCB8;
+  --skr-text-muted: #3A6A68;
+  --skr-text-tertiary: #1E4040;
+  --skr-border: rgba(52, 211, 153, 0.15);
+  --skr-border-strong: rgba(52, 211, 153, 0.3);
+  --skr-overlay: rgba(5, 14, 16, 0.85);
+  --skr-glow: 0 0 12px rgba(52, 211, 153, 0.25);
+  --skr-glow-strong: 0 0 20px rgba(52, 211, 153, 0.4), 0 0 6px rgba(34, 211, 238, 0.3);
+  --skr-glass: rgba(10, 26, 30, 0.65);
+}
+
+/* Crimson — deep dark with scarlet red + golden */
+[data-theme="crimson"] {
+  --skr-bg: #0F0608;
+  --skr-surface: #190B0D;
+  --skr-elevated: #241015;
+  --skr-card: #1E0C10;
+  --skr-accent: #F43F5E;
+  --skr-accent-hover: #FB7185;
+  --skr-accent-secondary: #F59E0B;
+  --skr-accent-info: #38BDF8;
+  --skr-accent-success: #4ADE80;
+  --skr-accent-warning: #F59E0B;
+  --skr-text: #FFF0F2;
+  --skr-text-primary: #FFF0F2;
+  --skr-text-inverse: #0F0608;
+  --skr-text-secondary: #C46878;
+  --skr-text-muted: #7A3040;
+  --skr-text-tertiary: #4A1828;
+  --skr-border: rgba(244, 63, 94, 0.15);
+  --skr-border-strong: rgba(244, 63, 94, 0.3);
+  --skr-overlay: rgba(15, 6, 8, 0.85);
+  --skr-glow: 0 0 12px rgba(244, 63, 94, 0.25);
+  --skr-glow-strong: 0 0 20px rgba(244, 63, 94, 0.4), 0 0 6px rgba(245, 158, 11, 0.3);
+  --skr-glass: rgba(25, 11, 13, 0.65);
+}
+
+/* Storm — dark slate with lightning yellow + silver */
+[data-theme="storm"] {
+  --skr-bg: #090C10;
+  --skr-surface: #10141C;
+  --skr-elevated: #181E2A;
+  --skr-card: #131820;
+  --skr-accent: #FDE047;
+  --skr-accent-hover: #FEF08A;
+  --skr-accent-secondary: #94A3B8;
+  --skr-accent-info: #38BDF8;
+  --skr-accent-success: #4ADE80;
+  --skr-accent-warning: #FDE047;
+  --skr-text: #F0F2FF;
+  --skr-text-primary: #F0F2FF;
+  --skr-text-inverse: #090C10;
+  --skr-text-secondary: #8899AA;
+  --skr-text-muted: #445566;
+  --skr-text-tertiary: #28333F;
+  --skr-border: rgba(253, 224, 71, 0.15);
+  --skr-border-strong: rgba(253, 224, 71, 0.3);
+  --skr-overlay: rgba(9, 12, 16, 0.85);
+  --skr-glow: 0 0 12px rgba(253, 224, 71, 0.2);
+  --skr-glow-strong: 0 0 20px rgba(253, 224, 71, 0.35), 0 0 6px rgba(148, 163, 184, 0.2);
+  --skr-glass: rgba(16, 20, 28, 0.65);
+}

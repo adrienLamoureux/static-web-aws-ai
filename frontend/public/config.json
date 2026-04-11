@@ -1,9 +1,9 @@
 {
-  "apiBaseUrl": "https://qy5pzvatme.execute-api.us-east-1.amazonaws.com/prod/",
+  "apiBaseUrl": "https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod",
   "cognito": {
-    "domain": "",
-    "clientId": "",
-    "userPoolId": "",
-    "region": ""
+    "domain": "https://whiskstudio-alx-dev-761593662432.auth.us-east-1.amazoncognito.com",
+    "clientId": "6qcsnr78lth12ql962iu9thhu6",
+    "userPoolId": "us-east-1_KGfmw3Ykn",
+    "region": "us-east-1"
   }
 }

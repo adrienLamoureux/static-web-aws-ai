@@ -1,0 +1,10 @@
+/* ─── Responsive ─── */
+@media (max-width: 780px) {
+  .skr-main { padding: 16px; }
+  .skr-topbar { padding: 0 16px; }
+  .skr-hud-pill { gap: 0; padding: 4px 4px; }
+  .skr-hud-item { padding: 6px 10px; }
+  .skr-hud-label { display: none; }
+  .skr-split { grid-template-columns: 1fr; }
+  .skr-music-pill-title { max-width: 80px; }
+}
