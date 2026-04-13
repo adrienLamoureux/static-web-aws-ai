@@ -26,7 +26,7 @@
 - Until a code worktree exists, it should be treated as a scaffolded idea environment rather than an actively differentiated UX branch.
 
 ## Architecture Touchpoints
-- Backend: shared contracts from `codex/dev`
+- Backend: shared contracts from `main`
 - Frontend: no active dedicated worktree at the moment
 - CDK: `StaticWebAWSAIStack-design-kinetic`
 - AI scripts/notebooks: no stage-specific changes
@@ -42,4 +42,4 @@
 - Known blockers:
   - stage exists, but the branch-local UI codebase does not
 - Next smallest shippable increment:
-  - define the intended shell/routing direction and spin up `codex/design-kinetic/code`
+  - define the intended shell/routing direction and spin up a design-kinetic UI worktree

@@ -14,7 +14,7 @@ This file is the current source of truth for the repo architecture, deployment m
 | Infrastructure | `cdk/bin/static-web-aws-ai-stack.ts`, `cdk/lib/*.ts`, `cdk/scripts/*.js` | Full-stack and UI-only deploy modes |
 | Idea metadata | `IDEAS.md`, `IMPROVEMENTS.md`, `ideas/<idea-id>/**` | Registry, status, decisions, runbooks |
 
-See [`docs/api-access.md`](./api-access.md) for the complete endpoint inventory with public / user / admin access levels.
+See [`docs/api-spec.md`](./api-spec.md) for the complete endpoint inventory with request/response shapes and public / user / admin access levels.
 
 ## 2. Branch Topology
 

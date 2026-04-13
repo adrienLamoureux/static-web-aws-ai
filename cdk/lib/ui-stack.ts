@@ -29,7 +29,7 @@ export interface UiOnlyStackProps extends cdk.StackProps {
  *   - BucketDeployment  (frontend/build + config.json pointing to the shared backend)
  *
  * No Lambda, API Gateway, DynamoDB, Cognito User Pool, or Media S3 are created here —
- * all backend resources are owned by the codex/dev full stack.
+ * all backend resources are owned by the main full stack.
  */
 export class UiOnlyStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: UiOnlyStackProps) {

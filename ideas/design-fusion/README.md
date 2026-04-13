@@ -18,7 +18,7 @@
 - Out of scope:
   - backend contract rewrites from this branch
   - cross-idea registry edits from this branch
-  - turning `codex/dev` into a Solaris UI branch
+  - turning `main` into a Solaris UI branch
 
 ## Delivery Tracks
 - Plan track: preserve backend contracts while remapping the frontend information architecture.
@@ -49,7 +49,7 @@
 
 ## Architecture Touchpoints
 - Backend:
-  - consumes the shared API contracts from `codex/dev`
+  - consumes the shared API contracts from `main`
 - Frontend:
   - `frontend/src/App.js`
   - `frontend/src/index.css`
@@ -63,7 +63,7 @@
 
 ## Contract Notes
 - API changes:
-  - none should originate from this branch without first landing in `codex/dev`
+  - none should originate from this branch without first landing in `main`
 - Runtime config changes:
   - this branch expects `/config.json` and uses `ConfigContext` as the runtime config entrypoint
 - Data model/storage changes:

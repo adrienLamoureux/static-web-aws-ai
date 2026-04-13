@@ -26,7 +26,7 @@
 - Product capabilities remain the shared Whisk feature set until a new UI branch is activated.
 
 ## Architecture Touchpoints
-- Backend: shared contracts from `codex/dev`
+- Backend: shared contracts from `main`
 - Frontend: no active dedicated worktree at the moment
 - CDK: `StaticWebAWSAIStack-design-atelier`
 - AI scripts/notebooks: no stage-specific changes
@@ -42,4 +42,4 @@
 - Known blockers:
   - no active overlay branch is checked out for this idea
 - Next smallest shippable increment:
-  - stand up a `codex/design-atelier/code` worktree and freeze the frontend route/layout contract
+  - create a design-atelier UI worktree and freeze the frontend route/layout contract

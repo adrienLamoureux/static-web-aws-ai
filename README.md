@@ -1,16 +1,6 @@
-# Static Web AWS AI
+# Whisk Studio
 
-Whisk Studio is an AWS-hosted AI creation platform with image, video, story, music, LoRA, and director workflows. This repository now operates as one full-stack baseline branch plus multiple UI overlay branches.
-
-## Current Development Model
-
-| Branch | Role | Frontend Reality |
-|--------|------|------------------|
-| `codex/dev` | Source of truth for backend, CDK, contracts, registries, and shared docs | Intentionally minimal placeholder UI |
-| `codex/design-fusion/code` | Solaris overlay branch | Full React app with grouped navigation and warm light-first shell |
-| `codex/design-pixnovel/code` | Pixnovel overlay branch | Full React app with cinematic shell, quick-generate panel, and director-first layout |
-
-The important consequence is that `codex/dev` should stay functionality-first and contract-focused. Rich UX work belongs in the design worktrees.
+Whisk Studio is an AWS-hosted AI creation platform with image, video, story, music, LoRA, and director workflows. The entire stack — backend, frontend (Sakura Bloom), and CDK infrastructure — lives on a single `main` branch.
 
 ## Product Capabilities
 - Authenticated creative workspace for images, videos, stories, soundtracks, and LoRA profiles
@@ -18,108 +8,101 @@ The important consequence is that `codex/dev` should stay functionality-first an
 - Director operations for configuration, queue visibility, session pinning, and masonry asset management
 - Story sessions with scene illustrations, animation, and per-scene music
 - Multi-provider AI integrations through Bedrock, Replicate, CivitAI, and Gradio/HuggingFace
+- Live2D companion (Hiyori) with contextual AI chat, emotion reactions, and proactive prompts
 
 ## Architecture At A Glance
-1. CloudFront serves the React bundle and a generated `/config.json`.
-2. The frontend resolves `apiBaseUrl` and Cognito settings from `/config.json`, with localhost env fallbacks.
-3. Design branches authenticate through Cognito Hosted UI + PKCE. The `codex/dev` placeholder frontend uses a fake session token only for baseline route coverage.
+1. CloudFront serves the Sakura Bloom React bundle and a generated `/config.json`.
+2. The frontend resolves `apiBaseUrl` and Cognito settings from `/config.json` at startup.
+3. All design variants authenticate through Cognito Hosted UI + PKCE.
 4. API Gateway invokes the Lambda-wrapped Express backend.
 5. Express routes persist metadata in DynamoDB and media in S3.
 6. Backend routes call Bedrock, Replicate, CivitAI, and Gradio providers when needed.
 
-See `docs/architecture.md` for the current branch/worktree topology, route groups, storage keys, and deployment modes.
+See `docs/architecture.md` for the full route map, storage keys, and deployment modes.
 
 ## Repository Layout
-- `backend/`: Express API, route modules, auth, data access helpers, provider integrations
-- `frontend/`: placeholder frontend on `codex/dev`; full React apps on design branches
+- `backend/`: Express API, 25 route modules, auth, data access helpers, provider integrations
+- `frontend/`: Sakura Bloom React app — Live2D companion, `skr-` CSS system, 10 themes, bottom HUD
 - `cdk/`: infrastructure stacks plus `idea:*` helper scripts
 - `ideas/`: per-idea context (`README`, `DECISIONS`, `RUNBOOK`, `STATUS`, `IMPROVEMENTS`, sometimes `cdk-outputs.json`)
-- `docs/`: shared architecture and workflow diagrams
-- `ai/`: optional research scripts/notebooks only
+- `docs/`: architecture, API spec, ADRs, and workflow docs
+- `ai/`: optional research scripts/notebooks only (no runtime dependency)
 - `IDEAS.md`: top-level registry of deployed idea stacks
-- `IMPROVEMENTS.md`: shared rollout log across ideas
 - `AGENTS.md`: collaboration rules for future agents
-- `REQUIREMENTS.md`: branch-specific requirements for `codex/dev`
 
 ## Backend Contract Summary
-- Route registration lives in `backend/routes/index.js`.
-- There are 15 registered route modules exposing 73 HTTP endpoints.
-- Major domains:
-  - prompt helper
-  - media management and sharing
-  - image generation and status
-  - video generation and status
-  - story sessions, messaging, illustration, animation, and music
-  - director operations
-  - LoRA catalog and profile management
-  - character CRUD
-- Critical invariant:
-  - `POST /story/sessions`
-  - `GET /story/sessions/:id`
-  both return `{ session, messages, scenes }` with `messages` and `scenes` at top level, not nested inside `session`.
+- Route registration: `backend/routes/index.js`
+- 25 registered route modules exposing 73+ HTTP endpoints
+- Major domains: prompt helper, media management and sharing, image generation, video generation, story sessions/illustration/animation/music, LoRA catalog and profiles, characters, companion (Hiyori), director operations
+- Critical invariant: `POST /story/sessions` and `GET /story/sessions/:id` both return `{ session, messages, scenes }` with `messages` and `scenes` at top level, not nested inside `session`
 
 ## Storage Model Summary
-- DynamoDB uses a single table with `pk` / `sk`.
-- User partition root: `USER#<cognito-sub>`.
-- Story session root: `SESSION#<sessionId>`.
-- Story message keys: `SESSION#<sessionId>#MSG#<timestamp>`.
-- Story scene keys: `SESSION#<sessionId>#SCENE#<sceneId>`.
-- S3 user isolation uses the prefix `users/<cognito-sub>/`.
+- DynamoDB single table with `pk` / `sk`
+- User partition root: `USER#<cognito-sub>`
+- Story session root: `SESSION#<sessionId>`
+- Story message keys: `SESSION#<sessionId>#MSG#<timestamp>`
+- Story scene keys: `SESSION#<sessionId>#SCENE#<sceneId>`
+- S3 user isolation: `users/<cognito-sub>/`
 
 ## Deployment Modes
-- Full stack:
-  - `cdk/lib/static-web-aws-ai-stack.ts`
-  - creates CloudFront, S3, API Gateway, Lambda, Cognito, DynamoDB
-- UI-only overlay:
-  - `cdk/lib/ui-stack.ts`
-  - creates only the website bucket/distribution and a per-design Cognito app client
-  - deploy with `npm --prefix cdk run idea:deploy -- --stage=<idea-id> --backend-stage=<backend-id>`
 
-## Active Worktrees And Live Stacks
+**Full stack** (backend + Sakura frontend + CDK — all from `main`):
+```bash
+npm --prefix cdk run idea:deploy -- --stage=dev
+```
 
-| Branch | Worktree | CloudFront | API |
-|--------|----------|------------|-----|
-| `codex/dev` | `/Users/adrienlamoureux/Documents/code/static-web-aws-ai` | `https://d2l9b1xmucsb19.cloudfront.net` | `https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/` |
-| `codex/design-fusion/code` | `/Users/adrienlamoureux/Documents/code/wt/design-fusion/code` | `https://d3ei9r5awjyzzr.cloudfront.net` | `https://luu3x0m826.execute-api.us-east-1.amazonaws.com/prod/` |
-| `codex/design-pixnovel/code` | `/Users/adrienlamoureux/Documents/code/wt/design-pixnovel/code` | `https://d21j30h6jj4n2k.cloudfront.net` | `https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/` |
+**UI-only design overlay** (separate CloudFront + Cognito app client, shares `dev` backend):
+```bash
+npm --prefix cdk run idea:deploy -- --stage=<idea-id> --backend-stage=dev
+```
 
-Shared test credentials across the live stacks: `test@test.com` / `Test1234567@`
+Never deploy a design variant without `--backend-stage=dev` — it would create a rogue full stack.
+
+Post-deploy validation is mandatory: `idea:deploy` runs sanity + UI smoke checks automatically.
+
+## Live Stacks
+
+| Idea ID | CloudFront | Notes |
+|---------|------------|-------|
+| `dev` | `d2l9b1xmucsb19.cloudfront.net` | Full stack — Sakura Bloom frontend |
+| `design-fusion` | `d3ei9r5awjyzzr.cloudfront.net` | UI-only overlay, Solaris shell |
+| `design-pixnovel` | `d21j30h6jj4n2k.cloudfront.net` | UI-only overlay, PixNovel shell |
+| `design-atelier` | `d3mv9zsmbqsn48.cloudfront.net` | UI-only overlay |
+| `design-kinetic` | `d1ulh0ke4fvnqg.cloudfront.net` | UI-only overlay |
+| `design-solaris` | `d17qd3rx45vcxl.cloudfront.net` | UI-only overlay |
+
+Shared test credentials: `test@test.com` / `Test1234567@`
+
+API: `https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/`
+Cognito domain: `whiskstudio-alx-dev-761593662432.auth.us-east-1.amazoncognito.com`
 
 ## Local Development
 
 Install dependencies:
-
 ```bash
 npm --prefix frontend install
 npm --prefix backend install
 npm --prefix cdk install
 ```
 
-Run the placeholder frontend on `codex/dev`:
+Run the frontend against the hosted dev stack:
+```bash
+npm --prefix cdk run idea:ui-local -- --stage=dev
+```
 
+Or run without a live stack (uses committed `frontend/public/config.json` as fallback):
 ```bash
 npm --prefix frontend start
 ```
 
-Run any frontend against hosted stack config:
-
-```bash
-npm --prefix cdk run idea:ui-local -- --stage=<idea-id>
-```
-
-Useful flags:
-- `--port=<port>`
-- `--print-env`
-- `--open`
+Useful flags for `idea:ui-local`: `--port=<port>`, `--print-env`, `--open`
 
 Quick backend sanity check:
-
 ```bash
 node -e "require('./backend/index')"
 ```
 
 ## Infrastructure Commands
-
 ```bash
 npm --prefix cdk run build
 npm --prefix cdk run idea:list
@@ -130,25 +113,23 @@ npm --prefix cdk run idea:ui-local -- --stage=<idea-id>
 npm --prefix cdk run idea:destroy -- --stage=<idea-id>
 ```
 
-Post-deploy validation is mandatory:
-- `idea:deploy`, `idea:deploy-many`, and `idea:rollout` run sanity + UI smoke automatically
-- the deploy runner rejects `--skip-ui-smoke`
-
 ## Validation Rules
 - Backend touched: `node -e "require('./backend/index')"`
 - Frontend touched: `npm --prefix frontend run build`
 - CDK touched: `npm --prefix cdk run build`
-- Backend or CDK changes are not considered complete until the relevant stage deploy succeeds and both sanity and UI smoke pass
+- Backend or CDK changes are not complete until the relevant stage deploy succeeds and both sanity and UI smoke pass
+
+See `CONTRIBUTING.md` for the full quality gate table and PR checklist.
 
 ## Documentation Map
-- `AGENTS.md`: collaboration rules and branch boundaries
-- `REQUIREMENTS.md`: `codex/dev` operating constraints and frozen contracts
-- `docs/architecture.md`: current architecture, route map, branch/worktree model
-- `docs/branches-worktrees-diagram.md`: visual topology
-- `ideas/dev/README.md`: baseline branch/stack intent
-- `ideas/design-fusion/README.md`: Solaris overlay summary
-- `ideas/design-pixnovel/README.md`: Pixnovel overlay summary
-- `frontend/REQUIREMENTS.md` inside each UI worktree: branch-local frontend guidance
+- `AGENTS.md`: collaboration rules and repo reality
+- `CONTRIBUTING.md`: code style, quality gates, PR checklist
+- `docs/architecture.md`: system layers, route map, deployment modes
+- `docs/api-spec.md`: full API contract (73 endpoints, request/response shapes)
+- `docs/testing.md`: how to run and write all test layers
+- `docs/adr/`: architecture decision records (001–006)
+- `ideas/dev/README.md`: dev stack intent and architecture touchpoints
+- `frontend/ARCHITECTURE.md`: component tree, hook graph, CSS system
 
 ## Common Configuration
 - `ADMIN_EMAIL`
@@ -163,14 +144,7 @@ Post-deploy validation is mandatory:
 Keep secrets in env or secret stores, never in committed files.
 
 ## Troubleshooting
-- Unauthorized after login:
-  - check that the deployed `config.json` points to the matching API and Cognito pool
-  - hard refresh and sign in again
-  - clear the `whisk_auth_tokens` session storage key if token state is stale
-- Placeholder auth confusion on `codex/dev`:
-  - the baseline frontend does not execute the real Cognito flow
-  - use a design worktree or a deployed idea stack when validating actual auth UX
-- Slow stack updates:
-  - `BucketDeployment` and CloudFront invalidation can take several minutes
-- Seeding issues:
-  - use `--source-stack=<stack-name>` when the source stack name does not follow stage naming
+- **Unauthorized after login**: check that the deployed `config.json` points to the matching API and Cognito pool; hard refresh and sign in again; clear the `whisk_auth_tokens` session storage key if token state is stale
+- **Slow stack updates**: `BucketDeployment` and CloudFront invalidation can take several minutes
+- **Seeding issues**: use `--source-stack=<stack-name>` when the source stack name does not follow stage naming
+- **Design variant shows old API**: the variant's S3 `config.json` may still reference an old endpoint; redeploy with `--stage=<id> --backend-stage=dev` to regenerate it

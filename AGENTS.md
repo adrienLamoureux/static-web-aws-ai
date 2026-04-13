@@ -12,7 +12,7 @@
 ## Repo Reality
 - `main` is the single source-of-truth branch for the full stack: backend, frontend (Sakura Bloom design), CDK, shared contracts, registries, and documentation.
 - The Sakura frontend (Live2D companion, bottom HUD, 10 themes) is the primary UI — it lives in `frontend/src/` on `main`.
-- Future agents should read `REQUIREMENTS.md` and `docs/architecture.md` before changing contracts.
+- Future agents should read `docs/architecture.md` before changing contracts.
 
 ## Stack Map
 - Backend API: Node.js + Express in `backend/`, Lambda adapter in `backend/lambda.js`.
@@ -45,9 +45,8 @@ Shared test credentials for the live stacks: `test@test.com` / `Test1234567@`
 
 ## Read Order For Agents
 1. `AGENTS.md`
-2. `REQUIREMENTS.md`
-3. `docs/architecture.md`
-4. Relevant `ideas/<idea-id>/*.md`
+2. `docs/architecture.md`
+3. Relevant `ideas/<idea-id>/*.md`
 
 ## Cognito Ownership — CRITICAL
 

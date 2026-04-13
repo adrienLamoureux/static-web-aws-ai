@@ -2,6 +2,19 @@
 
 > Last updated: 2026-04-06
 
+## Two Domains — One API, One CDN
+
+When using Whisk Studio you will see network requests going to two different domains:
+
+| Domain | What it is | Example |
+|--------|-----------|---------|
+| `k002t5i8r9.execute-api.us-east-1.amazonaws.com` | **API Gateway** — the backend REST API (Lambda) | `/prod/story/sessions` |
+| `d2l9b1xmucsb19.cloudfront.net` | **CloudFront CDN** — the React frontend (static files) | `/index.html`, `/config.json` |
+
+These are not two separate APIs. CloudFront serves the frontend bundle; the frontend then calls the API Gateway for all data. Both exist for every deployed stack.
+
+---
+
 ## Base URL
 
 Production: `https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod`
@@ -15,6 +28,14 @@ Access tiers:
 - **Public** — no token required
 - **User** — valid Cognito `idToken`
 - **Admin** — valid `idToken` + Cognito `admin` group membership
+
+### How the gateway enforces tiers
+
+1. **No token** → API Gateway passes the request through as anonymous → Express applies per-route middleware. Public routes respond normally; User and Admin routes return **401**.
+2. **Valid token** → API Gateway verifies the JWT and injects the user identity into the request context → Express reads it via `req.user`.
+3. **Invalid or expired token** → API Gateway rejects the request before it reaches Express → **403** from the gateway.
+
+> **Frontend note:** The frontend checks token expiry before mounting any protected component. If a token expires mid-session, a `whisk:auth:expired` event clears auth state and redirects to the login screen.
 
 ---
 

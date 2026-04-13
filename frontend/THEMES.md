@@ -94,4 +94,4 @@ All design tokens use the `--skr-` prefix. The full set defined per theme:
 1. Add an entry to `THEMES` in `src/contexts/ThemeContext.js` with `id`, `label`, `swatch`, `swatchSecondary`.
 2. Add a `[data-theme="<id>"]` dark block in `index.css` (after the existing theme blocks, before the responsive section).
 3. Add a `[data-brightness="light"][data-theme="<id>"]` light block after the existing light blocks.
-4. Build and deploy: `npm --prefix frontend run build` then `npm --prefix cdk run idea:deploy -- --stage=design-sakura --backend-stage=dev`.
+4. Build and deploy: `npm --prefix frontend run build` then `npm --prefix cdk run idea:deploy -- --stage=dev`.

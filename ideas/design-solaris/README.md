@@ -26,7 +26,7 @@
 - Until a dedicated code worktree exists, this idea should be treated as a prepared environment rather than an actively evolving overlay branch.
 
 ## Architecture Touchpoints
-- Backend: shared contracts from `codex/dev`
+- Backend: shared contracts from `main`
 - Frontend: no active dedicated worktree at the moment
 - CDK: `StaticWebAWSAIStack-design-solaris`
 - AI scripts/notebooks: no stage-specific changes
@@ -38,7 +38,7 @@
 
 ## Handoff Notes For Sub-Agents
 - Current priority:
-  - create a dedicated `codex/design-solaris/code` worktree before implementation resumes
+  - create a dedicated design-solaris UI worktree before implementation resumes
 - Known blockers:
   - stage exists, but no active overlay branch is checked out
 - Next smallest shippable increment:

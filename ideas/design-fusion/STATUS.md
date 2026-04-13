@@ -26,7 +26,7 @@
 ## Next Actions
 - Keep the branch-local docs aligned with the live stack after future deploys.
 - Add more focused visual QA for mobile sidebar behavior and route remaps.
-- Preserve the Solaris CSS namespace and avoid leaking branch-specific styling into `codex/dev`.
+- Preserve the Solaris CSS namespace and avoid leaking branch-specific styling into `main`.
 
 ## Activity Log
 - 2026-03-17T09:55:55.473Z | event=deploy | stack=StaticWebAWSAIStack-design-fusion / cloudfront=https://d3ei9r5awjyzzr.cloudfront.net / api=https://rrna07imb8.execute-api.us-east-1.amazonaws.com/prod/ / commit=628b7c7 / sanity=passed / ui_smoke=passed / improvement=add-videos-route

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE_BRANCH="${1:-codex/dev}"
+BASE_BRANCH="${1:-main}"
 VARIANT_BRANCH="${2:-codex/design-pixnovel/code}"
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
