@@ -9,14 +9,14 @@ import { useAuth } from "../../../contexts/AuthContext";
 
 export default function MusicCard({ musicAction, onNavigate }) {
   const { isAuthenticated } = useAuth();
-  const [mood, setMood]             = useState(musicAction?.mood || "");
+  const [mood, setMood] = useState(musicAction?.mood || "");
   const [description, setDescription] = useState(musicAction?.description || "");
-  const [navigated, setNavigated]   = useState(false);
+  const [navigated, setNavigated] = useState(false);
 
   const handleOpen = () => {
     if (navigated || !onNavigate) return;
     const params = new URLSearchParams();
-    if (mood.trim())        params.set("companionMusicMood", mood.trim());
+    if (mood.trim()) params.set("companionMusicMood", mood.trim());
     if (description.trim()) params.set("companionMusicDesc", description.trim());
     const query = params.toString();
     onNavigate(`/chronicle${query ? `?${query}` : ""}`);
@@ -83,7 +83,7 @@ const styles = {
     opacity: 0.8,
   },
   field: {
-    background: "rgba(13, 11, 20, 0.6)",
+    background: "var(--skr-comp-input-bg)",
     border: "1px solid rgba(251, 191, 36, 0.2)",
     borderRadius: 6,
     padding: "5px 8px",

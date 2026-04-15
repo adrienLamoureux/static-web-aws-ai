@@ -61,9 +61,7 @@ const resolveBucketName = (stage) => {
     );
   }
   const outputs = JSON.parse(fs.readFileSync(outputsPath, "utf8"));
-  const stackKey = Object.keys(outputs).find(
-    (key) => outputs[key] && outputs[key].MediaBucketName
-  );
+  const stackKey = Object.keys(outputs).find((key) => outputs[key] && outputs[key].MediaBucketName);
   if (!stackKey) {
     throw new Error(`No MediaBucketName found in ${outputsPath}`);
   }
@@ -84,7 +82,9 @@ const loadDefaultImages = () => {
 };
 
 const normalizePrefix = (value = DEFAULT_PREFIX) => {
-  const trimmed = String(value || "").trim().replace(/^\/+/, "");
+  const trimmed = String(value || "")
+    .trim()
+    .replace(/^\/+/, "");
   if (!trimmed) return DEFAULT_PREFIX;
   return trimmed.endsWith("/") ? trimmed : `${trimmed}/`;
 };

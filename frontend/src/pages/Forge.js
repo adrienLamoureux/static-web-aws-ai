@@ -1,35 +1,36 @@
-import React from 'react';
-import { useSearchParams } from 'react-router-dom';
-import Whisk from './Whisk';
-import WhiskVideos from './WhiskVideos';
+import React from "react";
+import { useSearchParams } from "react-router-dom";
+import Whisk from "./Whisk";
+import WhiskVideos from "./WhiskVideos";
 
 export default function Forge() {
   const [params, setParams] = useSearchParams();
-  const tab = params.get('tab') === 'videos' ? 'videos' : 'images';
+  const tab = params.get("tab") === "videos" ? "videos" : "images";
+  const prefilledPrompt = params.get("prompt") || "";
 
   return (
     <div>
-      <div className="skr-page-header">
+      <div className="skr-page-header" style={{ marginBottom: 12 }}>
         <h2 className="skr-page-title">Atelier</h2>
         <p className="skr-page-subtitle">Generate images and animate videos</p>
       </div>
-      <div className="skr-tab-bar">
+      <div className="skr-tab-bar" style={{ marginBottom: 16 }}>
         <button
           type="button"
-          className={`skr-tab${tab === 'images' ? ' is-active' : ''}`}
-          onClick={() => setParams({ tab: 'images' })}
+          className={`skr-tab${tab === "images" ? " is-active" : ""}`}
+          onClick={() => setParams({ tab: "images" })}
         >
-          Images
+          ◈ Images
         </button>
         <button
           type="button"
-          className={`skr-tab${tab === 'videos' ? ' is-active' : ''}`}
-          onClick={() => setParams({ tab: 'videos' })}
+          className={`skr-tab${tab === "videos" ? " is-active" : ""}`}
+          onClick={() => setParams({ tab: "videos" })}
         >
-          Videos
+          ▶ Videos
         </button>
       </div>
-      {tab === 'videos' ? <WhiskVideos /> : <Whisk />}
+      {tab === "videos" ? <WhiskVideos /> : <Whisk prefilledPrompt={prefilledPrompt} />}
     </div>
   );
 }

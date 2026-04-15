@@ -31,8 +31,14 @@ const createReq = ({
 const createRes = () => {
   const out = { statusCode: 200, payload: null };
   const res = {
-    status(code) { out.statusCode = code; return res; },
-    json(payload) { out.payload = payload; return res; },
+    status(code) {
+      out.statusCode = code;
+      return res;
+    },
+    json(payload) {
+      out.payload = payload;
+      return res;
+    },
     out,
   };
   return res;
@@ -42,9 +48,7 @@ const createRes = () => {
  * Make a Bedrock send stub that returns the given text in the expected shape.
  */
 const makeSend = (text) => async () => ({
-  body: new TextEncoder().encode(
-    JSON.stringify({ content: [{ type: "text", text }] })
-  ),
+  body: new TextEncoder().encode(JSON.stringify({ content: [{ type: "text", text }] })),
 });
 
 // ── POST /api/companion/chat ───────────────────────────────────────────────
@@ -72,7 +76,10 @@ test("POST /api/companion/chat strips EMOTION tag from text", async () => {
     bedrockClient: { send: makeSend("Nice work! [EMOTION: surprised]") },
   });
   const handler = getRouterHandler(router, "post", "/api/companion/chat");
-  const req = createReq({ body: { messages: [{ role: "user", content: "Hello" }] }, method: "POST" });
+  const req = createReq({
+    body: { messages: [{ role: "user", content: "Hello" }] },
+    method: "POST",
+  });
   const res = createRes();
 
   await handler(req, res);
@@ -95,10 +102,15 @@ test("POST /api/companion/chat defaults to neutral emotion when tag missing", as
 
 test("POST /api/companion/chat parses GENERATE_IMAGE action tag", async () => {
   const { router } = buildRouter({
-    bedrockClient: { send: makeSend("Here's an image!\n[GENERATE_IMAGE: anime girl, forest]\n[EMOTION: happy]") },
+    bedrockClient: {
+      send: makeSend("Here's an image!\n[GENERATE_IMAGE: anime girl, forest]\n[EMOTION: happy]"),
+    },
   });
   const handler = getRouterHandler(router, "post", "/api/companion/chat");
-  const req = createReq({ body: { messages: [{ role: "user", content: "Draw something" }] }, method: "POST" });
+  const req = createReq({
+    body: { messages: [{ role: "user", content: "Draw something" }] },
+    method: "POST",
+  });
   const res = createRes();
 
   await handler(req, res);
@@ -113,7 +125,10 @@ test("POST /api/companion/chat parses NAVIGATE action tag for valid path", async
     bedrockClient: { send: makeSend("Going there!\n[NAVIGATE: /gallery]\n[EMOTION: happy]") },
   });
   const handler = getRouterHandler(router, "post", "/api/companion/chat");
-  const req = createReq({ body: { messages: [{ role: "user", content: "Take me to gallery" }] }, method: "POST" });
+  const req = createReq({
+    body: { messages: [{ role: "user", content: "Take me to gallery" }] },
+    method: "POST",
+  });
   const res = createRes();
 
   await handler(req, res);
@@ -127,7 +142,10 @@ test("POST /api/companion/chat ignores NAVIGATE tag for invalid path", async () 
     bedrockClient: { send: makeSend("Going there!\n[NAVIGATE: /invalid]\n[EMOTION: happy]") },
   });
   const handler = getRouterHandler(router, "post", "/api/companion/chat");
-  const req = createReq({ body: { messages: [{ role: "user", content: "Take me somewhere" }] }, method: "POST" });
+  const req = createReq({
+    body: { messages: [{ role: "user", content: "Take me somewhere" }] },
+    method: "POST",
+  });
   const res = createRes();
 
   await handler(req, res);
@@ -137,10 +155,15 @@ test("POST /api/companion/chat ignores NAVIGATE tag for invalid path", async () 
 
 test("POST /api/companion/chat parses START_STORY action tag", async () => {
   const { router } = buildRouter({
-    bedrockClient: { send: makeSend("Let's begin!\n[START_STORY: Dragon Quest | fantasy]\n[EMOTION: happy]") },
+    bedrockClient: {
+      send: makeSend("Let's begin!\n[START_STORY: Dragon Quest | fantasy]\n[EMOTION: happy]"),
+    },
   });
   const handler = getRouterHandler(router, "post", "/api/companion/chat");
-  const req = createReq({ body: { messages: [{ role: "user", content: "Start a story" }] }, method: "POST" });
+  const req = createReq({
+    body: { messages: [{ role: "user", content: "Start a story" }] },
+    method: "POST",
+  });
   const res = createRes();
 
   await handler(req, res);
@@ -153,10 +176,15 @@ test("POST /api/companion/chat parses START_STORY action tag", async () => {
 
 test("POST /api/companion/chat parses GENERATE_MUSIC action tag", async () => {
   const { router } = buildRouter({
-    bedrockClient: { send: makeSend("Music time!\n[GENERATE_MUSIC: melancholic | gentle piano]\n[EMOTION: sad]") },
+    bedrockClient: {
+      send: makeSend("Music time!\n[GENERATE_MUSIC: melancholic | gentle piano]\n[EMOTION: sad]"),
+    },
   });
   const handler = getRouterHandler(router, "post", "/api/companion/chat");
-  const req = createReq({ body: { messages: [{ role: "user", content: "Play some music" }] }, method: "POST" });
+  const req = createReq({
+    body: { messages: [{ role: "user", content: "Play some music" }] },
+    method: "POST",
+  });
   const res = createRes();
 
   await handler(req, res);
@@ -169,7 +197,11 @@ test("POST /api/companion/chat parses GENERATE_MUSIC action tag", async () => {
 
 test("POST /api/companion/chat returns 500 on Bedrock error", async () => {
   const { router } = buildRouter({
-    bedrockClient: { send: async () => { throw new Error("bedrock unavailable"); } },
+    bedrockClient: {
+      send: async () => {
+        throw new Error("bedrock unavailable");
+      },
+    },
   });
   const handler = getRouterHandler(router, "post", "/api/companion/chat");
   const req = createReq({ body: { messages: [{ role: "user", content: "Hi" }] }, method: "POST" });
@@ -187,7 +219,10 @@ test("POST /api/companion/chat loads memory for authenticated user", async () =>
     bedrockClient: { send: makeSend("Hi! [EMOTION: happy]") },
     companionMemory: {
       SUMMARY_THRESHOLD: 30,
-      loadMemory: async () => { loadMemoryCalled = true; return { summary: "test", messages: [], turnCount: 0 }; },
+      loadMemory: async () => {
+        loadMemoryCalled = true;
+        return { summary: "test", messages: [], turnCount: 0 };
+      },
       saveMessages: async () => {},
       compactMemory: async () => {},
     },
@@ -213,7 +248,10 @@ test("POST /api/companion/chat does not load memory for anonymous user", async (
     bedrockClient: { send: makeSend("Hi! [EMOTION: happy]") },
     companionMemory: {
       SUMMARY_THRESHOLD: 30,
-      loadMemory: async () => { loadMemoryCalled = true; return null; },
+      loadMemory: async () => {
+        loadMemoryCalled = true;
+        return null;
+      },
       saveMessages: async () => {},
       compactMemory: async () => {},
     },
@@ -281,7 +319,11 @@ test("POST /api/companion/proactive defaults trigger to idle when not provided",
 
 test("POST /api/companion/proactive returns 500 on Bedrock error", async () => {
   const { router } = buildRouter({
-    bedrockClient: { send: async () => { throw new Error("fail"); } },
+    bedrockClient: {
+      send: async () => {
+        throw new Error("fail");
+      },
+    },
   });
   const handler = getRouterHandler(router, "post", "/api/companion/proactive");
   const req = createReq({ body: { trigger: "idle", context: {} }, method: "POST" });
@@ -326,11 +368,18 @@ test("GET /api/companion/memory/status calls getMemoryStatus for authenticated u
   let getStatusCalled = false;
   const { router } = buildRouter({
     companionMemory: {
-      getMemoryStatus: async () => { getStatusCalled = true; return { hasMemory: true, turnCount: 5 }; },
+      getMemoryStatus: async () => {
+        getStatusCalled = true;
+        return { hasMemory: true, turnCount: 5 };
+      },
     },
   });
   const handler = getRouterHandler(router, "get", "/api/companion/memory/status");
-  const req = createReq({ query: { modelId: "hiyori_free" }, user: { sub: "user-1" }, method: "GET" });
+  const req = createReq({
+    query: { modelId: "hiyori_free" },
+    user: { sub: "user-1" },
+    method: "GET",
+  });
   const res = createRes();
 
   await handler(req, res);
@@ -343,7 +392,9 @@ test("GET /api/companion/memory/status calls getMemoryStatus for authenticated u
 test("GET /api/companion/memory/status returns hasMemory: false on error", async () => {
   const { router } = buildRouter({
     companionMemory: {
-      getMemoryStatus: async () => { throw new Error("dynamo error"); },
+      getMemoryStatus: async () => {
+        throw new Error("dynamo error");
+      },
     },
   });
   const handler = getRouterHandler(router, "get", "/api/companion/memory/status");
@@ -360,15 +411,24 @@ test("GET /api/companion/memory/status returns hasMemory: false on error", async
 test("DELETE /api/companion/memory clears memory and returns ok: true", async () => {
   let clearCalled = false;
   const { router } = buildRouter({
-    requireUserMiddleware: (req, res, next) => { req.user = { sub: "user-1" }; next(); },
+    requireUserMiddleware: (req, res, next) => {
+      req.user = { sub: "user-1" };
+      next();
+    },
     companionMemory: {
-      clearMemory: async () => { clearCalled = true; },
+      clearMemory: async () => {
+        clearCalled = true;
+      },
     },
   });
   const handler = getRouterHandler(router, "delete", "/api/companion/memory");
   assert.ok(handler, "handler should exist");
 
-  const req = createReq({ query: { modelId: "hiyori_free" }, user: { sub: "user-1" }, method: "DELETE" });
+  const req = createReq({
+    query: { modelId: "hiyori_free" },
+    user: { sub: "user-1" },
+    method: "DELETE",
+  });
   const res = createRes();
 
   await handler(req, res);
@@ -381,9 +441,14 @@ test("DELETE /api/companion/memory clears memory and returns ok: true", async ()
 test("DELETE /api/companion/memory uses default modelId when not provided", async () => {
   let capturedModelId;
   const { router } = buildRouter({
-    requireUserMiddleware: (req, res, next) => { req.user = { sub: "user-1" }; next(); },
+    requireUserMiddleware: (req, res, next) => {
+      req.user = { sub: "user-1" };
+      next();
+    },
     companionMemory: {
-      clearMemory: async (userId, modelId) => { capturedModelId = modelId; },
+      clearMemory: async (userId, modelId) => {
+        capturedModelId = modelId;
+      },
     },
   });
   const handler = getRouterHandler(router, "delete", "/api/companion/memory");
@@ -401,7 +466,10 @@ test("DELETE /api/companion/memory returns 503 when companionMemory not availabl
   // Null out companionMemory via deps
   const deps = createMockDeps({
     companionMemory: null,
-    requireUserMiddleware: (req, res, next) => { req.user = { sub: "user-1" }; next(); },
+    requireUserMiddleware: (req, res, next) => {
+      req.user = { sub: "user-1" };
+      next();
+    },
   });
   require("../routes/companion-route")(router, deps);
 

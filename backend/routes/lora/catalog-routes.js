@@ -45,9 +45,7 @@ const normalizeModelIdList = (value = undefined) => {
   if (Array.isArray(value)) {
     return Array.from(
       new Set(
-        value
-          .map((item) => normalizeString(item))
-          .filter((item) => DIGITS_ONLY_PATTERN.test(item))
+        value.map((item) => normalizeString(item)).filter((item) => DIGITS_ONLY_PATTERN.test(item))
       )
     );
   }
@@ -85,17 +83,12 @@ const resolveRequestedModelIds = (payload = {}) => {
   return Array.from(new Set(modelIds));
 };
 
-const withBaseModelHint = ({
-  metadata = {},
-  requestedBaseModel = "",
-  hintItems = [],
-}) => {
+const withBaseModelHint = ({ metadata = {}, requestedBaseModel = "", hintItems = [] }) => {
   const normalizedRequestedModel = normalizeString(requestedBaseModel);
   if (!normalizedRequestedModel) return metadata;
   const suggestedBaseModels = collectCatalogBaseModels(hintItems);
   if (!suggestedBaseModels.length) return metadata;
-  const normalizedMetadata =
-    metadata && typeof metadata === "object" ? metadata : {};
+  const normalizedMetadata = metadata && typeof metadata === "object" ? metadata : {};
   return {
     ...normalizedMetadata,
     baseModelHint: {
@@ -132,12 +125,7 @@ const normalizeCatalogResponseItem = (item = {}) => ({
 });
 
 module.exports = function registerLoraCatalogRoutes(deps) {
-  const {
-    buildMediaPk,
-    buildMediaSk,
-    queryBySkPrefix,
-    putMediaItem,
-  } = deps;
+  const { buildMediaPk, buildMediaSk, queryBySkPrefix, putMediaItem } = deps;
 
   const parseLimit = (
     value,
@@ -166,11 +154,7 @@ module.exports = function registerLoraCatalogRoutes(deps) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const syncLimit = parseLimit(
-      req.body?.limit,
-      LORA_SYNC_DEFAULT_LIMIT,
-      LORA_SYNC_MAX_LIMIT
-    );
+    const syncLimit = parseLimit(req.body?.limit, LORA_SYNC_DEFAULT_LIMIT, LORA_SYNC_MAX_LIMIT);
     const query = normalizeString(req.body?.query);
     const baseModel = normalizeString(req.body?.baseModel);
     const sort = normalizeString(req.body?.sort);

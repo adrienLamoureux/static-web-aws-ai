@@ -14,10 +14,14 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { MusicProvider } from "./contexts/MusicContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import SakuraMusicBar from "./components/sakura/SakuraMusicBar";
-import ThemeSwitcher from "./components/sakura/ThemeSwitcher";
+import Sidebar from "./components/sakura/Sidebar";
 import CompanionPanel from "./components/sakura/companion/CompanionPanel";
 import LoginModal from "./components/auth/LoginModal";
-import { CompanionProvider, useCompanion, CompanionActions } from "./lib/companion/CompanionContext";
+import {
+  CompanionProvider,
+  useCompanion,
+  CompanionActions,
+} from "./lib/companion/CompanionContext";
 import { NotificationProvider } from "./components/sakura/NotificationStack";
 import { getAuthToken } from "./utils/authTokens";
 
@@ -30,16 +34,14 @@ import Director from "./pages/Director";
 import Story from "./pages/Story";
 import StoryMusicLibrary from "./pages/StoryMusicLibrary";
 import AuthCallback from "./pages/AuthCallback";
-
 /* ─── Navigation (Bottom HUD) ─── */
 
 const NAV_ITEMS = [
-  { label: "Realm",     path: "/",          icon: "✦", isPublic: true },
-  { label: "Atelier",   path: "/atelier",   icon: "◈", isPublic: false },
+  { label: "Realm", path: "/", icon: "✦", isPublic: true },
+  { label: "Atelier", path: "/atelier", icon: "◈", isPublic: false },
   { label: "Chronicle", path: "/chronicle", icon: "▤", isPublic: false },
-  { label: "Sanctum",   path: "/sanctum",   icon: "⚙", requiredRole: "admin" },
+  { label: "Sanctum", path: "/sanctum", icon: "⚙", requiredRole: "admin" },
 ];
-
 
 /* ─── Protected Route ─── */
 
@@ -134,7 +136,7 @@ function LoginPage() {
 
 function SakuraShell({ children }) {
   const location = useLocation();
-  const { isAuthenticated, logout, user, startLogin } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { dispatch } = useCompanion();
   const [hudExpanded, setHudExpanded] = useState(false);
 
@@ -160,32 +162,8 @@ function SakuraShell({ children }) {
       {/* Gradient backdrop */}
       <div className="skr-backdrop" aria-hidden="true" />
 
-      {/* Top bar — always visible */}
-      <header className="skr-topbar">
-        <Link to="/" className="skr-topbar-brand">
-          <span className="skr-brand-emblem">✦</span>
-          <span className="skr-brand-name">Whisk Studio</span>
-        </Link>
-        <div className="skr-topbar-right">
-          <ThemeSwitcher />
-          {isAuthenticated ? (
-            <>
-              <span className="skr-topbar-user">{user?.email || ""}</span>
-              <button type="button" className="skr-btn-ghost" onClick={logout}>
-                Sign out
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              className="skr-btn-ghost"
-              onClick={() => startLogin(location.pathname)}
-            >
-              Sign in
-            </button>
-          )}
-        </div>
-      </header>
+      {/* Left sidebar — desktop only (CSS hides on mobile) */}
+      <Sidebar />
 
       {/* Main content */}
       <main className="skr-main">
@@ -242,12 +220,47 @@ function AppRoutes() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         {/* Primary routes */}
         <Route path="/" element={<HomePage />} />
-        <Route path="/atelier" element={<ProtectedRoute><Forge /></ProtectedRoute>} />
-        <Route path="/chronicle" element={<ProtectedRoute><Story /></ProtectedRoute>} />
+        <Route
+          path="/atelier"
+          element={
+            <ProtectedRoute>
+              <Forge />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chronicle"
+          element={
+            <ProtectedRoute>
+              <Story />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/gallery" element={<Navigate to="/" replace />} />
-        <Route path="/sanctum" element={<AdminRoute><Director /></AdminRoute>} />
-        <Route path="/sanctum/sounds" element={<AdminRoute><StoryMusicLibrary /></AdminRoute>} />
-        <Route path="/sanctum/lora" element={<AdminRoute><LoraManagement /></AdminRoute>} />
+        <Route
+          path="/sanctum"
+          element={
+            <AdminRoute>
+              <Director />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/sanctum/sounds"
+          element={
+            <AdminRoute>
+              <StoryMusicLibrary />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/sanctum/lora"
+          element={
+            <AdminRoute>
+              <LoraManagement />
+            </AdminRoute>
+          }
+        />
         <Route path="/about" element={<AboutPage />} />
         {/* Legacy redirects */}
         <Route path="/whisk" element={<Navigate to="/atelier" replace />} />

@@ -17,23 +17,18 @@ const isFinitePositiveNumber = (value) => {
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
 const isLosslessLoopUrl = (url = "") => {
-  const normalizedUrl = String(url || "").split("?")[0].toLowerCase();
-  return LOSSLESS_LOOP_EXTENSIONS.some((extension) =>
-    normalizedUrl.endsWith(`.${extension}`)
-  );
+  const normalizedUrl = String(url || "")
+    .split("?")[0]
+    .toLowerCase();
+  return LOSSLESS_LOOP_EXTENSIONS.some((extension) => normalizedUrl.endsWith(`.${extension}`));
 };
 
 const resolveLoopWindow = (durationSeconds = 0, candidateWindow = null) => {
-  const safeDuration = isFinitePositiveNumber(durationSeconds)
-    ? Number(durationSeconds)
-    : 0;
+  const safeDuration = isFinitePositiveNumber(durationSeconds) ? Number(durationSeconds) : 0;
   if (!safeDuration) {
     return { start: 0, end: 0 };
   }
-  const minimumSpanSeconds = Math.min(
-    GAPLESS_LOOP_CONFIG.minLoopSpanSeconds,
-    safeDuration
-  );
+  const minimumSpanSeconds = Math.min(GAPLESS_LOOP_CONFIG.minLoopSpanSeconds, safeDuration);
   const candidateStart = Number(candidateWindow?.start);
   const candidateEnd = Number(candidateWindow?.end);
   const start = clamp(
@@ -125,9 +120,7 @@ const detectGaplessLoopWindow = async (url = "", signal) => {
 
   const audioContext = new AudioContextImpl();
   try {
-    const decodedAudioBuffer = await audioContext.decodeAudioData(
-      encodedAudioBuffer.slice(0)
-    );
+    const decodedAudioBuffer = await audioContext.decodeAudioData(encodedAudioBuffer.slice(0));
     return analyzeLoopWindowFromBuffer(decodedAudioBuffer);
   } finally {
     await audioContext.close().catch(() => {});
@@ -175,11 +168,7 @@ function SolarisTrackCard({
           ? `Source: ${source}`
           : ""
     : "";
-  const showMeta =
-    Boolean(sourceLabel) ||
-    Boolean(mood) ||
-    Boolean(energy) ||
-    Boolean(tempoBpm);
+  const showMeta = Boolean(sourceLabel) || Boolean(mood) || Boolean(energy) || Boolean(tempoBpm);
   const safeTagList = Array.isArray(tags) ? tags : [];
   const showLoopToggle = typeof onLoopChange === "function" && Boolean(url);
   const isStoryV3Variant = uiVariant === "story-v3";
@@ -216,8 +205,7 @@ function SolarisTrackCard({
 
     const overflowSeconds = Math.max(audioElement.currentTime - restartAtSeconds, 0);
     const nextTime = loopWindow.start + overflowSeconds;
-    audioElement.currentTime =
-      nextTime < loopWindow.end ? nextTime : loopWindow.start;
+    audioElement.currentTime = nextTime < loopWindow.end ? nextTime : loopWindow.start;
   }, [gaplessLoopWindow, useManualLoopFallback]);
 
   const startLoopMonitor = useCallback(() => {
@@ -225,12 +213,7 @@ function SolarisTrackCard({
     const tick = () => {
       syncLoopPosition();
       const audioElement = audioRef.current;
-      if (
-        !audioElement ||
-        audioElement.paused ||
-        audioElement.ended ||
-        !useManualLoopFallback
-      ) {
+      if (!audioElement || audioElement.paused || audioElement.ended || !useManualLoopFallback) {
         loopMonitorRef.current = null;
         return;
       }
@@ -253,10 +236,7 @@ function SolarisTrackCard({
 
     const loadLoopWindow = async () => {
       try {
-        const detectedWindow = await detectGaplessLoopWindow(
-          url,
-          abortController.signal
-        );
+        const detectedWindow = await detectGaplessLoopWindow(url, abortController.signal);
         if (isDisposed) return;
         setGaplessLoopWindow(detectedWindow);
       } catch (error) {
@@ -376,16 +356,18 @@ function SolarisTrackCard({
       }`}
     >
       {/* Title row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p className="skr-track-title">{title || "Untitled track"}</p>
-          {stampLabel && <span style={{ fontSize: 10, color: 'var(--skr-text-tertiary)' }}>{stampLabel}</span>}
+          {stampLabel && (
+            <span style={{ fontSize: 10, color: "var(--skr-text-tertiary)" }}>{stampLabel}</span>
+          )}
         </div>
         {typeof onSelect === "function" && (
           <button
             type="button"
             className="skr-btn-secondary"
-            style={{ fontSize: 11, padding: '3px 10px', flexShrink: 0 }}
+            style={{ fontSize: 11, padding: "3px 10px", flexShrink: 0 }}
             onClick={() => onSelect(track)}
             disabled={isSelected}
           >
@@ -393,7 +375,9 @@ function SolarisTrackCard({
           </button>
         )}
         {showLoopToggle && (
-          <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, flexShrink: 0 }}>
+          <label
+            style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, flexShrink: 0 }}
+          >
             <input
               type="checkbox"
               checked={loop}
@@ -404,7 +388,11 @@ function SolarisTrackCard({
         )}
       </div>
 
-      {description && <p style={{ fontSize: 12, color: 'var(--skr-text-secondary)', marginTop: 4 }}>{description}</p>}
+      {description && (
+        <p style={{ fontSize: 12, color: "var(--skr-text-secondary)", marginTop: 4 }}>
+          {description}
+        </p>
+      )}
 
       {/* Full-width audio player */}
       {url && (
@@ -429,7 +417,7 @@ function SolarisTrackCard({
       )}
 
       {showMeta && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
           {sourceLabel && <span className="skr-track-pill">{sourceLabel}</span>}
           {mood && <span className="skr-track-pill mood">Mood: {mood}</span>}
           {energy && <span className="skr-track-pill energy">Energy: {energy}</span>}
@@ -438,9 +426,12 @@ function SolarisTrackCard({
       )}
 
       {safeTagList.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: 4 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginTop: 4 }}>
           {safeTagList.map((tag, index) => (
-            <span key={`${trackId || key || title || "track"}-${tag}-${index}`} className="skr-track-tag">
+            <span
+              key={`${trackId || key || title || "track"}-${tag}-${index}`}
+              className="skr-track-tag"
+            >
               {tag}
             </span>
           ))}

@@ -24,7 +24,7 @@ function useStoryMedia({
   setSceneManualSelectionMap,
   // Refs (always up-to-date .current):
   setMusicLibraryRef, // { current: fn } — useStoryMusicLibrary's setMusicLibrary
-  setErrorRef,        // { current: fn } — orchestrator's setError
+  setErrorRef, // { current: fn } — orchestrator's setError
 }) {
   const [animationPrompt, setAnimationPrompt] = useState(DEFAULT_ANIMATION_PROMPT);
   const [musicPrompt, setMusicPrompt] = useState(DEFAULT_MUSIC_PROMPT);
@@ -105,8 +105,7 @@ function useStoryMedia({
               ? {
                   ...scene,
                   videoStatus: data.status || scene.videoStatus || "",
-                  videoPredictionId:
-                    data.predictionId || scene.videoPredictionId || "",
+                  videoPredictionId: data.predictionId || scene.videoPredictionId || "",
                   videoPrompt: data.prompt || resolvedPrompt,
                   videoKey:
                     data.status === "succeeded"
@@ -179,12 +178,9 @@ function useStoryMedia({
       };
 
       try {
-        const data = await startStorySceneAnimation(
-          resolvedApiBaseUrl,
-          sessionId,
-          sceneId,
-          { prompt: resolvedPrompt }
-        );
+        const data = await startStorySceneAnimation(resolvedApiBaseUrl, sessionId, sceneId, {
+          prompt: resolvedPrompt,
+        });
         applyAnimationData(data);
         const status = data?.status || "";
         if (status === "succeeded") {
@@ -230,9 +226,7 @@ function useStoryMedia({
       const setError = setErrorRef.current;
       const setMusicLibrary = setMusicLibraryRef.current;
       const resolvedPrompt =
-        typeof options.prompt === "string"
-          ? options.prompt.trim()
-          : (musicPrompt || "").trim();
+        typeof options.prompt === "string" ? options.prompt.trim() : (musicPrompt || "").trim();
 
       const applyMusicData = (data) => {
         if (!data) return;
@@ -242,8 +236,7 @@ function useStoryMedia({
               ? normalizeScene({
                   ...scene,
                   musicStatus: data.status || scene.musicStatus || "",
-                  musicPredictionId:
-                    data.predictionId || scene.musicPredictionId || "",
+                  musicPredictionId: data.predictionId || scene.musicPredictionId || "",
                   musicPrompt: data.prompt || scene.musicPrompt || resolvedPrompt,
                   musicKey:
                     data.status === "succeeded"
@@ -268,8 +261,7 @@ function useStoryMedia({
                     : Array.isArray(data.direction?.tags)
                       ? data.direction.tags
                       : scene.musicTags || [],
-                  musicLibraryTrackId:
-                    data.musicLibraryTrackId || scene.musicLibraryTrackId || "",
+                  musicLibraryTrackId: data.musicLibraryTrackId || scene.musicLibraryTrackId || "",
                 })
               : scene
           )
@@ -346,10 +338,7 @@ function useStoryMedia({
             setError("Scene soundtrack generation failed.");
             return;
           }
-          sceneMusicPollRef.current[sceneId] = setTimeout(
-            () => pollMusic(predictionId),
-            5000
-          );
+          sceneMusicPollRef.current[sceneId] = setTimeout(() => pollMusic(predictionId), 5000);
         } catch (err) {
           finishMusic();
           setError(err?.message || "Failed to generate scene soundtrack.");
@@ -378,10 +367,7 @@ function useStoryMedia({
           finishMusic();
           return;
         }
-        sceneMusicPollRef.current[sceneId] = setTimeout(
-          () => pollMusic(data.predictionId),
-          5000
-        );
+        sceneMusicPollRef.current[sceneId] = setTimeout(() => pollMusic(data.predictionId), 5000);
       } catch (err) {
         finishMusic();
         setError(err?.message || "Failed to generate scene soundtrack.");

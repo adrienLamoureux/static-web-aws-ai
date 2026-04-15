@@ -49,11 +49,7 @@ const STYLE_COHERENCE_PATTERNS = Object.freeze([
   /\b(lighting|color palette|depth|detail|quality)\b/i,
 ]);
 
-const parsePromptPairResponse = ({
-  responseText = "",
-  safeJsonParse,
-  normalizePromptFragment,
-}) => {
+const parsePromptPairResponse = ({ responseText = "", safeJsonParse, normalizePromptFragment }) => {
   const parsed = safeJsonParse(responseText) || {};
   const normalizedPositive = normalizePromptFragment(
     parsed.positivePrompt || parsed.positive || ""
@@ -68,9 +64,7 @@ const parsePromptPairResponse = ({
     };
   }
 
-  const positiveMatch = responseText.match(
-    /POSITIVE:\s*([\s\S]*?)(?:\nNEGATIVE:|$)/i
-  );
+  const positiveMatch = responseText.match(/POSITIVE:\s*([\s\S]*?)(?:\nNEGATIVE:|$)/i);
   const negativeMatch = responseText.match(/NEGATIVE:\s*([\s\S]*)/i);
   return {
     positivePrompt: normalizePromptFragment(positiveMatch?.[1] || ""),
@@ -78,8 +72,7 @@ const parsePromptPairResponse = ({
   };
 };
 
-const escapeRegexLiteral = (value = "") =>
-  String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const escapeRegexLiteral = (value = "") => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const dedupePromptFragments = (fragments = []) => {
   const seen = new Set();
@@ -103,10 +96,7 @@ const splitPromptFragments = ({ value = "", normalizePromptFragment }) =>
   );
 
 const countPatternMatches = (value = "", patterns = []) =>
-  patterns.reduce(
-    (count, pattern) => (pattern.test(value) ? count + 1 : count),
-    0
-  );
+  patterns.reduce((count, pattern) => (pattern.test(value) ? count + 1 : count), 0);
 
 const extractCharacterNameTerms = (name = "") =>
   Array.from(
@@ -117,8 +107,7 @@ const extractCharacterNameTerms = (name = "") =>
         .map((term) => term.trim())
         .filter(
           (term) =>
-            term.length >= CHARACTER_NAME_TERM_MIN_LENGTH &&
-            !CHARACTER_NAME_STOPWORDS.has(term)
+            term.length >= CHARACTER_NAME_TERM_MIN_LENGTH && !CHARACTER_NAME_STOPWORDS.has(term)
         )
     )
   ).slice(0, CHARACTER_NAME_MAX_SIGNAL_TERMS);
@@ -147,14 +136,10 @@ const classifyPromptFragment = ({ fragment = "", focusContext = {} }) => {
       value: normalized,
       terms: focusContext.nameTerms || [],
     }) +
-    (focusContext.normalizedName &&
-    normalized.includes(focusContext.normalizedName)
+    (focusContext.normalizedName && normalized.includes(focusContext.normalizedName)
       ? CHARACTER_NAME_EXACT_MATCH_BONUS
       : 0);
-  const environmentScore = countPatternMatches(
-    normalized,
-    ENVIRONMENT_FOCUS_PATTERNS
-  );
+  const environmentScore = countPatternMatches(normalized, ENVIRONMENT_FOCUS_PATTERNS);
   const styleScore = countPatternMatches(normalized, STYLE_COHERENCE_PATTERNS);
 
   if (characterScore > 0 && characterScore >= environmentScore) {
@@ -185,10 +170,7 @@ const buildCharacterAnchorFragments = ({
   const sourceFragments = splitPromptFragments({
     value: sourceText,
     normalizePromptFragment,
-  }).filter(
-    (fragment) =>
-      classifyPromptFragment({ fragment, focusContext }) === "character"
-  );
+  }).filter((fragment) => classifyPromptFragment({ fragment, focusContext }) === "character");
   return dedupePromptFragments([
     normalizePromptFragment(character?.name || ""),
     ...sourceFragments,
@@ -199,9 +181,7 @@ const resolveEnvironmentFragmentBudget = ({ characterFragmentCount = 0 }) => {
   if (characterFragmentCount <= 0) {
     return MIN_ENVIRONMENT_FRAGMENT_BUDGET;
   }
-  const ratioBudget = Math.floor(
-    characterFragmentCount / CHARACTER_TO_ENVIRONMENT_FRAGMENT_RATIO
-  );
+  const ratioBudget = Math.floor(characterFragmentCount / CHARACTER_TO_ENVIRONMENT_FRAGMENT_RATIO);
   return Math.max(
     MIN_ENVIRONMENT_FRAGMENT_BUDGET,
     Math.min(MAX_ENVIRONMENT_FRAGMENT_BUDGET, ratioBudget)
@@ -243,10 +223,7 @@ const rebalanceIllustrationPositivePrompt = ({
     buckets[category].push(fragment);
   });
 
-  const characterFragments = dedupePromptFragments([
-    ...characterAnchors,
-    ...buckets.character,
-  ]);
+  const characterFragments = dedupePromptFragments([...characterAnchors, ...buckets.character]);
   const environmentBudget = resolveEnvironmentFragmentBudget({
     characterFragmentCount: characterFragments.length,
   });
@@ -257,24 +234,17 @@ const rebalanceIllustrationPositivePrompt = ({
     ...buckets.environment.slice(0, environmentBudget),
   ]);
 
-  return (rebalancedFragments.length
-    ? rebalancedFragments
-    : sourceFragments
-  ).join(", ");
+  return (rebalancedFragments.length ? rebalancedFragments : sourceFragments).join(", ");
 };
 
-const rebalanceIllustrationNegativePrompt = ({
-  negativePrompt = "",
-  normalizePromptFragment,
-}) => {
+const rebalanceIllustrationNegativePrompt = ({ negativePrompt = "", normalizePromptFragment }) => {
   const sourceFragments = splitPromptFragments({
     value: negativePrompt,
     normalizePromptFragment,
   });
-  return dedupePromptFragments([
-    ...CHARACTER_PRIORITY_NEGATIVE_GUARDS,
-    ...sourceFragments,
-  ]).join(", ");
+  return dedupePromptFragments([...CHARACTER_PRIORITY_NEGATIVE_GUARDS, ...sourceFragments]).join(
+    ", "
+  );
 };
 
 module.exports = {

@@ -10,12 +10,7 @@ const extractRetryAfterSeconds = (errorMessage = "") => {
   return null;
 };
 
-const runReplicateWithRetry = async (
-  replicateClient,
-  modelId,
-  input,
-  maxAttempts = 3
-) => {
+const runReplicateWithRetry = async (replicateClient, modelId, input, maxAttempts = 3) => {
   let attempt = 0;
   while (attempt < maxAttempts) {
     try {
@@ -84,8 +79,7 @@ const getReplicateOutputUrls = (output) => {
   return urls.filter(Boolean);
 };
 
-const getReplicateOutputUrl = (output) =>
-  getReplicateOutputUrls(output)[0] || null;
+const getReplicateOutputUrl = (output) => getReplicateOutputUrls(output)[0] || null;
 
 module.exports = {
   delay,

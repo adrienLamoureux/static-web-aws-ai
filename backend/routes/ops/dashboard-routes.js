@@ -100,14 +100,13 @@ module.exports = function registerDashboardRoutes(deps) {
     }
 
     const safeBase = buildSafeBaseName(fileName || "masonry-image");
-    const extension =
-      contentType.includes("png")
-        ? "png"
-        : contentType.includes("webp")
-          ? "webp"
-          : contentType.includes("gif")
-            ? "gif"
-            : "jpg";
+    const extension = contentType.includes("png")
+      ? "png"
+      : contentType.includes("webp")
+        ? "webp"
+        : contentType.includes("gif")
+          ? "gif"
+          : "jpg";
     const key = `${GLOBAL_MASONRY_PREFIX}${safeBase}-${Date.now()}.${extension}`;
 
     try {
@@ -158,9 +157,7 @@ module.exports = function registerDashboardRoutes(deps) {
     const priorityRaw = String(req.body?.priority || DEFAULT_JOB_PRIORITY)
       .trim()
       .toLowerCase();
-    const priority = ALLOWED_JOB_PRIORITIES.has(priorityRaw)
-      ? priorityRaw
-      : DEFAULT_JOB_PRIORITY;
+    const priority = ALLOWED_JOB_PRIORITIES.has(priorityRaw) ? priorityRaw : DEFAULT_JOB_PRIORITY;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }

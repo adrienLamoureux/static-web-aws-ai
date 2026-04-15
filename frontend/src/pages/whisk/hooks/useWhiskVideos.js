@@ -2,12 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { deleteVideo, listVideos, setVideoFavorite } from "../../../services/s3";
 import { readSessionCache, writeSessionCache } from "../../../utils/sessionCache";
 
-export const useWhiskVideos = ({
-  apiBaseUrl,
-  cacheKey,
-  cacheMaxAge,
-  onError,
-}) => {
+export const useWhiskVideos = ({ apiBaseUrl, cacheKey, cacheMaxAge, onError }) => {
   const [videos, setVideos] = useState([]);
   const [videoUrls, setVideoUrls] = useState({});
   const [loadingVideoKey, setLoadingVideoKey] = useState("");
@@ -84,9 +79,7 @@ export const useWhiskVideos = ({
           includeUrls: true,
           includePosters: false,
         });
-        const matched = (data.videos || []).find(
-          (item) => item.key === video.key
-        );
+        const matched = (data.videos || []).find((item) => item.key === video.key);
         if (matched?.url) {
           setVideoUrls((prev) => ({ ...prev, [video.key]: matched.url }));
         }
@@ -116,9 +109,7 @@ export const useWhiskVideos = ({
       } catch (error) {
         setVideos((prev) => {
           const next = prev.map((item) =>
-            item.key === video.key
-              ? { ...item, favorite: Boolean(video.favorite) }
-              : item
+            item.key === video.key ? { ...item, favorite: Boolean(video.favorite) } : item
           );
           writeSessionCache(cacheKey, next);
           return next;

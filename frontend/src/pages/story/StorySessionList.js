@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 /**
  * StorySessionList — sidebar session selector.
@@ -9,7 +9,7 @@ import React from 'react';
  *   onSelect        – (sessionId: string) => void
  */
 export default function StorySessionList({ sessions, activeSessionId, onSelect }) {
-  const sessionLabel = (s) => s.title || s.name || s.sessionId?.slice(0, 8) || 'Session';
+  const sessionLabel = (s) => s.title || s.name || s.sessionId?.slice(0, 8) || "Session";
 
   if (sessions.length === 0) return null;
 
@@ -18,10 +18,12 @@ export default function StorySessionList({ sessions, activeSessionId, onSelect }
       className="skr-input"
       style={{ width: 200 }}
       value={activeSessionId}
-      onChange={e => onSelect(e.target.value)}
+      onChange={(e) => onSelect(e.target.value)}
     >
-      {sessions.map(s => (
-        <option key={s.sessionId} value={s.sessionId}>{sessionLabel(s)}</option>
+      {sessions.map((s) => (
+        <option key={s.sessionId} value={s.sessionId}>
+          {sessionLabel(s)}
+        </option>
       ))}
     </select>
   );

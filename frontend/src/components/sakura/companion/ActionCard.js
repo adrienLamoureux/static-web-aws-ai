@@ -9,6 +9,7 @@ import GenerationCard from "./GenerationCard";
 import NavigationCard from "./NavigationCard";
 import StoryCard from "./StoryCard";
 import MusicCard from "./MusicCard";
+import PromptGenerateCard from "./PromptGenerateCard";
 
 export default function ActionCard({ action, onNavigate }) {
   if (!action) return null;
@@ -22,6 +23,8 @@ export default function ActionCard({ action, onNavigate }) {
       return <StoryCard storyAction={action} onNavigate={onNavigate} />;
     case "generate_music":
       return <MusicCard musicAction={action} onNavigate={onNavigate} />;
+    case "generate_prompt":
+      return <PromptGenerateCard action={action} />;
     default:
       return null;
   }

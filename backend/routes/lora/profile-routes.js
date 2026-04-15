@@ -42,9 +42,7 @@ module.exports = function registerLoraProfileRoutes(deps) {
     const modelConfigByKey = isImageModality
       ? replicateModelConfig || {}
       : replicateVideoConfig || {};
-    const supportedModels = isImageModality
-      ? imageLoraSupportedModels
-      : videoLoraSupportedModels;
+    const supportedModels = isImageModality ? imageLoraSupportedModels : videoLoraSupportedModels;
     const modelConfig = modelConfigByKey[resolvedModelKey] || {};
     if (hasLoraInjectionSupport(modelConfig)) {
       return null;
@@ -144,7 +142,9 @@ module.exports = function registerLoraProfileRoutes(deps) {
       DEFAULT_CHARACTER_PROFILE_SEARCH_LIMIT,
       DEFAULT_CHARACTER_PROFILE_SEARCH_LIMIT
     );
-    const filterCharacterId = normalizeString(req.query?.characterId || req.query?.character_id || "");
+    const filterCharacterId = normalizeString(
+      req.query?.characterId || req.query?.character_id || ""
+    );
 
     try {
       const rawItems = await listUserItemsByType({
@@ -198,9 +198,15 @@ module.exports = function registerLoraProfileRoutes(deps) {
       maxItems: LORA_PROFILE_MAX_ITEMS_PER_MODALITY,
     });
 
-    const unsupportedImage = getUnsupportedModelPayload({ modality: LORA_MODALITY_IMAGE, modelKey: normalizedImageProfile.modelKey });
+    const unsupportedImage = getUnsupportedModelPayload({
+      modality: LORA_MODALITY_IMAGE,
+      modelKey: normalizedImageProfile.modelKey,
+    });
     if (unsupportedImage) return res.status(400).json(unsupportedImage);
-    const unsupportedVideo = getUnsupportedModelPayload({ modality: LORA_MODALITY_VIDEO, modelKey: normalizedVideoProfile.modelKey });
+    const unsupportedVideo = getUnsupportedModelPayload({
+      modality: LORA_MODALITY_VIDEO,
+      modelKey: normalizedVideoProfile.modelKey,
+    });
     if (unsupportedVideo) return res.status(400).json(unsupportedVideo);
 
     const requestedCatalogIds = [
@@ -212,16 +218,25 @@ module.exports = function registerLoraProfileRoutes(deps) {
       const catalogById = await fetchCatalogByIds({ userId, catalogIds: requestedCatalogIds });
       const missingIds = requestedCatalogIds.filter((id) => id && !catalogById.has(id));
       if (missingIds.length > 0) {
-        return res.status(400).json({ message: "Some catalog entries are missing. Sync catalog first.", missingCatalogIds: missingIds });
+        return res.status(400).json({
+          message: "Some catalog entries are missing. Sync catalog first.",
+          missingCatalogIds: missingIds,
+        });
       }
 
       const imageProfile = {
         ...normalizedImageProfile,
-        loras: mergeCatalogMetadataIntoProfile({ profileLoras: normalizedImageProfile.loras, catalogById }),
+        loras: mergeCatalogMetadataIntoProfile({
+          profileLoras: normalizedImageProfile.loras,
+          catalogById,
+        }),
       };
       const videoProfile = {
         ...normalizedVideoProfile,
-        loras: mergeCatalogMetadataIntoProfile({ profileLoras: normalizedVideoProfile.loras, catalogById }),
+        loras: mergeCatalogMetadataIntoProfile({
+          profileLoras: normalizedVideoProfile.loras,
+          catalogById,
+        }),
       };
 
       const now = new Date().toISOString();
@@ -247,16 +262,25 @@ module.exports = function registerLoraProfileRoutes(deps) {
 
       return res.status(201).json({
         profile: normalizeProfileResponseItem({
-          id: profileId, characterId, name, displayName: name,
-          imageModel: imageProfile.modelKey, imagePrompt: imageProfile.promptPrefix,
-          videoModel: videoProfile.modelKey, videoPrompt: videoProfile.promptPrefix,
-          image: imageProfile, video: videoProfile,
-          createdAt: now, updatedAt: now,
+          id: profileId,
+          characterId,
+          name,
+          displayName: name,
+          imageModel: imageProfile.modelKey,
+          imagePrompt: imageProfile.promptPrefix,
+          videoModel: videoProfile.modelKey,
+          videoPrompt: videoProfile.promptPrefix,
+          image: imageProfile,
+          video: videoProfile,
+          createdAt: now,
+          updatedAt: now,
         }),
       });
     } catch (error) {
       console.error("LoRA profile create error:", { message: error?.message || String(error) });
-      return res.status(500).json({ message: "Failed to create LoRA profile", error: error?.message || String(error) });
+      return res
+        .status(500)
+        .json({ message: "Failed to create LoRA profile", error: error?.message || String(error) });
     }
   });
 
@@ -312,7 +336,9 @@ module.exports = function registerLoraProfileRoutes(deps) {
       return res.json({ deleted: true, id: profileId });
     } catch (error) {
       console.error("LoRA profile delete error:", { message: error?.message || String(error) });
-      return res.status(500).json({ message: "Failed to delete LoRA profile", error: error?.message || String(error) });
+      return res
+        .status(500)
+        .json({ message: "Failed to delete LoRA profile", error: error?.message || String(error) });
     }
   });
 

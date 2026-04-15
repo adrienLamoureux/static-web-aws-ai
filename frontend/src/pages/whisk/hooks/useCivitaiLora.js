@@ -18,14 +18,8 @@ const normalizeCivitaiLoraStrength = (value) => {
   return Math.max(0, Math.min(2, Math.round(numeric * 100) / 100));
 };
 
-export const useCivitaiLora = ({
-  apiBaseUrl,
-  imageSource,
-  loraCatalogEntries = [],
-}) => {
-  const [civitaiLoraMode, setCivitaiLoraMode] = useState(
-    CIVITAI_LORA_MODE_PROFILE
-  );
+export const useCivitaiLora = ({ apiBaseUrl, imageSource, loraCatalogEntries = [] }) => {
+  const [civitaiLoraMode, setCivitaiLoraMode] = useState(CIVITAI_LORA_MODE_PROFILE);
   const [civitaiCatalogQuery, setCivitaiCatalogQuery] = useState("");
   const [civitaiRuntimeLoras, setCivitaiRuntimeLoras] = useState([]);
 
@@ -49,9 +43,7 @@ export const useCivitaiLora = ({
             baseModel: String(entry?.baseModel || "").trim(),
             creatorName: String(entry?.creatorName || "").trim(),
             triggerWords: Array.isArray(entry?.triggerWords)
-              ? entry.triggerWords
-                  .map((word) => String(word || "").trim())
-                  .filter(Boolean)
+              ? entry.triggerWords.map((word) => String(word || "").trim()).filter(Boolean)
               : [],
             downloadUrl: String(entry?.downloadUrl || "").trim(),
           };
@@ -111,21 +103,16 @@ export const useCivitaiLora = ({
     );
   }, []);
 
-  const updateCivitaiRuntimeLoraStrength = useCallback(
-    (catalogId, strength) => {
-      const resolvedCatalogId = String(catalogId || "").trim();
-      if (!resolvedCatalogId) return;
-      const normalizedStrength = normalizeCivitaiLoraStrength(strength);
-      setCivitaiRuntimeLoras((previous) =>
-        previous.map((item) =>
-          item.catalogId === resolvedCatalogId
-            ? { ...item, strength: normalizedStrength }
-            : item
-        )
-      );
-    },
-    []
-  );
+  const updateCivitaiRuntimeLoraStrength = useCallback((catalogId, strength) => {
+    const resolvedCatalogId = String(catalogId || "").trim();
+    if (!resolvedCatalogId) return;
+    const normalizedStrength = normalizeCivitaiLoraStrength(strength);
+    setCivitaiRuntimeLoras((previous) =>
+      previous.map((item) =>
+        item.catalogId === resolvedCatalogId ? { ...item, strength: normalizedStrength } : item
+      )
+    );
+  }, []);
 
   const persistRuntimeCivitaiProfileIfNeeded = useCallback(async () => {
     if (

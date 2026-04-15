@@ -1,18 +1,8 @@
 const { InvokeModelCommand } = require("@aws-sdk/client-bedrock-runtime");
 
-const createAiCraftMusicDirection = ({
-  bedrockClient,
-  promptHelperModelId,
-  safeJsonParse,
-  normalizePromptFragment,
-  clipText,
-}) =>
-  async ({
-    scene = {},
-    summary = "",
-    latest = "",
-    overridePrompt = "",
-  }) => {
+const createAiCraftMusicDirection =
+  ({ bedrockClient, promptHelperModelId, safeJsonParse, normalizePromptFragment, clipText }) =>
+  async ({ scene = {}, summary = "", latest = "", overridePrompt = "" }) => {
     const MUSIC_DIRECTION_MAX_TAGS = 6;
     const MUSIC_DIRECTION_MAX_PROMPT_CHARS = 260;
     const MUSIC_DIRECTION_ALLOWED_ENERGY = new Set(["low", "medium", "high"]);
@@ -61,19 +51,14 @@ const createAiCraftMusicDirection = ({
 
     const fallbackPrompt = normalizePromptFragment(
       overridePrompt ||
-        [
-          "cinematic fantasy ambient score",
-          scene?.sceneEnvironment,
-          scene?.sceneAction,
-        ]
+        ["cinematic fantasy ambient score", scene?.sceneEnvironment, scene?.sceneAction]
           .filter(Boolean)
           .join(", ")
     );
     const fallback = {
       prompt:
         buildMusicPrompt({
-          basePrompt:
-            fallbackPrompt || "cinematic fantasy ambience, gentle orchestral movement",
+          basePrompt: fallbackPrompt || "cinematic fantasy ambience, gentle orchestral movement",
           mood: "neutral",
           energy: "medium",
           tempoBpm: 96,
@@ -158,9 +143,7 @@ const createAiCraftMusicDirection = ({
           : fallback.tempoBpm;
       const tags = normalizeMusicTags(parsed.tags);
       const resolvedMood = mood || fallback.mood;
-      const resolvedEnergy = MUSIC_DIRECTION_ALLOWED_ENERGY.has(energy)
-        ? energy
-        : fallback.energy;
+      const resolvedEnergy = MUSIC_DIRECTION_ALLOWED_ENERGY.has(energy) ? energy : fallback.energy;
       const resolvedPrompt = buildMusicPrompt({
         basePrompt: prompt || fallback.prompt,
         mood: resolvedMood,

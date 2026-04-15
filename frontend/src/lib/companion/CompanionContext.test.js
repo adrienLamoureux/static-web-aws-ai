@@ -1,36 +1,36 @@
-import React from 'react';
-import { render, renderHook, act, screen } from '@testing-library/react';
+import React from "react";
+import { render, renderHook, act, screen } from "@testing-library/react";
 import {
   CompanionProvider,
   CompanionActions,
   useCompanion,
   useCompanionEvent,
-} from './CompanionContext';
+} from "./CompanionContext";
 
 // Wrap in provider for hooks
 function wrapper({ children }) {
   return <CompanionProvider>{children}</CompanionProvider>;
 }
 
-describe('CompanionProvider', () => {
-  it('renders children without crashing', () => {
+describe("CompanionProvider", () => {
+  it("renders children without crashing", () => {
     render(
       <CompanionProvider>
         <div>Hello companion</div>
       </CompanionProvider>
     );
-    expect(screen.getByText('Hello companion')).toBeInTheDocument();
+    expect(screen.getByText("Hello companion")).toBeInTheDocument();
   });
 });
 
-describe('useCompanion', () => {
-  it('returns dispatch and subscribe functions', () => {
+describe("useCompanion", () => {
+  it("returns dispatch and subscribe functions", () => {
     const { result } = renderHook(() => useCompanion(), { wrapper });
-    expect(typeof result.current.dispatch).toBe('function');
-    expect(typeof result.current.subscribe).toBe('function');
+    expect(typeof result.current.dispatch).toBe("function");
+    expect(typeof result.current.subscribe).toBe("function");
   });
 
-  it('dispatch + subscribe: subscriber receives dispatched events', () => {
+  it("dispatch + subscribe: subscriber receives dispatched events", () => {
     const { result } = renderHook(() => useCompanion(), { wrapper });
 
     const received = [];
@@ -43,26 +43,26 @@ describe('useCompanion', () => {
     });
 
     act(() => {
-      result.current.dispatch(CompanionActions.GENERATION_START, { type: 'image' });
+      result.current.dispatch(CompanionActions.GENERATION_START, { type: "image" });
     });
 
     expect(received).toHaveLength(1);
     expect(received[0].action).toBe(CompanionActions.GENERATION_START);
-    expect(received[0].payload).toEqual({ type: 'image' });
+    expect(received[0].payload).toEqual({ type: "image" });
 
     act(() => {
       unsubscribe();
     });
 
     act(() => {
-      result.current.dispatch(CompanionActions.GENERATION_DONE, { type: 'image', success: true });
+      result.current.dispatch(CompanionActions.GENERATION_DONE, { type: "image", success: true });
     });
 
     // Should not receive events after unsubscribe
     expect(received).toHaveLength(1);
   });
 
-  it('multiple subscribers all receive the same dispatch', () => {
+  it("multiple subscribers all receive the same dispatch", () => {
     const { result } = renderHook(() => useCompanion(), { wrapper });
 
     const received1 = [];
@@ -79,7 +79,7 @@ describe('useCompanion', () => {
     });
 
     act(() => {
-      result.current.dispatch(CompanionActions.STORY_TURN, { sessionTitle: 'Test' });
+      result.current.dispatch(CompanionActions.STORY_TURN, { sessionTitle: "Test" });
     });
 
     expect(received1).toHaveLength(1);
@@ -87,11 +87,14 @@ describe('useCompanion', () => {
     expect(received1[0].action).toBe(CompanionActions.STORY_TURN);
     expect(received2[0].action).toBe(CompanionActions.STORY_TURN);
 
-    act(() => { unsub1(); unsub2(); });
+    act(() => {
+      unsub1();
+      unsub2();
+    });
   });
 });
 
-describe('useCompanion idle timer', () => {
+describe("useCompanion idle timer", () => {
   beforeEach(() => {
     jest.useFakeTimers();
     // Clear session storage so FIRST_VISIT doesn't fire an extra timeout
@@ -104,7 +107,7 @@ describe('useCompanion idle timer', () => {
     sessionStorage.clear();
   });
 
-  it('fires USER_IDLE event after 60 seconds of inactivity', () => {
+  it("fires USER_IDLE event after 60 seconds of inactivity", () => {
     const { result } = renderHook(() => useCompanion(), { wrapper });
 
     const received = [];
@@ -121,7 +124,7 @@ describe('useCompanion idle timer', () => {
     expect(received).toContain(CompanionActions.USER_IDLE);
   });
 
-  it('fires USER_RETURN event when activity resumes after being idle', () => {
+  it("fires USER_RETURN event when activity resumes after being idle", () => {
     const { result } = renderHook(() => useCompanion(), { wrapper });
 
     const received = [];
@@ -139,15 +142,15 @@ describe('useCompanion idle timer', () => {
 
     // Simulate activity — triggers USER_RETURN
     act(() => {
-      document.dispatchEvent(new Event('mousemove'));
+      document.dispatchEvent(new Event("mousemove"));
     });
 
     expect(received).toContain(CompanionActions.USER_RETURN);
   });
 });
 
-describe('useCompanionEvent', () => {
-  it('calls callback when a matching event is dispatched', () => {
+describe("useCompanionEvent", () => {
+  it("calls callback when a matching event is dispatched", () => {
     const callback = jest.fn();
     let capturedDispatch;
 
@@ -165,16 +168,13 @@ describe('useCompanionEvent', () => {
     );
 
     act(() => {
-      capturedDispatch(CompanionActions.PAGE_NAVIGATE, { page: '/whisk' });
+      capturedDispatch(CompanionActions.PAGE_NAVIGATE, { page: "/whisk" });
     });
 
-    expect(callback).toHaveBeenCalledWith(
-      CompanionActions.PAGE_NAVIGATE,
-      { page: '/whisk' }
-    );
+    expect(callback).toHaveBeenCalledWith(CompanionActions.PAGE_NAVIGATE, { page: "/whisk" });
   });
 
-  it('stable callback ref — re-renders do not break subscription', () => {
+  it("stable callback ref — re-renders do not break subscription", () => {
     const capturedCallback = jest.fn();
     let capturedDispatch;
 
@@ -198,12 +198,12 @@ describe('useCompanionEvent', () => {
     );
 
     act(() => {
-      capturedDispatch(CompanionActions.GENERATION_ERROR, { type: 'image', error: 'fail' });
+      capturedDispatch(CompanionActions.GENERATION_ERROR, { type: "image", error: "fail" });
     });
 
-    expect(capturedCallback).toHaveBeenCalledWith(
-      CompanionActions.GENERATION_ERROR,
-      { type: 'image', error: 'fail' }
-    );
+    expect(capturedCallback).toHaveBeenCalledWith(CompanionActions.GENERATION_ERROR, {
+      type: "image",
+      error: "fail",
+    });
   });
 });

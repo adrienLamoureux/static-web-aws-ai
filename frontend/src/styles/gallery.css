@@ -1,0 +1,203 @@
+/* ─── Gallery Card (PixAI-inspired) ─── */
+.skr-gallery-card {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--skr-card);
+  border: 1px solid var(--skr-border);
+  transition:
+    box-shadow 0.2s,
+    transform 0.15s;
+  cursor: pointer;
+}
+.skr-gallery-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.skr-gallery-card-media {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: var(--skr-elevated);
+}
+.skr-gallery-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s;
+}
+.skr-gallery-card:hover .skr-gallery-card-img {
+  transform: scale(1.03);
+}
+
+/* "Animated" badge */
+.skr-gallery-card-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 3px 10px;
+  background: linear-gradient(135deg, var(--skr-cta), var(--skr-accent-secondary));
+  color: #fff;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* Hover overlay with tags */
+.skr-gallery-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(transparent 40%, rgba(0, 0, 0, 0.55));
+  opacity: 0;
+  transition: opacity 0.2s;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 12px;
+  pointer-events: none;
+}
+.skr-gallery-card-overlay.is-visible {
+  opacity: 1;
+}
+
+.skr-gallery-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.skr-gallery-card-tag {
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Footer */
+.skr-gallery-card-footer {
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid var(--skr-border);
+}
+
+.skr-gallery-card-meta {
+  min-width: 0;
+  flex: 1;
+}
+.skr-gallery-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--skr-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.skr-gallery-card-actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: 4px;
+}
+.skr-gallery-card-fav {
+  background: none;
+  border: none;
+  color: var(--skr-text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 6px;
+  transition:
+    color 0.15s,
+    transform 0.1s;
+  line-height: 1;
+}
+.skr-gallery-card-fav:hover,
+.skr-gallery-card-fav.is-active {
+  color: var(--skr-accent);
+  transform: scale(1.15);
+}
+
+/* ─── Gallery Feed grid ─── */
+.skr-feed-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+/* ─── Feed filter tabs ─── */
+.skr-feed-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 2px;
+}
+.skr-feed-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.skr-feed-tab {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--skr-text-muted);
+  background: none;
+  border: 1px solid var(--skr-border);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+  white-space: nowrap;
+}
+.skr-feed-tab:hover {
+  color: var(--skr-text);
+  background: var(--skr-elevated);
+}
+.skr-feed-tab.is-active {
+  background: var(--skr-cta, var(--skr-accent));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+}
+
+/* ─── Promo Banner ─── */
+.skr-promo-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 24px;
+  background: linear-gradient(90deg, var(--skr-cta, #7c3aed), var(--skr-accent));
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.skr-promo-bar:hover {
+  opacity: 0.92;
+}
+.skr-promo-bar-crown {
+  font-size: 16px;
+}

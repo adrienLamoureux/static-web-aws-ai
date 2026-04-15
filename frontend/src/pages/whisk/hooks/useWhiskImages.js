@@ -2,12 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { deleteImage, listImages, setImageFavorite } from "../../../services/s3";
 import { readSessionCache, writeSessionCache } from "../../../utils/sessionCache";
 
-export const useWhiskImages = ({
-  apiBaseUrl,
-  cacheKey,
-  cacheMaxAge,
-  onError,
-}) => {
+export const useWhiskImages = ({ apiBaseUrl, cacheKey, cacheMaxAge, onError }) => {
   const [images, setImages] = useState([]);
   const [status, setStatus] = useState("idle");
 
@@ -81,18 +76,14 @@ export const useWhiskImages = ({
       onError?.("");
       const nextFavorite = !Boolean(image.favorite);
       updateImages((prev) =>
-        prev.map((item) =>
-          item.key === image.key ? { ...item, favorite: nextFavorite } : item
-        )
+        prev.map((item) => (item.key === image.key ? { ...item, favorite: nextFavorite } : item))
       );
       try {
         await setImageFavorite(apiBaseUrl, image.key, nextFavorite);
       } catch (error) {
         updateImages((prev) =>
           prev.map((item) =>
-            item.key === image.key
-              ? { ...item, favorite: Boolean(image.favorite) }
-              : item
+            item.key === image.key ? { ...item, favorite: Boolean(image.favorite) } : item
           )
         );
         onError?.(error?.message || "Failed to update favorite.");

@@ -14,16 +14,11 @@ const CIVITAI_DEFAULT_SIZES = Object.freeze([
   { width: 1024, height: 768 },
 ]);
 
-
 const imageModelConfig = {
   titan: {
-    modelId:
-      process.env.BEDROCK_TITAN_IMAGE_MODEL_ID ||
-      "amazon.titan-image-generator-v2:0",
+    modelId: process.env.BEDROCK_TITAN_IMAGE_MODEL_ID || "amazon.titan-image-generator-v2:0",
     provider: "titan",
-    sizes: [
-      { width: 1024, height: 1024 },
-    ],
+    sizes: [{ width: 1024, height: 1024 }],
   },
   // Stability option removed until AWS Marketplace subscription is enabled.
 };
@@ -39,15 +34,7 @@ const replicateModelConfig = {
       { width: 768, height: 1024 },
     ],
     schedulers: ["Euler a", "DPM++ 2M Karras"],
-    buildInput: ({
-      prompt,
-      negativePrompt,
-      width,
-      height,
-      numOutputs,
-      seed,
-      scheduler,
-    }) => ({
+    buildInput: ({ prompt, negativePrompt, width, height, numOutputs, seed, scheduler }) => ({
       vae: "Animagine-XL-v4-Opt",
       model: "Animagine-XL-v4-Opt",
       seed: seed ?? -1,
@@ -73,10 +60,7 @@ const replicateModelConfig = {
       { width: 2048, height: 1152 },
     ],
     buildInput: ({ prompt, width, height, numOutputs }) => {
-      const aspectRatio =
-        width === 2048 && height === 1152
-          ? "16:9"
-          : "1:1";
+      const aspectRatio = width === 2048 && height === 1152 ? "16:9" : "1:1";
       return {
         size: "4K",
         width,
@@ -100,15 +84,7 @@ const replicateModelConfig = {
       { width: 768, height: 1024 },
     ],
     schedulers: ["Euler a"],
-    buildInput: ({
-      prompt,
-      negativePrompt,
-      width,
-      height,
-      numOutputs,
-      seed,
-      scheduler,
-    }) => ({
+    buildInput: ({ prompt, negativePrompt, width, height, numOutputs, seed, scheduler }) => ({
       vae: "WAI-NSFW-illustrious-SDXL-v11",
       seed: seed ?? -1,
       model: "WAI-NSFW-illustrious-SDXL-v11",
@@ -128,22 +104,15 @@ const replicateModelConfig = {
   },
   "wai-nsfw-illustrious-v12": {
     modelId:
-      process.env.REPLICATE_WAI_NSFW_ILLUSTRIOUS_V12_MODEL_ID || "aisha-ai-official/wai-nsfw-illustrious-v12:0fc0fa9885b284901a6f9c0b4d67701fd7647d157b88371427d63f8089ce140e",
+      process.env.REPLICATE_WAI_NSFW_ILLUSTRIOUS_V12_MODEL_ID ||
+      "aisha-ai-official/wai-nsfw-illustrious-v12:0fc0fa9885b284901a6f9c0b4d67701fd7647d157b88371427d63f8089ce140e",
     usePredictions: true,
     sizes: [
       { width: 1280, height: 720 },
       { width: 1024, height: 1024 },
       { width: 768, height: 1024 },
     ],
-    buildInput: ({
-      prompt,
-      negativePrompt,
-      width,
-      height,
-      numOutputs,
-      seed,
-      scheduler,
-    }) => ({
+    buildInput: ({ prompt, negativePrompt, width, height, numOutputs, seed, scheduler }) => ({
       batch_size: numOutputs,
       cfg_scale: 7,
       clip_skip: 2,
@@ -171,15 +140,7 @@ const replicateModelConfig = {
       { width: 1024, height: 1024 },
       { width: 768, height: 1024 },
     ],
-    buildInput: ({
-      prompt,
-      negativePrompt,
-      width,
-      height,
-      numOutputs,
-      seed,
-      scheduler,
-    }) => ({
+    buildInput: ({ prompt, negativePrompt, width, height, numOutputs, seed, scheduler }) => ({
       vae: "NeptuniaXL-VAE-ContrastSaturation",
       seed: seed ?? -1,
       model: "Anillustrious-v4",
@@ -217,15 +178,11 @@ const replicateModelConfig = {
 const civitaiModelConfig = {
   "civitai-sd15-anime": {
     provider: "civitai",
-    modelId:
-      process.env.CIVITAI_SD15_MODEL_URN ||
-      "urn:air:sd1:checkpoint:civitai:4384@128713",
+    modelId: process.env.CIVITAI_SD15_MODEL_URN || "urn:air:sd1:checkpoint:civitai:4384@128713",
     baseModel: "SD_1_5",
     loraAirModelFamily: "sd1",
     supportsLora: true,
-    estimatedUnitCostUsd: parseOptionalNumber(
-      process.env.CIVITAI_SD15_ESTIMATED_UNIT_COST_USD
-    ),
+    estimatedUnitCostUsd: parseOptionalNumber(process.env.CIVITAI_SD15_ESTIMATED_UNIT_COST_USD),
     sizes: CIVITAI_DEFAULT_SIZES,
     buildInput: ({ prompt, negativePrompt, width, height, seed }) => ({
       prompt,
@@ -241,15 +198,11 @@ const civitaiModelConfig = {
   },
   "civitai-pony-sdxl": {
     provider: "civitai",
-    modelId:
-      process.env.CIVITAI_PONY_MODEL_URN ||
-      "urn:air:pony:checkpoint:civitai:372465@534642",
+    modelId: process.env.CIVITAI_PONY_MODEL_URN || "urn:air:pony:checkpoint:civitai:372465@534642",
     baseModel: "SDXL",
     loraAirModelFamily: "sdxl",
     supportsLora: true,
-    estimatedUnitCostUsd: parseOptionalNumber(
-      process.env.CIVITAI_PONY_ESTIMATED_UNIT_COST_USD
-    ),
+    estimatedUnitCostUsd: parseOptionalNumber(process.env.CIVITAI_PONY_ESTIMATED_UNIT_COST_USD),
     sizes: CIVITAI_DEFAULT_SIZES,
     buildInput: ({ prompt, negativePrompt, width, height, seed }) => ({
       prompt,
@@ -361,10 +314,7 @@ const replicateVideoConfig = {
     modelId: "wan-video/wan-2.2-i2v-fast",
     requiresImage: true,
     loraInjection: {
-      scaleFieldNames: [
-        "lora_scale_transformer",
-        "lora_scale_transformer_2",
-      ],
+      scaleFieldNames: ["lora_scale_transformer", "lora_scale_transformer_2"],
     },
     buildInput: ({ imageUrl, prompt }) => ({
       image: imageUrl,
@@ -419,7 +369,6 @@ const replicateVideoConfig = {
     }),
   },
 };
-
 
 module.exports = {
   DEFAULT_NEGATIVE_PROMPT,

@@ -19,15 +19,15 @@ function useStorySession({
   illustrationContextMode,
   normalizeScene,
   // Refs (always up-to-date .current):
-  triggerIllustrationRef,           // { current: fn }
-  clearAllSceneAnimationPollsRef,   // { current: fn }
-  clearAllSceneMusicPollsRef,       // { current: fn }
-  setSceneAnimationLoadingMapRef,   // { current: fn }
-  setSceneMusicLoadingMapRef,       // { current: fn }
-  setSceneLibrarySelectionMap,      // setter (stable — from useState)
-  setSceneManualSelectionMap,       // setter (stable — from useState)
-  setScenes,                        // setter (stable — from useState)
-  setErrorRef,                      // { current: fn }
+  triggerIllustrationRef, // { current: fn }
+  clearAllSceneAnimationPollsRef, // { current: fn }
+  clearAllSceneMusicPollsRef, // { current: fn }
+  setSceneAnimationLoadingMapRef, // { current: fn }
+  setSceneMusicLoadingMapRef, // { current: fn }
+  setSceneLibrarySelectionMap, // setter (stable — from useState)
+  setSceneManualSelectionMap, // setter (stable — from useState)
+  setScenes, // setter (stable — from useState)
+  setErrorRef, // { current: fn }
 }) {
   const [sessions, setSessions] = useState([]);
   const [activeSessionId, setActiveSessionId] = useState("");
@@ -279,9 +279,7 @@ function useStorySession({
       if (typeof data.turnCount === "number") {
         setSessions((prev) =>
           prev.map((session) =>
-            session.id === activeSessionId
-              ? { ...session, turnCount: data.turnCount }
-              : session
+            session.id === activeSessionId ? { ...session, turnCount: data.turnCount } : session
           )
         );
       }
@@ -299,8 +297,7 @@ function useStorySession({
             ...prev,
             storyState: data.storyState || prev.storyState,
             lorebook: data.lorebook || prev.lorebook,
-            turnCount:
-              typeof data.turnCount === "number" ? data.turnCount : prev.turnCount,
+            turnCount: typeof data.turnCount === "number" ? data.turnCount : prev.turnCount,
           };
         });
       }
@@ -322,9 +319,7 @@ function useStorySession({
           musicMood: data.scene?.musicMood || "",
           musicEnergy: data.scene?.musicEnergy || "",
           musicTempoBpm:
-            typeof data.scene?.musicTempoBpm === "number"
-              ? data.scene.musicTempoBpm
-              : null,
+            typeof data.scene?.musicTempoBpm === "number" ? data.scene.musicTempoBpm : null,
           musicTags: Array.isArray(data.scene?.musicTags) ? data.scene.musicTags : [],
           musicLibraryTrackId: data.scene?.musicLibraryTrackId || "",
           createdAt: new Date().toISOString(),

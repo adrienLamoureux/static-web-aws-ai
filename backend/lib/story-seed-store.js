@@ -15,11 +15,7 @@ const {
   buildPromptHelperSk,
 } = require("./keys");
 
-const createStorySeedStore = ({
-  dynamoClient,
-  mediaTable,
-  queryBySkPrefix,
-}) => {
+const createStorySeedStore = ({ dynamoClient, mediaTable, queryBySkPrefix }) => {
   const ensurePromptHelperOptions = async () => {
     const pk = buildPromptHelperPk();
     const existing = await queryBySkPrefix({
@@ -28,16 +24,12 @@ const createStorySeedStore = ({
       limit: 50,
       scanForward: true,
     });
-    const existingMap = new Map(
-      existing.map((item) => [item.key || "", item])
-    );
-    const updates = Object.entries(promptHelperDefaults).filter(
-      ([key, options]) => {
-        const current = existingMap.get(key);
-        if (!current || !Array.isArray(current.options)) return true;
-        return JSON.stringify(current.options) !== JSON.stringify(options);
-      }
-    );
+    const existingMap = new Map(existing.map((item) => [item.key || "", item]));
+    const updates = Object.entries(promptHelperDefaults).filter(([key, options]) => {
+      const current = existingMap.get(key);
+      if (!current || !Array.isArray(current.options)) return true;
+      return JSON.stringify(current.options) !== JSON.stringify(options);
+    });
     if (updates.length) {
       await Promise.all(
         updates.map(([key, options]) =>
@@ -75,9 +67,7 @@ const createStorySeedStore = ({
       scanForward: true,
     });
     if (existing.length > 0) {
-      const existingMap = new Map(
-        existing.map((item) => [item.id || "", item])
-      );
+      const existingMap = new Map(existing.map((item) => [item.id || "", item]));
       const fieldsToCompare = [
         "name",
         "weight",
@@ -105,9 +95,7 @@ const createStorySeedStore = ({
       const updates = storyCharacters.filter((character) => {
         const current = existingMap.get(character.id);
         if (!current) return false;
-        return fieldsToCompare.some(
-          (field) => (current[field] || "") !== (character[field] || "")
-        );
+        return fieldsToCompare.some((field) => (current[field] || "") !== (character[field] || ""));
       });
       if (updates.length) {
         await Promise.all(
@@ -170,15 +158,11 @@ const createStorySeedStore = ({
       scanForward: true,
     });
     if (existing.length > 0) {
-      const existingMap = new Map(
-        existing.map((item) => [item.id || "", item])
-      );
+      const existingMap = new Map(existing.map((item) => [item.id || "", item]));
       const updates = storyPresets.filter((preset) => {
         const current = existingMap.get(preset.id);
         return (
-          current &&
-          (!current.protagonistId ||
-            current.protagonistId !== preset.protagonistId)
+          current && (!current.protagonistId || current.protagonistId !== preset.protagonistId)
         );
       });
       if (updates.length) {

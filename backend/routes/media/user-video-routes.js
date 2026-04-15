@@ -21,12 +21,11 @@ module.exports = function registerUserVideoRoutes(deps) {
   const SHARED_VIDEO_PREFIX = "shared/videos/";
   const SHARED_URL_EXPIRATION_SECONDS = 900;
 
-  const splitFileName = (
-    key = "",
-    fallbackBaseName = "asset",
-    fallbackExtension = "mp4"
-  ) => {
-    const rawName = String(key || "").split("/").pop() || "";
+  const splitFileName = (key = "", fallbackBaseName = "asset", fallbackExtension = "mp4") => {
+    const rawName =
+      String(key || "")
+        .split("/")
+        .pop() || "";
     const extensionIndex = rawName.lastIndexOf(".");
     if (extensionIndex > 0 && extensionIndex < rawName.length - 1) {
       return {
@@ -41,11 +40,7 @@ module.exports = function registerUserVideoRoutes(deps) {
   };
 
   const buildSharedKey = ({ sourceKey, sharedPrefix, defaultExtension }) => {
-    const { baseName, extension } = splitFileName(
-      sourceKey,
-      "shared-asset",
-      defaultExtension
-    );
+    const { baseName, extension } = splitFileName(sourceKey, "shared-asset", defaultExtension);
     const { buildSafeBaseName } = deps;
     const safeBaseName = buildSafeBaseName(baseName || "shared-asset");
     const resolvedExtension = extension || defaultExtension;
@@ -232,9 +227,7 @@ module.exports = function registerUserVideoRoutes(deps) {
           })
         );
         const objects = response.Contents || [];
-        const objectKeys = new Set(
-          objects.map((item) => item.Key).filter(Boolean)
-        );
+        const objectKeys = new Set(objects.map((item) => item.Key).filter(Boolean));
         videos = objects
           .filter((item) => item.Key && item.Key !== `${userPrefix}videos/`)
           .filter((item) => item.Key?.endsWith(".mp4"))

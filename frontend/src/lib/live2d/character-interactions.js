@@ -53,31 +53,31 @@ export const Capability = {
 
 export const Interaction = {
   // ── Ambient ──────────────────────────────────────────────────────────────
-  IDLE:           "idle",          // base idle loop (played on model load)
-  IDLE_VARIANT:   "idle_variant",  // periodic variety motion to break the static look
+  IDLE: "idle", // base idle loop (played on model load)
+  IDLE_VARIANT: "idle_variant", // periodic variety motion to break the static look
 
   // ── Click / touch zones ──────────────────────────────────────────────────
-  TOUCH_HEAD:     "touch_head",    // user clicks the top of the character
-  TOUCH_BODY:     "touch_body",    // user clicks the body/torso area
+  TOUCH_HEAD: "touch_head", // user clicks the top of the character
+  TOUCH_BODY: "touch_body", // user clicks the body/torso area
 
   // ── App lifecycle ────────────────────────────────────────────────────────
-  GREET:          "greet",         // page arrival / returning user
-  ACKNOWLEDGE:    "acknowledge",   // confirming / "got it"
-  DISMISS:        "dismiss",       // cancel / close / decline
-  REACT:          "react",         // generic excited reaction
+  GREET: "greet", // page arrival / returning user
+  ACKNOWLEDGE: "acknowledge", // confirming / "got it"
+  DISMISS: "dismiss", // cancel / close / decline
+  REACT: "react", // generic excited reaction
 
   // ── Task events ──────────────────────────────────────────────────────────
-  TASK_START:     "task_start",    // generation / story / music started
-  TASK_DONE:      "task_done",     // generation succeeded
-  TASK_FAIL:      "task_fail",     // generation failed / error
-  CELEBRATE:      "celebrate",     // special achievement (first story, milestone…)
+  TASK_START: "task_start", // generation / story / music started
+  TASK_DONE: "task_done", // generation succeeded
+  TASK_FAIL: "task_fail", // generation failed / error
+  CELEBRATE: "celebrate", // special achievement (first story, milestone…)
 
   // ── Story ────────────────────────────────────────────────────────────────
-  STORY_MOMENT:   "story_moment",  // dramatic / surprising story beat
+  STORY_MOMENT: "story_moment", // dramatic / surprising story beat
 
   // ── Emotional states (direct override) ──────────────────────────────────
-  HAPPY:          "happy",
-  SAD:            "sad",
-  SURPRISED:      "surprised",
-  THINKING:       "thinking",
+  HAPPY: "happy",
+  SAD: "sad",
+  SURPRISED: "surprised",
+  THINKING: "thinking",
 };

@@ -16,10 +16,7 @@ export const readSessionCache = (key, maxAgeMs) => {
 export const writeSessionCache = (key, data) => {
   if (typeof window === "undefined") return;
   try {
-    window.sessionStorage.setItem(
-      key,
-      JSON.stringify({ ts: Date.now(), data })
-    );
+    window.sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }));
   } catch (error) {
     // ignore cache write failures
   }

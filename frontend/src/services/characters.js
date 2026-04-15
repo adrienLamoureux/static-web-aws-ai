@@ -1,10 +1,4 @@
-import {
-  buildApiUrl,
-  fetchJson,
-  postJson,
-  putJson,
-  deleteJson,
-} from "./apiClient";
+import { buildApiUrl, fetchJson, postJson, putJson, deleteJson } from "./apiClient";
 
 export const listCharacters = (baseUrl) =>
   fetchJson(buildApiUrl(baseUrl, "/characters"), {}, "Failed to load characters.");

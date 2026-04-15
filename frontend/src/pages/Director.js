@@ -68,25 +68,43 @@ export default function Director() {
     <div>
       <SanctumSubNav />
 
-      <div className="skr-page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div
+        className="skr-page-header"
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}
+      >
         <div>
           <h2 className="skr-page-title">Global Command Center</h2>
           <p className="skr-page-subtitle">Director overview and orchestration controls</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {lastUpdated && (
-            <span style={{ fontSize: 11, color: 'var(--skr-text-tertiary)' }}>
+            <span style={{ fontSize: 11, color: "var(--skr-text-tertiary)" }}>
               Updated {Math.round((Date.now() - lastUpdated) / 1000)}s ago
             </span>
           )}
-          <button className="skr-btn-secondary" onClick={loadOverview} disabled={isLoading} style={{ fontSize: 12 }}>
-            {isLoading ? 'Loading…' : 'Refresh'}
+          <button
+            className="skr-btn-secondary"
+            onClick={loadOverview}
+            disabled={isLoading}
+            style={{ fontSize: 12 }}
+          >
+            {isLoading ? "Loading…" : "Refresh"}
           </button>
         </div>
       </div>
 
       {loadError && (
-        <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, marginBottom: 16, fontSize: 13, color: '#ef4444' }}>
+        <div
+          style={{
+            padding: "10px 14px",
+            background: "#fef2f2",
+            border: "1px solid #fecaca",
+            borderRadius: 8,
+            marginBottom: 16,
+            fontSize: 13,
+            color: "#ef4444",
+          }}
+        >
           {loadError}
         </div>
       )}
@@ -97,11 +115,11 @@ export default function Director() {
       {/* Summary stat cards */}
       <div className="skr-stat-grid">
         {[
-          { label: 'Queued', value: summary.queued },
-          { label: 'Running', value: summary.running },
-          { label: 'Completed', value: summary.completed },
-          { label: 'Failed', value: summary.failed },
-          { label: 'Queue Depth', value: summary.queueDepth },
+          { label: "Queued", value: summary.queued },
+          { label: "Running", value: summary.running },
+          { label: "Completed", value: summary.completed },
+          { label: "Failed", value: summary.failed },
+          { label: "Queue Depth", value: summary.queueDepth },
         ].map(({ label, value }) => (
           <StatCard key={label} label={label} value={value} isLoading={isLoading} />
         ))}

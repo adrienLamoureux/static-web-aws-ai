@@ -53,9 +53,7 @@ export default function ModelSelector({ currentModel, onModelChange, isAdmin }) 
         title="Director: change companion model"
       >
         {currentModel?.name}
-        <span style={{ marginLeft: 4, opacity: 0.6, fontSize: 9 }}>
-          {saving ? "…" : "▾"}
-        </span>
+        <span style={{ marginLeft: 4, opacity: 0.6, fontSize: 9 }}>{saving ? "…" : "▾"}</span>
       </button>
 
       {open && (

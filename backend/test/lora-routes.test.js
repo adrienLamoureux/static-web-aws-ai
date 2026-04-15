@@ -5,17 +5,9 @@ const registerLoraProfileRoutes = require("../routes/lora/profile-routes");
 const registerReplicateImageRoutes = require("../routes/replicate-image-routes");
 const registerReplicateVideoRoutes = require("../routes/replicate-video-routes");
 const registerCivitaiImageRoutes = require("../routes/civitai-image-routes");
-const {
-  replicateModelConfig,
-  replicateVideoConfig,
-} = require("../config/models");
+const { replicateModelConfig, replicateVideoConfig } = require("../config/models");
 
-const {
-  createMockApp,
-  createMockRes,
-  withEnv,
-  getRouterHandler,
-} = require("./helpers/test-utils");
+const { createMockApp, createMockRes, withEnv, getRouterHandler } = require("./helpers/test-utils");
 
 test("POST /civitai/image/generate rejects unsupported model when characterId is set", async () => {
   const app = createMockApp();

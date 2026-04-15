@@ -48,7 +48,9 @@ export default function ThemeSwitcher() {
             }}
           />
           <span className="skr-theme-trigger-label">{active.label}</span>
-          <span className="skr-theme-caret" aria-hidden="true">▾</span>
+          <span className="skr-theme-caret" aria-hidden="true">
+            ▾
+          </span>
         </button>
 
         {open && (
@@ -60,7 +62,10 @@ export default function ThemeSwitcher() {
                 role="option"
                 aria-selected={t.id === theme}
                 className={`skr-theme-option${t.id === theme ? " is-active" : ""}`}
-                onClick={() => { setTheme(t.id); setOpen(false); }}
+                onClick={() => {
+                  setTheme(t.id);
+                  setOpen(false);
+                }}
               >
                 <span
                   className="skr-theme-swatch"
@@ -69,7 +74,11 @@ export default function ThemeSwitcher() {
                   }}
                 />
                 <span>{t.label}</span>
-                {t.id === theme && <span className="skr-theme-check" aria-hidden="true">✓</span>}
+                {t.id === theme && (
+                  <span className="skr-theme-check" aria-hidden="true">
+                    ✓
+                  </span>
+                )}
               </button>
             ))}
           </div>

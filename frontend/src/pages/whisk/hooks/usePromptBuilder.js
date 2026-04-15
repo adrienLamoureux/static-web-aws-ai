@@ -10,9 +10,7 @@ import {
 
 const resolveDefaultPreset = (presets = []) =>
   presets.find((preset) => preset.id === DEFAULT_CHARACTER_ID) ||
-  presets.find((preset) =>
-    (preset.name || "").toLowerCase().includes("frieren")
-  ) ||
+  presets.find((preset) => (preset.name || "").toLowerCase().includes("frieren")) ||
   null;
 
 const buildSelectionsFromPreset = (preset) => {
@@ -98,41 +96,23 @@ export const usePromptBuilder = ({
       .then((data) => {
         if (typeof data.negativePrompt === "string") {
           setDefaultNegativePrompt(data.negativePrompt);
-          setImageNegativePrompt((prev) =>
-            prev ? prev : data.negativePrompt
-          );
+          setImageNegativePrompt((prev) => (prev ? prev : data.negativePrompt));
         }
         setPromptHelperOptions((prev) => ({
-          backgrounds: Array.isArray(data.backgrounds)
-            ? data.backgrounds
-            : prev.backgrounds,
+          backgrounds: Array.isArray(data.backgrounds) ? data.backgrounds : prev.backgrounds,
           poses: Array.isArray(data.poses) ? data.poses : prev.poses,
           traits: Array.isArray(data.traits) ? data.traits : prev.traits,
-          faceDetails: Array.isArray(data.faceDetails)
-            ? data.faceDetails
-            : prev.faceDetails,
-          eyeDetails: Array.isArray(data.eyeDetails)
-            ? data.eyeDetails
-            : prev.eyeDetails,
-          breastSizes: Array.isArray(data.breastSizes)
-            ? data.breastSizes
-            : prev.breastSizes,
+          faceDetails: Array.isArray(data.faceDetails) ? data.faceDetails : prev.faceDetails,
+          eyeDetails: Array.isArray(data.eyeDetails) ? data.eyeDetails : prev.eyeDetails,
+          breastSizes: Array.isArray(data.breastSizes) ? data.breastSizes : prev.breastSizes,
           ears: Array.isArray(data.ears) ? data.ears : prev.ears,
           tails: Array.isArray(data.tails) ? data.tails : prev.tails,
           horns: Array.isArray(data.horns) ? data.horns : prev.horns,
           wings: Array.isArray(data.wings) ? data.wings : prev.wings,
-          hairStyles: Array.isArray(data.hairStyles)
-            ? data.hairStyles
-            : prev.hairStyles,
-          viewDistance: Array.isArray(data.viewDistance)
-            ? data.viewDistance
-            : prev.viewDistance,
-          accessories: Array.isArray(data.accessories)
-            ? data.accessories
-            : prev.accessories,
-          markings: Array.isArray(data.markings)
-            ? data.markings
-            : prev.markings,
+          hairStyles: Array.isArray(data.hairStyles) ? data.hairStyles : prev.hairStyles,
+          viewDistance: Array.isArray(data.viewDistance) ? data.viewDistance : prev.viewDistance,
+          accessories: Array.isArray(data.accessories) ? data.accessories : prev.accessories,
+          markings: Array.isArray(data.markings) ? data.markings : prev.markings,
           outfits: Array.isArray(data.outfits) ? data.outfits : prev.outfits,
           styles: Array.isArray(data.styles) ? data.styles : prev.styles,
         }));
@@ -168,8 +148,7 @@ export const usePromptBuilder = ({
         const characterValue = selections.character.trim();
         const preset = characterPresetMap.get(characterValue.toLowerCase());
         if (preset?.name) {
-          const weight =
-            typeof preset.weight === "number" ? preset.weight : 1.4;
+          const weight = typeof preset.weight === "number" ? preset.weight : 1.4;
           parts.push(`(${preset.name}:${weight})`);
         } else {
           parts.push(characterValue);
@@ -229,22 +208,22 @@ export const usePromptBuilder = ({
 
   const hasPromptHelperSelection = Boolean(
     promptHelperSelections.background ||
-      promptHelperSelections.character ||
-      promptHelperSelections.pose ||
-      promptHelperSelections.signatureTraits ||
-      promptHelperSelections.faceDetails ||
-      promptHelperSelections.eyeDetails ||
-      promptHelperSelections.breastSize ||
-      promptHelperSelections.ears ||
-      promptHelperSelections.tails ||
-      promptHelperSelections.horns ||
-      promptHelperSelections.wings ||
-      promptHelperSelections.hairStyles ||
-      promptHelperSelections.viewDistance ||
-      promptHelperSelections.accessories ||
-      promptHelperSelections.markings ||
-      promptHelperSelections.outfitMaterials ||
-      promptHelperSelections.styleReference
+    promptHelperSelections.character ||
+    promptHelperSelections.pose ||
+    promptHelperSelections.signatureTraits ||
+    promptHelperSelections.faceDetails ||
+    promptHelperSelections.eyeDetails ||
+    promptHelperSelections.breastSize ||
+    promptHelperSelections.ears ||
+    promptHelperSelections.tails ||
+    promptHelperSelections.horns ||
+    promptHelperSelections.wings ||
+    promptHelperSelections.hairStyles ||
+    promptHelperSelections.viewDistance ||
+    promptHelperSelections.accessories ||
+    promptHelperSelections.markings ||
+    promptHelperSelections.outfitMaterials ||
+    promptHelperSelections.styleReference
   );
 
   const buildPromptFromSelections = () =>
@@ -282,8 +261,7 @@ export const usePromptBuilder = ({
         background: promptHelperSelections.background.trim() || undefined,
         character: promptHelperSelections.character.trim() || undefined,
         pose: promptHelperSelections.pose.trim() || undefined,
-        signatureTraits:
-          promptHelperSelections.signatureTraits.trim() || undefined,
+        signatureTraits: promptHelperSelections.signatureTraits.trim() || undefined,
         faceDetails: promptHelperSelections.faceDetails.trim() || undefined,
         eyeDetails: promptHelperSelections.eyeDetails.trim() || undefined,
         breastSize: promptHelperSelections.breastSize.trim() || undefined,
@@ -295,10 +273,8 @@ export const usePromptBuilder = ({
         viewDistance: promptHelperSelections.viewDistance.trim() || undefined,
         accessories: promptHelperSelections.accessories.trim() || undefined,
         markings: promptHelperSelections.markings.trim() || undefined,
-        outfitMaterials:
-          promptHelperSelections.outfitMaterials.trim() || undefined,
-        styleReference:
-          promptHelperSelections.styleReference.trim() || undefined,
+        outfitMaterials: promptHelperSelections.outfitMaterials.trim() || undefined,
+        styleReference: promptHelperSelections.styleReference.trim() || undefined,
       });
       if (data?.prompt) {
         setImagePrompt(data.prompt);
@@ -321,9 +297,7 @@ export const usePromptBuilder = ({
 
   const promptCharacterOptions = useMemo(
     () =>
-      characterPresets.length
-        ? characterPresets.map((preset) => preset.name).filter(Boolean)
-        : [],
+      characterPresets.length ? characterPresets.map((preset) => preset.name).filter(Boolean) : [],
     [characterPresets]
   );
 
@@ -361,9 +335,7 @@ export const usePromptBuilder = ({
 
   const resetPromptBuilder = () => {
     setPromptHelperStatus("idle");
-    setPromptHelperSelections(
-      buildSelectionsFromPreset(defaultCharacterPreset)
-    );
+    setPromptHelperSelections(buildSelectionsFromPreset(defaultCharacterPreset));
   };
 
   const promptHelperProps = {

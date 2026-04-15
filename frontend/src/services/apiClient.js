@@ -1,7 +1,6 @@
 import { getAuthToken } from "../utils/authTokens";
 
-export const normalizeBaseUrl = (baseUrl = "") =>
-  baseUrl.replace(/\/+$/, "");
+export const normalizeBaseUrl = (baseUrl = "") => baseUrl.replace(/\/+$/, "");
 
 export const buildApiUrl = (baseUrl, path = "") => {
   if (!baseUrl) return path || "";

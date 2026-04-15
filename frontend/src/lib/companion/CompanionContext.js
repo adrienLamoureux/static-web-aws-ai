@@ -12,24 +12,18 @@
  * USER_RETURN when activity resumes.
  */
 
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-} from "react";
+import React, { createContext, useCallback, useContext, useEffect, useRef } from "react";
 
 export const CompanionActions = {
-  PAGE_NAVIGATE:    "page_navigate",    // { page: string }
+  PAGE_NAVIGATE: "page_navigate", // { page: string }
   GENERATION_START: "generation_start", // { type: "image" | "story" | "video" }
-  GENERATION_DONE:  "generation_done",  // { type, success: true }
+  GENERATION_DONE: "generation_done", // { type, success: true }
   GENERATION_ERROR: "generation_error", // { type, error }
-  USER_IDLE:        "user_idle",        // {}
-  USER_RETURN:      "user_return",      // {}
-  FIRST_VISIT:      "first_visit",      // {} — first time opening app this session
-  LONG_SESSION:     "long_session",     // {} — 10+ minutes of active use
-  STORY_TURN:       "story_turn",       // { sessionTitle? }
+  USER_IDLE: "user_idle", // {}
+  USER_RETURN: "user_return", // {}
+  FIRST_VISIT: "first_visit", // {} — first time opening app this session
+  LONG_SESSION: "long_session", // {} — 10+ minutes of active use
+  STORY_TURN: "story_turn", // { sessionTitle? }
 };
 
 const IDLE_TIMEOUT_MS = 60_000;
@@ -38,18 +32,20 @@ const FIRST_VISIT_KEY = "skr-visited-session";
 const IDLE_EVENTS = ["mousemove", "click", "keydown", "scroll", "touchstart"];
 
 const CompanionContext = createContext({
-  dispatch:  () => {},
+  dispatch: () => {},
   subscribe: () => () => {},
 });
 
 export function CompanionProvider({ children }) {
   const listenersRef = useRef([]);
   const idleTimerRef = useRef(null);
-  const isIdleRef    = useRef(false);
+  const isIdleRef = useRef(false);
 
   const dispatch = useCallback((action, payload = {}) => {
     listenersRef.current.forEach((fn) => {
-      try { fn(action, payload); } catch {}
+      try {
+        fn(action, payload);
+      } catch {}
     });
   }, []);
 
@@ -84,9 +80,7 @@ export function CompanionProvider({ children }) {
       }, IDLE_TIMEOUT_MS);
     };
 
-    IDLE_EVENTS.forEach((ev) =>
-      document.addEventListener(ev, resetIdle, { passive: true })
-    );
+    IDLE_EVENTS.forEach((ev) => document.addEventListener(ev, resetIdle, { passive: true }));
     resetIdle();
 
     return () => {
@@ -97,10 +91,7 @@ export function CompanionProvider({ children }) {
 
   // Long session timer (10 minutes of total app usage)
   useEffect(() => {
-    const t = setTimeout(
-      () => dispatch(CompanionActions.LONG_SESSION, {}),
-      LONG_SESSION_MS
-    );
+    const t = setTimeout(() => dispatch(CompanionActions.LONG_SESSION, {}), LONG_SESSION_MS);
     return () => clearTimeout(t);
   }, [dispatch]);
 

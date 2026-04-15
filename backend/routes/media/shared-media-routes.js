@@ -29,12 +29,11 @@ module.exports = function registerSharedMediaRoutes(deps) {
     return Math.min(Math.trunc(parsed), SHARED_LIST_MAX_KEYS_LIMIT);
   };
 
-  const splitFileName = (
-    key = "",
-    fallbackBaseName = "asset",
-    fallbackExtension = "jpg"
-  ) => {
-    const rawName = String(key || "").split("/").pop() || "";
+  const splitFileName = (key = "", fallbackBaseName = "asset", fallbackExtension = "jpg") => {
+    const rawName =
+      String(key || "")
+        .split("/")
+        .pop() || "";
     const extensionIndex = rawName.lastIndexOf(".");
     if (extensionIndex > 0 && extensionIndex < rawName.length - 1) {
       return {
@@ -50,9 +49,7 @@ module.exports = function registerSharedMediaRoutes(deps) {
 
   const toIsoString = (value) => {
     const dateValue = value ? new Date(value) : null;
-    return dateValue && Number.isFinite(dateValue.getTime())
-      ? dateValue.toISOString()
-      : "";
+    return dateValue && Number.isFinite(dateValue.getTime()) ? dateValue.toISOString() : "";
   };
 
   const isSharedImageKey = (key = "") =>
@@ -85,12 +82,8 @@ module.exports = function registerSharedMediaRoutes(deps) {
         .filter((item) => item.Key && item.Key !== SHARED_IMAGE_PREFIX)
         .filter((item) => isImageKey(item.Key))
         .sort((left, right) => {
-          const leftTime = left.LastModified
-            ? new Date(left.LastModified).getTime()
-            : 0;
-          const rightTime = right.LastModified
-            ? new Date(right.LastModified).getTime()
-            : 0;
+          const leftTime = left.LastModified ? new Date(left.LastModified).getTime() : 0;
+          const rightTime = right.LastModified ? new Date(right.LastModified).getTime() : 0;
           return rightTime - leftTime;
         })
         .slice(0, maxKeys);
@@ -135,9 +128,7 @@ module.exports = function registerSharedMediaRoutes(deps) {
         userId,
         type: SHARED_IMAGE_FAVORITE_TYPE,
       });
-      const keys = items
-        .map((item) => item.key)
-        .filter((key) => isSharedImageKey(key));
+      const keys = items.map((item) => item.key).filter((key) => isSharedImageKey(key));
       res.json({ keys });
     } catch (error) {
       res.status(500).json({
@@ -207,19 +198,13 @@ module.exports = function registerSharedMediaRoutes(deps) {
         })
       );
       const objects = response.Contents || [];
-      const objectKeys = new Set(
-        objects.map((item) => item.Key).filter(Boolean)
-      );
+      const objectKeys = new Set(objects.map((item) => item.Key).filter(Boolean));
       const videos = objects
         .filter((item) => item.Key && item.Key !== SHARED_VIDEO_PREFIX)
         .filter((item) => item.Key?.endsWith(".mp4"))
         .sort((left, right) => {
-          const leftTime = left.LastModified
-            ? new Date(left.LastModified).getTime()
-            : 0;
-          const rightTime = right.LastModified
-            ? new Date(right.LastModified).getTime()
-            : 0;
+          const leftTime = left.LastModified ? new Date(left.LastModified).getTime() : 0;
+          const rightTime = right.LastModified ? new Date(right.LastModified).getTime() : 0;
           return rightTime - leftTime;
         })
         .slice(0, maxKeys)

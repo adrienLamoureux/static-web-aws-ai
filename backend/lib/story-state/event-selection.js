@@ -1,8 +1,4 @@
-const {
-  clampNumber,
-  normalizeStringArray,
-  uniqueStringArray,
-} = require("./shared");
+const { clampNumber, normalizeStringArray, uniqueStringArray } = require("./shared");
 
 const TAG_METRIC_BIASES = {
   quiet: { tension: -0.6, urgency: -0.3 },
@@ -18,10 +14,7 @@ const TAG_METRIC_BIASES = {
 const applyMetricBias = (weight, metrics = {}, bias = {}) => {
   let adjusted = weight;
   Object.entries(bias).forEach(([metric, factor]) => {
-    const value =
-      typeof metrics[metric] === "number"
-        ? clampNumber(metrics[metric], 0, 1)
-        : 0.5;
+    const value = typeof metrics[metric] === "number" ? clampNumber(metrics[metric], 0, 1) : 0.5;
     const delta = (value - 0.5) * factor;
     adjusted *= 1 + delta;
   });
@@ -38,18 +31,13 @@ const metricInRange = (value, range) => {
 };
 
 const matchesAll = (needles = [], haystack = []) =>
-  normalizeStringArray(needles).every((item) =>
-    haystack.includes(item)
-  );
+  normalizeStringArray(needles).every((item) => haystack.includes(item));
 
 const matchesAny = (needles = [], haystack = []) =>
-  normalizeStringArray(needles).some((item) =>
-    haystack.includes(item)
-  );
+  normalizeStringArray(needles).some((item) => haystack.includes(item));
 
 const computeEventWeight = (event = {}, state = {}, selection = {}) => {
-  const baseWeight =
-    typeof event.baseWeight === "number" ? event.baseWeight : 1;
+  const baseWeight = typeof event.baseWeight === "number" ? event.baseWeight : 1;
   if (baseWeight <= 0) return 0;
 
   const scene = state.scene || {};
@@ -80,11 +68,7 @@ const computeEventWeight = (event = {}, state = {}, selection = {}) => {
   ) {
     return 0;
   }
-  if (
-    Array.isArray(when.mood) &&
-    when.mood.length > 0 &&
-    !when.mood.includes(scene.mood)
-  ) {
+  if (Array.isArray(when.mood) && when.mood.length > 0 && !when.mood.includes(scene.mood)) {
     return 0;
   }
   if (Array.isArray(when.sceneTagsAll) && when.sceneTagsAll.length > 0) {
@@ -109,8 +93,7 @@ const computeEventWeight = (event = {}, state = {}, selection = {}) => {
   const metricsWhen = when.metrics || {};
   const metricKeys = Object.keys(metricsWhen);
   for (const key of metricKeys) {
-    const value =
-      typeof metrics[key] === "number" ? metrics[key] : 0;
+    const value = typeof metrics[key] === "number" ? metrics[key] : 0;
     if (!metricInRange(value, metricsWhen[key])) return 0;
   }
 
@@ -124,9 +107,7 @@ const computeEventWeight = (event = {}, state = {}, selection = {}) => {
 
   const recentIds = selection.recentIds || [];
   const cooldownTurns =
-    typeof event.cooldownTurns === "number"
-      ? event.cooldownTurns
-      : selection.cooldownTurns;
+    typeof event.cooldownTurns === "number" ? event.cooldownTurns : selection.cooldownTurns;
   const allowRepeat = selection.allowRepeat;
   if (recentIds.includes(event.id)) {
     if (!allowRepeat && cooldownTurns > 0) return 0;
@@ -136,10 +117,7 @@ const computeEventWeight = (event = {}, state = {}, selection = {}) => {
   const initiativeFocus = selection.initiativeFocus;
   if (initiativeFocus) {
     if (event.initiative === "protagonist") {
-      const bias =
-        typeof selection.protagonistBias === "number"
-          ? selection.protagonistBias
-          : 1.4;
+      const bias = typeof selection.protagonistBias === "number" ? selection.protagonistBias : 1.4;
       weight *= bias;
     } else {
       weight *= 0.7;
@@ -182,10 +160,8 @@ const selectStoryEvent = (lorebook = {}, storyState = {}, turnCount = 0) => {
 
   const policy = lorebook.rules?.eventSelection || {};
   const initiative = lorebook.rules?.initiative || {};
-  const cooldownTurns =
-    typeof policy.cooldownTurns === "number" ? policy.cooldownTurns : 2;
-  const recentLimit =
-    typeof policy.recentLimit === "number" ? policy.recentLimit : 4;
+  const cooldownTurns = typeof policy.cooldownTurns === "number" ? policy.cooldownTurns : 2;
+  const recentLimit = typeof policy.recentLimit === "number" ? policy.recentLimit : 4;
   const allowRepeat = Boolean(policy.allowRepeat);
 
   const recentEvents = Array.isArray(storyState?.meta?.recentEvents)
@@ -193,9 +169,7 @@ const selectStoryEvent = (lorebook = {}, storyState = {}, turnCount = 0) => {
     : [];
   const recentIds = recentEvents
     .filter((item) =>
-      typeof item?.turn === "number"
-        ? turnCount - item.turn <= cooldownTurns
-        : true
+      typeof item?.turn === "number" ? turnCount - item.turn <= cooldownTurns : true
     )
     .map((item) => item.id)
     .filter(Boolean);
@@ -205,22 +179,14 @@ const selectStoryEvent = (lorebook = {}, storyState = {}, turnCount = 0) => {
       ? storyState.meta.turnsSinceInitiative
       : 0;
   const minTurnsBetween =
-    typeof initiative.minTurnsBetween === "number"
-      ? initiative.minTurnsBetween
-      : 1;
+    typeof initiative.minTurnsBetween === "number" ? initiative.minTurnsBetween : 1;
   const maxTurnsBetween =
-    typeof initiative.maxTurnsBetween === "number"
-      ? initiative.maxTurnsBetween
-      : 3;
-  const baseRate =
-    typeof initiative.baseRate === "number" ? initiative.baseRate : 0.4;
+    typeof initiative.maxTurnsBetween === "number" ? initiative.maxTurnsBetween : 3;
+  const baseRate = typeof initiative.baseRate === "number" ? initiative.baseRate : 0.4;
   const protagonistBias =
-    typeof initiative.protagonistBias === "number"
-      ? initiative.protagonistBias
-      : 1.4;
+    typeof initiative.protagonistBias === "number" ? initiative.protagonistBias : 1.4;
   const forceInitiative = turnsSinceInitiative >= maxTurnsBetween;
-  const encourageInitiative =
-    turnsSinceInitiative >= minTurnsBetween && Math.random() < baseRate;
+  const encourageInitiative = turnsSinceInitiative >= minTurnsBetween && Math.random() < baseRate;
   const initiativeFocus = forceInitiative || encourageInitiative;
 
   const weighted = events
@@ -267,15 +233,10 @@ const updateStoryMeta = (state = {}, event = null, turnCount = 0, recentLimit = 
     next.recentEvents = recentEvents;
   }
   const turnsSinceInitiative =
-    typeof state.meta?.turnsSinceInitiative === "number"
-      ? state.meta.turnsSinceInitiative
-      : 0;
-  next.turnsSinceInitiative =
-    event?.initiative === "protagonist" ? 0 : turnsSinceInitiative + 1;
+    typeof state.meta?.turnsSinceInitiative === "number" ? state.meta.turnsSinceInitiative : 0;
+  next.turnsSinceInitiative = event?.initiative === "protagonist" ? 0 : turnsSinceInitiative + 1;
   return next;
 };
-
-
 
 module.exports = {
   TAG_METRIC_BIASES,

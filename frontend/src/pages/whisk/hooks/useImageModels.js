@@ -94,9 +94,7 @@ export const useImageModels = ({
           return {
             key,
             name: String(item?.label || key).trim() || key,
-            description: item?.supportsLora
-              ? `LoRA-capable model • ${costLabel}`
-              : costLabel,
+            description: item?.supportsLora ? `LoRA-capable model • ${costLabel}` : costLabel,
           };
         })
         .filter(Boolean),
@@ -135,11 +133,7 @@ export const useImageModels = ({
     return replicateModelOptionsFromDirector.length
       ? replicateModelOptionsFromDirector
       : FALLBACK_REPLICATE_IMAGE_MODELS;
-  }, [
-    imageSource,
-    replicateModelOptionsFromDirector,
-    civitaiModelOptionsFromDirector,
-  ]);
+  }, [imageSource, replicateModelOptionsFromDirector, civitaiModelOptionsFromDirector]);
 
   const imageSizeOptions = useMemo(() => {
     if (imageSource === "replicate" || imageSource === "civitai") {
@@ -258,8 +252,7 @@ export const useImageModels = ({
     const allowedModels = imageModelOptions.map((option) => option.key);
     if (!allowedModels.includes(imageModel)) {
       setImageModel(
-        imageModelOptions[0]?.key ||
-          (imageSource === "bedrock" ? "titan" : DEFAULT_IMAGE_MODEL)
+        imageModelOptions[0]?.key || (imageSource === "bedrock" ? "titan" : DEFAULT_IMAGE_MODEL)
       );
     }
   }, [imageModel, imageModelOptions, imageSource]);

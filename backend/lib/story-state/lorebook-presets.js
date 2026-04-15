@@ -10,8 +10,7 @@ const applyPresetLorebook = (preset = {}, base = {}, protagonistName = "Protagon
       initialScene: {
         locationId: "road-valley",
         locationName: "Misty valley road",
-        description:
-          "A soft mist settles over a winding road, with distant bells and open fields.",
+        description: "A soft mist settles over a winding road, with distant bells and open fields.",
         timeOfDay: "late afternoon",
         weather: "mist",
         mood: "quiet",
@@ -75,8 +74,7 @@ const applyPresetLorebook = (preset = {}, base = {}, protagonistName = "Protagon
           initiative: "protagonist",
           when: { locationIds: ["road-valley"], sceneTagsAny: ["travel"] },
           prompt: {
-            beat:
-              "The road splits toward a ridge and a village, inviting a calm decision.",
+            beat: "The road splits toward a ridge and a village, inviting a calm decision.",
             focus: "path choice + landscape",
             sensory: "distant bells, soft wind",
             hooks: ["ridge view", "village lights"],
@@ -96,8 +94,7 @@ const applyPresetLorebook = (preset = {}, base = {}, protagonistName = "Protagon
           initiative: "npc",
           when: { locationIds: ["road-valley", "village-outer"] },
           prompt: {
-            beat:
-              "A traveler crosses paths and offers a small rumor about nearby ruins.",
+            beat: "A traveler crosses paths and offers a small rumor about nearby ruins.",
             focus: "npc encounter + hint",
             sensory: "footsteps on stone, muted chatter",
             hooks: ["rumor", "direction hint"],
@@ -135,8 +132,7 @@ const applyPresetLorebook = (preset = {}, base = {}, protagonistName = "Protagon
           initiative: "protagonist",
           when: { sceneTagsAny: ["quiet", "countryside"] },
           prompt: {
-            beat:
-              `${protagonistName} shares a small memory tied to the landscape.`,
+            beat: `${protagonistName} shares a small memory tied to the landscape.`,
             focus: "character reflection",
             sensory: "soft light, distant birds",
             hooks: ["memory link", "gentle question"],
@@ -154,8 +150,7 @@ const applyPresetLorebook = (preset = {}, base = {}, protagonistName = "Protagon
           initiative: "protagonist",
           when: { flagsAny: ["rumor-ruins"] },
           prompt: {
-            beat:
-              "A distant silhouette or carved stone hints at ancient ruins nearby.",
+            beat: "A distant silhouette or carved stone hints at ancient ruins nearby.",
             focus: "discovery + environment",
             sensory: "faint glow, stone texture",
             hooks: ["investigation", "detour"],
@@ -178,8 +173,7 @@ const applyPresetLorebook = (preset = {}, base = {}, protagonistName = "Protagon
       initialScene: {
         locationId: "tavern-hall",
         locationName: "Moonlit tavern",
-        description:
-          "A warm tavern glow contrasts with rain-soaked windows and muted chatter.",
+        description: "A warm tavern glow contrasts with rain-soaked windows and muted chatter.",
         timeOfDay: "night",
         weather: "rain",
         mood: "cozy",
@@ -243,8 +237,7 @@ const applyPresetLorebook = (preset = {}, base = {}, protagonistName = "Protagon
           initiative: "npc",
           when: { locationIds: ["tavern-hall", "tavern-backroom"] },
           prompt: {
-            beat:
-              "A traveler shares a rumor about the ruins, testing the mood.",
+            beat: "A traveler shares a rumor about the ruins, testing the mood.",
             focus: "npc encounter + clue",
             sensory: "low voices, clinking cups",
             hooks: ["cryptic hint", "request"],
@@ -263,8 +256,7 @@ const applyPresetLorebook = (preset = {}, base = {}, protagonistName = "Protagon
           tags: ["environment", "quiet"],
           initiative: "environment",
           prompt: {
-            beat:
-              "The lanterns flicker, adding a hush to the tavern's warmth.",
+            beat: "The lanterns flicker, adding a hush to the tavern's warmth.",
             focus: "environment shift",
             sensory: "warm glow, rain tapping glass",
             hooks: ["subtle tension", "closer conversation"],
@@ -283,8 +275,7 @@ const applyPresetLorebook = (preset = {}, base = {}, protagonistName = "Protagon
           initiative: "protagonist",
           when: { sceneTagsAny: ["interior", "warm"] },
           prompt: {
-            beat:
-              `${protagonistName} notices a sealed letter tied to the ruins.`,
+            beat: `${protagonistName} notices a sealed letter tied to the ruins.`,
             focus: "discovery + prop",
             sensory: "wax seal, old parchment",
             hooks: ["investigation", "decision"],
@@ -327,8 +318,7 @@ const applyPresetLorebook = (preset = {}, base = {}, protagonistName = "Protagon
       initialScene: {
         locationId: "ruins-entrance",
         locationName: "Celestial ruins",
-        description:
-          "Ancient stones float above the clouds, glowing with starlit runes.",
+        description: "Ancient stones float above the clouds, glowing with starlit runes.",
         timeOfDay: "night",
         weather: "clear",
         mood: "awe",
@@ -383,8 +373,7 @@ const applyPresetLorebook = (preset = {}, base = {}, protagonistName = "Protagon
           tags: ["environment", "mystery", "ancient"],
           initiative: "environment",
           prompt: {
-            beat:
-              "The runes pulse with light, hinting at a hidden path or pattern.",
+            beat: "The runes pulse with light, hinting at a hidden path or pattern.",
             focus: "environment shift + mystery",
             sensory: "cold light, humming stones",
             hooks: ["investigate pattern", "touch the runes"],
@@ -401,8 +390,7 @@ const applyPresetLorebook = (preset = {}, base = {}, protagonistName = "Protagon
           tags: ["npc", "ancient", "warning"],
           initiative: "npc",
           prompt: {
-            beat:
-              "A disembodied voice offers a warning about the relic's cost.",
+            beat: "A disembodied voice offers a warning about the relic's cost.",
             focus: "npc encounter + warning",
             sensory: "echoing whispers, distant chimes",
             hooks: ["risk", "resolve"],
@@ -421,8 +409,7 @@ const applyPresetLorebook = (preset = {}, base = {}, protagonistName = "Protagon
           initiative: "environment",
           when: { locationIds: ["ruins-hall", "starlit-platform"] },
           prompt: {
-            beat:
-              "A stone stair fractures, forcing careful movement or quick action.",
+            beat: "A stone stair fractures, forcing careful movement or quick action.",
             focus: "hazard + movement",
             sensory: "cracking stone, falling dust",
             hooks: ["leap", "stabilize"],
@@ -440,8 +427,7 @@ const applyPresetLorebook = (preset = {}, base = {}, protagonistName = "Protagon
           initiative: "protagonist",
           when: { sceneTagsAny: ["mystic", "open"] },
           prompt: {
-            beat:
-              `${protagonistName} notices a relic glinting under starlight.`,
+            beat: `${protagonistName} notices a relic glinting under starlight.`,
             focus: "discovery + relic",
             sensory: "cold light, metallic shimmer",
             hooks: ["approach", "inspect"],

@@ -6,16 +6,17 @@ const createMockApp = () => {
     post: new Map(),
     put: new Map(),
   };
+  // Capture the last argument as the actual handler so routes registered with
+  // leading middleware (e.g. app.post(path, requireAuth, handler)) still work.
+  const register =
+    (map) =>
+    (path, ...handlers) => {
+      map.set(path, handlers[handlers.length - 1]);
+    };
   return {
-    get(path, handler) {
-      routes.get.set(path, handler);
-    },
-    post(path, handler) {
-      routes.post.set(path, handler);
-    },
-    put(path, handler) {
-      routes.put.set(path, handler);
-    },
+    get: register(routes.get),
+    post: register(routes.post),
+    put: register(routes.put),
     routes,
   };
 };
@@ -66,10 +67,7 @@ const withEnv = async (entries, fn) => {
 // Extract the last handler function from an Express Router's stack for a given method + path.
 const getRouterHandler = (router, method, routePath) => {
   const layer = router.stack.find(
-    (l) =>
-      l.route &&
-      l.route.path === routePath &&
-      l.route.methods[method.toLowerCase()]
+    (l) => l.route && l.route.path === routePath && l.route.methods[method.toLowerCase()]
   );
   if (!layer) return undefined;
   const handlers = layer.route.stack;

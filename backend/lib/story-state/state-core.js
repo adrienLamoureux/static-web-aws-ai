@@ -29,10 +29,7 @@ const buildInitialStoryState = (lorebook = {}) => {
       fatigue: clampNumber(scene.fatigue ?? lorebook?.initialMetrics?.fatigue ?? 0.1, 0, 1),
     },
     goals: {
-      active: uniqueStringArray([
-        goals.primary,
-        ...(goals.secondary || []),
-      ]),
+      active: uniqueStringArray([goals.primary, ...(goals.secondary || [])]),
       completed: [],
     },
     flags: [],
@@ -62,7 +59,8 @@ const applyStateDelta = (state = {}, delta = {}) => {
 
   const sceneDelta = delta.scene || {};
   if (typeof sceneDelta.locationId === "string") next.scene.locationId = sceneDelta.locationId;
-  if (typeof sceneDelta.locationName === "string") next.scene.locationName = sceneDelta.locationName;
+  if (typeof sceneDelta.locationName === "string")
+    next.scene.locationName = sceneDelta.locationName;
   if (typeof sceneDelta.description === "string") next.scene.description = sceneDelta.description;
   if (typeof sceneDelta.timeOfDay === "string") next.scene.timeOfDay = sceneDelta.timeOfDay;
   if (typeof sceneDelta.weather === "string") next.scene.weather = sceneDelta.weather;
@@ -73,25 +71,20 @@ const applyStateDelta = (state = {}, delta = {}) => {
   const addTags = normalizeStringArray(sceneDelta.tagsAdd || []);
   const removeTags = new Set(normalizeStringArray(sceneDelta.tagsRemove || []));
   next.scene.tags = uniqueStringArray(
-    currentTags
-      .filter((tag) => !removeTags.has(tag))
-      .concat(addTags)
+    currentTags.filter((tag) => !removeTags.has(tag)).concat(addTags)
   );
 
   const currentNearby = uniqueStringArray(next.scene.nearby || []);
   const addNearby = normalizeStringArray(sceneDelta.nearbyAdd || []);
   const removeNearby = new Set(normalizeStringArray(sceneDelta.nearbyRemove || []));
   next.scene.nearby = uniqueStringArray(
-    currentNearby
-      .filter((item) => !removeNearby.has(item))
-      .concat(addNearby)
+    currentNearby.filter((item) => !removeNearby.has(item)).concat(addNearby)
   );
 
   const metricsDelta = delta.metricsDelta || {};
   const metricsSet = delta.metrics || {};
   ["tension", "mystery", "urgency", "progress", "fatigue"].forEach((key) => {
-    const baseValue =
-      typeof next.metrics[key] === "number" ? next.metrics[key] : 0;
+    const baseValue = typeof next.metrics[key] === "number" ? next.metrics[key] : 0;
     if (typeof metricsDelta[key] === "number") {
       next.metrics[key] = clampNumber(baseValue + metricsDelta[key], 0, 1);
     }
@@ -112,17 +105,13 @@ const applyStateDelta = (state = {}, delta = {}) => {
       .concat(addGoals)
       .filter((goal) => !completeGoals.includes(goal))
   );
-  next.goals.completed = uniqueStringArray(
-    completedGoals.concat(completeGoals)
-  );
+  next.goals.completed = uniqueStringArray(completedGoals.concat(completeGoals));
 
   const flagsDelta = delta.flags || {};
   const flagsAdd = normalizeStringArray(flagsDelta.add || []);
   const flagsRemove = new Set(normalizeStringArray(flagsDelta.remove || []));
   next.flags = uniqueStringArray(
-    next.flags
-      .filter((flag) => !flagsRemove.has(flag))
-      .concat(flagsAdd)
+    next.flags.filter((flag) => !flagsRemove.has(flag)).concat(flagsAdd)
   );
 
   const npcsDelta = delta.npcs || {};
@@ -130,14 +119,11 @@ const applyStateDelta = (state = {}, delta = {}) => {
   const npcsAdd = normalizeStringArray(npcsDelta.presentAdd || []);
   const npcsRemove = new Set(normalizeStringArray(npcsDelta.presentRemove || []));
   next.npcs.present = uniqueStringArray(
-    presentNpcs
-      .filter((npc) => !npcsRemove.has(npc))
-      .concat(npcsAdd)
+    presentNpcs.filter((npc) => !npcsRemove.has(npc)).concat(npcsAdd)
   );
 
   return next;
 };
-
 
 module.exports = {
   buildInitialStoryState,

@@ -53,11 +53,7 @@ const toNormalizedBars = (dataArray) => {
 const blendBars = (previousBars, nextBars) =>
   nextBars.map((value, index) => {
     const previous = previousBars[index] ?? IDLE_BAR_HEIGHT;
-    return clamp(
-      previous + (value - previous) * ANALYZER_LERP_FACTOR,
-      BAR_MIN,
-      BAR_MAX
-    );
+    return clamp(previous + (value - previous) * ANALYZER_LERP_FACTOR, BAR_MIN, BAR_MAX);
   });
 
 const computeFallbackBars = (timeSeconds, tempoBpm) => {
@@ -69,9 +65,7 @@ const computeFallbackBars = (timeSeconds, tempoBpm) => {
   );
   return Array.from({ length: BAR_COUNT }, (_, index) => {
     const bandPosition = (index + FALLBACK_BAND_OFFSET) / BAR_COUNT;
-    const sway = Math.sin(
-      timeSeconds * FALLBACK_TIME_SPEED + bandPosition * Math.PI * 2
-    );
+    const sway = Math.sin(timeSeconds * FALLBACK_TIME_SPEED + bandPosition * Math.PI * 2);
     const value =
       IDLE_BAR_HEIGHT +
       Math.max(0, sway) * FALLBACK_BAR_SWAY +
@@ -93,10 +87,7 @@ function useAudioBars({ audioRef, isPlaying, tempoBpm, trackKey }) {
   const analyserRef = useRef(null);
   const frequencyDataRef = useRef(null);
 
-  const frameIntervalMs = useMemo(
-    () => Math.round(SECOND_IN_MS / Math.max(1, FPS_CAP)),
-    []
-  );
+  const frameIntervalMs = useMemo(() => Math.round(SECOND_IN_MS / Math.max(1, FPS_CAP)), []);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
@@ -204,8 +195,7 @@ function useAudioBars({ audioRef, isPlaying, tempoBpm, trackKey }) {
         const fallbackBars = computeFallbackBars(timestamp / SECOND_IN_MS, tempoBpm);
         setBars(fallbackBars);
         const averageEnergy =
-          fallbackBars.reduce((accumulator, value) => accumulator + value, 0) /
-          fallbackBars.length;
+          fallbackBars.reduce((accumulator, value) => accumulator + value, 0) / fallbackBars.length;
         setIsPeak(averageEnergy >= PEAK_THRESHOLD);
       }
 

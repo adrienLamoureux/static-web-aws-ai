@@ -34,11 +34,8 @@ function useStoryStudio(apiBaseUrl = "") {
 
   const [presets, setPresets] = useState([]);
   const [selectedPresetId, setSelectedPresetId] = useState("");
-  const [illustrationContextMode, setIllustrationContextMode] =
-    useState(DEFAULT_CONTEXT_MODE);
-  const [illustrationModel, setIllustrationModel] = useState(
-    DEFAULT_ILLUSTRATION_MODEL
-  );
+  const [illustrationContextMode, setIllustrationContextMode] = useState(DEFAULT_CONTEXT_MODE);
+  const [illustrationModel, setIllustrationModel] = useState(DEFAULT_ILLUSTRATION_MODEL);
   const [illustrationDebugEnabled, setIllustrationDebugEnabled] = useState(true);
   const [storyDebugEnabled, setStoryDebugEnabled] = useState(false);
   const [storyDebugView, setStoryDebugView] = useState("state");
@@ -48,48 +45,47 @@ function useStoryStudio(apiBaseUrl = "") {
 
   // ─── normalizeScene — pure helper shared by all sub-hooks ──────────
 
-  const normalizeScene = useCallback(
-    (scene = {}) => {
-      const parsedTempo = Number(scene.musicTempoBpm);
-      const hasRecommendationScore =
-        scene.recommendationScore !== null &&
-        scene.recommendationScore !== "" &&
-        typeof scene.recommendationScore !== "undefined";
-      const parsedRecommendationScore = Number(scene.recommendationScore);
-      return {
-        ...scene,
-        videoKey: scene.videoKey || "",
-        videoUrl: scene.videoUrl || "",
-        videoStatus: scene.videoStatus || "",
-        videoPredictionId: scene.videoPredictionId || "",
-        videoPrompt: scene.videoPrompt || "",
-        musicKey: scene.musicKey || "",
-        musicUrl: scene.musicUrl || "",
-        musicStatus: scene.musicStatus || "",
-        musicPredictionId: scene.musicPredictionId || "",
-        musicPrompt: scene.musicPrompt || "",
-        musicModelId: scene.musicModelId || "",
-        musicMood: scene.musicMood || "",
-        musicEnergy: scene.musicEnergy || "",
-        musicTempoBpm: Number.isFinite(parsedTempo) ? Math.round(parsedTempo) : null,
-        musicTags: Array.isArray(scene.musicTags) ? scene.musicTags : [],
-        musicLibraryTrackId: scene.musicLibraryTrackId || "",
-        recommendedTrackId: scene.recommendedTrackId || "",
-        recommendationMethod: scene.recommendationMethod || "",
-        recommendationScore:
-          hasRecommendationScore && Number.isFinite(parsedRecommendationScore)
-            ? parsedRecommendationScore
-            : null,
-      };
-    },
-    []
-  );
+  const normalizeScene = useCallback((scene = {}) => {
+    const parsedTempo = Number(scene.musicTempoBpm);
+    const hasRecommendationScore =
+      scene.recommendationScore !== null &&
+      scene.recommendationScore !== "" &&
+      typeof scene.recommendationScore !== "undefined";
+    const parsedRecommendationScore = Number(scene.recommendationScore);
+    return {
+      ...scene,
+      videoKey: scene.videoKey || "",
+      videoUrl: scene.videoUrl || "",
+      videoStatus: scene.videoStatus || "",
+      videoPredictionId: scene.videoPredictionId || "",
+      videoPrompt: scene.videoPrompt || "",
+      musicKey: scene.musicKey || "",
+      musicUrl: scene.musicUrl || "",
+      musicStatus: scene.musicStatus || "",
+      musicPredictionId: scene.musicPredictionId || "",
+      musicPrompt: scene.musicPrompt || "",
+      musicModelId: scene.musicModelId || "",
+      musicMood: scene.musicMood || "",
+      musicEnergy: scene.musicEnergy || "",
+      musicTempoBpm: Number.isFinite(parsedTempo) ? Math.round(parsedTempo) : null,
+      musicTags: Array.isArray(scene.musicTags) ? scene.musicTags : [],
+      musicLibraryTrackId: scene.musicLibraryTrackId || "",
+      recommendedTrackId: scene.recommendedTrackId || "",
+      recommendationMethod: scene.recommendationMethod || "",
+      recommendationScore:
+        hasRecommendationScore && Number.isFinite(parsedRecommendationScore)
+          ? parsedRecommendationScore
+          : null,
+    };
+  }, []);
 
   // ─── Stable refs for cross-hook wiring ────────────────────────────
   // Created once; .current values are kept up-to-date via useEffect.
 
   const setErrorRef = useRef(setError);
-  useEffect(() => { setErrorRef.current = setError; }, [setError]);
+  useEffect(() => {
+    setErrorRef.current = setError;
+  }, [setError]);
 
   // Refs for media setters (populated after useStoryMedia instantiation)
   const setSceneAnimationLoadingMapRef = useRef(() => {});

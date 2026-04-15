@@ -1,12 +1,15 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { requireUserMiddleware, optionalUserMiddleware, requireAdminMiddleware, getUserFromRequest } = require("../lib/auth");
+const {
+  requireUserMiddleware,
+  optionalUserMiddleware,
+  requireAdminMiddleware,
+  getUserFromRequest,
+} = require("../lib/auth");
 
 const toUnsignedToken = (payload = {}) => {
-  const header = Buffer.from(JSON.stringify({ alg: "none", typ: "JWT" })).toString(
-    "base64url"
-  );
+  const header = Buffer.from(JSON.stringify({ alg: "none", typ: "JWT" })).toString("base64url");
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
   return `${header}.${body}.`;
 };

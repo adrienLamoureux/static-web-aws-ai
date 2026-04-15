@@ -1,12 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  generateNovaReelVideo,
-  getNovaReelJobStatus,
-} from "../../../services/bedrock";
-import {
-  generateReplicateVideo,
-  getReplicateVideoStatus,
-} from "../../../services/replicate";
+import { generateNovaReelVideo, getNovaReelJobStatus } from "../../../services/bedrock";
+import { generateReplicateVideo, getReplicateVideoStatus } from "../../../services/replicate";
 
 const buildUnsupportedLoraMessage = ({
   modelKey = "",
@@ -82,8 +76,7 @@ export const useVideoGeneration = ({
     isGenerating ||
     jobStatus === "InProgress" ||
     (videoProvider === "replicate" &&
-      (replicateJobStatus === "starting" ||
-        replicateJobStatus === "processing"));
+      (replicateJobStatus === "starting" || replicateJobStatus === "processing"));
 
   const videoProviderOptions = [
     {
@@ -209,9 +202,7 @@ export const useVideoGeneration = ({
           inputKey: resolvedInputKey,
           imageUrl: selectedImageUrl,
           characterId: selectedLoraProfileId || undefined,
-          ...(isReplicateAudioOption
-            ? { generateAudio: videoGenerateAudio }
-            : {}),
+          ...(isReplicateAudioOption ? { generateAudio: videoGenerateAudio } : {}),
         });
         if (data?.predictionId && data?.status !== "succeeded") {
           setReplicatePredictionId(data.predictionId);
@@ -230,8 +221,7 @@ export const useVideoGeneration = ({
         });
         setGenerationStatus("success");
         setInvocationArn(data?.response?.invocationArn || "");
-        const resolvedPrefix =
-          data?.outputPrefix || derivePrefixFromS3Uri(data?.outputS3Uri || "");
+        const resolvedPrefix = data?.outputPrefix || derivePrefixFromS3Uri(data?.outputS3Uri || "");
         setOutputPrefix(resolvedPrefix);
         setBedrockInputKey(resolvedInputKey);
         onSubmitted?.();

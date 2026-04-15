@@ -116,7 +116,12 @@ module.exports = function registerDirectorAdminRoutes(deps) {
       const msgPrefix = companionMsgPrefix(modelId);
       let recentMessages = [];
       if (queryBySkPrefix) {
-        const allMsgs = await queryBySkPrefix({ pk, skPrefix: msgPrefix, limit: 20, scanForward: false }).catch(() => []);
+        const allMsgs = await queryBySkPrefix({
+          pk,
+          skPrefix: msgPrefix,
+          limit: 20,
+          scanForward: false,
+        }).catch(() => []);
         recentMessages = (allMsgs || []).slice(0, 5).map((m) => ({
           role: m.role,
           content: m.content,

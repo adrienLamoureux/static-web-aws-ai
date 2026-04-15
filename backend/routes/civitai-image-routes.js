@@ -1,9 +1,5 @@
 const { createCivitaiClient } = require("../lib/civitai-client");
-const {
-  LORA_MODALITY_IMAGE,
-  LORA_PROFILE_TYPE,
-  LORA_STRENGTH_DEFAULT,
-} = require("../config/lora");
+const { LORA_MODALITY_IMAGE, LORA_PROFILE_TYPE, LORA_STRENGTH_DEFAULT } = require("../config/lora");
 const {
   applyCharacterProfileToReplicateInput,
   buildLoraUnsupportedModelError,
@@ -26,8 +22,7 @@ const parseOptionalInteger = (value, fallback) => {
   return Number.isFinite(parsed) ? Math.round(parsed) : fallback;
 };
 
-const buildImageJobKey = (token = "") =>
-  `render/civitai/image/${token || Date.now()}`;
+const buildImageJobKey = (token = "") => `render/civitai/image/${token || Date.now()}`;
 
 const parseCatalogId = (catalogId = "") => {
   const normalized = normalizeString(catalogId);
@@ -45,23 +40,15 @@ const parseCatalogId = (catalogId = "") => {
   };
 };
 
-const resolveAdditionalNetworks = ({
-  profileModality = {},
-  modelConfig = {},
-}) => {
-  const modelFamily =
-    normalizeString(modelConfig?.loraAirModelFamily).toLowerCase() || "sd1";
-  const loras = Array.isArray(profileModality?.loras)
-    ? profileModality.loras
-    : [];
+const resolveAdditionalNetworks = ({ profileModality = {}, modelConfig = {} }) => {
+  const modelFamily = normalizeString(modelConfig?.loraAirModelFamily).toLowerCase() || "sd1";
+  const loras = Array.isArray(profileModality?.loras) ? profileModality.loras : [];
   const additionalNetworks = {};
   loras.forEach((item) => {
     const parsedCatalog = parseCatalogId(item?.catalogId);
     if (!parsedCatalog) return;
     const strengthInput = Number(item?.strength);
-    const strength = Number.isFinite(strengthInput)
-      ? strengthInput
-      : LORA_STRENGTH_DEFAULT;
+    const strength = Number.isFinite(strengthInput) ? strengthInput : LORA_STRENGTH_DEFAULT;
     const air = `urn:air:${modelFamily}:lora:civitai:${parsedCatalog.modelId}@${parsedCatalog.versionId}`;
     additionalNetworks[air] = {
       strength,
@@ -73,17 +60,13 @@ const resolveAdditionalNetworks = ({
 const resolveOutputUrls = (jobs = []) =>
   jobs
     .map((item) =>
-      normalizeString(
-        item?.result?.blobUrl || item?.result?.url || item?.result?.imageUrl
-      )
+      normalizeString(item?.result?.blobUrl || item?.result?.url || item?.result?.imageUrl)
     )
     .filter(Boolean);
 
 const resolveJobErrorMessage = (jobs = []) => {
   const failedItem = jobs.find((item) =>
-    CIVITAI_FAILED_EVENTS.has(
-      normalizeString(item?.lastEvent?.type).toLowerCase()
-    )
+    CIVITAI_FAILED_EVENTS.has(normalizeString(item?.lastEvent?.type).toLowerCase())
   );
   if (!failedItem) return "CivitAI image generation failed.";
   const contextMessage =
@@ -215,9 +198,7 @@ module.exports = (app, deps) => {
         profileModality,
       }).prompt;
       const finalPrompt = clampPromptTokens(promptWithProfile);
-      const finalNegativePrompt = negativePrompt
-        ? clampPromptTokens(negativePrompt)
-        : "";
+      const finalNegativePrompt = negativePrompt ? clampPromptTokens(negativePrompt) : "";
 
       const civitaiClient = createCivitaiClient({
         apiToken,
@@ -244,9 +225,7 @@ module.exports = (app, deps) => {
 
       const token = normalizeString(response?.token);
       const jobs = Array.isArray(response?.jobs) ? response.jobs : [];
-      const jobIds = jobs
-        .map((item) => normalizeString(item?.jobId))
-        .filter(Boolean);
+      const jobIds = jobs.map((item) => normalizeString(item?.jobId)).filter(Boolean);
 
       if (!token) {
         return res.status(500).json({
@@ -332,9 +311,7 @@ module.exports = (app, deps) => {
       const jobs = Array.isArray(response?.jobs) ? response.jobs : [];
       const outputUrls = resolveOutputUrls(jobs);
       const hasFailedJobs = jobs.some((item) =>
-        CIVITAI_FAILED_EVENTS.has(
-          normalizeString(item?.lastEvent?.type).toLowerCase()
-        )
+        CIVITAI_FAILED_EVENTS.has(normalizeString(item?.lastEvent?.type).toLowerCase())
       );
       const totalCost = resolveCost(jobs);
 

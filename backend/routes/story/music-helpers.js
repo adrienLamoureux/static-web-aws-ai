@@ -46,9 +46,7 @@ const AUDIO_CONTENT_TYPE_BY_EXTENSION = Object.freeze({
   aac: "audio/aac",
   m4a: "audio/mp4",
 });
-const STORY_MUSIC_SUPPORTED_OUTPUT_FORMATS = new Set(
-  Object.keys(AUDIO_CONTENT_TYPE_BY_EXTENSION)
-);
+const STORY_MUSIC_SUPPORTED_OUTPUT_FORMATS = new Set(Object.keys(AUDIO_CONTENT_TYPE_BY_EXTENSION));
 
 const STORY_MUSIC_DURATION_SECONDS = parseIntegerEnv(
   process.env.STORY_MUSIC_DURATION_SECONDS,
@@ -59,8 +57,7 @@ const STORY_MUSIC_DURATION_SECONDS = parseIntegerEnv(
 // normalizePromptFragment is a dep — pass it in where needed, or resolve at module load
 // We defer to the callers for deps that come from the DI container.
 
-const DEFAULT_STORY_MUSIC_PROMPT =
-  "Cinematic fantasy ambience, gentle orchestral movement";
+const DEFAULT_STORY_MUSIC_PROMPT = "Cinematic fantasy ambience, gentle orchestral movement";
 const MUSIC_LIBRARY_SK_PREFIX = "MUSICLIB#";
 const STORY_MUSIC_RECOMMENDATION_METHOD = "keyword-overlap-v1";
 const STORY_MUSIC_RECOMMENDATION_SCAN_LIMIT = 500;
@@ -201,9 +198,7 @@ const parseMusicTags = (normalizePromptFragment, value) => {
         .map((item) => item.trim());
   return Array.from(
     new Set(
-      raw
-        .map((item) => normalizePromptFragment(String(item || "")).toLowerCase())
-        .filter(Boolean)
+      raw.map((item) => normalizePromptFragment(String(item || "")).toLowerCase()).filter(Boolean)
     )
   ).slice(0, 12);
 };
@@ -244,14 +239,7 @@ const normalizeTrackForSearch = (normalizePromptFragment, trackItem = {}) => {
 
 const buildTrackSearchText = (
   normalizePromptFragment,
-  {
-    title = "",
-    description = "",
-    mood = "",
-    energy = "",
-    tags = [],
-    prompt = "",
-  }
+  { title = "", description = "", mood = "", energy = "", tags = [], prompt = "" }
 ) =>
   [title, description, mood, energy, prompt, ...(Array.isArray(tags) ? tags : [])]
     .map((item) => normalizePromptFragment(String(item || "")).toLowerCase())
@@ -270,9 +258,7 @@ const mapMusicTrackResponse = async (
     signObjectUrl(s3Client, GetObjectCommand, getSignedUrl, bucket, key);
 
   return {
-    trackId:
-      trackItem.trackId ||
-      String(trackItem.sk || "").replace(MUSIC_LIBRARY_SK_PREFIX, ""),
+    trackId: trackItem.trackId || String(trackItem.sk || "").replace(MUSIC_LIBRARY_SK_PREFIX, ""),
     title: trackItem.title || "Saved soundtrack",
     description: trackItem.description || "",
     key: trackItem.key || "",
@@ -349,16 +335,14 @@ const resolveAudioContentType = ({ contentType = "", extension = "" }) => {
   );
 };
 
-const buildStoryMusicLibrarySk = (trackId = "") =>
-  `${MUSIC_LIBRARY_SK_PREFIX}${trackId}`;
+const buildStoryMusicLibrarySk = (trackId = "") => `${MUSIC_LIBRARY_SK_PREFIX}${trackId}`;
 
 const buildStoryMusicLibraryKey = (
   buildUserPrefix,
   userId = "",
   trackId = "",
   outputFormat = DEFAULT_STORY_MUSIC_OUTPUT_FORMAT
-) =>
-  `${buildUserPrefix(userId)}stories/music-library/${trackId}.${outputFormat}`;
+) => `${buildUserPrefix(userId)}stories/music-library/${trackId}.${outputFormat}`;
 
 const buildStorySceneMusicKey = (
   buildUserPrefix,
@@ -368,12 +352,10 @@ const buildStorySceneMusicKey = (
   outputFormat = DEFAULT_STORY_MUSIC_OUTPUT_FORMAT
 ) => `${buildUserPrefix(userId)}stories/${sessionId}/scenes/${sceneId}.${outputFormat}`;
 
-const buildGeneratedTrackId = () =>
-  `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+const buildGeneratedTrackId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 const buildGeneratedTrackTitle = (normalizePromptFragment, sceneItem = {}) =>
-  normalizePromptFragment(`${sceneItem.title || "Scene"} soundtrack`) ||
-  "Saved soundtrack";
+  normalizePromptFragment(`${sceneItem.title || "Scene"} soundtrack`) || "Saved soundtrack";
 
 const parseLibraryLimit = (value, fallback = 200) => {
   const parsed = Number(value);

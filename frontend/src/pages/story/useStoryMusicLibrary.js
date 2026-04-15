@@ -24,9 +24,9 @@ function useStoryMusicLibrary({
   setSceneLibrarySelectionMap,
   setSceneManualSelectionMap,
   // Refs (always up-to-date .current):
-  setActiveMusicTrackKeyRef,  // { current: fn }
+  setActiveMusicTrackKeyRef, // { current: fn }
   setMusicAutoPlayRequestRef, // { current: fn }
-  setErrorRef,                // { current: fn }
+  setErrorRef, // { current: fn }
 }) {
   const [musicLibrary, setMusicLibrary] = useState([]);
 
@@ -111,28 +111,28 @@ function useStoryMusicLibrary({
   // Selection helpers
   // ------------------------------------------------------------------
 
-  const setSceneLibraryTrackSelection = useCallback((sceneId, trackId) => {
-    if (!sceneId) return;
-    setSceneLibrarySelectionMap((prev) => ({
-      ...prev,
-      [sceneId]: trackId || "",
-    }));
-    setSceneManualSelectionMap((prev) => ({
-      ...prev,
-      [sceneId]: true,
-    }));
-  }, [setSceneLibrarySelectionMap, setSceneManualSelectionMap]);
+  const setSceneLibraryTrackSelection = useCallback(
+    (sceneId, trackId) => {
+      if (!sceneId) return;
+      setSceneLibrarySelectionMap((prev) => ({
+        ...prev,
+        [sceneId]: trackId || "",
+      }));
+      setSceneManualSelectionMap((prev) => ({
+        ...prev,
+        [sceneId]: true,
+      }));
+    },
+    [setSceneLibrarySelectionMap, setSceneManualSelectionMap]
+  );
 
   const applyLibraryTrackToScene = useCallback(
     async (sessionId, sceneId, trackId) => {
       if (!resolvedApiBaseUrl || !sessionId || !sceneId || !trackId) return;
       try {
-        const data = await selectStorySceneLibraryTrack(
-          resolvedApiBaseUrl,
-          sessionId,
-          sceneId,
-          { trackId }
-        );
+        const data = await selectStorySceneLibraryTrack(resolvedApiBaseUrl, sessionId, sceneId, {
+          trackId,
+        });
         setScenes((prev) =>
           prev.map((scene) =>
             scene.sceneId === sceneId
@@ -150,9 +150,7 @@ function useStoryMusicLibrary({
                     typeof data.musicTempoBpm === "number"
                       ? data.musicTempoBpm
                       : scene.musicTempoBpm || null,
-                  musicTags: Array.isArray(data.musicTags)
-                    ? data.musicTags
-                    : scene.musicTags || [],
+                  musicTags: Array.isArray(data.musicTags) ? data.musicTags : scene.musicTags || [],
                   musicLibraryTrackId: data.musicLibraryTrackId || trackId,
                 })
               : scene
@@ -197,11 +195,7 @@ function useStoryMusicLibrary({
     async (sessionId, sceneId) => {
       if (!resolvedApiBaseUrl || !sessionId || !sceneId) return;
       try {
-        const data = await recommendStorySceneMusic(
-          resolvedApiBaseUrl,
-          sessionId,
-          sceneId
-        );
+        const data = await recommendStorySceneMusic(resolvedApiBaseUrl, sessionId, sceneId);
         const recommendedTrackId = String(data?.recommendedTrackId || "");
         const recommendationMethod = String(data?.recommendationMethod || "");
         const recommendationScore = Number(data?.recommendationScore);
@@ -239,15 +233,12 @@ function useStoryMusicLibrary({
               const libraryData = await listStoryMusicLibrary(resolvedApiBaseUrl, {
                 limit: 500,
               });
-              const refreshedTracks = Array.isArray(libraryData?.tracks)
-                ? libraryData.tracks
-                : [];
+              const refreshedTracks = Array.isArray(libraryData?.tracks) ? libraryData.tracks : [];
               if (refreshedTracks.length > 0) {
                 setMusicLibrary(refreshedTracks);
               }
               recommendedTrack =
-                refreshedTracks.find((t) => t.trackId === recommendedTrackId) ||
-                recommendedTrack;
+                refreshedTracks.find((t) => t.trackId === recommendedTrackId) || recommendedTrack;
             } catch (refreshError) {
               console.warn(
                 "Story music recommendation library refresh warning:",

@@ -58,7 +58,9 @@ test("POST /director/jobs/retry resets a failed job to queued", async () => {
   let savedItem = null;
   const deps = buildAdminDeps({
     getItem: async () => failedItem,
-    putMediaItem: async ({ extra }) => { savedItem = extra; },
+    putMediaItem: async ({ extra }) => {
+      savedItem = extra;
+    },
   });
   const router = require("../routes/ops/dashboard-routes")(deps);
   const handler = getRouterHandler(router, "post", "/director/jobs/retry");
@@ -91,13 +93,19 @@ test("POST /director/jobs/retry returns 409 when job is not failed", async () =>
 
 test("POST /director/jobs/cancel sets a queued job to cancelled", async () => {
   const queuedItem = {
-    pk: "USER#admin-1", sk: "JOB#job-2", type: "JOB", key: "job-2",
-    status: "queued", createdAt: "2026-01-01T00:00:00.000Z",
+    pk: "USER#admin-1",
+    sk: "JOB#job-2",
+    type: "JOB",
+    key: "job-2",
+    status: "queued",
+    createdAt: "2026-01-01T00:00:00.000Z",
   };
   let savedItem = null;
   const deps = buildAdminDeps({
     getItem: async () => queuedItem,
-    putMediaItem: async ({ extra }) => { savedItem = extra; },
+    putMediaItem: async ({ extra }) => {
+      savedItem = extra;
+    },
   });
   const router = require("../routes/ops/dashboard-routes")(deps);
   const handler = getRouterHandler(router, "post", "/director/jobs/cancel");
@@ -144,8 +152,20 @@ test("POST /director/jobs/retry returns 400 when jobKey is missing", async () =>
 
 test("GET /director/story/sessions/all returns sessions from scan", async () => {
   const mockItems = [
-    { pk: "USER#user-1", sk: "SESSION#sess-1", title: "My Story", turnCount: 5, createdAt: "2026-01-01T00:00:00.000Z" },
-    { pk: "USER#user-2", sk: "SESSION#sess-2", title: "Another", turnCount: 2, createdAt: "2026-01-02T00:00:00.000Z" },
+    {
+      pk: "USER#user-1",
+      sk: "SESSION#sess-1",
+      title: "My Story",
+      turnCount: 5,
+      createdAt: "2026-01-01T00:00:00.000Z",
+    },
+    {
+      pk: "USER#user-2",
+      sk: "SESSION#sess-2",
+      title: "Another",
+      turnCount: 2,
+      createdAt: "2026-01-02T00:00:00.000Z",
+    },
     // MSG item should be filtered out
     { pk: "USER#user-1", sk: "SESSION#sess-1#MSG#001", role: "user", content: "hi" },
   ];
@@ -220,7 +240,10 @@ test("GET /director/companion/memory returns memory for userId+modelId", async (
   const handler = getRouterHandler(router, "get", "/director/companion/memory");
   assert.ok(handler, "handler should exist");
 
-  const req = createReq({ query: { userId: "target-user", modelId: "hiyori_free" }, method: "GET" });
+  const req = createReq({
+    query: { userId: "target-user", modelId: "hiyori_free" },
+    method: "GET",
+  });
   const res = createMockRes();
   await handler(req, res);
 
@@ -258,7 +281,10 @@ test("DELETE /director/companion/memory calls clearMemory and returns cleared: t
   const handler = getRouterHandler(router, "delete", "/director/companion/memory");
   assert.ok(handler, "handler should exist");
 
-  const req = createReq({ query: { userId: "target-user", modelId: "hiyori_free" }, method: "DELETE" });
+  const req = createReq({
+    query: { userId: "target-user", modelId: "hiyori_free" },
+    method: "DELETE",
+  });
   const res = createMockRes();
   await handler(req, res);
 
@@ -273,9 +299,30 @@ test("DELETE /director/companion/memory calls clearMemory and returns cleared: t
 
 test("GET /director/usage returns aggregated usage data", async () => {
   const mockJobs = [
-    { pk: "USER#u1", sk: "JOB#1", provider: "replicate", model: "animagine", status: "completed", createdAt: new Date().toISOString() },
-    { pk: "USER#u1", sk: "JOB#2", provider: "replicate", model: "animagine", status: "failed", createdAt: new Date().toISOString() },
-    { pk: "USER#u2", sk: "JOB#3", provider: "civitai", model: "civitai", status: "completed", createdAt: new Date().toISOString() },
+    {
+      pk: "USER#u1",
+      sk: "JOB#1",
+      provider: "replicate",
+      model: "animagine",
+      status: "completed",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      pk: "USER#u1",
+      sk: "JOB#2",
+      provider: "replicate",
+      model: "animagine",
+      status: "failed",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      pk: "USER#u2",
+      sk: "JOB#3",
+      provider: "civitai",
+      model: "civitai",
+      status: "completed",
+      createdAt: new Date().toISOString(),
+    },
   ];
   const deps = buildAdminDeps({
     dynamoClient: {

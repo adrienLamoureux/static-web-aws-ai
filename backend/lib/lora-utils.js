@@ -1,8 +1,4 @@
-const {
-  LORA_STRENGTH_DEFAULT,
-  MIN_LORA_STRENGTH,
-  MAX_LORA_STRENGTH,
-} = require("../config/lora");
+const { LORA_STRENGTH_DEFAULT, MIN_LORA_STRENGTH, MAX_LORA_STRENGTH } = require("../config/lora");
 
 const normalizeString = (value = "") => String(value || "").trim();
 
@@ -85,11 +81,7 @@ const getLoraSupportedModelKeys = (modelConfigByKey = {}) =>
     hasConfiguredLoraSupport(modelConfigByKey[modelKey] || {})
   );
 
-const buildLoraUnsupportedModelError = ({
-  modelKey = "",
-  modality = "",
-  supportedModels = [],
-}) => {
+const buildLoraUnsupportedModelError = ({ modelKey = "", modality = "", supportedModels = [] }) => {
   const resolvedModelKey = normalizeString(modelKey);
   const resolvedModality = normalizeString(modality) || "image";
   const normalizedSupportedModels = Array.isArray(supportedModels)
@@ -144,10 +136,7 @@ const normalizeLoraProfileItem = (item = {}) => {
   };
 };
 
-const normalizeLoraProfileModality = ({
-  modalityConfig = {},
-  maxItems = 1,
-}) => {
+const normalizeLoraProfileModality = ({ modalityConfig = {}, maxItems = 1 }) => {
   const modelKey = normalizeString(modalityConfig.modelKey);
   const promptPrefix = normalizeString(modalityConfig.promptPrefix);
   const loras = Array.isArray(modalityConfig.loras)
@@ -164,24 +153,16 @@ const normalizeLoraProfileModality = ({
   };
 };
 
-const mergeCatalogMetadataIntoProfile = ({
-  profileLoras = [],
-  catalogById = new Map(),
-}) =>
+const mergeCatalogMetadataIntoProfile = ({ profileLoras = [], catalogById = new Map() }) =>
   profileLoras.map((profileLora) => {
     const catalogItem = catalogById.get(profileLora.catalogId) || {};
-    const catalogTriggerWords = dedupeStringArray(
-      normalizeStringArray(catalogItem.triggerWords)
-    );
+    const catalogTriggerWords = dedupeStringArray(normalizeStringArray(catalogItem.triggerWords));
     return {
       ...profileLora,
       name: profileLora.name || normalizeString(catalogItem.name),
-      downloadUrl:
-        profileLora.downloadUrl || normalizeString(catalogItem.downloadUrl),
+      downloadUrl: profileLora.downloadUrl || normalizeString(catalogItem.downloadUrl),
       triggerWords:
-        profileLora.triggerWords.length > 0
-          ? profileLora.triggerWords
-          : catalogTriggerWords,
+        profileLora.triggerWords.length > 0 ? profileLora.triggerWords : catalogTriggerWords,
     };
   });
 
@@ -199,22 +180,13 @@ const getAverageStrength = (loras = []) => {
   if (!loras.length) return LORA_STRENGTH_DEFAULT;
   const sum = loras.reduce(
     (acc, item) =>
-      acc +
-      clampNumber(
-        item.strength,
-        LORA_STRENGTH_DEFAULT,
-        MIN_LORA_STRENGTH,
-        MAX_LORA_STRENGTH
-      ),
+      acc + clampNumber(item.strength, LORA_STRENGTH_DEFAULT, MIN_LORA_STRENGTH, MAX_LORA_STRENGTH),
     0
   );
   return sum / loras.length;
 };
 
-const resolveReplicateLoraPatch = ({
-  profileModality = {},
-  modelConfig = {},
-}) => {
+const resolveReplicateLoraPatch = ({ profileModality = {}, modelConfig = {} }) => {
   const loras = Array.isArray(profileModality.loras)
     ? profileModality.loras.filter(
         (item) => normalizeString(item.downloadUrl) || normalizeString(item.catalogId)
@@ -238,9 +210,7 @@ const resolveReplicateLoraPatch = ({
 
   if (weightsField && resolvedDownloadUrls.length) {
     patch[weightsField] =
-      weightsFormat === "csv"
-        ? resolvedDownloadUrls.join(",")
-        : resolvedDownloadUrls;
+      weightsFormat === "csv" ? resolvedDownloadUrls.join(",") : resolvedDownloadUrls;
   }
 
   if (strengthField) {

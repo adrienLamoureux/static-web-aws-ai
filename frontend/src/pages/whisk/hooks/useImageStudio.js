@@ -70,8 +70,7 @@ export const useImageStudio = ({
     selectedLoraProfileId,
     civitaiLoraMode: civitaiLora.civitaiLoraMode,
     civitaiRuntimeLoras: civitaiLora.civitaiRuntimeLoras,
-    persistRuntimeCivitaiProfileIfNeeded:
-      civitaiLora.persistRuntimeCivitaiProfileIfNeeded,
+    persistRuntimeCivitaiProfileIfNeeded: civitaiLora.persistRuntimeCivitaiProfileIfNeeded,
     loraImageSupportByModel,
     loraImageSupportByProviderModel,
     supportedImageLoraModels,
@@ -133,8 +132,7 @@ export const useImageStudio = ({
     civitaiRuntimeLoras: civitaiLora.civitaiRuntimeLoras,
     onAddCivitaiRuntimeLora: civitaiLora.addCivitaiRuntimeLora,
     onRemoveCivitaiRuntimeLora: civitaiLora.removeCivitaiRuntimeLora,
-    onCivitaiRuntimeLoraStrengthChange:
-      civitaiLora.updateCivitaiRuntimeLoraStrength,
+    onCivitaiRuntimeLoraStrengthChange: civitaiLora.updateCivitaiRuntimeLoraStrength,
     civitaiRuntimeLoraLimit: CIVITAI_MAX_RUNTIME_LORAS,
   };
 

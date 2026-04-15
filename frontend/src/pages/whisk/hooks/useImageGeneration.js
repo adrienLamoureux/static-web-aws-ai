@@ -1,26 +1,12 @@
 import { useMemo, useRef, useEffect, useState } from "react";
-import {
-  generateBedrockImage,
-} from "../../../services/bedrock";
-import {
-  generateReplicateImage,
-  getReplicateImageStatus,
-} from "../../../services/replicate";
-import {
-  generateCivitaiImage,
-  getCivitaiImageStatus,
-} from "../../../services/civitai";
+import { generateBedrockImage } from "../../../services/bedrock";
+import { generateReplicateImage, getReplicateImageStatus } from "../../../services/replicate";
+import { generateCivitaiImage, getCivitaiImageStatus } from "../../../services/civitai";
 import { generateHuggingFaceImage } from "../../../services/huggingface";
 import { createVideoReadyImage } from "../../../services/images";
-import {
-  putFileToUrl,
-  requestImageUploadUrl,
-} from "../../../services/s3";
+import { putFileToUrl, requestImageUploadUrl } from "../../../services/s3";
 import { buildSafeFileName } from "../../../utils/fileName";
-import {
-  CIVITAI_LORA_MODE_QUICK,
-  CIVITAI_RUNTIME_PROFILE_ID,
-} from "./image-studio-constants";
+import { CIVITAI_LORA_MODE_QUICK, CIVITAI_RUNTIME_PROFILE_ID } from "./image-studio-constants";
 
 const buildUnsupportedLoraMessage = ({
   modelKey = "",
@@ -99,8 +85,7 @@ export const useImageGeneration = ({
 
   const loraSupportBySourceModel = useMemo(
     () => ({
-      replicate:
-        loraImageSupportByProviderModel?.replicate || loraImageSupportByModel || {},
+      replicate: loraImageSupportByProviderModel?.replicate || loraImageSupportByModel || {},
       civitai: loraImageSupportByProviderModel?.civitai || {},
     }),
     [loraImageSupportByModel, loraImageSupportByProviderModel]
@@ -108,8 +93,7 @@ export const useImageGeneration = ({
 
   const supportedLoraModelsBySource = useMemo(
     () => ({
-      replicate:
-        supportedImageLoraModelsByProvider?.replicate || supportedImageLoraModels || [],
+      replicate: supportedImageLoraModelsByProvider?.replicate || supportedImageLoraModels || [],
       civitai: supportedImageLoraModelsByProvider?.civitai || [],
     }),
     [supportedImageLoraModels, supportedImageLoraModelsByProvider]
@@ -124,8 +108,8 @@ export const useImageGeneration = ({
 
   const loraUnsupportedForCurrentSelection = Boolean(
     activeCharacterIdForGeneration &&
-      (!["replicate", "civitai"].includes(imageSource) ||
-        !Boolean(loraSupportBySourceModel?.[imageSource]?.[imageModel]))
+    (!["replicate", "civitai"].includes(imageSource) ||
+      !Boolean(loraSupportBySourceModel?.[imageSource]?.[imageModel]))
   );
 
   const localLoraSupportNotice = loraUnsupportedForCurrentSelection
@@ -163,18 +147,12 @@ export const useImageGeneration = ({
         if (data?.status === "failed" || data?.status === "canceled") {
           clearReplicatePoll();
           setImageGenerationStatus("error");
-          onError?.(
-            data?.error || "Replicate image generation failed."
-          );
+          onError?.(data?.error || "Replicate image generation failed.");
           return;
         }
-        setImageGenerationNotice(
-          "Replicate is still generating the image..."
-        );
+        setImageGenerationNotice("Replicate is still generating the image...");
       } catch (_error) {
-        setImageGenerationNotice(
-          "Replicate is still generating the image..."
-        );
+        setImageGenerationNotice("Replicate is still generating the image...");
       }
       replicatePollRef.current = setTimeout(poll, 2500);
     };
@@ -269,10 +247,7 @@ export const useImageGeneration = ({
       setUploadKey(presignData.key);
       setUploadStatus("uploaded");
 
-      const videoReadyData = await createVideoReadyImage(
-        apiBaseUrl,
-        presignData.key
-      );
+      const videoReadyData = await createVideoReadyImage(apiBaseUrl, presignData.key);
       if (videoReadyData?.videoReadyKey) {
         onVideoReady?.({
           key: videoReadyData.videoReadyKey,
@@ -329,14 +304,11 @@ export const useImageGeneration = ({
         imageName: imageGenerationName.trim(),
         prompt: imagePrompt.trim(),
         negativePrompt: imageNegativePrompt.trim() || undefined,
-        characterId:
-          resolvedCharacterId || activeCharacterIdForGeneration || undefined,
+        characterId: resolvedCharacterId || activeCharacterIdForGeneration || undefined,
         width,
         height,
         numImages:
-          imageSource === "replicate" || imageSource === "civitai"
-            ? Number(imageCount) || 1
-            : 1,
+          imageSource === "replicate" || imageSource === "civitai" ? Number(imageCount) || 1 : 1,
         ...(imageSource === "replicate" && imageSchedulerOptions.length > 0
           ? { scheduler: imageScheduler }
           : {}),
@@ -347,9 +319,9 @@ export const useImageGeneration = ({
           ? await generateBedrockImage(apiBaseUrl, payload)
           : imageSource === "civitai"
             ? await generateCivitaiImage(apiBaseUrl, payload)
-          : imageSource === "huggingface"
-            ? await generateHuggingFaceImage(apiBaseUrl, payload)
-            : await generateReplicateImage(apiBaseUrl, payload);
+            : imageSource === "huggingface"
+              ? await generateHuggingFaceImage(apiBaseUrl, payload)
+              : await generateReplicateImage(apiBaseUrl, payload);
       if (imageSource === "civitai" && data?.token && data?.status !== "succeeded") {
         if (data.status === "failed") {
           setImageGenerationStatus("error");
@@ -370,21 +342,14 @@ export const useImageGeneration = ({
         });
         return;
       }
-      if (
-        data?.predictionId &&
-        data?.status &&
-        data.status !== "succeeded"
-      ) {
+      if (data?.predictionId && data?.status && data.status !== "succeeded") {
         if (data.status === "failed" || data.status === "canceled") {
           setImageGenerationStatus("error");
-          onError?.(
-            data?.error || "Replicate image generation failed."
-          );
+          onError?.(data?.error || "Replicate image generation failed.");
           return;
         }
         setImageGenerationNotice(
-          data?.notice ||
-            "Replicate is processing the image. We'll keep checking."
+          data?.notice || "Replicate is processing the image. We'll keep checking."
         );
         setImageGenerationStatus("loading");
         startReplicateImagePolling({

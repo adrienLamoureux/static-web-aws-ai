@@ -1,14 +1,15 @@
 const { InvokeModelCommand } = require("@aws-sdk/client-bedrock-runtime");
 
-const createAiCraftSceneContext = ({
-  bedrockClient,
-  promptHelperModelId,
-  uniqueStringArray,
-  safeJsonParse,
-  normalizePromptFragment,
-  compactScenePayload,
-  clipText,
-}) =>
+const createAiCraftSceneContext =
+  ({
+    bedrockClient,
+    promptHelperModelId,
+    uniqueStringArray,
+    safeJsonParse,
+    normalizePromptFragment,
+    compactScenePayload,
+    clipText,
+  }) =>
   async ({
     scenePrompt = "",
     sceneEnvironment = "",
@@ -100,9 +101,7 @@ const createAiCraftSceneContext = ({
         .trim();
       const parsed = safeJsonParse(responseText) || {};
       const aiScenePrompt = normalizePromptFragment(parsed.scenePrompt || "");
-      const aiSceneEnvironment = normalizePromptFragment(
-        parsed.sceneEnvironment || ""
-      );
+      const aiSceneEnvironment = normalizePromptFragment(parsed.sceneEnvironment || "");
       const aiSceneAction = normalizePromptFragment(parsed.sceneAction || "");
       if (!aiScenePrompt && !aiSceneEnvironment && !aiSceneAction) {
         return fallback;

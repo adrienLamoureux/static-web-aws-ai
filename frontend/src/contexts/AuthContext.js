@@ -1,22 +1,11 @@
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
   clearAuthTokens,
   getUserFromIdToken,
   loadAuthTokens,
   saveAuthTokens,
 } from "../utils/authTokens";
-import {
-  createAuthState,
-  createCodeChallenge,
-  createCodeVerifier,
-} from "../utils/pkce";
+import { createAuthState, createCodeChallenge, createCodeVerifier } from "../utils/pkce";
 import { clearSessionCache } from "../utils/sessionCache";
 
 const AuthContext = createContext({
@@ -39,9 +28,7 @@ export const AuthProvider = ({ cognito, children }) => {
   const isConfigured = Boolean(cognito?.domain && cognito?.clientId);
   const domain = normalizeDomain(cognito?.domain || "");
   const redirectUri =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/auth/callback`
-      : "";
+    typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : "";
 
   const bootstrapSession = useCallback(() => {
     const tokens = loadAuthTokens();
@@ -150,8 +137,7 @@ export const AuthProvider = ({ cognito, children }) => {
 
       window.sessionStorage.removeItem("whisk_auth_state");
       window.sessionStorage.removeItem("whisk_auth_verifier");
-      const redirectTo =
-        window.sessionStorage.getItem("whisk_auth_redirect") || "/";
+      const redirectTo = window.sessionStorage.getItem("whisk_auth_redirect") || "/";
       window.sessionStorage.removeItem("whisk_auth_redirect");
       return redirectTo;
     },
@@ -182,15 +168,7 @@ export const AuthProvider = ({ cognito, children }) => {
       completeLogin,
       logout,
     }),
-    [
-      completeLogin,
-      isAuthenticated,
-      isConfigured,
-      isLoading,
-      logout,
-      startLogin,
-      user,
-    ]
+    [completeLogin, isAuthenticated, isConfigured, isLoading, logout, startLogin, user]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

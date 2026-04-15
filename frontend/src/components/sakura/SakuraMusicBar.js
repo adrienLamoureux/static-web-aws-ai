@@ -19,12 +19,7 @@ export default function SakuraMusicBar() {
     trackKey: currentTrack?.key,
   });
 
-  // 24 bars from the hook is too many for the compact pill — sample 10 from the
-  // mid frequency range so the visualizer reads cleanly at this size.
-  const visibleBars = useMemo(
-    () => bars.filter((_, i) => i % 2 === 0).slice(2, 12),
-    [bars]
-  );
+  const visibleBars = useMemo(() => bars.filter((_, i) => i % 2 === 0).slice(2, 12), [bars]);
 
   useEffect(() => {
     if (currentTrack?.url && audioRef.current) {
@@ -43,11 +38,13 @@ export default function SakuraMusicBar() {
     if (!autoPlayRequest?.requestId || autoPlayRequest.requestId === lastRequestId.current) return;
     lastRequestId.current = autoPlayRequest.requestId;
     if (audioRef.current && currentTrack?.url) {
-      audioRef.current.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+      audioRef.current
+        .play()
+        .then(() => setPlaying(true))
+        .catch(() => setPlaying(false));
     }
   }, [autoPlayRequest, currentTrack?.url]);
 
-  // Close panel when clicking outside
   useEffect(() => {
     if (!expanded) return;
     const handler = (e) => {
@@ -63,36 +60,55 @@ export default function SakuraMusicBar() {
       audioRef.current.pause();
       setPlaying(false);
     } else {
-      audioRef.current.play().then(() => setPlaying(true)).catch(() => {});
+      audioRef.current
+        .play()
+        .then(() => setPlaying(true))
+        .catch(() => {});
     }
   }, [playing, currentTrack?.url]);
 
-  const handleSeek = useCallback((e) => {
-    if (!audioRef.current || !duration) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    audioRef.current.currentTime = ratio * duration;
-  }, [duration]);
+  const handleSeek = useCallback(
+    (e) => {
+      if (!audioRef.current || !duration) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      audioRef.current.currentTime = ratio * duration;
+    },
+    [duration]
+  );
 
   const handleStop = useCallback(() => {
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+    }
     setPlaying(false);
     setCurrentTime(0);
     setDuration(0);
     dismissTrack();
   }, [dismissTrack]);
 
-  const handlePickTrack = useCallback((track) => {
-    setExpanded(false);
-    playTrack(track);
-  }, [playTrack]);
+  const handlePickTrack = useCallback(
+    (track) => {
+      setExpanded(false);
+      playTrack(track);
+    },
+    [playTrack]
+  );
 
   const progress = duration ? (currentTime / duration) * 100 : 0;
 
-  const pillClass = `skr-music-pill${playing ? " is-playing" : ""}${isPeak ? " is-peak" : ""}`;
+  const widgetClass = [
+    "skr-music-widget",
+    currentTrack ? "has-track" : "",
+    playing ? "is-playing" : "",
+    isPeak ? "is-peak" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
-    <div className={pillClass} ref={panelRef}>
+    <div className={widgetClass} ref={panelRef}>
       <audio
         ref={audioRef}
         crossOrigin="anonymous"
@@ -101,71 +117,85 @@ export default function SakuraMusicBar() {
         loop
       />
 
-      {/* Audio-reactive spectrum or idle note */}
-      <div className={`skr-music-eq${playing ? " is-playing" : ""}`} aria-hidden="true">
-        {currentTrack ? (
-          visibleBars.map((h, i) => (
-            <span key={i} style={{ "--skr-bar-h": h }} />
-          ))
-        ) : (
-          <span className="skr-music-note">♪</span>
+      <div className="skr-music-inner">
+        {/* EQ visualizer or idle icon */}
+        <div className={`skr-music-eq${playing ? " is-playing" : ""}`} aria-hidden="true">
+          {currentTrack ? (
+            visibleBars.map((h, i) => <span key={i} style={{ "--skr-bar-h": h }} />)
+          ) : (
+            <span className="skr-music-note">♫</span>
+          )}
+        </div>
+
+        {/* Track info — only when a track is loaded */}
+        {currentTrack && (
+          <div className="skr-music-info">
+            <span className="skr-music-title">
+              {playing && <span className="skr-music-live-dot" aria-hidden="true" />}
+              {currentTrack.title || "Untitled"}
+            </span>
+            {currentTrack.mood && <span className="skr-music-mood">{currentTrack.mood}</span>}
+          </div>
         )}
+
+        {/* Controls */}
+        <div className="skr-music-controls">
+          {currentTrack && (
+            <button
+              type="button"
+              className="skr-music-btn skr-music-btn-play"
+              onClick={togglePlay}
+              aria-label={playing ? "Pause" : "Play"}
+            >
+              {playing ? "⏸" : "▶"}
+            </button>
+          )}
+          {currentTrack && (
+            <button
+              type="button"
+              className="skr-music-btn skr-music-btn-stop"
+              onClick={handleStop}
+              aria-label="Stop"
+            >
+              ✕
+            </button>
+          )}
+          <button
+            type="button"
+            className={`skr-music-btn skr-music-btn-list${expanded ? " is-open" : ""}`}
+            onClick={() => setExpanded((v) => !v)}
+            aria-label="Toggle track list"
+          >
+            ♬
+          </button>
+        </div>
       </div>
 
-      {/* Track name or idle label */}
-      <span className="skr-music-pill-title">
-        {currentTrack ? (currentTrack.title || "Untitled") : "Music"}
-      </span>
-
-      {/* Play/pause — only when a track is loaded */}
+      {/* Seekable progress bar */}
       {currentTrack && (
-        <button type="button" className="skr-music-pill-btn" onClick={togglePlay} aria-label={playing ? "Pause" : "Play"}>
-          {playing ? "⏸" : "▶"}
-        </button>
-      )}
-
-      {/* Stop — only when a track is loaded */}
-      {currentTrack && (
-        <button type="button" className="skr-music-pill-btn skr-music-pill-close" onClick={handleStop} aria-label="Stop">
-          ✕
-        </button>
-      )}
-
-      {/* Expand toggle */}
-      <button
-        type="button"
-        className={`skr-music-pill-btn skr-music-pill-expand${expanded ? " is-open" : ""}`}
-        onClick={() => setExpanded(v => !v)}
-        aria-label="Toggle track list"
-      >
-        ▾
-      </button>
-
-      {/* Progress bar */}
-      {currentTrack && (
-        <div className="skr-music-pill-progress" onClick={handleSeek} role="progressbar">
-          <div className="skr-music-pill-progress-fill" style={{ width: `${progress}%` }} />
+        <div className="skr-music-progress" onClick={handleSeek} role="progressbar">
+          <div className="skr-music-progress-fill" style={{ width: `${progress}%` }} />
         </div>
       )}
 
       {/* Track picker panel */}
       {expanded && (
-        <div className="skr-music-pill-panel">
+        <div className="skr-music-panel">
           {tracks.length === 0 ? (
-            <p className="skr-music-pill-empty">No tracks available</p>
+            <p className="skr-music-panel-empty">No tracks available</p>
           ) : (
-            <ul className="skr-music-pill-list">
+            <ul className="skr-music-panel-list">
               {tracks.map((t) => (
                 <li
                   key={t.key || t.url}
-                  className={`skr-music-pill-track${currentTrack?.key === t.key ? " is-active" : ""}`}
+                  className={`skr-music-panel-track${currentTrack?.key === t.key ? " is-active" : ""}`}
                   onClick={() => handlePickTrack(t)}
                 >
-                  <span className="skr-music-pill-track-icon">
+                  <span className="skr-music-panel-icon">
                     {currentTrack?.key === t.key && playing ? "⏸" : "▶"}
                   </span>
-                  <span className="skr-music-pill-track-name">{t.title || "Untitled"}</span>
-                  {t.mood && <span className="skr-music-pill-track-tag">{t.mood}</span>}
+                  <span className="skr-music-panel-name">{t.title || "Untitled"}</span>
+                  {t.mood && <span className="skr-music-panel-tag">{t.mood}</span>}
                 </li>
               ))}
             </ul>

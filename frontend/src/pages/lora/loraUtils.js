@@ -70,14 +70,18 @@ export const normalizeProfileDraft = ({ profile = {}, characterId = "", name = "
     modelKey: normalizeString(profile?.image?.modelKey),
     promptPrefix: normalizeString(profile?.image?.promptPrefix),
     loras: Array.isArray(profile?.image?.loras)
-      ? profile.image.loras.map(normalizeLoraItem).filter((item) => item.catalogId || item.downloadUrl)
+      ? profile.image.loras
+          .map(normalizeLoraItem)
+          .filter((item) => item.catalogId || item.downloadUrl)
       : [],
   },
   video: {
     modelKey: normalizeString(profile?.video?.modelKey),
     promptPrefix: normalizeString(profile?.video?.promptPrefix),
     loras: Array.isArray(profile?.video?.loras)
-      ? profile.video.loras.map(normalizeLoraItem).filter((item) => item.catalogId || item.downloadUrl)
+      ? profile.video.loras
+          .map(normalizeLoraItem)
+          .filter((item) => item.catalogId || item.downloadUrl)
       : [],
   },
 });
@@ -106,7 +110,7 @@ export const normalizeCharacterOptions = (characters = []) =>
     .map((item) => ({
       id: normalizeString(item?.id),
       name: normalizeString(item?.name || item?.id),
-      source: normalizeString(item?.source || 'user'),
+      source: normalizeString(item?.source || "user"),
     }))
     .filter((item) => item.id && item.name);
 
@@ -117,14 +121,18 @@ export const buildProfileSavePayload = (draft = {}) => ({
     modelKey: normalizeString(draft?.image?.modelKey),
     promptPrefix: normalizeString(draft?.image?.promptPrefix),
     loras: Array.isArray(draft?.image?.loras)
-      ? draft.image.loras.map(normalizeLoraItem).filter((item) => item.catalogId || item.downloadUrl)
+      ? draft.image.loras
+          .map(normalizeLoraItem)
+          .filter((item) => item.catalogId || item.downloadUrl)
       : [],
   },
   video: {
     modelKey: normalizeString(draft?.video?.modelKey),
     promptPrefix: normalizeString(draft?.video?.promptPrefix),
     loras: Array.isArray(draft?.video?.loras)
-      ? draft.video.loras.map(normalizeLoraItem).filter((item) => item.catalogId || item.downloadUrl)
+      ? draft.video.loras
+          .map(normalizeLoraItem)
+          .filter((item) => item.catalogId || item.downloadUrl)
       : [],
   },
 });
@@ -132,4 +140,6 @@ export const buildProfileSavePayload = (draft = {}) => ({
 export const toNumberLabel = (value) => new Intl.NumberFormat().format(Number(value) || 0);
 
 export const isProfileNotFoundError = (message = "") =>
-  String(message || "").toLowerCase().includes("not found");
+  String(message || "")
+    .toLowerCase()
+    .includes("not found");

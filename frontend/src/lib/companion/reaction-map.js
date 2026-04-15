@@ -9,13 +9,13 @@ import { CompanionActions } from "./CompanionContext";
 import { Interaction } from "../live2d/character-interactions";
 
 export const REACTIONS = {
-  [CompanionActions.PAGE_NAVIGATE]:    Interaction.GREET,
+  [CompanionActions.PAGE_NAVIGATE]: Interaction.GREET,
   [CompanionActions.GENERATION_START]: Interaction.TASK_START,
-  [CompanionActions.GENERATION_DONE]:  Interaction.TASK_DONE,
+  [CompanionActions.GENERATION_DONE]: Interaction.TASK_DONE,
   [CompanionActions.GENERATION_ERROR]: Interaction.TASK_FAIL,
-  [CompanionActions.USER_IDLE]:        Interaction.THINKING,
-  [CompanionActions.USER_RETURN]:      Interaction.GREET,
-  [CompanionActions.FIRST_VISIT]:      Interaction.CELEBRATE,
-  [CompanionActions.LONG_SESSION]:     Interaction.ACKNOWLEDGE,
-  [CompanionActions.STORY_TURN]:       Interaction.STORY_MOMENT,
+  [CompanionActions.USER_IDLE]: Interaction.THINKING,
+  [CompanionActions.USER_RETURN]: Interaction.GREET,
+  [CompanionActions.FIRST_VISIT]: Interaction.CELEBRATE,
+  [CompanionActions.LONG_SESSION]: Interaction.ACKNOWLEDGE,
+  [CompanionActions.STORY_TURN]: Interaction.STORY_MOMENT,
 };

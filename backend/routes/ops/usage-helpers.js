@@ -46,8 +46,12 @@ const PROVIDER_FALLBACK_COSTS = {
  * @returns {number} estimated cost in USD
  */
 const estimateJobCost = (item = {}) => {
-  const model = String(item.model || "").toLowerCase().trim();
-  const provider = String(item.provider || "").toLowerCase().trim();
+  const model = String(item.model || "")
+    .toLowerCase()
+    .trim();
+  const provider = String(item.provider || "")
+    .toLowerCase()
+    .trim();
 
   if (model && model in MODEL_COSTS) {
     return MODEL_COSTS[model];

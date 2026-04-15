@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 /**
  * StoryComposer — message input area at the bottom of the Story page.
@@ -20,21 +20,21 @@ export default function StoryComposer({
   activeSessionId,
 }) {
   const handleKey = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       onSend();
     }
   };
 
   return (
-    <div style={{ display: 'flex', gap: 8 }}>
+    <div style={{ display: "flex", gap: 8 }}>
       <textarea
         className="skr-input"
-        style={{ flex: 1, resize: 'none', minHeight: 42 }}
+        style={{ flex: 1, resize: "none", minHeight: 42 }}
         rows={2}
-        placeholder={activeSessionId ? 'What do you do or say?' : 'Loading session…'}
+        placeholder={activeSessionId ? "What do you do or say?" : "Loading session…"}
         value={input}
-        onChange={e => onInputChange(e.target.value)}
+        onChange={(e) => onInputChange(e.target.value)}
         onKeyDown={handleKey}
         disabled={isSending || isLoading || !activeSessionId}
       />
@@ -42,7 +42,7 @@ export default function StoryComposer({
         className="skr-btn-primary"
         onClick={onSend}
         disabled={isSending || !input.trim() || isLoading || !activeSessionId}
-        style={{ alignSelf: 'flex-end' }}
+        style={{ alignSelf: "flex-end" }}
       >
         Send
       </button>

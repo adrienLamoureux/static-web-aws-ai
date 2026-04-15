@@ -13,12 +13,7 @@ const {
 } = require("./ops/ops-helpers");
 
 const buildListGlobalMasonryImages = (deps) => {
-  const {
-    s3Client,
-    getSignedUrl,
-    GetObjectCommand,
-    ListObjectsV2Command,
-  } = deps;
+  const { s3Client, getSignedUrl, GetObjectCommand, ListObjectsV2Command } = deps;
 
   return async ({ limit = MAX_GLOBAL_MASONRY_IMAGES } = {}) => {
     const mediaBucket = process.env.MEDIA_BUCKET;

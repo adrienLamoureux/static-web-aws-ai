@@ -8,8 +8,8 @@ import { useAuth } from "../../../contexts/AuthContext";
 
 export default function StoryCard({ storyAction, onNavigate }) {
   const { isAuthenticated } = useAuth();
-  const [title, setTitle]   = useState(storyAction?.title || "");
-  const [genre, setGenre]   = useState(storyAction?.genre || "");
+  const [title, setTitle] = useState(storyAction?.title || "");
+  const [genre, setGenre] = useState(storyAction?.genre || "");
   const [started, setStarted] = useState(false);
 
   const handleStart = () => {
@@ -82,7 +82,7 @@ const styles = {
     opacity: 0.8,
   },
   field: {
-    background: "rgba(13, 11, 20, 0.6)",
+    background: "var(--skr-comp-input-bg)",
     border: "1px solid rgba(96, 165, 250, 0.2)",
     borderRadius: 6,
     padding: "5px 8px",

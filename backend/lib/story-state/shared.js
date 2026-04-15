@@ -8,9 +8,7 @@ const clampNumber = (value, min, max) => {
 
 const normalizeStringArray = (value) => {
   if (!Array.isArray(value)) return [];
-  return value
-    .map((item) => String(item || "").trim())
-    .filter(Boolean);
+  return value.map((item) => String(item || "").trim()).filter(Boolean);
 };
 
 const uniqueStringArray = (value) => {

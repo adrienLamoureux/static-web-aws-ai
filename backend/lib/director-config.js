@@ -37,7 +37,11 @@ const normalizeTags = (value) => {
   const rawTags = Array.isArray(value) ? value : splitTagInput(value || "");
   const seen = new Set();
   return rawTags
-    .map((tag) => String(tag || "").trim().toLowerCase())
+    .map((tag) =>
+      String(tag || "")
+        .trim()
+        .toLowerCase()
+    )
     .filter(Boolean)
     .filter((tag) => {
       if (seen.has(tag)) return false;
@@ -48,22 +52,21 @@ const normalizeTags = (value) => {
 };
 
 const normalizeEnergy = (value = "", fallback = DEFAULT_SOUND_ENERGY) => {
-  const normalized = String(value || "").trim().toLowerCase();
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
   return SOUND_ENERGY_LEVELS.has(normalized) ? normalized : fallback;
 };
 
 const normalizeMood = (value = "", fallback = DEFAULT_SOUND_MOOD) => {
-  const normalized = String(value || "").trim().toLowerCase();
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
   if (!normalized) return fallback;
   return normalized.slice(0, MAX_SOUND_MOOD_LENGTH);
 };
 
-const normalizeSizeForModel = ({
-  modelConfig,
-  requestedWidth,
-  requestedHeight,
-  fallbackSize,
-}) => {
+const normalizeSizeForModel = ({ modelConfig, requestedWidth, requestedHeight, fallbackSize }) => {
   const allowedSizes = Array.isArray(modelConfig?.sizes) ? modelConfig.sizes : [];
   if (!allowedSizes.length) {
     return {
@@ -100,9 +103,7 @@ const resolveModelKey = (requestedKey, availableConfig = {}, fallbackKey = "") =
 };
 
 const resolveScheduler = (requestedScheduler, modelConfig = {}) => {
-  const schedulers = Array.isArray(modelConfig.schedulers)
-    ? modelConfig.schedulers
-    : [];
+  const schedulers = Array.isArray(modelConfig.schedulers) ? modelConfig.schedulers : [];
   if (!schedulers.length) return "";
   const requested = String(requestedScheduler || "").trim();
   if (requested && schedulers.includes(requested)) {
@@ -123,24 +124,17 @@ const buildDirectorFallbackConfig = ({
   );
   const imageModelConfig = replicateModelConfig[defaultImageModelKey] || {};
   const defaultImageSize = {
-    width: parseInteger(
-      process.env.DIRECTOR_DEFAULT_IMAGE_WIDTH,
-      DEFAULT_IMAGE_WIDTH
-    ),
-    height: parseInteger(
-      process.env.DIRECTOR_DEFAULT_IMAGE_HEIGHT,
-      DEFAULT_IMAGE_HEIGHT
-    ),
+    width: parseInteger(process.env.DIRECTOR_DEFAULT_IMAGE_WIDTH, DEFAULT_IMAGE_WIDTH),
+    height: parseInteger(process.env.DIRECTOR_DEFAULT_IMAGE_HEIGHT, DEFAULT_IMAGE_HEIGHT),
   };
   const resolvedImageSize = normalizeSizeForModel({
     modelConfig: imageModelConfig,
     requestedWidth: defaultImageSize.width,
     requestedHeight: defaultImageSize.height,
-    fallbackSize:
-      imageModelConfig.sizes?.[0] || {
-        width: DEFAULT_IMAGE_WIDTH,
-        height: DEFAULT_IMAGE_HEIGHT,
-      },
+    fallbackSize: imageModelConfig.sizes?.[0] || {
+      width: DEFAULT_IMAGE_WIDTH,
+      height: DEFAULT_IMAGE_HEIGHT,
+    },
   });
 
   const defaultVideoModelKey = resolveModelKey(
@@ -172,17 +166,9 @@ const buildDirectorFallbackConfig = ({
   };
 
   const sound = {
-    defaultMood: normalizeMood(
-      process.env.DIRECTOR_DEFAULT_SOUND_MOOD,
-      DEFAULT_SOUND_MOOD
-    ),
-    defaultEnergy: normalizeEnergy(
-      process.env.DIRECTOR_DEFAULT_SOUND_ENERGY,
-      DEFAULT_SOUND_ENERGY
-    ),
-    defaultTags: normalizeTags(
-      process.env.DIRECTOR_DEFAULT_SOUND_TAGS || DEFAULT_SOUND_TAGS
-    ),
+    defaultMood: normalizeMood(process.env.DIRECTOR_DEFAULT_SOUND_MOOD, DEFAULT_SOUND_MOOD),
+    defaultEnergy: normalizeEnergy(process.env.DIRECTOR_DEFAULT_SOUND_ENERGY, DEFAULT_SOUND_ENERGY),
+    defaultTags: normalizeTags(process.env.DIRECTOR_DEFAULT_SOUND_TAGS || DEFAULT_SOUND_TAGS),
   };
   if (!sound.defaultTags.length) {
     sound.defaultTags = [...DEFAULT_SOUND_TAGS];
@@ -201,11 +187,13 @@ const normalizeDirectorConfig = ({
   replicateModelConfig = {},
   replicateVideoConfig = {},
 }) => {
-  const fallback = fallbackConfig || buildDirectorFallbackConfig({
-    replicateModelConfig,
-    replicateVideoConfig,
-    defaultNegativePrompt: "",
-  });
+  const fallback =
+    fallbackConfig ||
+    buildDirectorFallbackConfig({
+      replicateModelConfig,
+      replicateVideoConfig,
+      defaultNegativePrompt: "",
+    });
   const generationInput = input.generation || {};
   const videoInput = input.video || {};
   const soundInput = input.sound || {};
@@ -228,15 +216,11 @@ const normalizeDirectorConfig = ({
 
   const generation = {
     imageModel: imageModelKey,
-    imageScheduler: resolveScheduler(
-      generationInput.imageScheduler,
-      imageModelConfig
-    ),
+    imageScheduler: resolveScheduler(generationInput.imageScheduler, imageModelConfig),
     imageWidth: resolvedImageSize.width,
     imageHeight: resolvedImageSize.height,
     negativePrompt:
-      String(generationInput.negativePrompt || "").trim() ||
-      fallback.generation.negativePrompt,
+      String(generationInput.negativePrompt || "").trim() || fallback.generation.negativePrompt,
   };
 
   const videoModelKey = resolveModelKey(
@@ -254,10 +238,7 @@ const normalizeDirectorConfig = ({
 
   const sound = {
     defaultMood: normalizeMood(soundInput.defaultMood, fallback.sound.defaultMood),
-    defaultEnergy: normalizeEnergy(
-      soundInput.defaultEnergy,
-      fallback.sound.defaultEnergy
-    ),
+    defaultEnergy: normalizeEnergy(soundInput.defaultEnergy, fallback.sound.defaultEnergy),
     defaultTags: normalizeTags(soundInput.defaultTags),
   };
   if (!sound.defaultTags.length) {

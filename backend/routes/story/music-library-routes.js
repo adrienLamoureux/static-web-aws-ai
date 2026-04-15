@@ -47,9 +47,7 @@ module.exports = function registerStoryMusicLibraryRoutes(deps) {
     const energy = normalizePromptFragment(req.query?.energy || "").toLowerCase();
     const source = normalizePromptFragment(req.query?.source || "").toLowerCase();
     const tags = parseMusicTags(normalizePromptFragment, req.query?.tags);
-    const tagsMode = String(req.query?.tagsMode || "any").toLowerCase() === "all"
-      ? "all"
-      : "any";
+    const tagsMode = String(req.query?.tagsMode || "any").toLowerCase() === "all" ? "all" : "any";
 
     if (!requireEnv(res, "MEDIA_TABLE", mediaTable)) return;
     if (!requireEnv(res, "MEDIA_BUCKET", bucket)) return;
@@ -70,11 +68,20 @@ module.exports = function registerStoryMusicLibraryRoutes(deps) {
         tags,
         tagsMode,
       };
-      const filteredItems = items.filter((item) => matchesTrackFilter(normalizePromptFragment, item, filters));
+      const filteredItems = items.filter((item) =>
+        matchesTrackFilter(normalizePromptFragment, item, filters)
+      );
       const slicedItems = filteredItems.slice(0, limit);
       const tracks = await Promise.all(
         slicedItems.map((item) =>
-          mapMusicTrackResponse(normalizePromptFragment, s3Client, GetObjectCommand, getSignedUrl, bucket, normalizeTrackForSearch(normalizePromptFragment, item))
+          mapMusicTrackResponse(
+            normalizePromptFragment,
+            s3Client,
+            GetObjectCommand,
+            getSignedUrl,
+            bucket,
+            normalizeTrackForSearch(normalizePromptFragment, item)
+          )
         )
       );
       return res.json({
@@ -104,7 +111,11 @@ module.exports = function registerStoryMusicLibraryRoutes(deps) {
     if (!requireEnv(res, "MEDIA_TABLE", mediaTable)) return;
     if (!requireEnv(res, "MEDIA_BUCKET", bucket)) return;
     if (!requireAuth(res, userId)) return;
-    if (!String(contentType || "").toLowerCase().startsWith("audio/")) {
+    if (
+      !String(contentType || "")
+        .toLowerCase()
+        .startsWith("audio/")
+    ) {
       return res.status(400).json({
         message: "contentType must be an audio type",
       });
@@ -149,9 +160,7 @@ module.exports = function registerStoryMusicLibraryRoutes(deps) {
     const tags = parseMusicTags(normalizePromptFragment, req.body?.tags);
     const parsedTempo = Number(req.body?.tempoBpm);
     const tempoBpm =
-      Number.isFinite(parsedTempo) && parsedTempo > 0
-        ? Math.round(parsedTempo)
-        : null;
+      Number.isFinite(parsedTempo) && parsedTempo > 0 ? Math.round(parsedTempo) : null;
 
     if (!requireEnv(res, "MEDIA_TABLE", mediaTable)) return;
     if (!requireEnv(res, "MEDIA_BUCKET", bucket)) return;
@@ -170,7 +179,10 @@ module.exports = function registerStoryMusicLibraryRoutes(deps) {
     }
 
     const extractedTrackId =
-      key.split("/").pop()?.replace(/\.[^.]+$/, "") || "";
+      key
+        .split("/")
+        .pop()
+        ?.replace(/\.[^.]+$/, "") || "";
     const trackId = providedTrackId || extractedTrackId;
     if (!trackId) {
       return res.status(400).json({ message: "trackId is required" });
@@ -187,9 +199,7 @@ module.exports = function registerStoryMusicLibraryRoutes(deps) {
         sk: buildStoryMusicLibrarySk(trackId),
       });
       const now = new Date().toISOString();
-      const energy = ["low", "medium", "high"].includes(energyRaw)
-        ? energyRaw
-        : "";
+      const energy = ["low", "medium", "high"].includes(energyRaw) ? energyRaw : "";
       const trackItem = {
         ...(existingItem || {}),
         pk: buildMediaPk(userId),
@@ -225,7 +235,14 @@ module.exports = function registerStoryMusicLibraryRoutes(deps) {
       );
 
       return res.json({
-        track: await mapMusicTrackResponse(normalizePromptFragment, s3Client, GetObjectCommand, getSignedUrl, bucket, trackItem),
+        track: await mapMusicTrackResponse(
+          normalizePromptFragment,
+          s3Client,
+          GetObjectCommand,
+          getSignedUrl,
+          bucket,
+          trackItem
+        ),
       });
     } catch (error) {
       return handleRouteError(res, "save uploaded music metadata", error);

@@ -1,38 +1,16 @@
-import {
-  buildApiUrl,
-  buildUrlWithQuery,
-  fetchJson,
-  postJson,
-  deleteJson,
-} from "./apiClient";
+import { buildApiUrl, buildUrlWithQuery, fetchJson, postJson, deleteJson } from "./apiClient";
 
 export const listStoryPresets = (baseUrl) =>
-  fetchJson(
-    buildApiUrl(baseUrl, "/story/presets"),
-    {},
-    "Failed to load story presets."
-  );
+  fetchJson(buildApiUrl(baseUrl, "/story/presets"), {}, "Failed to load story presets.");
 
 export const listStorySessions = (baseUrl) =>
-  fetchJson(
-    buildApiUrl(baseUrl, "/story/sessions"),
-    {},
-    "Failed to load story sessions."
-  );
+  fetchJson(buildApiUrl(baseUrl, "/story/sessions"), {}, "Failed to load story sessions.");
 
 export const listStoryCharacters = (baseUrl) =>
-  fetchJson(
-    buildApiUrl(baseUrl, "/story/characters"),
-    {},
-    "Failed to load story characters."
-  );
+  fetchJson(buildApiUrl(baseUrl, "/story/characters"), {}, "Failed to load story characters.");
 
 export const createStorySession = (baseUrl, payload) =>
-  postJson(
-    buildApiUrl(baseUrl, "/story/sessions"),
-    payload,
-    "Failed to create story session."
-  );
+  postJson(buildApiUrl(baseUrl, "/story/sessions"), payload, "Failed to create story session.");
 
 export const getStorySession = (baseUrl, sessionId) =>
   fetchJson(
@@ -52,91 +30,50 @@ export const generateStoryIllustration = (baseUrl, sessionId, payload, options =
   postJson(
     buildApiUrl(
       baseUrl,
-      `/story/sessions/${sessionId}/illustrations${
-        options.debug ? "?debug=true" : ""
-      }`
+      `/story/sessions/${sessionId}/illustrations${options.debug ? "?debug=true" : ""}`
     ),
     payload,
     "Failed to generate illustration."
   );
 
-export const startStorySceneAnimation = (
-  baseUrl,
-  sessionId,
-  sceneId,
-  payload
-) =>
+export const startStorySceneAnimation = (baseUrl, sessionId, sceneId, payload) =>
   postJson(
     buildApiUrl(baseUrl, `/story/sessions/${sessionId}/scenes/${sceneId}/animation`),
     payload,
     "Failed to start scene animation."
   );
 
-export const getStorySceneAnimationStatus = (
-  baseUrl,
-  sessionId,
-  sceneId,
-  params = {}
-) =>
+export const getStorySceneAnimationStatus = (baseUrl, sessionId, sceneId, params = {}) =>
   fetchJson(
-    buildUrlWithQuery(
-      baseUrl,
-      `/story/sessions/${sessionId}/scenes/${sceneId}/animation`,
-      params
-    ),
+    buildUrlWithQuery(baseUrl, `/story/sessions/${sessionId}/scenes/${sceneId}/animation`, params),
     {},
     "Failed to fetch scene animation status."
   );
 
-export const startStorySceneMusic = (
-  baseUrl,
-  sessionId,
-  sceneId,
-  payload
-) =>
+export const startStorySceneMusic = (baseUrl, sessionId, sceneId, payload) =>
   postJson(
     buildApiUrl(baseUrl, `/story/sessions/${sessionId}/scenes/${sceneId}/music`),
     payload,
     "Failed to start scene music generation."
   );
 
-export const getStorySceneMusicStatus = (
-  baseUrl,
-  sessionId,
-  sceneId,
-  params = {}
-) =>
+export const getStorySceneMusicStatus = (baseUrl, sessionId, sceneId, params = {}) =>
   fetchJson(
-    buildUrlWithQuery(
-      baseUrl,
-      `/story/sessions/${sessionId}/scenes/${sceneId}/music`,
-      params
-    ),
+    buildUrlWithQuery(baseUrl, `/story/sessions/${sessionId}/scenes/${sceneId}/music`, params),
     {},
     "Failed to fetch scene music status."
   );
 
-export const saveStorySceneMusicToLibrary = (
-  baseUrl,
-  sessionId,
-  sceneId,
-  payload = {}
-) =>
+export const saveStorySceneMusicToLibrary = (baseUrl, sessionId, sceneId, payload = {}) =>
   postJson(
-    buildApiUrl(
-      baseUrl,
-      `/story/sessions/${sessionId}/scenes/${sceneId}/music/favorite`
-    ),
+    buildApiUrl(baseUrl, `/story/sessions/${sessionId}/scenes/${sceneId}/music/favorite`),
     payload,
     "Failed to save soundtrack to library."
   );
 
 export const recommendStorySceneMusic = (baseUrl, sessionId, sceneId) =>
   postJson(
-    buildApiUrl(
-      baseUrl,
-      `/story/sessions/${sessionId}/scenes/${sceneId}/music/recommend`
-    ),
+    buildApiUrl(baseUrl, `/story/sessions/${sessionId}/scenes/${sceneId}/music/recommend`),
     {},
     "Failed to recommend soundtrack for scene."
   );
@@ -162,17 +99,9 @@ export const saveUploadedStoryMusicTrack = (baseUrl, payload) =>
     "Failed to save uploaded music track."
   );
 
-export const selectStorySceneLibraryTrack = (
-  baseUrl,
-  sessionId,
-  sceneId,
-  payload
-) =>
+export const selectStorySceneLibraryTrack = (baseUrl, sessionId, sceneId, payload) =>
   postJson(
-    buildApiUrl(
-      baseUrl,
-      `/story/sessions/${sessionId}/scenes/${sceneId}/music/select`
-    ),
+    buildApiUrl(baseUrl, `/story/sessions/${sessionId}/scenes/${sceneId}/music/select`),
     payload,
     "Failed to apply soundtrack from library."
   );

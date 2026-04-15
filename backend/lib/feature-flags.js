@@ -33,8 +33,7 @@ let _cache = null;
  * Build the default flags object (all flags = true).
  * @returns {object}
  */
-const buildDefaultFlags = () =>
-  Object.fromEntries(KNOWN_FLAGS.map((k) => [k, true]));
+const buildDefaultFlags = () => Object.fromEntries(KNOWN_FLAGS.map((k) => [k, true]));
 
 /**
  * Merge stored flags with defaults so new flags always have a value.

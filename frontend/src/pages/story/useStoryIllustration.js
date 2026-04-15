@@ -19,11 +19,11 @@ function useStoryIllustration({
   setSceneManualSelectionMap,
   setActiveMusicTrackKey,
   // Refs (always up-to-date .current):
-  recommendLibraryTrackForSceneRef,  // { current: fn }
-  refreshActiveSessionDetailRef,      // { current: fn }
-  refreshSessionsRef,                 // { current: fn }
-  activeSessionIdRef,                 // { current: string }
-  setErrorRef,                        // { current: fn }
+  recommendLibraryTrackForSceneRef, // { current: fn }
+  refreshActiveSessionDetailRef, // { current: fn }
+  refreshSessionsRef, // { current: fn }
+  activeSessionIdRef, // { current: string }
+  setErrorRef, // { current: fn }
 }) {
   const [sceneLoadingMap, setSceneLoadingMap] = useState({});
   const [isForcingIllustration, setIsForcingIllustration] = useState(false);
@@ -42,9 +42,7 @@ function useStoryIllustration({
       if (!resolvedApiBaseUrl || !sessionId || !sceneId) return;
       const setError = setErrorRef.current;
       const shouldDebug =
-        typeof options.debug === "boolean"
-          ? options.debug
-          : illustrationDebugEnabled;
+        typeof options.debug === "boolean" ? options.debug : illustrationDebugEnabled;
       setSceneLoadingMap((prev) => ({ ...prev, [sceneId]: true }));
       setScenes((prev) =>
         prev.map((scene) =>
@@ -86,29 +84,20 @@ function useStoryIllustration({
                     status: "completed",
                     imageUrl: illustration.imageUrl,
                     imageKey: illustration.imageKey,
-                    promptPositive:
-                      illustration.prompt?.positive || scene.promptPositive,
-                    promptNegative:
-                      illustration.prompt?.negative || scene.promptNegative,
+                    promptPositive: illustration.prompt?.positive || scene.promptPositive,
+                    promptNegative: illustration.prompt?.negative || scene.promptNegative,
                     sceneEnvironment:
                       illustration.context?.sceneEnvironment || scene.sceneEnvironment,
-                    sceneAction:
-                      illustration.context?.sceneAction || scene.sceneAction,
-                    videoKey:
-                      illustration.scene?.videoKey ?? illustration.videoKey ?? "",
-                    videoUrl:
-                      illustration.scene?.videoUrl ?? illustration.videoUrl ?? "",
+                    sceneAction: illustration.context?.sceneAction || scene.sceneAction,
+                    videoKey: illustration.scene?.videoKey ?? illustration.videoKey ?? "",
+                    videoUrl: illustration.scene?.videoUrl ?? illustration.videoUrl ?? "",
                     videoStatus: illustration.scene?.videoStatus || "",
-                    videoPredictionId:
-                      illustration.scene?.videoPredictionId || "",
+                    videoPredictionId: illustration.scene?.videoPredictionId || "",
                     videoPrompt: illustration.scene?.videoPrompt || "",
-                    musicKey:
-                      illustration.scene?.musicKey ?? illustration.musicKey ?? "",
-                    musicUrl:
-                      illustration.scene?.musicUrl ?? illustration.musicUrl ?? "",
+                    musicKey: illustration.scene?.musicKey ?? illustration.musicKey ?? "",
+                    musicUrl: illustration.scene?.musicUrl ?? illustration.musicUrl ?? "",
                     musicStatus: illustration.scene?.musicStatus || "",
-                    musicPredictionId:
-                      illustration.scene?.musicPredictionId || "",
+                    musicPredictionId: illustration.scene?.musicPredictionId || "",
                     musicPrompt: illustration.scene?.musicPrompt || "",
                     musicModelId: illustration.scene?.musicModelId || "",
                     musicMood: illustration.scene?.musicMood || "",
@@ -120,8 +109,7 @@ function useStoryIllustration({
                     musicTags: Array.isArray(illustration.scene?.musicTags)
                       ? illustration.scene.musicTags
                       : scene.musicTags || [],
-                    musicLibraryTrackId:
-                      illustration.scene?.musicLibraryTrackId || "",
+                    musicLibraryTrackId: illustration.scene?.musicLibraryTrackId || "",
                     debug: debugData || scene.debug,
                   }
                 : scene
@@ -147,9 +135,7 @@ function useStoryIllustration({
         } else {
           setScenes((prev) =>
             prev.map((scene) =>
-              scene.sceneId === sceneId
-                ? { ...scene, status: "pending" }
-                : scene
+              scene.sceneId === sceneId ? { ...scene, status: "pending" } : scene
             )
           );
         }
@@ -235,8 +221,7 @@ function useStoryIllustration({
           status: illustration.imageUrl ? "completed" : scene.status || "pending",
           promptPositive: illustration.prompt?.positive || scene.promptPositive,
           promptNegative: illustration.prompt?.negative || scene.promptNegative,
-          sceneEnvironment:
-            illustration.context?.sceneEnvironment || scene.sceneEnvironment,
+          sceneEnvironment: illustration.context?.sceneEnvironment || scene.sceneEnvironment,
           sceneAction: illustration.context?.sceneAction || scene.sceneAction,
           videoKey: scene.videoKey ?? illustration.videoKey ?? "",
           videoUrl: scene.videoUrl ?? illustration.videoUrl ?? "",
@@ -251,8 +236,7 @@ function useStoryIllustration({
           musicModelId: scene.musicModelId || "",
           musicMood: scene.musicMood || "",
           musicEnergy: scene.musicEnergy || "",
-          musicTempoBpm:
-            typeof scene.musicTempoBpm === "number" ? scene.musicTempoBpm : null,
+          musicTempoBpm: typeof scene.musicTempoBpm === "number" ? scene.musicTempoBpm : null,
           musicTags: Array.isArray(scene.musicTags) ? scene.musicTags : [],
           musicLibraryTrackId: scene.musicLibraryTrackId || "",
           debug: debugData || scene.debug,

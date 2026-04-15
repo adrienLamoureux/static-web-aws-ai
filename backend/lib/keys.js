@@ -18,8 +18,7 @@ const buildPromptHelperSk = (key = "") => `OPTIONS#${key.toUpperCase()}`;
 const buildStorySessionSk = (sessionId = "") => `SESSION#${sessionId}`;
 const buildStoryMessageSk = (sessionId = "", timestamp = Date.now()) =>
   `SESSION#${sessionId}#MSG#${String(timestamp).padStart(13, "0")}`;
-const buildStorySceneSk = (sessionId = "", sceneId = "") =>
-  `SESSION#${sessionId}#SCENE#${sceneId}`;
+const buildStorySceneSk = (sessionId = "", sceneId = "") => `SESSION#${sessionId}#SCENE#${sceneId}`;
 const storyMessagePrefix = (sessionId = "") => `SESSION#${sessionId}#MSG#`;
 const storyScenePrefix = (sessionId = "") => `SESSION#${sessionId}#SCENE#`;
 
@@ -27,12 +26,10 @@ const storyScenePrefix = (sessionId = "") => `SESSION#${sessionId}#SCENE#`;
 // pk = USER#{userId}
 // sk = COMPANION#{modelId}                    → memory record (summary, turnCount, updatedAt)
 // sk = COMPANION#{modelId}#MSG#{timestamp13}  → individual message turn
-const buildCompanionMemorySk = (modelId = "hiyori_free") =>
-  `COMPANION#${modelId}`;
+const buildCompanionMemorySk = (modelId = "hiyori_free") => `COMPANION#${modelId}`;
 const buildCompanionMsgSk = (modelId = "hiyori_free", timestamp = Date.now()) =>
   `COMPANION#${modelId}#MSG#${String(timestamp).padStart(13, "0")}`;
-const companionMsgPrefix = (modelId = "hiyori_free") =>
-  `COMPANION#${modelId}#MSG#`;
+const companionMsgPrefix = (modelId = "hiyori_free") => `COMPANION#${modelId}#MSG#`;
 
 module.exports = {
   buildUserPrefix,

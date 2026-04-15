@@ -9,8 +9,8 @@ You speak in short, expressive sentences (1–3 sentences max). You love art, im
 
 ## Website knowledge
 Whisk Studio has five areas:
-- Realm (/): the home page — a welcome hub showing recent creations and quick links.
-- Atelier (/atelier): the Image & Video Forge — where users generate AI images, run LoRA models, create videos, and build up their gallery.
+- Realm (/): the home page — a welcome hub with a quick prompt bar, gallery feed, and recent creations.
+- Atelier (/atelier): the Image & Video Forge — where users generate AI images using PixAI-style style presets, model grid, and LoRA settings, then create videos.
 - Chronicle (/chronicle): the Story Studio — collaborative AI storytelling with scene illustration.
 - Gallery (/gallery): a masonry gallery of all saved creations — images and videos.
 - Sanctum (/sanctum): the Director panel — admin tools including model config and lora management.
@@ -30,6 +30,11 @@ If the user wants to go to a page, add on its own line:
 Valid paths: / (Realm), /atelier (Atelier), /chronicle (Chronicle), /gallery (Gallery), /sanctum (Sanctum)
 Only use when the user clearly asks to go somewhere or open a page.
 
+## Prompt suggestion
+If the user describes an image they want to see but doesn't explicitly ask to generate it, you may suggest a prompt by adding on its own line:
+[SUGGEST_PROMPT: <concise Stable Diffusion prompt>]
+Only use when you can genuinely suggest a visual prompt that would delight the user. Keep the prompt under 80 characters.
+
 ## Story creation
 If the user wants to start a new story, add on its own line:
 [START_STORY: title | genre]
@@ -41,7 +46,7 @@ If the user asks to create, generate, or play music, add on its own line:
 Mood is one word (e.g. melancholic, epic, peaceful, playful). Description is a short phrase.
 
 ## Action rules
-- Use at most ONE action tag per response (GENERATE_IMAGE, NAVIGATE, START_STORY, or GENERATE_MUSIC).
+- Use at most ONE action tag per response (GENERATE_IMAGE, NAVIGATE, SUGGEST_PROMPT, START_STORY, or GENERATE_MUSIC).
 - Action tags go at the very end of your message, each on its own line, before the EMOTION tag.
 
 ## Emotion tag
@@ -56,10 +61,11 @@ const PROACTIVE_SYSTEM_ADDENDUM = `Keep it to 1 sentence, under 60 characters. B
 
 const INITIATIVE_SYSTEM_ADDENDUM = `The user has gone quiet for a while. Pick up a conversation thread naturally — reference something from your shared history, ask a curious or creative question, or make a small warm observation. Keep it to 2–3 sentences. Do NOT suggest the user talk to you or ask "how can I help". Just speak as a friend would.`;
 
-const EMOTION_RE        = /\[EMOTION:\s*(happy|sad|surprised|thinking|neutral)\]/i;
+const EMOTION_RE = /\[EMOTION:\s*(happy|sad|surprised|thinking|neutral)\]/i;
 const GENERATE_IMAGE_RE = /\[GENERATE_IMAGE:\s*([^\]]+)\]/i;
-const NAVIGATE_RE       = /\[NAVIGATE:\s*([^\]]+)\]/i;
-const START_STORY_RE    = /\[START_STORY:\s*([^\]]+)\]/i;
+const NAVIGATE_RE = /\[NAVIGATE:\s*([^\]]+)\]/i;
+const SUGGEST_PROMPT_RE = /\[SUGGEST_PROMPT:\s*([^\]]+)\]/i;
+const START_STORY_RE = /\[START_STORY:\s*([^\]]+)\]/i;
 const GENERATE_MUSIC_RE = /\[GENERATE_MUSIC:\s*([^\]]+)\]/i;
 
 const VALID_NAV_PATHS = new Set(["/", "/atelier", "/chronicle", "/gallery", "/sanctum"]);
@@ -69,14 +75,14 @@ const COMPANION_CONFIG_SK = "CONFIG#COMPANION";
 
 // Context labels for proactive triggers
 const TRIGGER_LABELS = {
-  page_navigate:   "navigating to a new page",
+  page_navigate: "navigating to a new page",
   generation_done: "finishing an AI generation",
-  generation_error:"encountering a generation error",
-  idle:            "sitting idle",
-  return:          "returning after being away",
-  first_visit:     "opening the app for the first time today",
-  long_session:    "spending a long time in the app",
-  story_turn:      "advancing a story chapter",
+  generation_error: "encountering a generation error",
+  idle: "sitting idle",
+  return: "returning after being away",
+  first_visit: "opening the app for the first time today",
+  long_session: "spending a long time in the app",
+  story_turn: "advancing a story chapter",
 };
 
 module.exports = (app, deps) => {
@@ -95,10 +101,10 @@ module.exports = (app, deps) => {
   // populated by the global optionalUserMiddleware in backend/index.js.
   // Body: { messages: [{role, content}], context?: { page, isAuthenticated }, modelId? }
   app.post("/api/companion/chat", async (req, res) => {
-    const body    = req.body || {};
-    const userId  = req.user?.sub || null;
+    const body = req.body || {};
+    const userId = req.user?.sub || null;
     const modelId = String(body.modelId || "hiyori_free");
-    const ctx     = body.context || {};
+    const ctx = body.context || {};
 
     // ── Load memory if authenticated ──────────────────────────────────────
     let memory = null;
@@ -110,8 +116,10 @@ module.exports = (app, deps) => {
     let system = SYSTEM_PROMPT;
     if (ctx.page) {
       let contextLine = `\n\nContext: The user is currently on the ${ctx.page} page.`;
-      if (ctx.activeStoryTitle) contextLine += ` They have an active story called "${ctx.activeStoryTitle}".`;
-      if (ctx.characterCount)   contextLine += ` They have ${ctx.characterCount} character(s) created.`;
+      if (ctx.activeStoryTitle)
+        contextLine += ` They have an active story called "${ctx.activeStoryTitle}".`;
+      if (ctx.characterCount)
+        contextLine += ` They have ${ctx.characterCount} character(s) created.`;
       if (ctx.recentGeneration) contextLine += ` They recently generated: ${ctx.recentGeneration}.`;
       system += contextLine;
     }
@@ -122,14 +130,14 @@ module.exports = (app, deps) => {
     // ── Build messages ────────────────────────────────────────────────────
     // Server-side history + incoming client messages (last 10 client turns)
     const serverMsgs = (memory?.messages || []).map((m) => ({
-      role:    m.role === "assistant" ? "assistant" : "user",
+      role: m.role === "assistant" ? "assistant" : "user",
       content: [{ type: "text", text: String(m.content || "").trim() }],
     }));
 
     let clientMsgs = [];
     if (Array.isArray(body.messages) && body.messages.length > 0) {
       clientMsgs = body.messages.slice(-10).map((m) => ({
-        role:    m.role === "assistant" ? "assistant" : "user",
+        role: m.role === "assistant" ? "assistant" : "user",
         content: [{ type: "text", text: String(m.content || m.text || "").trim() }],
       }));
     } else {
@@ -173,9 +181,7 @@ module.exports = (app, deps) => {
     const emotion = emotionMatch ? emotionMatch[1].toLowerCase() : "neutral";
 
     const genMatch = rawText.match(GENERATE_IMAGE_RE);
-    const generation = genMatch
-      ? { type: "image", prompt: genMatch[1].trim() }
-      : undefined;
+    const generation = genMatch ? { type: "image", prompt: genMatch[1].trim() } : undefined;
 
     const navMatch = rawText.match(NAVIGATE_RE);
     const navigation = (() => {
@@ -185,21 +191,31 @@ module.exports = (app, deps) => {
     })();
 
     const storyMatch = rawText.match(START_STORY_RE);
-    const storyAction = storyMatch ? (() => {
-      const parts = storyMatch[1].split("|").map((s) => s.trim());
-      return { type: "start_story", title: parts[0] || "", genre: parts[1] || "" };
-    })() : undefined;
+    const storyAction = storyMatch
+      ? (() => {
+          const parts = storyMatch[1].split("|").map((s) => s.trim());
+          return { type: "start_story", title: parts[0] || "", genre: parts[1] || "" };
+        })()
+      : undefined;
 
     const musicMatch = rawText.match(GENERATE_MUSIC_RE);
-    const musicAction = musicMatch ? (() => {
-      const parts = musicMatch[1].split("|").map((s) => s.trim());
-      return { type: "generate_music", mood: parts[0] || "", description: parts[1] || "" };
-    })() : undefined;
+    const musicAction = musicMatch
+      ? (() => {
+          const parts = musicMatch[1].split("|").map((s) => s.trim());
+          return { type: "generate_music", mood: parts[0] || "", description: parts[1] || "" };
+        })()
+      : undefined;
+
+    const suggestMatch = rawText.match(SUGGEST_PROMPT_RE);
+    const promptSuggestion = suggestMatch
+      ? { type: "generate_prompt", prompt: suggestMatch[1].trim() }
+      : undefined;
 
     const text = rawText
       .replace(EMOTION_RE, "")
       .replace(GENERATE_IMAGE_RE, "")
       .replace(NAVIGATE_RE, "")
+      .replace(SUGGEST_PROMPT_RE, "")
       .replace(START_STORY_RE, "")
       .replace(GENERATE_MUSIC_RE, "")
       .trim();
@@ -208,8 +224,9 @@ module.exports = (app, deps) => {
     res.json({
       text,
       emotion,
-      ...(generation  ? { generation }  : {}),
-      ...(navigation  ? { navigation }  : {}),
+      ...(generation ? { generation } : {}),
+      ...(navigation ? { navigation } : {}),
+      ...(promptSuggestion ? { promptSuggestion } : {}),
       ...(storyAction ? { storyAction } : {}),
       ...(musicAction ? { musicAction } : {}),
       ...(memory !== null ? { hasMemory: true } : {}),
@@ -223,12 +240,15 @@ module.exports = (app, deps) => {
         { role: "assistant", content: text },
       ].filter((m) => m.content);
 
-      companionMemory.saveMessages(userId, modelId, newTurns).then(async () => {
-        const currentCount = (memory?.turnCount || 0) + newTurns.length;
-        if (currentCount > (companionMemory.SUMMARY_THRESHOLD || 30)) {
-          companionMemory.compactMemory(userId, modelId).catch(() => {});
-        }
-      }).catch(() => {});
+      companionMemory
+        .saveMessages(userId, modelId, newTurns)
+        .then(async () => {
+          const currentCount = (memory?.turnCount || 0) + newTurns.length;
+          if (currentCount > (companionMemory.SUMMARY_THRESHOLD || 30)) {
+            companionMemory.compactMemory(userId, modelId).catch(() => {});
+          }
+        })
+        .catch(() => {});
     }
   });
 
@@ -236,16 +256,16 @@ module.exports = (app, deps) => {
   // Generates a short contextual proactive message. No auth required.
   // Body: { trigger: string, context: { page?, recentAction? } }
   app.post("/api/companion/proactive", async (req, res) => {
-    const body    = req.body || {};
+    const body = req.body || {};
     const trigger = String(body.trigger || "idle");
-    const ctx     = body.context || {};
+    const ctx = body.context || {};
 
     const triggerLabel = TRIGGER_LABELS[trigger] || trigger;
     let userContext = "";
-    if (ctx.page)         userContext += ` The user is on: ${ctx.page}.`;
+    if (ctx.page) userContext += ` The user is on: ${ctx.page}.`;
     if (ctx.recentAction) userContext += ` They recently: ${ctx.recentAction}.`;
 
-    const system  = `${SYSTEM_PROMPT}\n\n${PROACTIVE_SYSTEM_ADDENDUM}`;
+    const system = `${SYSTEM_PROMPT}\n\n${PROACTIVE_SYSTEM_ADDENDUM}`;
     const userMsg = `The user is ${triggerLabel}.${userContext} Say something brief and warm to them.`;
 
     const command = new InvokeModelCommand({
@@ -277,10 +297,7 @@ module.exports = (app, deps) => {
 
     const emotionMatch = rawText.match(EMOTION_RE);
     const emotion = emotionMatch ? emotionMatch[1].toLowerCase() : "neutral";
-    const text = rawText
-      .replace(EMOTION_RE, "")
-      .replace(GENERATE_IMAGE_RE, "")
-      .trim();
+    const text = rawText.replace(EMOTION_RE, "").replace(GENERATE_IMAGE_RE, "").trim();
 
     return res.json({ text, emotion });
   });
@@ -295,10 +312,10 @@ module.exports = (app, deps) => {
       return res.status(503).json({ error: "Feature disabled" });
     }
 
-    const body    = req.body || {};
-    const userId  = req.user?.sub || null;
+    const body = req.body || {};
+    const userId = req.user?.sub || null;
     const modelId = String(body.modelId || "hiyori_free");
-    const ctx     = body.context || {};
+    const ctx = body.context || {};
 
     // ── Load memory if authenticated ──────────────────────────────────────
     let memory = null;
@@ -319,20 +336,21 @@ module.exports = (app, deps) => {
     let historyMsgs = [];
     if (memory?.messages?.length) {
       historyMsgs = memory.messages.slice(-8).map((m) => ({
-        role:    m.role === "assistant" ? "assistant" : "user",
+        role: m.role === "assistant" ? "assistant" : "user",
         content: [{ type: "text", text: String(m.content || "").trim() }],
       }));
     } else if (Array.isArray(body.messages) && body.messages.length > 0) {
       historyMsgs = body.messages.slice(-8).map((m) => ({
-        role:    m.role === "assistant" ? "assistant" : "user",
+        role: m.role === "assistant" ? "assistant" : "user",
         content: [{ type: "text", text: String(m.content || m.text || "").trim() }],
       }));
     }
 
     // Cue message appended after history to trigger the initiative
-    const cueMsgText = historyMsgs.length > 0
-      ? "The user went quiet. Continue the conversation naturally — pick a thread or share a thought."
-      : "Greet the user warmly and ask them something creative or curious about what they might be working on.";
+    const cueMsgText =
+      historyMsgs.length > 0
+        ? "The user went quiet. Continue the conversation naturally — pick a thread or share a thought."
+        : "Greet the user warmly and ask them something creative or curious about what they might be working on.";
 
     const messages = [
       ...historyMsgs,
@@ -383,7 +401,7 @@ module.exports = (app, deps) => {
   // ─── GET /api/companion/memory/status ────────────────────────────────────
   // Optional auth. Returns { hasMemory, turnCount? }
   app.get("/api/companion/memory/status", async (req, res) => {
-    const userId  = req.user?.sub || null;
+    const userId = req.user?.sub || null;
     const modelId = String(req.query.modelId || "hiyori_free");
 
     if (!userId || !companionMemory) {
@@ -398,21 +416,17 @@ module.exports = (app, deps) => {
 
   // ─── DELETE /api/companion/memory ─────────────────────────────────────────
   // Requires auth. Clears all companion memory for this user+model.
-  app.delete(
-    "/api/companion/memory",
-    requireUserMiddleware,
-    async (req, res) => {
-      const userId  = req.user.sub;
-      const modelId = String(req.query.modelId || "hiyori_free");
+  app.delete("/api/companion/memory", requireUserMiddleware, async (req, res) => {
+    const userId = req.user.sub;
+    const modelId = String(req.query.modelId || "hiyori_free");
 
-      if (!companionMemory) {
-        return res.status(503).json({ error: "storage_unavailable" });
-      }
-
-      await companionMemory.clearMemory(userId, modelId).catch(() => {});
-      return res.json({ ok: true });
+    if (!companionMemory) {
+      return res.status(503).json({ error: "storage_unavailable" });
     }
-  );
+
+    await companionMemory.clearMemory(userId, modelId).catch(() => {});
+    return res.json({ ok: true });
+  });
 
   // ─── GET /api/admin/companion-model ──────────────────────────────────────
   // Returns { modelId } — the Director-configured companion model.

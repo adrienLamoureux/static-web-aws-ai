@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { fetchDirectorUsage } from '../../services/operations';
-import StatCard from '../../components/sakura/StatCard';
+import React, { useState, useEffect } from "react";
+import { fetchDirectorUsage } from "../../services/operations";
+import StatCard from "../../components/sakura/StatCard";
 
-const WINDOWS = ['24h', '7d', '30d'];
+const WINDOWS = ["24h", "7d", "30d"];
 
 function UsageBar({ label, value, maxValue }) {
   const pct = maxValue > 0 ? Math.round((value / maxValue) * 100) : 0;
   return (
     <div className="skr-usage-bar-row">
-      <span className="skr-usage-bar-label" title={label}>{label}</span>
+      <span className="skr-usage-bar-label" title={label}>
+        {label}
+      </span>
       <div className="skr-usage-bar-track">
         <div className="skr-usage-bar-fill" style={{ width: `${pct}%` }} />
       </div>
@@ -22,12 +24,15 @@ function UsageBar({ label, value, maxValue }) {
  * Props: { apiBaseUrl }
  */
 export default function UsageDashboard({ apiBaseUrl }) {
-  const [window, setWindow] = useState('24h');
+  const [window, setWindow] = useState("24h");
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!apiBaseUrl) { setIsLoading(false); return; }
+    if (!apiBaseUrl) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     fetchDirectorUsage(apiBaseUrl, { window })
       .then(setData)
@@ -46,12 +51,17 @@ export default function UsageDashboard({ apiBaseUrl }) {
     <div style={{ marginBottom: 20 }}>
       <div className="skr-section-header">
         <p className="skr-section-title">Usage</p>
-        <div style={{ display: 'flex', gap: 4 }}>
-          {WINDOWS.map(w => (
+        <div style={{ display: "flex", gap: 4 }}>
+          {WINDOWS.map((w) => (
             <button
               key={w}
-              className={`skr-chip${window === w ? ' accent' : ''}`}
-              style={{ cursor: 'pointer', background: window === w ? 'rgba(255,107,157,0.2)' : 'rgba(255,107,157,0.06)', border: 'none', fontSize: 11 }}
+              className={`skr-chip${window === w ? " accent" : ""}`}
+              style={{
+                cursor: "pointer",
+                background: window === w ? "rgba(255,107,157,0.2)" : "rgba(255,107,157,0.06)",
+                border: "none",
+                fontSize: 11,
+              }}
               onClick={() => setWindow(w)}
             >
               {w}
@@ -60,20 +70,32 @@ export default function UsageDashboard({ apiBaseUrl }) {
         </div>
       </div>
       <div className="skr-stat-grid">
-        <StatCard label="Total USD" value={data?.totalUsd != null ? `$${Number(data.totalUsd).toFixed(2)}` : '—'} isLoading={isLoading} />
-        <StatCard label="Job Count" value={data?.jobCount ?? '—'} isLoading={isLoading} />
-        <StatCard label="Failure Rate" value={data?.failureRate != null ? `${Math.round(data.failureRate * 100)}%` : '—'} isLoading={isLoading} />
+        <StatCard
+          label="Total USD"
+          value={data?.totalUsd != null ? `$${Number(data.totalUsd).toFixed(2)}` : "—"}
+          isLoading={isLoading}
+        />
+        <StatCard label="Job Count" value={data?.jobCount ?? "—"} isLoading={isLoading} />
+        <StatCard
+          label="Failure Rate"
+          value={data?.failureRate != null ? `${Math.round(data.failureRate * 100)}%` : "—"}
+          isLoading={isLoading}
+        />
       </div>
       {providerEntries.length > 0 && (
         <div className="skr-card" style={{ padding: 16, marginBottom: 12 }}>
           <p className="skr-module-title">By Provider</p>
-          {providerEntries.map(([k, v]) => <UsageBar key={k} label={k} value={v} maxValue={maxProvider} />)}
+          {providerEntries.map(([k, v]) => (
+            <UsageBar key={k} label={k} value={v} maxValue={maxProvider} />
+          ))}
         </div>
       )}
       {modelEntries.length > 0 && (
         <div className="skr-card" style={{ padding: 16 }}>
           <p className="skr-module-title">By Model</p>
-          {modelEntries.map(([k, v]) => <UsageBar key={k} label={k} value={v} maxValue={maxModel} />)}
+          {modelEntries.map(([k, v]) => (
+            <UsageBar key={k} label={k} value={v} maxValue={maxModel} />
+          ))}
         </div>
       )}
     </div>

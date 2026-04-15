@@ -7,7 +7,7 @@
  */
 export const toLoraSupportMap = (models = []) =>
   (Array.isArray(models) ? models : []).reduce((acc, item) => {
-    const key = String(item?.key || '').trim();
+    const key = String(item?.key || "").trim();
     if (key) acc[key] = Boolean(item?.supportsLora);
     return acc;
   }, {});

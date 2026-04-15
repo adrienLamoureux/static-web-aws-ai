@@ -35,12 +35,7 @@ module.exports = function registerStorySessionRoutes(deps) {
   const filterActiveStoryPresets = (presets = []) =>
     presets.filter((preset) => ACTIVE_STORY_PRESET_IDS.has(preset?.id));
 
-  const deleteSessionCascade = async ({
-    userId,
-    sessionId,
-    mediaTableName,
-    mediaBucket,
-  }) => {
+  const deleteSessionCascade = async ({ userId, sessionId, mediaTableName, mediaBucket }) => {
     const messages = await queryBySkPrefix({
       pk: buildMediaPk(userId),
       skPrefix: storyMessagePrefix(sessionId),
@@ -102,9 +97,7 @@ module.exports = function registerStorySessionRoutes(deps) {
         limit: 200,
         scanForward: false,
       });
-      const items = rawItems
-        .map(normalizeSessionItem)
-        .filter((item) => item.sessionId);
+      const items = rawItems.map(normalizeSessionItem).filter((item) => item.sessionId);
       const keepByPreset = new Map();
       const duplicateSessions = [];
 
@@ -117,9 +110,9 @@ module.exports = function registerStorySessionRoutes(deps) {
         duplicateSessions.push(item);
       });
 
-      const sessions = sortSessionsByRecent(
-        Array.from(keepByPreset.values())
-      ).map(buildSessionResponse);
+      const sessions = sortSessionsByRecent(Array.from(keepByPreset.values())).map(
+        buildSessionResponse
+      );
 
       res.json({
         sessions,
@@ -143,9 +136,7 @@ module.exports = function registerStorySessionRoutes(deps) {
         limit: 200,
         scanForward: false,
       });
-      const sessions = rawSessions
-        .map(normalizeSessionItem)
-        .filter((item) => item.sessionId);
+      const sessions = rawSessions.map(normalizeSessionItem).filter((item) => item.sessionId);
 
       if (sessions.length === 0) {
         return res.json({
@@ -202,9 +193,7 @@ module.exports = function registerStorySessionRoutes(deps) {
         ensuredPresets.length ? ensuredPresets : storyPresets
       );
       const characters = await ensureStoryCharacters();
-      const characterMap = new Map(
-        characters.map((character) => [character.id, character])
-      );
+      const characterMap = new Map(characters.map((character) => [character.id, character]));
       const preset = presets.find((item) => item.id === presetId);
       if (!preset) {
         return res.status(400).json({
@@ -214,14 +203,11 @@ module.exports = function registerStorySessionRoutes(deps) {
       }
       const resolvedProtagonistId =
         preset.protagonistId ||
-        (preset.protagonistName?.toLowerCase().includes("frieren")
-          ? "frieren"
-          : "");
+        (preset.protagonistName?.toLowerCase().includes("frieren") ? "frieren" : "");
       const character = characterMap.get(resolvedProtagonistId) || null;
       const protagonistPrompt =
         preset.protagonistPrompt || character?.identityPrompt || buildCharacterPrompt(character);
-      const protagonistName =
-        character?.name || preset.protagonistName || "Protagonist";
+      const protagonistName = character?.name || preset.protagonistName || "Protagonist";
       const resolvedLorebook = resolveStoryLorebook(preset, protagonistName);
       const initialStoryState = buildInitialStoryState(resolvedLorebook);
 
@@ -234,9 +220,7 @@ module.exports = function registerStorySessionRoutes(deps) {
       const existingSessions = rawExistingSessions
         .map(normalizeSessionItem)
         .filter((item) => item.sessionId);
-      const samePresetSessions = existingSessions.filter(
-        (item) => item.presetId === preset.id
-      );
+      const samePresetSessions = existingSessions.filter((item) => item.presetId === preset.id);
       if (samePresetSessions.length > 0) {
         await Promise.all(
           samePresetSessions.map((item) =>
@@ -250,9 +234,7 @@ module.exports = function registerStorySessionRoutes(deps) {
         );
       }
 
-      const sessionId = `story-${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2, 6)}`;
+      const sessionId = `story-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       const now = new Date().toISOString();
       const sessionItem = {
         pk: buildMediaPk(userId),
@@ -307,13 +289,8 @@ module.exports = function registerStorySessionRoutes(deps) {
         })
       );
 
-      const openingSceneId = `opening-${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2, 6)}`;
-      const openingScenePrompt = [
-        "balanced composition, coherent staging",
-        preset.worldPrompt,
-      ]
+      const openingSceneId = `opening-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const openingScenePrompt = ["balanced composition, coherent staging", preset.worldPrompt]
         .filter(Boolean)
         .join(", ");
       const openingScene = {

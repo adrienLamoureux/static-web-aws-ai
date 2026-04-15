@@ -26,9 +26,7 @@ const deleteS3ObjectsByPrefix = async (s3Client, bucket, prefix) => {
         ContinuationToken: continuationToken,
       })
     );
-    const keys = (response.Contents || [])
-      .map((item) => item.Key)
-      .filter(Boolean);
+    const keys = (response.Contents || []).map((item) => item.Key).filter(Boolean);
     for (const key of keys) {
       await s3Client.send(
         new DeleteObjectCommand({
@@ -37,9 +35,7 @@ const deleteS3ObjectsByPrefix = async (s3Client, bucket, prefix) => {
         })
       );
     }
-    continuationToken = response.IsTruncated
-      ? response.NextContinuationToken
-      : undefined;
+    continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined;
   } while (continuationToken);
 };
 
@@ -56,7 +52,11 @@ const fetchS3ImageBuffer = async (s3Client, bucket, key) => {
 };
 
 const buildVideoOutputKey = (inputKey = "", outputPrefix = "videos/") => {
-  const baseName = inputKey.split("/").pop()?.replace(/\.[^.]+$/, "") || "video";
+  const baseName =
+    inputKey
+      .split("/")
+      .pop()
+      ?.replace(/\.[^.]+$/, "") || "video";
   const safeBase = buildSafeBaseName(baseName);
   const inputPrefixMatch = inputKey.match(/^(users\/[^/]+\/)/);
   const userPrefix = inputPrefixMatch ? inputPrefixMatch[1] : "";
@@ -66,8 +66,7 @@ const buildVideoOutputKey = (inputKey = "", outputPrefix = "videos/") => {
   return `${normalizedPrefix}${safeBase}.mp4`;
 };
 
-const encodeS3Key = (key = "") =>
-  encodeURIComponent(key).replace(/%2F/g, "/");
+const encodeS3Key = (key = "") => encodeURIComponent(key).replace(/%2F/g, "/");
 
 const buildVideoPosterKeyFromVideoKey = (videoKey = "") => {
   if (!videoKey) return "";
@@ -81,9 +80,7 @@ const buildVideoPosterKeyFromVideoKey = (videoKey = "") => {
 };
 
 const buildVideoPosterKeyFromPrefix = (outputPrefix = "videos/") => {
-  const safePrefix = outputPrefix.endsWith("/")
-    ? outputPrefix
-    : `${outputPrefix}/`;
+  const safePrefix = outputPrefix.endsWith("/") ? outputPrefix : `${outputPrefix}/`;
   return `${safePrefix}poster.jpg`;
 };
 
@@ -138,14 +135,19 @@ const copyS3Object = async ({ s3Client, bucket, sourceKey, destinationKey }) => 
  * @param {string} key
  * @param {number} [expiresIn=900]
  */
-const signObjectUrl = async (s3Client, GetObjectCommand, getSignedUrl, bucket, key, expiresIn = 900) => {
+const signObjectUrl = async (
+  s3Client,
+  GetObjectCommand,
+  getSignedUrl,
+  bucket,
+  key,
+  expiresIn = 900
+) => {
   if (!bucket || !key) return "";
   try {
-    return await getSignedUrl(
-      s3Client,
-      new GetObjectCommand({ Bucket: bucket, Key: key }),
-      { expiresIn }
-    );
+    return await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: bucket, Key: key }), {
+      expiresIn,
+    });
   } catch (error) {
     return "";
   }

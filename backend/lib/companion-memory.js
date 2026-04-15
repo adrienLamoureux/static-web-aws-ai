@@ -25,8 +25,8 @@ const {
 } = require("./keys");
 
 const SUMMARY_THRESHOLD = 30; // compact when turnCount exceeds this
-const MAX_HISTORY_LOAD  = 20; // how many messages to load for context
-const COMPACT_WINDOW    = 20; // how many old messages to summarise + delete
+const MAX_HISTORY_LOAD = 20; // how many messages to load for context
+const COMPACT_WINDOW = 20; // how many old messages to summarise + delete
 
 /**
  * Factory — returns the companion memory API bound to DynamoDB and Bedrock.
@@ -50,11 +50,11 @@ function createCompanionMemory({
   if (!dynamoClient || !mediaTable) {
     // Return no-op stubs when DynamoDB is unavailable (local dev, tests)
     return {
-      loadMemory:    async () => null,
-      saveMessages:  async () => {},
+      loadMemory: async () => null,
+      saveMessages: async () => {},
       updateSummary: async () => {},
       compactMemory: async () => {},
-      clearMemory:   async () => {},
+      clearMemory: async () => {},
       getMemoryStatus: async () => ({ hasMemory: false }),
     };
   }
@@ -91,11 +91,11 @@ function createCompanionMemory({
     }
 
     return {
-      summary:    memRecord.Item?.summary || null,
-      turnCount:  memRecord.Item?.turnCount || 0,
-      messages:   (messages || []).map((m) => ({
-        role:      m.role,
-        content:   m.content,
+      summary: memRecord.Item?.summary || null,
+      turnCount: memRecord.Item?.turnCount || 0,
+      messages: (messages || []).map((m) => ({
+        role: m.role,
+        content: m.content,
         createdAt: m.createdAt,
       })),
     };
@@ -126,9 +126,7 @@ function createCompanionMemory({
     try {
       await Promise.all(
         writes.map((item) =>
-          dynamoClient.send(
-            new PutCommand({ TableName: mediaTable, Item: item })
-          )
+          dynamoClient.send(new PutCommand({ TableName: mediaTable, Item: item }))
         )
       );
 
@@ -167,8 +165,8 @@ function createCompanionMemory({
    * Overwrite the summary field on the memory record.
    */
   async function updateSummary(userId, modelId = "hiyori_free", summary) {
-    const pk  = buildMediaPk(userId);
-    const sk  = buildCompanionMemorySk(modelId);
+    const pk = buildMediaPk(userId);
+    const sk = buildCompanionMemorySk(modelId);
     const now = Date.now();
 
     try {
@@ -206,7 +204,7 @@ function createCompanionMemory({
    * This should be called fire-and-forget (don't await in the request path).
    */
   async function compactMemory(userId, modelId = "hiyori_free") {
-    const pk        = buildMediaPk(userId);
+    const pk = buildMediaPk(userId);
     const msgPrefix = companionMsgPrefix(modelId);
 
     try {
@@ -228,9 +226,7 @@ function createCompanionMemory({
           temperature: 0.3,
           system:
             "You are a memory summariser. Write 2-3 sentences summarising the key personal details, preferences, and topics from this conversation between Hiyori (AI companion) and the user.",
-          messages: [
-            { role: "user", content: [{ type: "text", text: transcript }] },
-          ],
+          messages: [{ role: "user", content: [{ type: "text", text: transcript }] }],
         }),
       });
 
@@ -263,14 +259,14 @@ function createCompanionMemory({
    * Delete all messages + the memory record for a user/model pair.
    */
   async function clearMemory(userId, modelId = "hiyori_free") {
-    const pk        = buildMediaPk(userId);
-    const memSk     = buildCompanionMemorySk(modelId);
+    const pk = buildMediaPk(userId);
+    const memSk = buildCompanionMemorySk(modelId);
     const msgPrefix = companionMsgPrefix(modelId);
 
     try {
       const allMessages = await queryBySkPrefix(pk, msgPrefix, 200);
       await Promise.all([
-        ...( allMessages || []).map((item) =>
+        ...(allMessages || []).map((item) =>
           dynamoClient
             .send(new DeleteCommand({ TableName: mediaTable, Key: { pk, sk: item.sk } }))
             .catch(() => {})
@@ -288,7 +284,7 @@ function createCompanionMemory({
    * Return lightweight memory status without loading messages.
    */
   async function getMemoryStatus(userId, modelId = "hiyori_free") {
-    const pk    = buildMediaPk(userId);
+    const pk = buildMediaPk(userId);
     const memSk = buildCompanionMemorySk(modelId);
 
     try {

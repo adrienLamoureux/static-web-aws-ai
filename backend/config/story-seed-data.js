@@ -30,8 +30,7 @@ const buildPresetPrompt = (character) => {
   if (character.name) {
     parts.push("1girl, solo");
     push(character.outfitMaterials);
-    const weight =
-      typeof character.weight === "number" ? character.weight : 1.4;
+    const weight = typeof character.weight === "number" ? character.weight : 1.4;
     parts.push(`(${character.name}:${weight})`);
   }
   push(character.signatureTraits);
@@ -133,7 +132,6 @@ const buildCharacterPrompt = (character) => {
   if (!character) return "";
   return buildPresetPrompt(character);
 };
-
 
 module.exports = {
   buildPresetPrompt,

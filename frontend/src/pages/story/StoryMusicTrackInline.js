@@ -22,7 +22,11 @@ const buildTrackSearchText = (track = {}) => {
     track.source || "",
     ...tags,
   ]
-    .map((value) => String(value || "").trim().toLowerCase())
+    .map((value) =>
+      String(value || "")
+        .trim()
+        .toLowerCase()
+    )
     .filter(Boolean)
     .join(" ");
 };
@@ -48,9 +52,7 @@ export default function StoryMusicTrackInline({
       if (!key) return;
       const current = trackMap.get(key);
       if (!current) {
-        const normalizedTags = Array.isArray(candidate.tags)
-          ? candidate.tags.filter(Boolean)
-          : [];
+        const normalizedTags = Array.isArray(candidate.tags) ? candidate.tags.filter(Boolean) : [];
         trackMap.set(key, {
           ...candidate,
           key,
@@ -61,16 +63,13 @@ export default function StoryMusicTrackInline({
           source: candidate.source || "scene",
           mood: candidate.mood || "",
           energy: candidate.energy || "",
-          tempoBpm:
-            typeof candidate.tempoBpm === "number" ? candidate.tempoBpm : null,
+          tempoBpm: typeof candidate.tempoBpm === "number" ? candidate.tempoBpm : null,
           tags: normalizedTags,
           createdAt: candidate.createdAt || "",
         });
         return;
       }
-      const candidateTags = Array.isArray(candidate.tags)
-        ? candidate.tags.filter(Boolean)
-        : [];
+      const candidateTags = Array.isArray(candidate.tags) ? candidate.tags.filter(Boolean) : [];
       const preferCandidateMetadata =
         candidate.source === "library" && current.source !== "library";
       trackMap.set(key, {
@@ -130,8 +129,7 @@ export default function StoryMusicTrackInline({
         description: scene.musicPrompt || "",
         mood: scene.musicMood || "",
         energy: scene.musicEnergy || "",
-        tempoBpm:
-          typeof scene.musicTempoBpm === "number" ? scene.musicTempoBpm : null,
+        tempoBpm: typeof scene.musicTempoBpm === "number" ? scene.musicTempoBpm : null,
         tags: Array.isArray(scene.musicTags) ? scene.musicTags : [],
         source: "scene",
         createdAt: scene.musicUpdatedAt || scene.updatedAt || scene.createdAt || "",
@@ -148,8 +146,7 @@ export default function StoryMusicTrackInline({
         description: track.description || "",
         mood: track.mood || "",
         energy: track.energy || "",
-        tempoBpm:
-          typeof track.tempoBpm === "number" ? track.tempoBpm : null,
+        tempoBpm: typeof track.tempoBpm === "number" ? track.tempoBpm : null,
         tags: Array.isArray(track.tags) ? track.tags : [],
         source: "library",
         createdAt: track.updatedAt || track.createdAt || "",
@@ -169,19 +166,13 @@ export default function StoryMusicTrackInline({
 
   const selectedTrackKey = useMemo(() => {
     if (isManualOverride && manualOverrideTrackKey) {
-      const hasManualTrack = availableTracks.some(
-        (track) => track.key === manualOverrideTrackKey
-      );
+      const hasManualTrack = availableTracks.some((track) => track.key === manualOverrideTrackKey);
       if (hasManualTrack) return manualOverrideTrackKey;
     }
-    const hasActiveTrack = availableTracks.some(
-      (track) => track.key === activeMusicTrackKey
-    );
+    const hasActiveTrack = availableTracks.some((track) => track.key === activeMusicTrackKey);
     if (hasActiveTrack) return activeMusicTrackKey;
     if (!isManualOverride && focusedSceneTrackKey) {
-      const hasFocusedTrack = availableTracks.some(
-        (track) => track.key === focusedSceneTrackKey
-      );
+      const hasFocusedTrack = availableTracks.some((track) => track.key === focusedSceneTrackKey);
       if (hasFocusedTrack) return focusedSceneTrackKey;
     }
     return availableTracks[0]?.key || "";
@@ -208,9 +199,7 @@ export default function StoryMusicTrackInline({
     if (isManualOverride) return;
     if (typeof setActiveMusicTrackKey !== "function") return;
     if (!focusedSceneTrackKey) return;
-    const hasFocusedTrack = availableTracks.some(
-      (track) => track.key === focusedSceneTrackKey
-    );
+    const hasFocusedTrack = availableTracks.some((track) => track.key === focusedSceneTrackKey);
     if (!hasFocusedTrack) return;
     if (focusedSceneTrackKey !== activeMusicTrackKey) {
       setActiveMusicTrackKey(focusedSceneTrackKey);
@@ -237,9 +226,7 @@ export default function StoryMusicTrackInline({
   }, [availableTracks, normalizedTrackQuery]);
   const trackOptions = useMemo(() => {
     if (!selectedTrack) return filteredTracks;
-    const selectedInResults = filteredTracks.some(
-      (track) => track.key === selectedTrack.key
-    );
+    const selectedInResults = filteredTracks.some((track) => track.key === selectedTrack.key);
     if (selectedInResults) return filteredTracks;
     return [selectedTrack, ...filteredTracks];
   }, [filteredTracks, selectedTrack]);
@@ -271,9 +258,7 @@ export default function StoryMusicTrackInline({
       setIsManualOverride(false);
       return;
     }
-    const hasManualTrack = availableTracks.some(
-      (track) => track.key === manualOverrideTrackKey
-    );
+    const hasManualTrack = availableTracks.some((track) => track.key === manualOverrideTrackKey);
     if (!hasManualTrack) {
       setIsManualOverride(false);
       setManualOverrideTrackKey("");

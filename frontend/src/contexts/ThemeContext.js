@@ -1,16 +1,16 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 export const THEMES = [
-  { id: "sakura",  label: "Sakura",  swatch: "#FF6B9D", swatchSecondary: "#C084FC" },
-  { id: "moonrise",label: "Moonrise",swatch: "#38BDF8", swatchSecondary: "#818CF8" },
-  { id: "bamboo",  label: "Bamboo",  swatch: "#4ADE80", swatchSecondary: "#FBBF24" },
-  { id: "ember",   label: "Ember",   swatch: "#F87171", swatchSecondary: "#FB923C" },
-  { id: "void",    label: "Void",    swatch: "#A855F7", swatchSecondary: "#22D3EE" },
+  { id: "sakura", label: "Sakura", swatch: "#FF6B9D", swatchSecondary: "#C084FC" },
+  { id: "moonrise", label: "Moonrise", swatch: "#38BDF8", swatchSecondary: "#818CF8" },
+  { id: "bamboo", label: "Bamboo", swatch: "#4ADE80", swatchSecondary: "#FBBF24" },
+  { id: "ember", label: "Ember", swatch: "#F87171", swatchSecondary: "#FB923C" },
+  { id: "void", label: "Void", swatch: "#A855F7", swatchSecondary: "#22D3EE" },
   { id: "glacier", label: "Glacier", swatch: "#2DD4BF", swatchSecondary: "#94A3B8" },
-  { id: "dusk",    label: "Dusk",    swatch: "#FB923C", swatchSecondary: "#F472B6" },
-  { id: "aurora",  label: "Aurora",  swatch: "#34D399", swatchSecondary: "#22D3EE" },
+  { id: "dusk", label: "Dusk", swatch: "#FB923C", swatchSecondary: "#F472B6" },
+  { id: "aurora", label: "Aurora", swatch: "#34D399", swatchSecondary: "#22D3EE" },
   { id: "crimson", label: "Crimson", swatch: "#F43F5E", swatchSecondary: "#F59E0B" },
-  { id: "storm",   label: "Storm",   swatch: "#FDE047", swatchSecondary: "#94A3B8" },
+  { id: "storm", label: "Storm", swatch: "#FDE047", swatchSecondary: "#94A3B8" },
 ];
 
 const STORAGE_KEY = "skr-theme";
@@ -25,7 +25,7 @@ export function ThemeProvider({ children }) {
   });
 
   const [brightness, setBrightnessState] = useState(() => {
-    return localStorage.getItem(BRIGHTNESS_KEY) || "dark";
+    return localStorage.getItem(BRIGHTNESS_KEY) || "light";
   });
 
   useEffect(() => {
@@ -39,10 +39,12 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => {
     const root = document.documentElement;
-    if (brightness === "dark") {
-      root.removeAttribute("data-brightness");
+    // Always set data-brightness; light-themes.css targets [data-brightness="light"]
+    // tokens.css (dark) applies when this attribute is absent or "dark"
+    if (brightness === "light") {
+      root.setAttribute("data-brightness", "light");
     } else {
-      root.setAttribute("data-brightness", brightness);
+      root.removeAttribute("data-brightness");
     }
   }, [brightness]);
 

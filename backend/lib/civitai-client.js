@@ -60,9 +60,7 @@ const normalizeBaseModelKey = (value = "") => normalizeString(value).toLowerCase
 
 const resolveCivitaiDownloadUrl = (version = {}) => {
   if (!Array.isArray(version.files)) return "";
-  const fileWithDownload = version.files.find((file) =>
-    normalizeString(file?.downloadUrl)
-  );
+  const fileWithDownload = version.files.find((file) => normalizeString(file?.downloadUrl));
   return normalizeString(fileWithDownload?.downloadUrl);
 };
 
@@ -84,9 +82,7 @@ const mapCivitaiModelsToCatalogEntries = (models = []) => {
     const modelName = normalizeString(model?.name);
     const creatorName = normalizeString(model?.creator?.username);
     const tags = normalizeStringArray(model?.tags);
-    const modelVersions = Array.isArray(model?.modelVersions)
-      ? model.modelVersions
-      : [];
+    const modelVersions = Array.isArray(model?.modelVersions) ? model.modelVersions : [];
 
     modelVersions.forEach((version) => {
       const versionId = normalizeString(version?.id);
@@ -141,12 +137,7 @@ const createCivitaiClient = ({
   fetchImpl = resolveFetch(),
 } = {}) => {
   const resolveTimeoutMs = () =>
-    clampInteger(
-      requestTimeoutMs,
-      CIVITAI_REQUEST_TIMEOUT_MS,
-      1000,
-      120000
-    );
+    clampInteger(requestTimeoutMs, CIVITAI_REQUEST_TIMEOUT_MS, 1000, 120000);
 
   const runRequest = async ({
     url,
@@ -175,9 +166,7 @@ const createCivitaiClient = ({
       if (!response.ok) {
         const bodyText = await response.text();
         throw new Error(
-          `CivitAI request failed (${response.status}): ${
-            bodyText || response.statusText
-          }`
+          `CivitAI request failed (${response.status}): ${bodyText || response.statusText}`
         );
       }
       return response.json();
@@ -186,10 +175,7 @@ const createCivitaiClient = ({
     }
   };
 
-  const fetchAndMapCatalogEntries = async ({
-    url,
-    timeoutMs = resolveTimeoutMs(),
-  }) => {
+  const fetchAndMapCatalogEntries = async ({ url, timeoutMs = resolveTimeoutMs() }) => {
     const payload = await runRequest({
       url,
       timeoutMs,
@@ -277,12 +263,7 @@ const createCivitaiClient = ({
     baseModel = "",
     modelIds = [],
   } = {}) => {
-    const resolvedLimit = clampInteger(
-      limit,
-      LORA_SYNC_DEFAULT_LIMIT,
-      1,
-      LORA_SYNC_MAX_LIMIT
-    );
+    const resolvedLimit = clampInteger(limit, LORA_SYNC_DEFAULT_LIMIT, 1, LORA_SYNC_MAX_LIMIT);
     const url = new URL(CIVITAI_MODELS_PATH, apiBaseUrl);
     url.searchParams.set("types", CIVITAI_MODEL_TYPE);
     url.searchParams.set("limit", String(resolvedLimit));
@@ -377,11 +358,7 @@ const createCivitaiClient = ({
     });
   };
 
-  const getImageJobs = async ({
-    token = "",
-    wait = false,
-    detailed = true,
-  } = {}) => {
+  const getImageJobs = async ({ token = "", wait = false, detailed = true } = {}) => {
     const normalizedToken = normalizeString(token);
     if (!normalizedToken) {
       throw new Error("CivitAI job token is required");

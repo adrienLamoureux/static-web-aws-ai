@@ -1,12 +1,7 @@
 const { Router } = require("express");
 
 module.exports = function registerStorySeedRoutes(deps) {
-  const {
-    mediaTable,
-    ensureStoryPresets,
-    ensureStoryCharacters,
-    storyPresets,
-  } = deps;
+  const { mediaTable, ensureStoryPresets, ensureStoryCharacters, storyPresets } = deps;
 
   const ACTIVE_STORY_PRESET_IDS = new Set(["frieren-road"]);
   const filterActiveStoryPresets = (presets = []) =>
@@ -24,18 +19,14 @@ module.exports = function registerStorySeedRoutes(deps) {
         ensuredPresets.length ? ensuredPresets : storyPresets
       );
       const characters = await ensureStoryCharacters();
-      const characterMap = new Map(
-        characters.map((character) => [character.id, character])
-      );
+      const characterMap = new Map(characters.map((character) => [character.id, character]));
       res.json({
         presets: presets.map((preset) => ({
           id: preset.id,
           name: preset.name,
           synopsis: preset.synopsis,
           protagonistName:
-            characterMap.get(preset.protagonistId || "")?.name ||
-            preset.protagonistName ||
-            "",
+            characterMap.get(preset.protagonistId || "")?.name || preset.protagonistName || "",
           stylePrompt: preset.stylePrompt,
           opening: preset.opening,
         })),

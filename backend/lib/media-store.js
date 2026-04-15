@@ -1,14 +1,6 @@
-const {
-  PutCommand,
-  GetCommand,
-  QueryCommand,
-  DeleteCommand,
-} = require("@aws-sdk/lib-dynamodb");
+const { PutCommand, GetCommand, QueryCommand, DeleteCommand } = require("@aws-sdk/lib-dynamodb");
 
-const {
-  buildMediaPk,
-  buildMediaSk,
-} = require("./keys");
+const { buildMediaPk, buildMediaSk } = require("./keys");
 
 const createMediaStore = ({ dynamoClient, mediaTable }) => {
   const putMediaItem = async ({ userId, type, key, extra = {} }) => {
@@ -69,12 +61,7 @@ const createMediaStore = ({ dynamoClient, mediaTable }) => {
     return response.Item || null;
   };
 
-  const queryBySkPrefix = async ({
-    pk,
-    skPrefix,
-    limit = 100,
-    scanForward = true,
-  }) => {
+  const queryBySkPrefix = async ({ pk, skPrefix, limit = 100, scanForward = true }) => {
     if (!mediaTable || !pk || !skPrefix) return [];
     const response = await dynamoClient.send(
       new QueryCommand({

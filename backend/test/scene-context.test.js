@@ -20,10 +20,16 @@ const normalizePromptFragment = (value = "") =>
 
 const safeJsonParse = (text = "") => {
   if (!text) return null;
-  try { return JSON.parse(text); } catch {
+  try {
+    return JSON.parse(text);
+  } catch {
     const m = text.match(/\{[\s\S]*\}/);
     if (!m) return null;
-    try { return JSON.parse(m[0]); } catch { return null; }
+    try {
+      return JSON.parse(m[0]);
+    } catch {
+      return null;
+    }
   }
 };
 
@@ -57,7 +63,11 @@ test("parsePromptPairResponse falls back to POSITIVE:/NEGATIVE: text format", ()
 });
 
 test("parsePromptPairResponse returns empty strings when input is empty", () => {
-  const result = parsePromptPairResponse({ responseText: "", safeJsonParse, normalizePromptFragment });
+  const result = parsePromptPairResponse({
+    responseText: "",
+    safeJsonParse,
+    normalizePromptFragment,
+  });
   assert.equal(result.positivePrompt, "");
   assert.equal(result.negativePrompt, "");
 });

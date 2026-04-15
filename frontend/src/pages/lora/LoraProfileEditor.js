@@ -55,7 +55,7 @@ export default function LoraProfileEditor({
     return (
       <div key={modality} className="skr-lora-section">
         <p className="skr-lora-section-title">{label}</p>
-        <label style={{ display: 'block', marginBottom: 10 }}>
+        <label style={{ display: "block", marginBottom: 10 }}>
           <span className="skr-field-label">Preferred model key</span>
           <select
             className="skr-field-select"
@@ -64,11 +64,13 @@ export default function LoraProfileEditor({
           >
             <option value="">No model lock</option>
             {modelOptions.map((option) => (
-              <option key={option.key} value={option.key}>{option.label}</option>
+              <option key={option.key} value={option.key}>
+                {option.label}
+              </option>
             ))}
           </select>
         </label>
-        <label style={{ display: 'block', marginBottom: 10 }}>
+        <label style={{ display: "block", marginBottom: 10 }}>
           <span className="skr-field-label">Prompt prefix</span>
           <textarea
             className="skr-field-textarea"
@@ -80,13 +82,25 @@ export default function LoraProfileEditor({
         </label>
         <div style={{ marginBottom: 8 }}>
           {(modalityDraft.loras || []).length === 0 ? (
-            <p style={{ fontSize: 12, color: 'var(--skr-text-tertiary)' }}>No LoRAs selected for this modality yet.</p>
+            <p style={{ fontSize: 12, color: "var(--skr-text-tertiary)" }}>
+              No LoRAs selected for this modality yet.
+            </p>
           ) : (
             modalityDraft.loras.map((entry) => {
-              const loraKey = String(entry.catalogId || "").trim() || String(entry.downloadUrl || "").trim();
+              const loraKey =
+                String(entry.catalogId || "").trim() || String(entry.downloadUrl || "").trim();
               return (
-                <div key={`${modality}-${loraKey}`} style={{ padding: '10px 0', borderBottom: '1px solid var(--skr-border)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div
+                  key={`${modality}-${loraKey}`}
+                  style={{ padding: "10px 0", borderBottom: "1px solid var(--skr-border)" }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                    }}
+                  >
                     <div>
                       <p className="skr-lora-item-name">{entry.name || entry.catalogId}</p>
                       <p className="skr-lora-item-meta">{entry.catalogId}</p>
@@ -94,14 +108,24 @@ export default function LoraProfileEditor({
                     <button
                       type="button"
                       className="skr-btn-secondary"
-                      style={{ fontSize: 11, padding: '3px 10px' }}
+                      style={{ fontSize: 11, padding: "3px 10px" }}
                       onClick={() => onRemoveProfileLora(modality, entry.catalogId)}
                     >
                       Remove
                     </button>
                   </div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, fontSize: 12 }}>
-                    <span className="skr-field-label" style={{ marginBottom: 0 }}>Strength</span>
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      marginTop: 6,
+                      fontSize: 12,
+                    }}
+                  >
+                    <span className="skr-field-label" style={{ marginBottom: 0 }}>
+                      Strength
+                    </span>
                     <input
                       type="number"
                       step={PROFILE_STRENGTH_STEP}
@@ -110,13 +134,17 @@ export default function LoraProfileEditor({
                       className="skr-input"
                       style={{ width: 80 }}
                       value={entry.strength}
-                      onChange={(e) => onUpdateLoraStrength(modality, entry.catalogId, e.target.value)}
+                      onChange={(e) =>
+                        onUpdateLoraStrength(modality, entry.catalogId, e.target.value)
+                      }
                     />
                   </label>
                   {entry.triggerWords.length > 0 && (
-                    <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                    <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", gap: 3 }}>
                       {entry.triggerWords.map((word) => (
-                        <span key={`${loraKey}-${word}`} className="skr-lora-chip">{word}</span>
+                        <span key={`${loraKey}-${word}`} className="skr-lora-chip">
+                          {word}
+                        </span>
                       ))}
                     </div>
                   )}
@@ -132,14 +160,24 @@ export default function LoraProfileEditor({
   return (
     <div className="skr-lora-panel">
       <div style={{ marginBottom: 16 }}>
-        <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--skr-text-primary)', marginBottom: 4 }}>Character LoRA Profile</p>
-        <p style={{ fontSize: 12, color: 'var(--skr-text-secondary)' }}>
-          Attach catalog LoRAs per character and modality. Each character can have multiple named profiles.
+        <p
+          style={{
+            fontSize: 15,
+            fontWeight: 700,
+            color: "var(--skr-text-primary)",
+            marginBottom: 4,
+          }}
+        >
+          Character LoRA Profile
+        </p>
+        <p style={{ fontSize: 12, color: "var(--skr-text-secondary)" }}>
+          Attach catalog LoRAs per character and modality. Each character can have multiple named
+          profiles.
         </p>
       </div>
 
       {/* Character selector */}
-      <label style={{ display: 'block', marginBottom: 10 }}>
+      <label style={{ display: "block", marginBottom: 10 }}>
         <span className="skr-field-label">Character</span>
         <select
           className="skr-field-select"
@@ -147,10 +185,13 @@ export default function LoraProfileEditor({
           onChange={(e) => onCharacterChange(e.target.value)}
           disabled={isBootstrapping}
         >
-          <option value="">{isBootstrapping ? "Loading characters..." : "Select a character"}</option>
+          <option value="">
+            {isBootstrapping ? "Loading characters..." : "Select a character"}
+          </option>
           {characterOptions.map((character) => (
             <option key={character.id} value={character.id}>
-              {character.name}{character.source === 'system' ? ' (system)' : ''}
+              {character.name}
+              {character.source === "system" ? " (system)" : ""}
             </option>
           ))}
         </select>
@@ -160,7 +201,7 @@ export default function LoraProfileEditor({
       {selectedCharacterId && (
         <div style={{ marginBottom: 10 }}>
           <span className="skr-field-label">Profile</span>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
             <select
               className="skr-field-select"
               style={{ flex: 1 }}
@@ -170,14 +211,16 @@ export default function LoraProfileEditor({
             >
               <option value="">— New profile —</option>
               {profileOptions.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
               ))}
             </select>
             {selectedProfileId && (
               <button
                 type="button"
                 className="skr-btn-secondary"
-                style={{ fontSize: 11, padding: '3px 8px', color: '#ef4444', flexShrink: 0 }}
+                style={{ fontSize: 11, padding: "3px 8px", color: "#ef4444", flexShrink: 0 }}
                 onClick={onDeleteProfile}
                 disabled={isSaving}
                 title="Delete this profile"
@@ -187,31 +230,43 @@ export default function LoraProfileEditor({
             )}
           </div>
           {isProfileListLoading && (
-            <p style={{ fontSize: 11, color: 'var(--skr-text-tertiary)', marginTop: 4 }}>Loading profiles…</p>
+            <p style={{ fontSize: 11, color: "var(--skr-text-tertiary)", marginTop: 4 }}>
+              Loading profiles…
+            </p>
           )}
         </div>
       )}
 
       {/* Profile name */}
-      <label style={{ display: 'block', marginBottom: 16 }}>
+      <label style={{ display: "block", marginBottom: 16 }}>
         <span className="skr-field-label">Profile name</span>
         <input
           className="skr-input"
-          style={{ width: '100%' }}
-          value={profileDraft.name || ''}
+          style={{ width: "100%" }}
+          value={profileDraft.name || ""}
           onChange={(e) => onProfileNameChange(e.target.value)}
-          placeholder={selectedProfileId ? "e.g. Summer outfit, Battle armor…" : "Name for new profile"}
+          placeholder={
+            selectedProfileId ? "e.g. Summer outfit, Battle armor…" : "Name for new profile"
+          }
           maxLength={120}
           disabled={!selectedCharacterId}
         />
       </label>
 
       {isProfileLoading ? (
-        <p style={{ fontSize: 12, color: 'var(--skr-text-tertiary)' }}>Loading profile...</p>
+        <p style={{ fontSize: 12, color: "var(--skr-text-tertiary)" }}>Loading profile...</p>
       ) : (
         <>
-          {renderModalityEditor({ modality: "image", label: "Image Modality", modelOptions: imageModelOptions })}
-          {renderModalityEditor({ modality: "video", label: "Video Modality", modelOptions: videoModelOptions })}
+          {renderModalityEditor({
+            modality: "image",
+            label: "Image Modality",
+            modelOptions: imageModelOptions,
+          })}
+          {renderModalityEditor({
+            modality: "video",
+            label: "Video Modality",
+            modelOptions: videoModelOptions,
+          })}
         </>
       )}
 
@@ -222,7 +277,7 @@ export default function LoraProfileEditor({
           onClick={onSaveProfile}
           disabled={!selectedCharacterId || isSaving}
         >
-          {isSaving ? "Saving..." : (selectedProfileId ? "Save Profile" : "Create Profile")}
+          {isSaving ? "Saving..." : selectedProfileId ? "Save Profile" : "Create Profile"}
         </button>
         <button
           type="button"

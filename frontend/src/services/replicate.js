@@ -1,11 +1,7 @@
 import { buildApiUrl, buildUrlWithQuery, postJson, fetchJson } from "./apiClient";
 
 export const generateReplicateImage = (baseUrl, payload) =>
-  postJson(
-    buildApiUrl(baseUrl, "/replicate/image/generate"),
-    payload,
-    "Failed to generate image."
-  );
+  postJson(buildApiUrl(baseUrl, "/replicate/image/generate"), payload, "Failed to generate image.");
 
 export const generateReplicateVideo = (baseUrl, payload) =>
   postJson(

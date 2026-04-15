@@ -1,4 +1,11 @@
-import { buildApiUrl, buildUrlWithQuery, fetchJson, postJson, putJson, deleteJson } from "./apiClient";
+import {
+  buildApiUrl,
+  buildUrlWithQuery,
+  fetchJson,
+  postJson,
+  putJson,
+  deleteJson,
+} from "./apiClient";
 
 export const fetchOperationalDashboard = async (apiBaseUrl) => {
   const url = buildApiUrl(apiBaseUrl, "/ops/dashboard");
@@ -100,13 +107,19 @@ export const clearCompanionMemoryAdmin = async (apiBaseUrl, { userId, modelId })
   return deleteJson(url, "Failed to clear companion memory.");
 };
 
-export const fetchDirectorUsage = async (apiBaseUrl, { window: w = '24h' } = {}) => {
+export const fetchDirectorUsage = async (apiBaseUrl, { window: w = "24h" } = {}) => {
   const url = buildUrlWithQuery(apiBaseUrl, "/ops/director/usage", { window: w });
   return fetchJson(url, {}, "Failed to load usage data.");
 };
 
-export const listSharedImagesAdmin = async (apiBaseUrl, { limit = 120, continuationToken } = {}) => {
-  const url = buildUrlWithQuery(apiBaseUrl, "/ops/director/media/shared/images", { limit, continuationToken });
+export const listSharedImagesAdmin = async (
+  apiBaseUrl,
+  { limit = 120, continuationToken } = {}
+) => {
+  const url = buildUrlWithQuery(apiBaseUrl, "/ops/director/media/shared/images", {
+    limit,
+    continuationToken,
+  });
   return fetchJson(url, {}, "Failed to list shared images.");
 };
 
@@ -115,8 +128,14 @@ export const deleteSharedImageAdmin = async (apiBaseUrl, { key }) => {
   return postJson(url, { key }, "Failed to delete shared image.");
 };
 
-export const listSharedVideosAdmin = async (apiBaseUrl, { limit = 120, continuationToken } = {}) => {
-  const url = buildUrlWithQuery(apiBaseUrl, "/ops/director/media/shared/videos", { limit, continuationToken });
+export const listSharedVideosAdmin = async (
+  apiBaseUrl,
+  { limit = 120, continuationToken } = {}
+) => {
+  const url = buildUrlWithQuery(apiBaseUrl, "/ops/director/media/shared/videos", {
+    limit,
+    continuationToken,
+  });
   return fetchJson(url, {}, "Failed to list shared videos.");
 };
 

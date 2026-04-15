@@ -187,8 +187,8 @@ const styles = {
     opacity: 0.8,
   },
   promptInput: {
-    background: "rgba(13, 11, 20, 0.6)",
-    border: "1px solid rgba(192, 132, 252, 0.2)",
+    background: "var(--skr-comp-input-bg)",
+    border: "1px solid var(--skr-comp-input-border)",
     borderRadius: 6,
     padding: "5px 8px",
     color: "var(--skr-text)",

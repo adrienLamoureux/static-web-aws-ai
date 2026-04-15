@@ -69,11 +69,7 @@ const normalizeStatus = (status = "") => {
   if (normalized === "queued" || normalized === "pending") {
     return "queued";
   }
-  if (
-    normalized === "succeeded" ||
-    normalized === "completed" ||
-    normalized === "done"
-  ) {
+  if (normalized === "succeeded" || normalized === "completed" || normalized === "done") {
     return "completed";
   }
   if (
@@ -97,7 +93,10 @@ const inferProviderFromKey = (key = "") => {
 
 const prettyKeyName = (key = "", fallback = "Render") => {
   const raw = key.split("/").pop() || "";
-  const clean = raw.replace(/\.[^/.]+$/, "").replace(/[-_]+/g, " ").trim();
+  const clean = raw
+    .replace(/\.[^/.]+$/, "")
+    .replace(/[-_]+/g, " ")
+    .trim();
   return clean || fallback;
 };
 
@@ -124,21 +123,21 @@ const toTitleCaseFromKey = (value = "") =>
     })
     .join(" ");
 
-const resolveImageModelLabel = (key = "") =>
-  IMAGE_MODEL_LABELS[key] || toTitleCaseFromKey(key);
+const resolveImageModelLabel = (key = "") => IMAGE_MODEL_LABELS[key] || toTitleCaseFromKey(key);
 
-const resolveVideoModelLabel = (key = "") =>
-  VIDEO_MODEL_LABELS[key] || toTitleCaseFromKey(key);
+const resolveVideoModelLabel = (key = "") => VIDEO_MODEL_LABELS[key] || toTitleCaseFromKey(key);
 
 const resolveThemeLabel = (value = "") => {
-  const normalized = String(value || "").trim().toLowerCase();
-  return normalized
-    ? `${normalized.slice(0, 1).toUpperCase()}${normalized.slice(1)}`
-    : "";
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  return normalized ? `${normalized.slice(0, 1).toUpperCase()}${normalized.slice(1)}` : "";
 };
 
 const normalizeAppTheme = (value = "", fallback = DEFAULT_APP_THEME) => {
-  const normalized = String(value || "").trim().toLowerCase();
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
   return APP_THEME_OPTIONS.includes(normalized) ? normalized : fallback;
 };
 
@@ -151,9 +150,7 @@ const mapJobItem = (item = {}) => {
   const statusMeta = STATUS_META[status];
   const progressPct = clampPercent(item.progressPct) ?? statusMeta.progress;
   const entityType =
-    item.entityType === "video" || item.entityType === "image"
-      ? item.entityType
-      : "image";
+    item.entityType === "video" || item.entityType === "image" ? item.entityType : "image";
   const provider = item.provider || inferProviderFromKey(item.inputKey || item.key || "");
   const title =
     item.title ||
@@ -162,7 +159,10 @@ const mapJobItem = (item = {}) => {
       item.inputKey || item.outputKey || item.key || "",
       entityType === "video" ? "Video render" : "Image render"
     );
-  const detail = [provider ? provider.toUpperCase() : null, entityType === "video" ? "Video" : "Image"]
+  const detail = [
+    provider ? provider.toUpperCase() : null,
+    entityType === "video" ? "Video" : "Image",
+  ]
     .filter(Boolean)
     .join(" • ");
 
@@ -186,9 +186,7 @@ const mapJobItem = (item = {}) => {
     provider,
     entityType,
     priority: String(item.priority || "normal"),
-    priorityRank: Number.isFinite(Number(item.priorityRank))
-      ? Number(item.priorityRank)
-      : null,
+    priorityRank: Number.isFinite(Number(item.priorityRank)) ? Number(item.priorityRank) : null,
     errorMessage: item.errorMessage || "",
   };
 };
@@ -258,10 +256,7 @@ const buildDashboardData = ({
 }) => {
   const normalizedJobs = (jobItems || []).map(mapJobItem).sort(sortByNewest);
   const fallbackQueue = buildFallbackQueue({ imageItems, videoItems });
-  const queue = (normalizedJobs.length ? normalizedJobs : fallbackQueue).slice(
-    0,
-    MAX_QUEUE_ITEMS
-  );
+  const queue = (normalizedJobs.length ? normalizedJobs : fallbackQueue).slice(0, MAX_QUEUE_ITEMS);
   const statusCounts = countStatuses(normalizedJobs);
   const queueDepth = statusCounts.queued + statusCounts.running;
 
@@ -271,9 +266,7 @@ const buildDashboardData = ({
     const isTerminal = item.status === "completed" || item.status === "failed";
     return isRecent && isTerminal;
   });
-  const recentFailedJobs = recentTerminalJobs.filter(
-    (item) => item.status === "failed"
-  ).length;
+  const recentFailedJobs = recentTerminalJobs.filter((item) => item.status === "failed").length;
   const errorRatePct =
     recentTerminalJobs.length > 0
       ? Math.round((recentFailedJobs / recentTerminalJobs.length) * 100)
@@ -289,8 +282,7 @@ const buildDashboardData = ({
     .filter((value) => Number.isFinite(value));
   const averageRenderSeconds = completedDurations.length
     ? Math.round(
-        completedDurations.reduce((sum, value) => sum + value, 0) /
-          completedDurations.length
+        completedDurations.reduce((sum, value) => sum + value, 0) / completedDurations.length
       )
     : null;
 
@@ -320,12 +312,8 @@ const buildDashboardData = ({
     {
       key: "avg-render",
       label: "Avg render",
-      value:
-        averageRenderSeconds === null ? "n/a" : `${averageRenderSeconds}s`,
-      hint:
-        averageRenderSeconds === null
-          ? "No completed jobs yet"
-          : "Based on completed jobs",
+      value: averageRenderSeconds === null ? "n/a" : `${averageRenderSeconds}s`,
+      hint: averageRenderSeconds === null ? "No completed jobs yet" : "Based on completed jobs",
       tone: "good",
     },
   ];
@@ -352,9 +340,7 @@ const buildDirectorOptions = ({
   const generationByModel = {};
   const imageModels = Object.keys(replicateModelConfig).map((modelKey) => {
     const modelConfig = replicateModelConfig[modelKey] || {};
-    const schedulers = Array.isArray(modelConfig.schedulers)
-      ? modelConfig.schedulers
-      : [];
+    const schedulers = Array.isArray(modelConfig.schedulers) ? modelConfig.schedulers : [];
     const sizes = Array.isArray(modelConfig.sizes)
       ? modelConfig.sizes.map((size) => ({
           width: Number(size.width),
@@ -392,9 +378,7 @@ const buildDirectorOptions = ({
       label: resolveImageModelLabel(modelKey),
       provider: "civitai",
       supportsLora: hasConfiguredLoraSupport(modelConfig),
-      estimatedUnitCostUsd: Number.isFinite(
-        Number(modelConfig.estimatedUnitCostUsd)
-      )
+      estimatedUnitCostUsd: Number.isFinite(Number(modelConfig.estimatedUnitCostUsd))
         ? Number(modelConfig.estimatedUnitCostUsd)
         : null,
     };

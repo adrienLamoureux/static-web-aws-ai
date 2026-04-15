@@ -8,8 +8,4 @@ export const createVideoReadyImage = (baseUrl, key) =>
   );
 
 export const selectGeneratedImage = (baseUrl, key) =>
-  postJson(
-    buildApiUrl(baseUrl, "/images/select"),
-    { key },
-    "Image selection failed."
-  );
+  postJson(buildApiUrl(baseUrl, "/images/select"), { key }, "Image selection failed.");

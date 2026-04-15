@@ -63,7 +63,10 @@ const parseIsoTimestamp = (value = "") => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
-const buildSceneRecommendationProfile = (normalizePromptFragment, { sceneItem = {}, sessionItem = {} }) => {
+const buildSceneRecommendationProfile = (
+  normalizePromptFragment,
+  { sceneItem = {}, sessionItem = {} }
+) => {
   const mood = normalizePromptFragment(sceneItem.musicMood || "").toLowerCase();
   const energy = normalizePromptFragment(sceneItem.musicEnergy || "").toLowerCase();
   const tags = parseMusicTags(normalizePromptFragment, sceneItem.musicTags);
@@ -104,8 +107,7 @@ const buildSceneRecommendationProfile = (normalizePromptFragment, { sceneItem = 
 
 const rankRecommendedTracks = (normalizePromptFragment, { trackItems = [], sceneProfile = {} }) => {
   const resolveMusicLibraryTrackId = (trackItem = {}) =>
-    trackItem.trackId ||
-    String(trackItem.sk || "").replace(MUSIC_LIBRARY_SK_PREFIX, "");
+    trackItem.trackId || String(trackItem.sk || "").replace(MUSIC_LIBRARY_SK_PREFIX, "");
 
   const buildTrackRecommendationCandidate = ({ trackItem = {}, sceneProfile: profile = {} }) => {
     const track = normalizeTrackForSearch(normalizePromptFragment, trackItem);
@@ -115,15 +117,10 @@ const rankRecommendedTracks = (normalizePromptFragment, { trackItems = [], scene
     const trackTerms = tokenizeSearchText(track.searchText || "");
     const sharedTermCount = countTokenOverlap(sceneTerms, trackTerms);
     const sharedTagCount = countTagOverlap(sceneTags, track.tags || []);
-    const termScore =
-      sceneTerms.length > 0 ? sharedTermCount / sceneTerms.length : 0;
+    const termScore = sceneTerms.length > 0 ? sharedTermCount / sceneTerms.length : 0;
     const tagScore = sceneTags.length > 0 ? sharedTagCount / sceneTags.length : 0;
-    const moodScore =
-      profile.mood && track.mood && profile.mood === track.mood ? 1 : 0;
-    const energyScore =
-      profile.energy && track.energy && profile.energy === track.energy
-        ? 1
-        : 0;
+    const moodScore = profile.mood && track.mood && profile.mood === track.mood ? 1 : 0;
+    const energyScore = profile.energy && track.energy && profile.energy === track.energy ? 1 : 0;
     const score = clampRecommendationScore(
       termScore * STORY_MUSIC_RECOMMENDATION_WEIGHTS.tokenCoverage +
         tagScore * STORY_MUSIC_RECOMMENDATION_WEIGHTS.tagCoverage +
@@ -131,13 +128,8 @@ const rankRecommendedTracks = (normalizePromptFragment, { trackItems = [], scene
         energyScore * STORY_MUSIC_RECOMMENDATION_WEIGHTS.energyMatch
     );
     const metadataRichness =
-      [
-        track.title,
-        track.description,
-        track.prompt,
-        track.mood,
-        track.energy,
-      ].filter(Boolean).length + (Array.isArray(track.tags) ? track.tags.length : 0);
+      [track.title, track.description, track.prompt, track.mood, track.energy].filter(Boolean)
+        .length + (Array.isArray(track.tags) ? track.tags.length : 0);
 
     return {
       trackId,

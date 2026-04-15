@@ -29,8 +29,7 @@ function SolarisImageWall({
   showCta,
   onCta,
 }) {
-  const resolvedTotal =
-    typeof totalCount === "number" ? totalCount : images.length;
+  const resolvedTotal = typeof totalCount === "number" ? totalCount : images.length;
   const wallRef = useRef(null);
   const animationFrameRef = useRef(0);
   const lastFrameTimeRef = useRef(0);
@@ -235,9 +234,7 @@ function SolarisImageWall({
                     onToggleFavorite?.(image);
                   }}
                   aria-label={
-                    image.favorite
-                      ? "Remove image from favorites"
-                      : "Add image to favorites"
+                    image.favorite ? "Remove image from favorites" : "Add image to favorites"
                   }
                 >
                   ♥
@@ -295,14 +292,21 @@ function SolarisImageWall({
             </div>
           ))
         ) : (
-          <div style={{ padding: '20px', color: 'var(--skr-text-tertiary)', fontSize: 13 }}>
-            {status === "loading"
-              ? "Loading images..."
-              : "No images found yet."}
+          <div style={{ padding: "20px", color: "var(--skr-text-tertiary)", fontSize: 13 }}>
+            {status === "loading" ? "Loading images..." : "No images found yet."}
           </div>
         )}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0', fontSize: 11, color: 'var(--skr-text-tertiary)' }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "4px 0",
+          fontSize: 11,
+          color: "var(--skr-text-tertiary)",
+        }}
+      >
         <span>
           Showing {images.length} of {resolvedTotal}
         </span>
@@ -311,7 +315,7 @@ function SolarisImageWall({
             type="button"
             className="skr-btn-secondary"
             onClick={onLoadMore}
-            style={{ fontSize: 11, padding: '4px 10px' }}
+            style={{ fontSize: 11, padding: "4px 10px" }}
           >
             Load 10 more
           </button>

@@ -50,9 +50,7 @@ test("hasLoraInjectionSupport handles representative injection shapes", () => {
 
 test("extractCivitaiStatusCodeFromError parses client errors", () => {
   assert.equal(
-    extractCivitaiStatusCodeFromError(
-      "CivitAI request failed (400): {\"error\":\"invalid\"}"
-    ),
+    extractCivitaiStatusCodeFromError('CivitAI request failed (400): {"error":"invalid"}'),
     400
   );
   assert.equal(extractCivitaiStatusCodeFromError("random error"), null);
@@ -92,10 +90,10 @@ test("collectCatalogBaseModels keeps insertion order and deduplicates case-insen
 });
 
 test("normalizeModelIdList keeps numeric IDs and removes invalid values", () => {
-  assert.deepEqual(
-    normalizeModelIdList(["372057", " 372057 ", "abc", "", "415616"]),
-    ["372057", "415616"]
-  );
+  assert.deepEqual(normalizeModelIdList(["372057", " 372057 ", "abc", "", "415616"]), [
+    "372057",
+    "415616",
+  ]);
   assert.deepEqual(normalizeModelIdList("372057"), ["372057"]);
   assert.deepEqual(normalizeModelIdList(""), []);
 });
@@ -116,8 +114,7 @@ test("resolveRequestedModelIds supports ids/modelIds/modelUrl aliases", () => {
       modelIds: ["372057", "372057"],
       ids: "415616",
       modelId: "999999",
-      modelUrl:
-        "https://civitai.com/models/372057/frieren-frieren-beyond-journeys-end-xl-lora",
+      modelUrl: "https://civitai.com/models/372057/frieren-frieren-beyond-journeys-end-xl-lora",
       query: "https://civitai.com/models/111111/demo",
     }),
     ["372057", "415616", "999999", "111111"]
@@ -227,10 +224,7 @@ test("searchLoras falls back to broad query scan when baseModel filter returns z
   assert.equal(response.items.length, 1);
   assert.equal(response.items[0]?.modelId, "372057");
   assert.equal(response.items[0]?.baseModel, "SDXL 1.0");
-  assert.equal(
-    response.metadata?.fallbackSearch?.strategy,
-    "broad-query-post-filter-base-model"
-  );
+  assert.equal(response.metadata?.fallbackSearch?.strategy, "broad-query-post-filter-base-model");
   assert.ok(requestedUrls.length >= 2);
   assert.ok(requestedUrls.some((url) => url.includes("baseModels=SDXL+1.0")));
   assert.ok(requestedUrls.some((url) => url.includes("query=frieren")));
@@ -248,9 +242,7 @@ test("buildDirectorOptions exposes supportsLora for image/video models", () => {
   const civitaiSupport = new Map(
     options.generation.civitaiModels.map((item) => [item.key, item.supportsLora])
   );
-  const videoSupport = new Map(
-    options.video.models.map((item) => [item.key, item.supportsLora])
-  );
+  const videoSupport = new Map(options.video.models.map((item) => [item.key, item.supportsLora]));
 
   assert.equal(imageSupport.get("animagine"), false);
   assert.equal(civitaiSupport.get("civitai-sd15-anime"), true);

@@ -1,8 +1,5 @@
 const { Router } = require("express");
-const {
-  parseOptionalNumber,
-  buildSessionResponse,
-} = require("./session-helpers");
+const { parseOptionalNumber, buildSessionResponse } = require("./session-helpers");
 
 module.exports = function registerStorySessionItemRoutes(deps) {
   const {
@@ -23,12 +20,7 @@ module.exports = function registerStorySessionItemRoutes(deps) {
     deleteS3ObjectsByPrefix,
   } = deps;
 
-  const deleteSessionCascade = async ({
-    userId,
-    sessionId,
-    mediaTableName,
-    mediaBucket,
-  }) => {
+  const deleteSessionCascade = async ({ userId, sessionId, mediaTableName, mediaBucket }) => {
     const messages = await queryBySkPrefix({
       pk: buildMediaPk(userId),
       skPrefix: storyMessagePrefix(sessionId),
@@ -85,12 +77,13 @@ module.exports = function registerStorySessionItemRoutes(deps) {
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
     if (!sessionId) return res.status(400).json({ message: "sessionId is required" });
 
-    const loraProfileId = req.body?.loraProfileId !== undefined
-      ? (req.body.loraProfileId || null)
-      : undefined;
+    const loraProfileId =
+      req.body?.loraProfileId !== undefined ? req.body.loraProfileId || null : undefined;
 
     if (loraProfileId === undefined) {
-      return res.status(400).json({ message: "loraProfileId is required in body (use null to clear)" });
+      return res
+        .status(400)
+        .json({ message: "loraProfileId is required in body (use null to clear)" });
     }
 
     try {
@@ -103,15 +96,15 @@ module.exports = function registerStorySessionItemRoutes(deps) {
       }
       const now = new Date().toISOString();
       const updated = { ...existing, loraProfileId, updatedAt: now };
-      await dynamoClient.send(
-        new PutCommand({ TableName: mediaTable, Item: updated })
-      );
+      await dynamoClient.send(new PutCommand({ TableName: mediaTable, Item: updated }));
       return res.json({
         session: buildSessionResponse(updated),
       });
     } catch (error) {
       console.error("Session lora patch error:", error?.message);
-      return res.status(500).json({ message: "Failed to update session LoRA", error: error?.message });
+      return res
+        .status(500)
+        .json({ message: "Failed to update session LoRA", error: error?.message });
     }
   });
 

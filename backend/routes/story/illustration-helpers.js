@@ -12,10 +12,7 @@ const parseIntegerEnv = (value, fallback, minimum = 0) => {
 const DEFAULT_STORY_ILLUSTRATION_MODEL = "wai-nsfw-illustrious-v11";
 const DEFAULT_STORY_ILLUSTRATION_WIDTH = 768;
 const DEFAULT_STORY_ILLUSTRATION_HEIGHT = 1024;
-const STORY_ILLUSTRATION_MODEL_KEYS = new Set([
-  "animagine",
-  "wai-nsfw-illustrious-v11",
-]);
+const STORY_ILLUSTRATION_MODEL_KEYS = new Set(["animagine", "wai-nsfw-illustrious-v11"]);
 const OPENING_SCENE_ID_PREFIX = "opening-";
 const OPENING_SCENE_TITLE = "opening scene";
 const DEFAULT_STORY_OPENING_SCENE_MAX_ENVIRONMENT_FRAGMENTS = 3;
@@ -54,44 +51,47 @@ const resolveStoryIllustrationSize = (modelConfig = {}) => {
       width: Number(size?.width),
       height: Number(size?.height),
     }))
-    .filter(
-      (size) => Number.isFinite(size.width) && Number.isFinite(size.height)
-    );
+    .filter((size) => Number.isFinite(size.width) && Number.isFinite(size.height));
 
   if (normalizedSizes.length === 0) return null;
 
   const exactMatch = normalizedSizes.find(
-    (size) =>
-      size.width === STORY_ILLUSTRATION_WIDTH &&
-      size.height === STORY_ILLUSTRATION_HEIGHT
+    (size) => size.width === STORY_ILLUSTRATION_WIDTH && size.height === STORY_ILLUSTRATION_HEIGHT
   );
   if (exactMatch) return exactMatch;
 
-  const portraitMatch = normalizedSizes.find(
-    (size) => size.height > size.width
-  );
+  const portraitMatch = normalizedSizes.find((size) => size.height > size.width);
   if (portraitMatch) return portraitMatch;
 
   return normalizedSizes[0];
 };
 
 const isOpeningSceneItem = (normalizePromptFragment, sceneItem = {}) => {
-  const normalizedSceneId = normalizePromptFragment(sceneItem.sceneId || "")
-    .toLowerCase();
-  const normalizedTitle = normalizePromptFragment(sceneItem.title || "")
-    .toLowerCase();
+  const normalizedSceneId = normalizePromptFragment(sceneItem.sceneId || "").toLowerCase();
+  const normalizedTitle = normalizePromptFragment(sceneItem.title || "").toLowerCase();
   return (
-    normalizedSceneId.startsWith(OPENING_SCENE_ID_PREFIX) ||
-    normalizedTitle === OPENING_SCENE_TITLE
+    normalizedSceneId.startsWith(OPENING_SCENE_ID_PREFIX) || normalizedTitle === OPENING_SCENE_TITLE
   );
 };
 
-const signSceneVideoUrl = async (s3Client, GetObjectCommand, getSignedUrl, bucket, sceneItem = {}) => {
+const signSceneVideoUrl = async (
+  s3Client,
+  GetObjectCommand,
+  getSignedUrl,
+  bucket,
+  sceneItem = {}
+) => {
   if (!sceneItem.videoKey) return "";
   return signObjectUrl(s3Client, GetObjectCommand, getSignedUrl, bucket, sceneItem.videoKey);
 };
 
-const signSceneMusicUrl = async (s3Client, GetObjectCommand, getSignedUrl, bucket, sceneItem = {}) => {
+const signSceneMusicUrl = async (
+  s3Client,
+  GetObjectCommand,
+  getSignedUrl,
+  bucket,
+  sceneItem = {}
+) => {
   if (!sceneItem.musicKey) return "";
   return signObjectUrl(s3Client, GetObjectCommand, getSignedUrl, bucket, sceneItem.musicKey);
 };

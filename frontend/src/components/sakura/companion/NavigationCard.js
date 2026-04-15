@@ -6,11 +6,11 @@
 import { useState } from "react";
 
 const PAGE_NAMES = {
-  "/":          "Realm (Home)",
-  "/atelier":   "Atelier",
+  "/": "Realm (Home)",
+  "/atelier": "Atelier",
   "/chronicle": "Chronicle",
-  "/gallery":   "Gallery",
-  "/sanctum":   "Sanctum",
+  "/gallery": "Gallery",
+  "/sanctum": "Sanctum",
 };
 
 const VALID_PATHS = new Set(Object.keys(PAGE_NAMES));

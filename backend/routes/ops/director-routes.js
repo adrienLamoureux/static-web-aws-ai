@@ -428,9 +428,7 @@ module.exports = function registerDirectorRoutes(deps) {
       return res.status(500).json({ message: "MEDIA_TABLE is not set" });
     }
     try {
-      const patchSoundDefaults = req.body?.soundDefaults
-        ? { sound: req.body.soundDefaults }
-        : {};
+      const patchSoundDefaults = req.body?.soundDefaults ? { sound: req.body.soundDefaults } : {};
       const config = Object.keys(patchSoundDefaults).length
         ? await writeDirectorConfig(userId, patchSoundDefaults)
         : (await readDirectorConfig(userId)).config;

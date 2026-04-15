@@ -42,4 +42,3 @@ export const resolveApiBaseUrl = ({
 
   return normalizedRuntimeApiBaseUrl || normalizedEnvApiBaseUrl;
 };
-

@@ -22,7 +22,7 @@ const extractJsonStringField = (text = "", field = "") => {
   if (colonIndex === -1) return "";
   let start = colonIndex + 1;
   while (start < text.length && /\s/.test(text[start])) start += 1;
-  if (text[start] !== "\"") return "";
+  if (text[start] !== '"') return "";
   let i = start + 1;
   let escaped = false;
   for (; i < text.length; i += 1) {
@@ -35,7 +35,7 @@ const extractJsonStringField = (text = "", field = "") => {
       escaped = true;
       continue;
     }
-    if (ch === "\"") {
+    if (ch === '"') {
       const raw = text.slice(start, i + 1);
       try {
         return JSON.parse(raw);
@@ -175,9 +175,7 @@ const compactScenePayload = ({
     ...splitPromptFragments(sceneAction || ""),
     ...promptContext.action,
   ]);
-  const actionSet = new Set(
-    mergedAction.map((fragment) => fragment.toLowerCase())
-  );
+  const actionSet = new Set(mergedAction.map((fragment) => fragment.toLowerCase()));
   const mergedEnvironment = rawMergedEnvironment.filter(
     (fragment) => !actionSet.has(fragment.toLowerCase())
   );
@@ -202,11 +200,7 @@ const clipText = (value = "", max = 1200) => {
 
 const MAX_REPLICATE_PROMPT_TOKENS = 75;
 
-const estimateTokenCount = (value = "") =>
-  value
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean).length;
+const estimateTokenCount = (value = "") => value.trim().split(/\s+/).filter(Boolean).length;
 
 const clampPromptTokens = (value = "", maxTokens = MAX_REPLICATE_PROMPT_TOKENS) => {
   if (!value) return "";
@@ -230,7 +224,6 @@ const clampPromptTokens = (value = "", maxTokens = MAX_REPLICATE_PROMPT_TOKENS) 
   const fallbackTokens = parts[0]?.split(/\s+/).filter(Boolean) || [];
   return fallbackTokens.slice(0, maxTokens).join(" ");
 };
-
 
 module.exports = {
   safeJsonParse,

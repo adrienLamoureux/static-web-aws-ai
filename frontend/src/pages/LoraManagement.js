@@ -7,13 +7,11 @@ import {
   getLoraProfile,
   listLoraCatalog,
   listLoraProfilesForCharacter,
-  createLoraProfile,
-  saveLoraProfile,
-  deleteLoraProfile,
   syncLoraCatalogFromCivitai,
 } from "../services/lora";
 import LoraCatalogView from "./lora/LoraCatalogView";
 import LoraProfileEditor from "./lora/LoraProfileEditor";
+import useLoraProfileActions from "./lora/useLoraProfileActions";
 import {
   LORA_MODALITY_IMAGE,
   LORA_MODALITY_VIDEO,
@@ -33,7 +31,6 @@ import {
   normalizeProfileDraft,
   normalizeCatalogItems,
   normalizeCharacterOptions,
-  buildProfileSavePayload,
   toNumberLabel,
   isProfileNotFoundError,
 } from "./lora/loraUtils";
@@ -86,7 +83,9 @@ export default function LoraManagement() {
         });
         const items = normalizeCatalogItems(response?.items || []);
         setCatalogItems(items);
-        setCatalogTotal(Number.isFinite(Number(response?.total)) ? Number(response.total) : items.length);
+        setCatalogTotal(
+          Number.isFinite(Number(response?.total)) ? Number(response.total) : items.length
+        );
       } catch (catalogError) {
         setError(catalogError?.message || "Failed to load LoRA catalog.");
       } finally {
@@ -102,10 +101,7 @@ export default function LoraManagement() {
     setIsBootstrapping(true);
     setError("");
 
-    Promise.all([
-      listCharacters(resolvedApiBaseUrl),
-      fetchDirectorConfig(resolvedApiBaseUrl),
-    ])
+    Promise.all([listCharacters(resolvedApiBaseUrl), fetchDirectorConfig(resolvedApiBaseUrl)])
       .then(([characterPayload, directorConfigPayload]) => {
         if (isCancelled) return;
         const normalizedCharacters = normalizeCharacterOptions(characterPayload?.characters || []);
@@ -113,19 +109,26 @@ export default function LoraManagement() {
 
         const imageModels = Array.isArray(directorConfigPayload?.options?.generation?.imageModels)
           ? directorConfigPayload.options.generation.imageModels
-              .map((item) => ({ key: normalizeString(item?.key), label: normalizeString(item?.label || item?.key) }))
+              .map((item) => ({
+                key: normalizeString(item?.key),
+                label: normalizeString(item?.label || item?.key),
+              }))
               .filter((item) => item.key)
           : [];
         const videoModels = Array.isArray(directorConfigPayload?.options?.video?.models)
           ? directorConfigPayload.options.video.models
-              .map((item) => ({ key: normalizeString(item?.key), label: normalizeString(item?.label || item?.key) }))
+              .map((item) => ({
+                key: normalizeString(item?.key),
+                label: normalizeString(item?.label || item?.key),
+              }))
               .filter((item) => item.key)
           : [];
         setImageModelOptions(imageModels);
         setVideoModelOptions(videoModels);
 
         setSelectedCharacterId((previous) => {
-          if (previous && normalizedCharacters.some((item) => item.id === previous)) return previous;
+          if (previous && normalizedCharacters.some((item) => item.id === previous))
+            return previous;
           return normalizeString(normalizedCharacters[0]?.id);
         });
       })
@@ -137,7 +140,9 @@ export default function LoraManagement() {
         if (!isCancelled) setIsBootstrapping(false);
       });
 
-    return () => { isCancelled = true; };
+    return () => {
+      isCancelled = true;
+    };
   }, [resolvedApiBaseUrl]);
 
   useEffect(() => {
@@ -161,11 +166,16 @@ export default function LoraManagement() {
         const response = await getLoraProfile(resolvedApiBaseUrl, resolvedProfileId);
         const profile = response?.profile || {};
         const charId = normalizeString(profile.characterId) || selectedCharacterId;
-        const fallbackName = normalizeString(profile.name || profile.displayName) || characterNameById.get(charId) || '';
-        setProfileDraft(normalizeProfileDraft({ profile, characterId: charId, name: fallbackName }));
+        const fallbackName =
+          normalizeString(profile.name || profile.displayName) ||
+          characterNameById.get(charId) ||
+          "";
+        setProfileDraft(
+          normalizeProfileDraft({ profile, characterId: charId, name: fallbackName })
+        );
       } catch (profileError) {
         if (isProfileNotFoundError(profileError?.message)) {
-          setProfileDraft(createEmptyProfileDraft({ characterId: selectedCharacterId, name: '' }));
+          setProfileDraft(createEmptyProfileDraft({ characterId: selectedCharacterId, name: "" }));
         } else {
           setError(profileError?.message || "Failed to load LoRA profile.");
         }
@@ -186,17 +196,24 @@ export default function LoraManagement() {
     setIsProfileListLoading(true);
     listLoraProfilesForCharacter(resolvedApiBaseUrl, selectedCharacterId)
       .then((response) => {
-        const profiles = (response?.items || response?.profiles || []).map((p) => ({
-          id: normalizeString(p.id || p.characterId),
-          name: normalizeString(p.name || p.displayName || p.id || p.characterId),
-        })).filter((p) => p.id);
+        const profiles = (response?.items || response?.profiles || [])
+          .map((p) => ({
+            id: normalizeString(p.id || p.characterId),
+            name: normalizeString(p.name || p.displayName || p.id || p.characterId),
+          }))
+          .filter((p) => p.id);
         setProfileOptions(profiles);
         const firstId = profiles[0]?.id || "";
         setSelectedProfileId(firstId);
         if (firstId) {
           loadProfile(firstId);
         } else {
-          setProfileDraft(createEmptyProfileDraft({ characterId: selectedCharacterId, name: characterNameById.get(selectedCharacterId) }));
+          setProfileDraft(
+            createEmptyProfileDraft({
+              characterId: selectedCharacterId,
+              name: characterNameById.get(selectedCharacterId),
+            })
+          );
         }
       })
       .catch(() => {
@@ -205,17 +222,20 @@ export default function LoraManagement() {
         setProfileDraft(createEmptyProfileDraft({ characterId: selectedCharacterId }));
       })
       .finally(() => setIsProfileListLoading(false));
-  // eslint-disable-next-line
+    // eslint-disable-next-line
   }, [resolvedApiBaseUrl, selectedCharacterId, characterNameById]); // intentionally excludes loadProfile to avoid loop
 
-  const handleSelectProfile = useCallback((profileId) => {
-    setSelectedProfileId(profileId);
-    if (!profileId) {
-      setProfileDraft(createEmptyProfileDraft({ characterId: selectedCharacterId, name: '' }));
-    } else {
-      loadProfile(profileId);
-    }
-  }, [loadProfile, selectedCharacterId]);
+  const handleSelectProfile = useCallback(
+    (profileId) => {
+      setSelectedProfileId(profileId);
+      if (!profileId) {
+        setProfileDraft(createEmptyProfileDraft({ characterId: selectedCharacterId, name: "" }));
+      } else {
+        loadProfile(profileId);
+      }
+    },
+    [loadProfile, selectedCharacterId]
+  );
 
   const setModalityValue = useCallback((modality, patch) => {
     setProfileDraft((previous) => ({
@@ -229,8 +249,15 @@ export default function LoraManagement() {
     if (!normalizedItem.catalogId) return;
     setProfileDraft((previous) => {
       const modalityDraft = previous?.[modality] || emptyModalityDraft();
-      if (Array.isArray(modalityDraft.loras) && modalityDraft.loras.some((entry) => entry.catalogId === normalizedItem.catalogId)) return previous;
-      return { ...previous, [modality]: { ...modalityDraft, loras: [...(modalityDraft.loras || []), normalizedItem] } };
+      if (
+        Array.isArray(modalityDraft.loras) &&
+        modalityDraft.loras.some((entry) => entry.catalogId === normalizedItem.catalogId)
+      )
+        return previous;
+      return {
+        ...previous,
+        [modality]: { ...modalityDraft, loras: [...(modalityDraft.loras || []), normalizedItem] },
+      };
     });
   }, []);
 
@@ -239,7 +266,15 @@ export default function LoraManagement() {
     if (!resolvedCatalogId) return;
     setProfileDraft((previous) => {
       const modalityDraft = previous?.[modality] || emptyModalityDraft();
-      return { ...previous, [modality]: { ...modalityDraft, loras: (modalityDraft.loras || []).filter((entry) => entry.catalogId !== resolvedCatalogId) } };
+      return {
+        ...previous,
+        [modality]: {
+          ...modalityDraft,
+          loras: (modalityDraft.loras || []).filter(
+            (entry) => entry.catalogId !== resolvedCatalogId
+          ),
+        },
+      };
     });
   }, []);
 
@@ -248,15 +283,35 @@ export default function LoraManagement() {
     if (!resolvedCatalogId) return;
     setProfileDraft((previous) => {
       const modalityDraft = previous?.[modality] || emptyModalityDraft();
-      return { ...previous, [modality]: { ...modalityDraft, loras: (modalityDraft.loras || []).map((entry) => entry.catalogId === resolvedCatalogId ? { ...entry, strength: clampStrength(value) } : entry) } };
+      return {
+        ...previous,
+        [modality]: {
+          ...modalityDraft,
+          loras: (modalityDraft.loras || []).map((entry) =>
+            entry.catalogId === resolvedCatalogId
+              ? { ...entry, strength: clampStrength(value) }
+              : entry
+          ),
+        },
+      };
     });
   }, []);
 
   const handleSync = async (event) => {
     event.preventDefault();
-    if (!resolvedApiBaseUrl) { setError("API base URL is missing."); return; }
-    const resolvedLimit = clampInteger(syncLimit, SYNC_DEFAULT_LIMIT, SYNC_MIN_LIMIT, SYNC_MAX_LIMIT);
-    setError(""); setNotice(""); setIsSyncing(true);
+    if (!resolvedApiBaseUrl) {
+      setError("API base URL is missing.");
+      return;
+    }
+    const resolvedLimit = clampInteger(
+      syncLimit,
+      SYNC_DEFAULT_LIMIT,
+      SYNC_MIN_LIMIT,
+      SYNC_MAX_LIMIT
+    );
+    setError("");
+    setNotice("");
+    setIsSyncing(true);
     try {
       const response = await syncLoraCatalogFromCivitai(resolvedApiBaseUrl, {
         query: normalizeString(syncQuery) || undefined,
@@ -265,7 +320,9 @@ export default function LoraManagement() {
         nsfw: syncNsfw,
       });
       setSyncLimit(String(resolvedLimit));
-      setNotice(`Synced ${toNumberLabel(response?.syncedCount || 0)} LoRA catalog item(s) from CivitAI.`);
+      setNotice(
+        `Synced ${toNumberLabel(response?.syncedCount || 0)} LoRA catalog item(s) from CivitAI.`
+      );
       await loadCatalog({ query: catalogQuery, limit: catalogLimit });
     } catch (syncError) {
       setError(syncError?.message || "Failed to sync LoRA catalog.");
@@ -274,65 +331,19 @@ export default function LoraManagement() {
     }
   };
 
-  const handleSaveProfile = async () => {
-    if (!resolvedApiBaseUrl) { setError("API base URL is missing."); return; }
-    if (!selectedCharacterId) { setError("Select a character first."); return; }
-    if (!profileDraft?.name?.trim()) { setError("Profile name is required."); return; }
-    setError(""); setNotice(""); setIsSaving(true);
-    try {
-      const payload = buildProfileSavePayload(profileDraft);
-      let savedProfileId = selectedProfileId;
-      let response;
-      if (!selectedProfileId) {
-        response = await createLoraProfile(resolvedApiBaseUrl, { characterId: selectedCharacterId, ...payload });
-        savedProfileId = response?.profile?.id || response?.id || '';
-        setNotice("LoRA profile created.");
-      } else {
-        response = await saveLoraProfile(resolvedApiBaseUrl, selectedProfileId, { characterId: selectedCharacterId, ...payload });
-        setNotice("LoRA profile saved.");
-      }
-      const savedProfile = response?.profile || {};
-      setProfileDraft(normalizeProfileDraft({ profile: savedProfile, characterId: selectedCharacterId, name: normalizeString(savedProfile.name || payload.name) }));
-      const listResponse = await listLoraProfilesForCharacter(resolvedApiBaseUrl, selectedCharacterId);
-      const profiles = (listResponse?.items || listResponse?.profiles || []).map((p) => ({
-        id: normalizeString(p.id || p.characterId),
-        name: normalizeString(p.name || p.displayName || p.id || p.characterId),
-      })).filter((p) => p.id);
-      setProfileOptions(profiles);
-      if (savedProfileId) setSelectedProfileId(savedProfileId);
-    } catch (saveError) {
-      setError(saveError?.message || "Failed to save LoRA profile.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDeleteProfile = async () => {
-    if (!selectedProfileId) return;
-    if (!window.confirm(`Delete LoRA profile "${profileDraft?.name || selectedProfileId}"?`)) return;
-    setError(""); setNotice(""); setIsSaving(true);
-    try {
-      await deleteLoraProfile(resolvedApiBaseUrl, selectedProfileId);
-      const listResponse = await listLoraProfilesForCharacter(resolvedApiBaseUrl, selectedCharacterId);
-      const profiles = (listResponse?.items || listResponse?.profiles || []).map((p) => ({
-        id: normalizeString(p.id || p.characterId),
-        name: normalizeString(p.name || p.displayName || p.id || p.characterId),
-      })).filter((p) => p.id);
-      setProfileOptions(profiles);
-      const firstId = profiles[0]?.id || "";
-      setSelectedProfileId(firstId);
-      if (firstId) {
-        loadProfile(firstId);
-      } else {
-        setProfileDraft(createEmptyProfileDraft({ characterId: selectedCharacterId }));
-      }
-      setNotice("LoRA profile deleted.");
-    } catch (deleteError) {
-      setError(deleteError?.message || "Failed to delete LoRA profile.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  const { handleSaveProfile, handleDeleteProfile } = useLoraProfileActions({
+    resolvedApiBaseUrl,
+    selectedCharacterId,
+    selectedProfileId,
+    setSelectedProfileId,
+    profileDraft,
+    loadProfile,
+    setError,
+    setNotice,
+    setIsSaving,
+    setProfileDraft,
+    setProfileOptions,
+  });
 
   const handleResetProfile = () => {
     if (selectedProfileId) {
@@ -397,8 +408,34 @@ export default function LoraManagement() {
         />
       </div>
 
-      {notice && <p style={{ marginTop: 16, fontSize: 13, color: 'var(--skr-accent)', background: 'var(--skr-accent-subtle)', padding: '8px 12px', borderRadius: 6 }}>{notice}</p>}
-      {error && <p style={{ marginTop: 16, fontSize: 13, color: '#ef4444', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>{error}</p>}
+      {notice && (
+        <p
+          style={{
+            marginTop: 16,
+            fontSize: 13,
+            color: "var(--skr-accent)",
+            background: "var(--skr-accent-subtle)",
+            padding: "8px 12px",
+            borderRadius: 6,
+          }}
+        >
+          {notice}
+        </p>
+      )}
+      {error && (
+        <p
+          style={{
+            marginTop: 16,
+            fontSize: 13,
+            color: "#ef4444",
+            background: "#fef2f2",
+            padding: "8px 12px",
+            borderRadius: 6,
+          }}
+        >
+          {error}
+        </p>
+      )}
     </div>
   );
 }

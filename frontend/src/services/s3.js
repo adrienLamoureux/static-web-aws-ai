@@ -25,18 +25,10 @@ export const listVideos = (baseUrl, options = {}) => {
 };
 
 export const deleteVideo = (baseUrl, key) =>
-  postJson(
-    buildApiUrl(baseUrl, "/s3/videos/delete"),
-    { key },
-    "Failed to delete video."
-  );
+  postJson(buildApiUrl(baseUrl, "/s3/videos/delete"), { key }, "Failed to delete video.");
 
 export const deleteImage = (baseUrl, key) =>
-  postJson(
-    buildApiUrl(baseUrl, "/s3/images/delete"),
-    { key },
-    "Failed to delete image."
-  );
+  postJson(buildApiUrl(baseUrl, "/s3/images/delete"), { key }, "Failed to delete image.");
 
 export const setImageFavorite = (baseUrl, key, favorite) =>
   postJson(
@@ -53,18 +45,10 @@ export const setVideoFavorite = (baseUrl, key, favorite) =>
   );
 
 export const shareImage = (baseUrl, key) =>
-  postJson(
-    buildApiUrl(baseUrl, "/s3/images/share"),
-    { key },
-    "Failed to share image."
-  );
+  postJson(buildApiUrl(baseUrl, "/s3/images/share"), { key }, "Failed to share image.");
 
 export const shareVideo = (baseUrl, key) =>
-  postJson(
-    buildApiUrl(baseUrl, "/s3/videos/share"),
-    { key },
-    "Failed to share video."
-  );
+  postJson(buildApiUrl(baseUrl, "/s3/videos/share"), { key }, "Failed to share video.");
 
 export const listSharedImages = (baseUrl, params = {}) =>
   fetchJson(
@@ -81,11 +65,7 @@ export const listSharedVideos = (baseUrl, params = {}) =>
   );
 
 export const listSharedImageFavorites = (baseUrl) =>
-  fetchJson(
-    buildApiUrl(baseUrl, "/s3/shared/images/favorites"),
-    {},
-    "Failed to load favorites."
-  );
+  fetchJson(buildApiUrl(baseUrl, "/s3/shared/images/favorites"), {}, "Failed to load favorites.");
 
 export const setSharedImageFavorite = (baseUrl, key, favorite) =>
   postJson(
@@ -95,11 +75,7 @@ export const setSharedImageFavorite = (baseUrl, key, favorite) =>
   );
 
 export const requestImageUploadUrl = (baseUrl, payload) =>
-  postJson(
-    buildApiUrl(baseUrl, "/s3/image-upload-url"),
-    payload,
-    "Failed to request upload URL."
-  );
+  postJson(buildApiUrl(baseUrl, "/s3/image-upload-url"), payload, "Failed to request upload URL.");
 
 export const putFileToUrl = async (url, file, contentType) => {
   const response = await fetch(url, {

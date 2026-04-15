@@ -1,0 +1,3 @@
+# CSS files use intentional compact single-line notation for utility-style rules.
+# Prettier expansion would push them over the 500-line project limit.
+src/styles/

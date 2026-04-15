@@ -39,23 +39,49 @@ export default function AuthCallback() {
   }, [completeLogin, location.search, navigate]);
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--skr-base)' }}>
-      <div className="skr-card" style={{ padding: 40, width: 420, maxWidth: '95vw', textAlign: 'center' }}>
-        <p style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--skr-text-tertiary)', marginBottom: 16 }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "var(--skr-base)",
+      }}
+    >
+      <div
+        className="skr-card"
+        style={{ padding: 40, width: 420, maxWidth: "95vw", textAlign: "center" }}
+      >
+        <p
+          style={{
+            fontSize: 11,
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            color: "var(--skr-text-tertiary)",
+            marginBottom: 16,
+          }}
+        >
           whisk studio
         </p>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--skr-text-primary)', marginBottom: 12 }}>
+        <h1
+          style={{
+            fontSize: 22,
+            fontWeight: 700,
+            color: "var(--skr-text-primary)",
+            marginBottom: 12,
+          }}
+        >
           Signing you in…
         </h1>
         {error ? (
           <>
-            <p style={{ fontSize: 13, color: '#ef4444', marginBottom: 20 }}>{error}</p>
-            <button className="skr-btn-secondary" onClick={() => navigate('/login')}>
+            <p style={{ fontSize: 13, color: "#ef4444", marginBottom: 20 }}>{error}</p>
+            <button className="skr-btn-secondary" onClick={() => navigate("/login")}>
               Back to login
             </button>
           </>
         ) : (
-          <p style={{ fontSize: 14, color: 'var(--skr-text-secondary)' }}>
+          <p style={{ fontSize: 14, color: "var(--skr-text-secondary)" }}>
             Finalizing your session…
           </p>
         )}

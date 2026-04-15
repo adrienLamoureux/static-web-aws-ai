@@ -24,12 +24,11 @@ module.exports = function registerUserMediaRoutes(deps) {
   const SHARED_IMAGE_PREFIX = "shared/images/";
   const SHARED_URL_EXPIRATION_SECONDS = 900;
 
-  const splitFileName = (
-    key = "",
-    fallbackBaseName = "asset",
-    fallbackExtension = "jpg"
-  ) => {
-    const rawName = String(key || "").split("/").pop() || "";
+  const splitFileName = (key = "", fallbackBaseName = "asset", fallbackExtension = "jpg") => {
+    const rawName =
+      String(key || "")
+        .split("/")
+        .pop() || "";
     const extensionIndex = rawName.lastIndexOf(".");
     if (extensionIndex > 0 && extensionIndex < rawName.length - 1) {
       return {
@@ -44,11 +43,7 @@ module.exports = function registerUserMediaRoutes(deps) {
   };
 
   const buildSharedKey = ({ sourceKey, sharedPrefix, defaultExtension }) => {
-    const { baseName, extension } = splitFileName(
-      sourceKey,
-      "shared-asset",
-      defaultExtension
-    );
+    const { baseName, extension } = splitFileName(sourceKey, "shared-asset", defaultExtension);
     const safeBaseName = buildSafeBaseName(baseName || "shared-asset");
     const resolvedExtension = extension || defaultExtension;
     return `${sharedPrefix}${safeBaseName}-${Date.now()}.${resolvedExtension}`;
@@ -261,9 +256,7 @@ module.exports = function registerUserMediaRoutes(deps) {
           .map((key) => ({ key }));
 
         await Promise.all(
-          images.map((item) =>
-            putMediaItem({ userId, type: "IMG", key: item.key })
-          )
+          images.map((item) => putMediaItem({ userId, type: "IMG", key: item.key }))
         );
       }
 

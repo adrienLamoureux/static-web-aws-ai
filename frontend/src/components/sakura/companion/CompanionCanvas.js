@@ -14,34 +14,43 @@ function ClickRipple({ x, y, onDone }) {
     return () => clearTimeout(t);
   }, [onDone]);
   return (
-    <div style={{
-      position: "absolute", left: x - 18, top: y - 18,
-      width: 36, height: 36, borderRadius: "50%",
-      border: "2px solid rgba(255,107,157,0.7)",
-      animation: "skr-ripple 0.5s ease-out forwards",
-      pointerEvents: "none",
-    }} />
+    <div
+      style={{
+        position: "absolute",
+        left: x - 18,
+        top: y - 18,
+        width: 36,
+        height: 36,
+        borderRadius: "50%",
+        border: "2px solid rgba(255,107,157,0.7)",
+        animation: "skr-ripple 0.5s ease-out forwards",
+        pointerEvents: "none",
+      }}
+    />
   );
 }
 
 export default function CompanionCanvas({ modelEntry, onEngineReady, style }) {
-  const canvasRef  = useRef(null);
-  const engineRef  = useRef(null);
-  const entryRef   = useRef(modelEntry);
+  const canvasRef = useRef(null);
+  const engineRef = useRef(null);
+  const entryRef = useRef(modelEntry);
   const [ripple, setRipple] = useState(null); // { x, y, key }
 
-  const initEngine = useCallback(async (canvas, entry) => {
-    if (!window.Live2DCubismCore) {
-      console.warn("[CompanionCanvas] Live2DCubismCore not found — check index.html");
-      return;
-    }
+  const initEngine = useCallback(
+    async (canvas, entry) => {
+      if (!window.Live2DCubismCore) {
+        console.warn("[CompanionCanvas] Live2DCubismCore not found — check index.html");
+        return;
+      }
 
-    const engine = new Live2DEngine(canvas);
-    engineRef.current = engine;
-    onEngineReady(engine);
+      const engine = new Live2DEngine(canvas);
+      engineRef.current = engine;
+      onEngineReady(engine);
 
-    await engine.loadModel(entry);
-  }, [onEngineReady]);
+      await engine.loadModel(entry);
+    },
+    [onEngineReady]
+  );
 
   // Initialize engine on mount
   useEffect(() => {
@@ -96,12 +105,7 @@ export default function CompanionCanvas({ modelEntry, onEngineReady, style }) {
         style={{ display: "block", width: "100%", height: "100%", pointerEvents: "none" }}
       />
       {ripple && (
-        <ClickRipple
-          key={ripple.key}
-          x={ripple.x}
-          y={ripple.y}
-          onDone={() => setRipple(null)}
-        />
+        <ClickRipple key={ripple.key} x={ripple.x} y={ripple.y} onDone={() => setRipple(null)} />
       )}
     </div>
   );

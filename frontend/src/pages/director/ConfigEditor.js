@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { saveDirectorConfig } from '../../services/operations';
-import { useNotify } from '../../components/sakura/NotificationStack';
+import React, { useState, useEffect } from "react";
+import { saveDirectorConfig } from "../../services/operations";
+import { useNotify } from "../../components/sakura/NotificationStack";
 
 /**
  * ConfigEditor — three disclosure panels for generation / video / sound config.
@@ -12,7 +12,7 @@ export default function ConfigEditor({ apiBaseUrl, config, options, isLoading, o
   const [genConfig, setGenConfig] = useState({});
   const [videoConfig, setVideoConfig] = useState({});
   const [soundConfig, setSoundConfig] = useState({});
-  const [saving, setSaving] = useState('');
+  const [saving, setSaving] = useState("");
 
   useEffect(() => {
     setGenConfig(config?.generation || {});
@@ -27,43 +27,43 @@ export default function ConfigEditor({ apiBaseUrl, config, options, isLoading, o
 
   const handleSaveGen = async () => {
     if (!apiBaseUrl) return;
-    setSaving('gen');
+    setSaving("gen");
     try {
       await saveDirectorConfig(apiBaseUrl, { generation: genConfig });
-      notify('Generation config saved.', 'success');
+      notify("Generation config saved.", "success");
       if (onRefresh) onRefresh();
     } catch (e) {
-      notify(e?.message || 'Failed to save generation config.', 'error');
+      notify(e?.message || "Failed to save generation config.", "error");
     } finally {
-      setSaving('');
+      setSaving("");
     }
   };
 
   const handleSaveVideo = async () => {
     if (!apiBaseUrl) return;
-    setSaving('video');
+    setSaving("video");
     try {
       await saveDirectorConfig(apiBaseUrl, { video: videoConfig });
-      notify('Video config saved.', 'success');
+      notify("Video config saved.", "success");
       if (onRefresh) onRefresh();
     } catch (e) {
-      notify(e?.message || 'Failed to save video config.', 'error');
+      notify(e?.message || "Failed to save video config.", "error");
     } finally {
-      setSaving('');
+      setSaving("");
     }
   };
 
   const handleSaveSound = async () => {
     if (!apiBaseUrl) return;
-    setSaving('sound');
+    setSaving("sound");
     try {
       await saveDirectorConfig(apiBaseUrl, { sound: soundConfig });
-      notify('Sound config saved.', 'success');
+      notify("Sound config saved.", "success");
       if (onRefresh) onRefresh();
     } catch (e) {
-      notify(e?.message || 'Failed to save sound config.', 'error');
+      notify(e?.message || "Failed to save sound config.", "error");
     } finally {
-      setSaving('');
+      setSaving("");
     }
   };
 
@@ -71,7 +71,9 @@ export default function ConfigEditor({ apiBaseUrl, config, options, isLoading, o
 
   return (
     <div style={{ marginBottom: 20 }}>
-      <p className="skr-section-title" style={{ marginBottom: 12 }}>Config Editor</p>
+      <p className="skr-section-title" style={{ marginBottom: 12 }}>
+        Config Editor
+      </p>
 
       {/* Generation */}
       <details className="skr-disclosure">
@@ -79,35 +81,72 @@ export default function ConfigEditor({ apiBaseUrl, config, options, isLoading, o
         <div className="skr-disclosure-body">
           <div>
             <label className="skr-field-label">Image Model</label>
-            <select className="skr-input skr-field-select" style={{ fontSize: 12 }} value={genConfig.imageModel || ''} onChange={e => setGenConfig(p => ({ ...p, imageModel: e.target.value }))}>
+            <select
+              className="skr-input skr-field-select"
+              style={{ fontSize: 12 }}
+              value={genConfig.imageModel || ""}
+              onChange={(e) => setGenConfig((p) => ({ ...p, imageModel: e.target.value }))}
+            >
               <option value="">— Default —</option>
-              {imageModels.map(m => <option key={m.key} value={m.key}>{m.name || m.key}</option>)}
+              {imageModels.map((m) => (
+                <option key={m.key} value={m.key}>
+                  {m.name || m.key}
+                </option>
+              ))}
             </select>
           </div>
           {imageSizes.length > 0 && (
             <div>
               <label className="skr-field-label">Image Size</label>
-              <select className="skr-input skr-field-select" style={{ fontSize: 12 }} value={genConfig.imageSize || ''} onChange={e => setGenConfig(p => ({ ...p, imageSize: e.target.value }))}>
+              <select
+                className="skr-input skr-field-select"
+                style={{ fontSize: 12 }}
+                value={genConfig.imageSize || ""}
+                onChange={(e) => setGenConfig((p) => ({ ...p, imageSize: e.target.value }))}
+              >
                 <option value="">— Default —</option>
-                {imageSizes.map(s => <option key={s.key || s} value={s.key || s}>{s.label || s.key || s}</option>)}
+                {imageSizes.map((s) => (
+                  <option key={s.key || s} value={s.key || s}>
+                    {s.label || s.key || s}
+                  </option>
+                ))}
               </select>
             </div>
           )}
           {schedulers.length > 0 && (
             <div>
               <label className="skr-field-label">Scheduler</label>
-              <select className="skr-input skr-field-select" style={{ fontSize: 12 }} value={genConfig.scheduler || ''} onChange={e => setGenConfig(p => ({ ...p, scheduler: e.target.value }))}>
+              <select
+                className="skr-input skr-field-select"
+                style={{ fontSize: 12 }}
+                value={genConfig.scheduler || ""}
+                onChange={(e) => setGenConfig((p) => ({ ...p, scheduler: e.target.value }))}
+              >
                 <option value="">— Default —</option>
-                {schedulers.map(s => <option key={s.key || s} value={s.key || s}>{s.label || s.key || s}</option>)}
+                {schedulers.map((s) => (
+                  <option key={s.key || s} value={s.key || s}>
+                    {s.label || s.key || s}
+                  </option>
+                ))}
               </select>
             </div>
           )}
           <div>
             <label className="skr-field-label">Negative Prompt</label>
-            <textarea className="skr-input skr-field-textarea" style={{ fontSize: 12 }} value={genConfig.negativePrompt || ''} onChange={e => setGenConfig(p => ({ ...p, negativePrompt: e.target.value }))} />
+            <textarea
+              className="skr-input skr-field-textarea"
+              style={{ fontSize: 12 }}
+              value={genConfig.negativePrompt || ""}
+              onChange={(e) => setGenConfig((p) => ({ ...p, negativePrompt: e.target.value }))}
+            />
           </div>
-          <button className="skr-btn-primary" style={{ fontSize: 12, alignSelf: 'flex-start' }} onClick={handleSaveGen} disabled={saving === 'gen'}>
-            {saving === 'gen' ? 'Saving…' : 'Save'}
+          <button
+            className="skr-btn-primary"
+            style={{ fontSize: 12, alignSelf: "flex-start" }}
+            onClick={handleSaveGen}
+            disabled={saving === "gen"}
+          >
+            {saving === "gen" ? "Saving…" : "Save"}
           </button>
         </div>
       </details>
@@ -118,13 +157,27 @@ export default function ConfigEditor({ apiBaseUrl, config, options, isLoading, o
         <div className="skr-disclosure-body">
           <div>
             <label className="skr-field-label">Video Model</label>
-            <select className="skr-input skr-field-select" style={{ fontSize: 12 }} value={videoConfig.videoModel || ''} onChange={e => setVideoConfig(p => ({ ...p, videoModel: e.target.value }))}>
+            <select
+              className="skr-input skr-field-select"
+              style={{ fontSize: 12 }}
+              value={videoConfig.videoModel || ""}
+              onChange={(e) => setVideoConfig((p) => ({ ...p, videoModel: e.target.value }))}
+            >
               <option value="">— Default —</option>
-              {videoModels.map(m => <option key={m.key} value={m.key}>{m.name || m.key}</option>)}
+              {videoModels.map((m) => (
+                <option key={m.key} value={m.key}>
+                  {m.name || m.key}
+                </option>
+              ))}
             </select>
           </div>
-          <button className="skr-btn-primary" style={{ fontSize: 12, alignSelf: 'flex-start' }} onClick={handleSaveVideo} disabled={saving === 'video'}>
-            {saving === 'video' ? 'Saving…' : 'Save'}
+          <button
+            className="skr-btn-primary"
+            style={{ fontSize: 12, alignSelf: "flex-start" }}
+            onClick={handleSaveVideo}
+            disabled={saving === "video"}
+          >
+            {saving === "video" ? "Saving…" : "Save"}
           </button>
         </div>
       </details>
@@ -135,10 +188,20 @@ export default function ConfigEditor({ apiBaseUrl, config, options, isLoading, o
         <div className="skr-disclosure-body">
           <div>
             <label className="skr-field-label">Default Mood</label>
-            <input className="skr-input" style={{ fontSize: 12 }} value={soundConfig.defaultMood || ''} onChange={e => setSoundConfig(p => ({ ...p, defaultMood: e.target.value }))} />
+            <input
+              className="skr-input"
+              style={{ fontSize: 12 }}
+              value={soundConfig.defaultMood || ""}
+              onChange={(e) => setSoundConfig((p) => ({ ...p, defaultMood: e.target.value }))}
+            />
           </div>
-          <button className="skr-btn-primary" style={{ fontSize: 12, alignSelf: 'flex-start' }} onClick={handleSaveSound} disabled={saving === 'sound'}>
-            {saving === 'sound' ? 'Saving…' : 'Save'}
+          <button
+            className="skr-btn-primary"
+            style={{ fontSize: 12, alignSelf: "flex-start" }}
+            onClick={handleSaveSound}
+            disabled={saving === "sound"}
+          >
+            {saving === "sound" ? "Saving…" : "Save"}
           </button>
         </div>
       </details>

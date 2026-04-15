@@ -24,8 +24,7 @@ const buildImageKey = ({
   return `${prefix}images/${safeProvider}/${safeBase}-${Date.now()}-${index}.png`;
 };
 
-const buildImageBatchId = () =>
-  `batch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+const buildImageBatchId = () => `batch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 const buildSeedList = (count, seed) => {
   const baseSeed = Number.isFinite(Number(seed))
@@ -35,7 +34,11 @@ const buildSeedList = (count, seed) => {
 };
 
 const buildVideoReadyKey = (sourceKey = "") => {
-  const baseName = sourceKey.split("/").pop()?.replace(/\.[^.]+$/, "") || "image";
+  const baseName =
+    sourceKey
+      .split("/")
+      .pop()
+      ?.replace(/\.[^.]+$/, "") || "image";
   const safeBase = buildSafeBaseName(baseName);
   const prefixMatch = sourceKey.match(/^(users\/[^/]+\/)/);
   const prefix = prefixMatch ? prefixMatch[1] : "";
@@ -55,8 +58,7 @@ const fetchImageBuffer = async (url) => {
     throw new Error(`Failed to download image: ${response.status}`);
   }
   const arrayBuffer = await response.arrayBuffer();
-  const contentType =
-    response.headers.get("content-type") || "image/png";
+  const contentType = response.headers.get("content-type") || "image/png";
   return { buffer: Buffer.from(arrayBuffer), contentType };
 };
 
@@ -71,8 +73,7 @@ const decodeDataUrl = (value = "") => {
   return { buffer: Buffer.from(base64, "base64"), contentType };
 };
 
-const looksLikeBase64 = (value = "") =>
-  /^[a-z0-9+/=]+$/i.test(value) && value.length > 256;
+const looksLikeBase64 = (value = "") => /^[a-z0-9+/=]+$/i.test(value) && value.length > 256;
 
 const resolveGradioImageBuffer = async (output) => {
   if (!output) {

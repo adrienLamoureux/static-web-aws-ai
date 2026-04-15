@@ -75,7 +75,9 @@ module.exports = function registerStoryIllustrationRoutes(deps) {
     }
     if (!apiToken) return res.status(500).json({ message: "REPLICATE_API_TOKEN must be set" });
     if (!sessionId || (!sceneId && !forceCurrent)) {
-      return res.status(400).json({ message: "sessionId and sceneId are required unless forceCurrent is true" });
+      return res
+        .status(400)
+        .json({ message: "sessionId and sceneId are required unless forceCurrent is true" });
     }
     if (!STORY_ILLUSTRATION_MODEL_KEYS.has(requestedModelKey)) {
       return res.status(400).json({
@@ -107,9 +109,7 @@ module.exports = function registerStoryIllustrationRoutes(deps) {
           limit: 6,
           scanForward: false,
         });
-        const latestAssistant = recentMessages.find(
-          (message) => message.role === "assistant"
-        );
+        const latestAssistant = recentMessages.find((message) => message.role === "assistant");
         const stateScene = buildSceneFragmentsFromStoryState(
           sessionItem.storyState || {},
           sessionItem.worldPrompt || ""
@@ -173,8 +173,20 @@ module.exports = function registerStoryIllustrationRoutes(deps) {
           }),
           { expiresIn: 900 }
         );
-        const videoUrl = await signSceneVideoUrl(s3Client, GetObjectCommand, getSignedUrl, bucket, sceneItem);
-        const musicUrl = await signSceneMusicUrl(s3Client, GetObjectCommand, getSignedUrl, bucket, sceneItem);
+        const videoUrl = await signSceneVideoUrl(
+          s3Client,
+          GetObjectCommand,
+          getSignedUrl,
+          bucket,
+          sceneItem
+        );
+        const musicUrl = await signSceneMusicUrl(
+          s3Client,
+          GetObjectCommand,
+          getSignedUrl,
+          bucket,
+          sceneItem
+        );
         return res.json({
           sceneId,
           imageKey: sceneItem.imageKey,
@@ -202,24 +214,18 @@ module.exports = function registerStoryIllustrationRoutes(deps) {
       }
 
       const characters = await ensureStoryCharacters();
-      const characterMap = new Map(
-        characters.map((character) => [character.id, character])
-      );
+      const characterMap = new Map(characters.map((character) => [character.id, character]));
       const resolvedProtagonistId =
         sessionItem.protagonistId ||
-        (sessionItem.protagonistName?.toLowerCase().includes("frieren")
-          ? "frieren"
-          : "");
+        (sessionItem.protagonistName?.toLowerCase().includes("frieren") ? "frieren" : "");
       const characterItem = resolvedProtagonistId
         ? await getItem({
             pk: buildStoryCharacterPk(),
             sk: buildStoryCharacterSk(resolvedProtagonistId),
           })
         : null;
-      const fallbackCharacter =
-        characterMap.get(resolvedProtagonistId || "") || null;
-      const resolvedCharacter =
-        characterItem || fallbackCharacter || characters[0] || null;
+      const fallbackCharacter = characterMap.get(resolvedProtagonistId || "") || null;
+      const resolvedCharacter = characterItem || fallbackCharacter || characters[0] || null;
 
       if (
         resolvedCharacter?.identityPrompt &&
@@ -228,8 +234,7 @@ module.exports = function registerStoryIllustrationRoutes(deps) {
         const updatedSession = {
           ...sessionItem,
           protagonistPrompt: resolvedCharacter.identityPrompt,
-          protagonistName:
-            resolvedCharacter.name || sessionItem.protagonistName,
+          protagonistName: resolvedCharacter.name || sessionItem.protagonistName,
           protagonistId: resolvedProtagonistId || resolvedCharacter.id || "",
           updatedAt: new Date().toISOString(),
         };
@@ -250,15 +255,11 @@ module.exports = function registerStoryIllustrationRoutes(deps) {
         scanForward: false,
       });
       const orderedRecent = recentMessages.slice().reverse();
-      const lastAssistant = recentMessages.find(
-        (message) => message.role === "assistant"
-      );
+      const lastAssistant = recentMessages.find((message) => message.role === "assistant");
       const contextLine = lastAssistant?.content
         ? normalizePromptFragment(lastAssistant.content)
         : "";
-      const summaryLine = sessionItem.summary
-        ? normalizePromptFragment(sessionItem.summary)
-        : "";
+      const summaryLine = sessionItem.summary ? normalizePromptFragment(sessionItem.summary) : "";
       const recentTranscript = orderedRecent
         .map((message) => {
           const label = message.role === "user" ? "Player" : "Narrator";
@@ -269,8 +270,7 @@ module.exports = function registerStoryIllustrationRoutes(deps) {
       const isOpening = isOpeningSceneItem(normalizePromptFragment, sceneItem);
       const openingSceneContextLimits = isOpening
         ? {
-            maxEnvironmentFragments:
-              STORY_OPENING_SCENE_MAX_ENVIRONMENT_FRAGMENTS,
+            maxEnvironmentFragments: STORY_OPENING_SCENE_MAX_ENVIRONMENT_FRAGMENTS,
             maxActionFragments: STORY_OPENING_SCENE_MAX_ACTION_FRAGMENTS,
           }
         : {};
@@ -293,27 +293,21 @@ module.exports = function registerStoryIllustrationRoutes(deps) {
             maxAction: STORY_OPENING_SCENE_MAX_ACTION_FRAGMENTS,
           })
         : compactSceneForPrompt;
-      const cleanScenePrompt =
-        sceneContextForPrompt.scenePrompt || sceneItem.prompt || "";
+      const cleanScenePrompt = sceneContextForPrompt.scenePrompt || sceneItem.prompt || "";
 
-      const protagonistLine = sessionItem.protagonistPrompt?.includes(
-        sessionItem.protagonistName
-      )
+      const protagonistLine = sessionItem.protagonistPrompt?.includes(sessionItem.protagonistName)
         ? sessionItem.protagonistPrompt
         : `${sessionItem.protagonistName}, ${sessionItem.protagonistPrompt}`;
 
       const identityBlock =
-        resolvedCharacter?.identityPrompt ||
-        sessionItem.protagonistPrompt ||
-        protagonistLine;
+        resolvedCharacter?.identityPrompt || sessionItem.protagonistPrompt || protagonistLine;
 
       const draftedPrompts = await aiCraftIllustrationPrompts({
         character: {
           name: resolvedCharacter?.name || sessionItem.protagonistName || "",
           identityPrompt: identityBlock,
           signatureTraits: resolvedCharacter?.signatureTraits || "",
-          styleReference:
-            resolvedCharacter?.styleReference || sessionItem.stylePrompt || "",
+          styleReference: resolvedCharacter?.styleReference || sessionItem.stylePrompt || "",
           viewDistance: resolvedCharacter?.viewDistance || "",
           eyeDetails: resolvedCharacter?.eyeDetails || "",
           pose: resolvedCharacter?.pose || "",
@@ -337,8 +331,7 @@ module.exports = function registerStoryIllustrationRoutes(deps) {
       const trimmedPositivePrompt = clampPromptTokens(positivePrompt);
       const trimmedNegativePrompt = clampPromptTokens(negativePrompt);
       const promptWasTrimmed = trimmedPositivePrompt.trim() !== positivePrompt.trim();
-      const negativeWasTrimmed =
-        trimmedNegativePrompt.trim() !== negativePrompt.trim();
+      const negativeWasTrimmed = trimmedNegativePrompt.trim() !== negativePrompt.trim();
 
       const modelConfig = replicateModelConfig[requestedModelKey];
       if (!modelConfig?.modelId) {
@@ -386,8 +379,7 @@ module.exports = function registerStoryIllustrationRoutes(deps) {
       const updatedScene = {
         ...sceneItem,
         prompt: sceneContextForPrompt.scenePrompt || sceneItem.prompt,
-        sceneEnvironment:
-          sceneContextForPrompt.sceneEnvironment || sceneItem.sceneEnvironment,
+        sceneEnvironment: sceneContextForPrompt.sceneEnvironment || sceneItem.sceneEnvironment,
         sceneAction: sceneContextForPrompt.sceneAction || sceneItem.sceneAction,
         imageKey,
         status: "completed",
@@ -415,7 +407,13 @@ module.exports = function registerStoryIllustrationRoutes(deps) {
         }),
         { expiresIn: 900 }
       );
-      const musicUrl = await signSceneMusicUrl(s3Client, GetObjectCommand, getSignedUrl, bucket, updatedScene);
+      const musicUrl = await signSceneMusicUrl(
+        s3Client,
+        GetObjectCommand,
+        getSignedUrl,
+        bucket,
+        updatedScene
+      );
 
       res.json({
         sceneId,

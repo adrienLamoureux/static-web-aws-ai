@@ -2,8 +2,8 @@ import React, { useMemo } from "react";
 import SOL_MASONRY_DEFAULTS from "../data/skr-masonry-defaults.json";
 
 const COLUMNS = [
-  { id: "col-a", durationSeconds: 86,  startOffset: "0%"   },
-  { id: "col-b", durationSeconds: 94,  startOffset: "-11%" },
+  { id: "col-a", durationSeconds: 86, startOffset: "0%" },
+  { id: "col-b", durationSeconds: 94, startOffset: "-11%" },
   { id: "col-c", durationSeconds: 102, startOffset: "-22%" },
 ];
 
@@ -53,7 +53,7 @@ export default function SolarisMasonry({ images = [], title, subtitle }) {
 
       {(title || subtitle) && (
         <div className="skr-masonry-overlay">
-          {title   && <p className="skr-masonry-title">{title}</p>}
+          {title && <p className="skr-masonry-title">{title}</p>}
           {subtitle && <p className="skr-masonry-subtitle">{subtitle}</p>}
         </div>
       )}

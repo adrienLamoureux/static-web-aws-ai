@@ -28,9 +28,9 @@ export function applyEmotion(coreModel, emotionMap, emotionName, durationMs = 30
   let cancelled = false;
   let rafId = null;
   const startTime = performance.now();
-  const holdStart   = startTime + FADE_MS;
+  const holdStart = startTime + FADE_MS;
   const fadeOutStart = startTime + durationMs - FADE_MS;
-  const endTime     = startTime + durationMs;
+  const endTime = startTime + durationMs;
 
   function tick() {
     if (cancelled) return;
@@ -38,7 +38,9 @@ export function applyEmotion(coreModel, emotionMap, emotionName, durationMs = 30
 
     if (now >= endTime) {
       for (const id of paramIds) {
-        try { coreModel.setParameterValueById(id, startValues[id]); } catch {}
+        try {
+          coreModel.setParameterValueById(id, startValues[id]);
+        } catch {}
       }
       return;
     }
@@ -68,7 +70,9 @@ export function applyEmotion(coreModel, emotionMap, emotionName, durationMs = 30
     if (rafId) cancelAnimationFrame(rafId);
     // Restore on cancel
     for (const id of paramIds) {
-      try { coreModel.setParameterValueById(id, startValues[id]); } catch {}
+      try {
+        coreModel.setParameterValueById(id, startValues[id]);
+      } catch {}
     }
   };
 }

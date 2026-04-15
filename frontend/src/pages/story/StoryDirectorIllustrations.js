@@ -246,10 +246,7 @@ function StoryDirectorIllustrations({
           const generatingMusic = isSceneGeneratingMusic(scene.sceneId);
           const animationStatusLabel = formatAnimationStatus(scene.videoStatus);
           const soundtrackReady = Boolean(scene.musicUrl);
-          const musicStatusLabel = formatMusicStatus(
-            scene.musicStatus,
-            soundtrackReady
-          );
+          const musicStatusLabel = formatMusicStatus(scene.musicStatus, soundtrackReady);
           const assignedGroupId = currentBoard.assignments[scene.sceneId] || "";
           const selectedTrackId = sceneLibrarySelectionMap?.[scene.sceneId] || "";
           const canApplyTrack = Boolean(selectedTrackId);
@@ -299,10 +296,7 @@ function StoryDirectorIllustrations({
                           })
                         }
                         disabled={
-                          generating ||
-                          animating ||
-                          status === "sending" ||
-                          !scene.imageKey
+                          generating || animating || status === "sending" || !scene.imageKey
                         }
                       >
                         {animating ? "Animating..." : "Animate"}
@@ -323,9 +317,7 @@ function StoryDirectorIllustrations({
                   </>
                 ) : (
                   <div className="story-scene-placeholder">
-                    <span>
-                      {generating ? "Rendering illustration..." : "Illustration pending"}
-                    </span>
+                    <span>{generating ? "Rendering illustration..." : "Illustration pending"}</span>
                     <button
                       type="button"
                       className="story-scene-generate"
@@ -376,10 +368,7 @@ function StoryDirectorIllustrations({
                       className="field-select story-scene-folder-select"
                       value={selectedTrackId}
                       onChange={(event) =>
-                        setSceneLibraryTrackSelection(
-                          scene.sceneId,
-                          event.target.value
-                        )
+                        setSceneLibraryTrackSelection(scene.sceneId, event.target.value)
                       }
                     >
                       <option value="">Select soundtrack</option>
@@ -398,11 +387,7 @@ function StoryDirectorIllustrations({
                       type="button"
                       className="story-scene-apply-track"
                       onClick={() =>
-                        applyLibraryTrackToScene(
-                          activeSessionId,
-                          scene.sceneId,
-                          selectedTrackId
-                        )
+                        applyLibraryTrackToScene(activeSessionId, scene.sceneId, selectedTrackId)
                       }
                       disabled={!canApplyTrack || status === "sending"}
                     >

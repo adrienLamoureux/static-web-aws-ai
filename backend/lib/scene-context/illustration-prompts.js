@@ -5,13 +5,8 @@ const {
   rebalanceIllustrationNegativePrompt,
 } = require("./shared");
 
-const createAiCraftIllustrationPrompts = ({
-  bedrockClient,
-  promptHelperModelId,
-  safeJsonParse,
-  normalizePromptFragment,
-  clipText,
-}) =>
+const createAiCraftIllustrationPrompts =
+  ({ bedrockClient, promptHelperModelId, safeJsonParse, normalizePromptFragment, clipText }) =>
   async ({
     character = {},
     scenePrompt = "",

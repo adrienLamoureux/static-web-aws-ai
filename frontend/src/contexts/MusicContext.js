@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
-import { useConfig } from './ConfigContext';
-import { useAuth } from './AuthContext';
-import { getAuthToken } from '../utils/authTokens';
-import { listStoryMusicLibrary } from '../services/story';
+import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from "react";
+import { useConfig } from "./ConfigContext";
+import { useAuth } from "./AuthContext";
+import { getAuthToken } from "../utils/authTokens";
+import { listStoryMusicLibrary } from "../services/story";
 
 const MusicContext = createContext({});
 
@@ -16,24 +16,28 @@ export function MusicProvider({ children }) {
 
   useEffect(() => {
     if (!configReady || !apiBaseUrl || !isAuthenticated || !getAuthToken()) return;
-    listStoryMusicLibrary(apiBaseUrl).then(data => {
-      const list = (data?.tracks || []).map(t => ({
-        url: t.url || t.musicUrl,
-        key: t.key || t.musicKey || t.url || t.musicUrl,
-        title: t.title || t.musicTitle || 'Untitled',
-        mood: t.mood || t.musicMood || '',
-        energy: t.energy || t.musicEnergy || '',
-        tempoBpm: t.tempoBpm || t.musicTempoBpm || null,
-        tags: t.tags || t.musicTags || [],
-      })).filter(t => t.url);
-      if (list.length > 0) setTracks(list);
-    }).catch(() => {});
+    listStoryMusicLibrary(apiBaseUrl)
+      .then((data) => {
+        const list = (data?.tracks || [])
+          .map((t) => ({
+            url: t.url || t.musicUrl,
+            key: t.key || t.musicKey || t.url || t.musicUrl,
+            title: t.title || t.musicTitle || "Untitled",
+            mood: t.mood || t.musicMood || "",
+            energy: t.energy || t.musicEnergy || "",
+            tempoBpm: t.tempoBpm || t.musicTempoBpm || null,
+            tags: t.tags || t.musicTags || [],
+          }))
+          .filter((t) => t.url);
+        if (list.length > 0) setTracks(list);
+      })
+      .catch(() => {});
   }, [configReady, apiBaseUrl, isAuthenticated]);
 
   const pushTracks = useCallback((newTracks) => {
-    setTracks(prev => {
-      const existing = new Set(prev.map(t => t.key || t.url));
-      const toAdd = newTracks.filter(t => !existing.has(t.key || t.url));
+    setTracks((prev) => {
+      const existing = new Set(prev.map((t) => t.key || t.url));
+      const toAdd = newTracks.filter((t) => !existing.has(t.key || t.url));
       return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
     });
   }, []);
@@ -53,7 +57,9 @@ export function MusicProvider({ children }) {
   }, []);
 
   return (
-    <MusicContext.Provider value={{ tracks, currentTrack, autoPlayRequest, pushTracks, playTrack, dismissTrack }}>
+    <MusicContext.Provider
+      value={{ tracks, currentTrack, autoPlayRequest, pushTracks, playTrack, dismissTrack }}
+    >
       {children}
     </MusicContext.Provider>
   );

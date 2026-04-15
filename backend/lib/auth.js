@@ -8,7 +8,9 @@ const normalizeBoolean = (value, fallback = false) => {
 
 const isUnsignedFallbackAllowed = () =>
   normalizeBoolean(process.env.ALLOW_UNSIGNED_JWT_FALLBACK, false) &&
-  String(process.env.NODE_ENV || "").trim().toLowerCase() !== "production";
+  String(process.env.NODE_ENV || "")
+    .trim()
+    .toLowerCase() !== "production";
 
 const decodeJwtPayload = (token = "") => {
   try {
@@ -27,14 +29,11 @@ const decodeJwtPayload = (token = "") => {
 
 const getUserFromRequest = (req) => {
   const authorizer =
-    req.apiGateway?.event?.requestContext?.authorizer ||
-    req.requestContext?.authorizer;
+    req.apiGateway?.event?.requestContext?.authorizer || req.requestContext?.authorizer;
 
   // New REQUEST authorizer: flat context fields (sub is set directly)
   if (authorizer && authorizer.sub) {
-    const groups = authorizer.groups
-      ? authorizer.groups.split(",").filter(Boolean)
-      : [];
+    const groups = authorizer.groups ? authorizer.groups.split(",").filter(Boolean) : [];
     return {
       sub: authorizer.sub,
       email: authorizer.email || "",
@@ -50,8 +49,8 @@ const getUserFromRequest = (req) => {
     const groups = Array.isArray(rawGroups)
       ? rawGroups
       : typeof rawGroups === "string"
-      ? rawGroups.split(",").filter(Boolean)
-      : [];
+        ? rawGroups.split(",").filter(Boolean)
+        : [];
     return {
       sub: claims.sub,
       email: claims.email || "",

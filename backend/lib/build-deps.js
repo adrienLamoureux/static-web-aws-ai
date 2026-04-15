@@ -145,8 +145,7 @@ const createDeps = () => {
     process.env.BEDROCK_PROMPT_HELPER_MODEL_ID ||
     process.env.BEDROCK_CLAUDE_MODEL_ID ||
     "us.anthropic.claude-haiku-4-5-20251001-v1:0";
-  const storyModelId =
-    process.env.BEDROCK_STORY_MODEL_ID || promptHelperModelId;
+  const storyModelId = process.env.BEDROCK_STORY_MODEL_ID || promptHelperModelId;
 
   const mediaStore = createMediaStore({
     dynamoClient,
@@ -199,8 +198,7 @@ const createDeps = () => {
   const deleteS3ObjectsByPrefixBound = async (bucket, prefix) =>
     deleteS3ObjectsByPrefix(s3Client, bucket, prefix);
 
-  const fetchS3ImageBufferBound = async (bucket, key) =>
-    fetchS3ImageBuffer(s3Client, bucket, key);
+  const fetchS3ImageBufferBound = async (bucket, key) => fetchS3ImageBuffer(s3Client, bucket, key);
 
   const copyS3Object = async ({ bucket, sourceKey, destinationKey }) =>
     copyS3ObjectRaw({ s3Client, bucket, sourceKey, destinationKey });

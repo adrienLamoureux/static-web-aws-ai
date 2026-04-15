@@ -6,14 +6,8 @@ const {
   uniqueStringArray,
   deepMerge,
 } = require("./story-state/shared");
-const {
-  buildDefaultLorebook,
-  resolveStoryLorebook,
-} = require("./story-state/lorebook");
-const {
-  buildInitialStoryState,
-  applyStateDelta,
-} = require("./story-state/state-core");
+const { buildDefaultLorebook, resolveStoryLorebook } = require("./story-state/lorebook");
+const { buildInitialStoryState, applyStateDelta } = require("./story-state/state-core");
 const {
   TAG_METRIC_BIASES,
   applyMetricBias,

@@ -26,38 +26,38 @@ Live2DModel.registerTicker(Ticker);
 
 export class Live2DEngine {
   constructor(canvas) {
-    this._canvas     = canvas;
-    this._app        = null;
-    this._model      = null;
-    this._manifest   = null;
+    this._canvas = canvas;
+    this._app = null;
+    this._model = null;
+    this._manifest = null;
     this._generation = 0; // incremented on every loadModel call; guards stale async completions
 
     // Emotion
     this._cancelEmotion = null;
 
     // Look-at
-    this._lookTarget  = { x: 0, y: 0 };
+    this._lookTarget = { x: 0, y: 0 };
     this._lookCurrent = { x: 0, y: 0 };
     this._mouseHandler = null;
     this._isMobile = window.matchMedia("(pointer: coarse)").matches;
 
     // Lip sync
-    this._lipSyncActive   = false;
-    this._lipSyncStart    = 0;
+    this._lipSyncActive = false;
+    this._lipSyncStart = 0;
     this._lipSyncDuration = 0;
 
     this._motionPlaying = false;
-    this._motionTimer   = null;
+    this._motionTimer = null;
 
     // Idle variety cycling
-    this._idleTimer         = null;
-    this._idleVariantIndex  = 0;
+    this._idleTimer = null;
+    this._idleVariantIndex = 0;
 
     // Away / focus handlers (set after model load)
-    this._focusHandler     = null;
-    this._blurHandler      = null;
+    this._focusHandler = null;
+    this._blurHandler = null;
     this._blurClearHandler = null;
-    this._blurTimer        = null;
+    this._blurTimer = null;
 
     this._onVisibilityChange = () => {
       if (document.hidden) this.pause();
@@ -66,7 +66,9 @@ export class Live2DEngine {
     document.addEventListener("visibilitychange", this._onVisibilityChange);
   }
 
-  get isLoaded() { return this._model !== null; }
+  get isLoaded() {
+    return this._model !== null;
+  }
 
   /**
    * Returns true when the current model supports the given Capability constant.
@@ -75,10 +77,14 @@ export class Live2DEngine {
   hasCapability(cap) {
     if (!this._manifest) return false;
     switch (cap) {
-      case "look_at":      return !!this._manifest.lookAt;
-      case "idle_variety": return Array.isArray(this._manifest.idleVariants) && this._manifest.idleVariants.length > 0;
-      case "hit_test":     return Array.isArray(this._manifest.hitZones)     && this._manifest.hitZones.length > 0;
-      default:             return false;
+      case "look_at":
+        return !!this._manifest.lookAt;
+      case "idle_variety":
+        return Array.isArray(this._manifest.idleVariants) && this._manifest.idleVariants.length > 0;
+      case "hit_test":
+        return Array.isArray(this._manifest.hitZones) && this._manifest.hitZones.length > 0;
+      default:
+        return false;
     }
   }
 
@@ -90,18 +96,18 @@ export class Live2DEngine {
     const gen = ++this._generation; // capture before the await
 
     const rect = this._canvas.getBoundingClientRect();
-    const W = rect.width  || this._canvas.offsetWidth  || 240;
+    const W = rect.width || this._canvas.offsetWidth || 240;
     const H = rect.height || this._canvas.offsetHeight || 280;
 
     if (!this._app) {
       this._app = new Application({
         view: this._canvas,
-        width:  W,
+        width: W,
         height: H,
         backgroundAlpha: 0,
-        antialias:   true,
+        antialias: true,
         autoDensity: true,
-        resolution:  window.devicePixelRatio || 1,
+        resolution: window.devicePixelRatio || 1,
       });
     } else {
       this._app.renderer.resize(W, H);
@@ -115,11 +121,14 @@ export class Live2DEngine {
       return;
     }
     // Another loadModel call happened while we were awaiting — discard this result
-    if (gen !== this._generation) { model.destroy(); return; }
+    if (gen !== this._generation) {
+      model.destroy();
+      return;
+    }
 
     this._manifest = manifest;
-    this._model    = model;
-    this._alive2   = true;
+    this._model = model;
+    this._alive2 = true;
     this._app.stage.addChild(model);
 
     // Scale to fill manifest.scale of canvas height, anchor at bottom-center
@@ -161,9 +170,9 @@ export class Live2DEngine {
     if (!this._isMobile && manifest.lookAt) {
       this._mouseHandler = (e) => {
         const rect = this._canvas.getBoundingClientRect();
-        const cx = rect.left + rect.width  / 2;
-        const cy = rect.top  + rect.height / 2;
-        this._lookTarget.x = Math.max(-1, Math.min(1, (e.clientX - cx) / (window.innerWidth  / 2)));
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        this._lookTarget.x = Math.max(-1, Math.min(1, (e.clientX - cx) / (window.innerWidth / 2)));
         this._lookTarget.y = Math.max(-1, Math.min(1, (e.clientY - cy) / (window.innerHeight / 2)));
       };
       document.addEventListener("mousemove", this._mouseHandler);
@@ -171,11 +180,12 @@ export class Live2DEngine {
   }
 
   setEmotion(emotionName, durationMs = 3000) {
-    if (this._cancelEmotion) { this._cancelEmotion(); this._cancelEmotion = null; }
+    if (this._cancelEmotion) {
+      this._cancelEmotion();
+      this._cancelEmotion = null;
+    }
     if (!this._model || !this._manifest) return;
-    const entry = this._manifest.emotionMap[emotionName]
-      ?? this._manifest.emotionMap.neutral
-      ?? {};
+    const entry = this._manifest.emotionMap[emotionName] ?? this._manifest.emotionMap.neutral ?? {};
 
     if (entry.expression !== undefined) {
       // Expression-file dispatch (models with .exp3.json, e.g. Kagura)
@@ -190,7 +200,9 @@ export class Live2DEngine {
       this._model.motion(entry.motion);
       this._motionPlaying = true;
       if (this._motionTimer) clearTimeout(this._motionTimer);
-      this._motionTimer = setTimeout(() => { this._motionPlaying = false; }, 2000);
+      this._motionTimer = setTimeout(() => {
+        this._motionPlaying = false;
+      }, 2000);
     } else {
       // Parameter-override dispatch (Hiyori free tier)
       const core = this._model.internalModel?.coreModel;
@@ -206,20 +218,24 @@ export class Live2DEngine {
     this._model.motion(group);
     this._motionPlaying = true;
     if (this._motionTimer) clearTimeout(this._motionTimer);
-    this._motionTimer = setTimeout(() => { this._motionPlaying = false; }, 2000);
+    this._motionTimer = setTimeout(() => {
+      this._motionPlaying = false;
+    }, 2000);
   }
 
   startLipSync(durationMs) {
-    this._lipSyncStart    = performance.now();
+    this._lipSyncStart = performance.now();
     this._lipSyncDuration = durationMs;
-    this._lipSyncActive   = true;
+    this._lipSyncActive = true;
   }
 
   stopLipSync() {
     this._lipSyncActive = false;
     const core = this._model?.internalModel?.coreModel;
     if (core) {
-      try { core.setParameterValueById("ParamMouthOpenY", 0); } catch {}
+      try {
+        core.setParameterValueById("ParamMouthOpenY", 0);
+      } catch {}
     }
   }
 
@@ -276,16 +292,21 @@ export class Live2DEngine {
     if (this._app) {
       this._app.renderer.resize(width, height);
       if (this._model && this._manifest) {
-        const baseScale = (height * this._manifest.scale) / (this._model.height / this._model.scale.y);
+        const baseScale =
+          (height * this._manifest.scale) / (this._model.height / this._model.scale.y);
         this._model.scale.set(baseScale);
-        this._model.x = width  / 2;
+        this._model.x = width / 2;
         this._model.y = height;
       }
     }
   }
 
-  pause()  { if (this._app) this._app.ticker.stop();  }
-  resume() { if (this._app) this._app.ticker.start(); }
+  pause() {
+    if (this._app) this._app.ticker.stop();
+  }
+  resume() {
+    if (this._app) this._app.ticker.start();
+  }
 
   // ─── Internal ──────────────────────────────────────────────────
 
@@ -309,12 +330,12 @@ export class Live2DEngine {
     const ly = this._lookCurrent.y;
 
     try {
-      core.setParameterValueById("ParamAngleX",    lx *  cfg.headWeight.x);
-      core.setParameterValueById("ParamAngleY",    ly * -cfg.headWeight.y);
-      core.setParameterValueById("ParamEyeBallX",  lx *  cfg.eyeWeight.x);
-      core.setParameterValueById("ParamEyeBallY",  ly * -cfg.eyeWeight.y);
+      core.setParameterValueById("ParamAngleX", lx * cfg.headWeight.x);
+      core.setParameterValueById("ParamAngleY", ly * -cfg.headWeight.y);
+      core.setParameterValueById("ParamEyeBallX", lx * cfg.eyeWeight.x);
+      core.setParameterValueById("ParamEyeBallY", ly * -cfg.eyeWeight.y);
       if (cfg.bodyWeight) {
-        core.setParameterValueById("ParamBodyAngleX", lx *  cfg.bodyWeight.x);
+        core.setParameterValueById("ParamBodyAngleX", lx * cfg.bodyWeight.x);
         core.setParameterValueById("ParamBodyAngleY", ly * -cfg.bodyWeight.y);
       }
     } catch {}
@@ -324,10 +345,14 @@ export class Live2DEngine {
       const elapsed = performance.now() - this._lipSyncStart;
       if (elapsed < this._lipSyncDuration) {
         const mouth = Math.abs(Math.sin(elapsed * 0.006 * Math.PI * 2)) * 0.8;
-        try { core.setParameterValueById("ParamMouthOpenY", mouth); } catch {}
+        try {
+          core.setParameterValueById("ParamMouthOpenY", mouth);
+        } catch {}
       } else {
         this._lipSyncActive = false;
-        try { core.setParameterValueById("ParamMouthOpenY", 0); } catch {}
+        try {
+          core.setParameterValueById("ParamMouthOpenY", 0);
+        } catch {}
       }
     }
   };
@@ -368,8 +393,14 @@ export class Live2DEngine {
     this._alive2 = false; // stop idle cycle
     clearTimeout(this._idleTimer);
     this._idleTimer = null;
-    if (this._cancelEmotion) { this._cancelEmotion(); this._cancelEmotion = null; }
-    if (this._motionTimer)   { clearTimeout(this._motionTimer); this._motionTimer = null; }
+    if (this._cancelEmotion) {
+      this._cancelEmotion();
+      this._cancelEmotion = null;
+    }
+    if (this._motionTimer) {
+      clearTimeout(this._motionTimer);
+      this._motionTimer = null;
+    }
     if (this._mouseHandler) {
       document.removeEventListener("mousemove", this._mouseHandler);
       this._mouseHandler = null;

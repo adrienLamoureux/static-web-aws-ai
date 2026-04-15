@@ -67,22 +67,15 @@ export default function ReaderIllustrations({
           <div className="story-scene-card story-scene-card--feature">
             {featuredScene.imageUrl ? (
               <>
-                <img
-                  src={featuredScene.imageUrl}
-                  alt={featuredScene.title || "Featured scene"}
-                />
+                <img src={featuredScene.imageUrl} alt={featuredScene.title || "Featured scene"} />
                 <div className="story-scene-actions">
                   <button
                     type="button"
                     className="story-scene-regenerate"
                     onClick={() => runRegenerate(featuredScene.sceneId)}
-                    disabled={
-                      !canRunActions || isSceneGenerating(featuredScene.sceneId)
-                    }
+                    disabled={!canRunActions || isSceneGenerating(featuredScene.sceneId)}
                   >
-                    {isSceneGenerating(featuredScene.sceneId)
-                      ? "Rendering..."
-                      : "Regenerate"}
+                    {isSceneGenerating(featuredScene.sceneId) ? "Rendering..." : "Regenerate"}
                   </button>
                   <button
                     type="button"
@@ -95,21 +88,15 @@ export default function ReaderIllustrations({
                       !featuredScene.imageKey
                     }
                   >
-                    {isSceneAnimating(featuredScene.sceneId)
-                      ? "Animating..."
-                      : "Animate"}
+                    {isSceneAnimating(featuredScene.sceneId) ? "Animating..." : "Animate"}
                   </button>
                   <button
                     type="button"
                     className="story-scene-music-trigger"
                     onClick={() => runMusic(featuredScene.sceneId)}
-                    disabled={
-                      !canRunActions || isSceneGeneratingMusic(featuredScene.sceneId)
-                    }
+                    disabled={!canRunActions || isSceneGeneratingMusic(featuredScene.sceneId)}
                   >
-                    {isSceneGeneratingMusic(featuredScene.sceneId)
-                      ? "Scoring..."
-                      : "Music"}
+                    {isSceneGeneratingMusic(featuredScene.sceneId) ? "Scoring..." : "Music"}
                   </button>
                 </div>
               </>
@@ -124,10 +111,7 @@ export default function ReaderIllustrations({
             </div>
           </div>
           {(featuredScene.videoUrl ||
-            formatAnimationStatus(
-              featuredScene.videoStatus,
-              Boolean(featuredScene.videoUrl)
-            )) && (
+            formatAnimationStatus(featuredScene.videoStatus, Boolean(featuredScene.videoUrl))) && (
             <div className="story-scene-video">
               {featuredScene.videoUrl ? (
                 <video controls preload="metadata" src={featuredScene.videoUrl} />
@@ -180,9 +164,7 @@ export default function ReaderIllustrations({
                         onClick={() => runRegenerate(scene.sceneId)}
                         disabled={!canRunActions || isSceneGenerating(scene.sceneId)}
                       >
-                        {isSceneGenerating(scene.sceneId)
-                          ? "Rendering..."
-                          : "Regenerate"}
+                        {isSceneGenerating(scene.sceneId) ? "Rendering..." : "Regenerate"}
                       </button>
                       <button
                         type="button"
@@ -201,9 +183,7 @@ export default function ReaderIllustrations({
                         type="button"
                         className="story-scene-music-trigger"
                         onClick={() => runMusic(scene.sceneId)}
-                        disabled={
-                          !canRunActions || isSceneGeneratingMusic(scene.sceneId)
-                        }
+                        disabled={!canRunActions || isSceneGeneratingMusic(scene.sceneId)}
                       >
                         {isSceneGeneratingMusic(scene.sceneId) ? "Scoring..." : "Music"}
                       </button>

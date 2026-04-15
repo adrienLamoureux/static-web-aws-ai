@@ -166,7 +166,9 @@ const registerCharacterRoutes = (app, deps) => {
         sk: buildMediaSk(CHARACTER_TYPE, charId),
       });
       if (!existing) {
-        return res.status(404).json({ message: "Character not found or not editable (system characters cannot be modified)" });
+        return res.status(404).json({
+          message: "Character not found or not editable (system characters cannot be modified)",
+        });
       }
 
       const b = req.body || {};
@@ -182,7 +184,7 @@ const registerCharacterRoutes = (app, deps) => {
         defaultVideoPrompt: patch("defaultVideoPrompt", existing.defaultVideoPrompt),
         defaultLoraProfileId:
           b.defaultLoraProfileId !== undefined
-            ? (normalizeStr(b.defaultLoraProfileId) || null)
+            ? normalizeStr(b.defaultLoraProfileId) || null
             : existing.defaultLoraProfileId,
         signatureTraits: patch("signatureTraits", existing.signatureTraits),
         eyeDetails: patch("eyeDetails", existing.eyeDetails),
@@ -215,7 +217,9 @@ const registerCharacterRoutes = (app, deps) => {
         sk: buildMediaSk(CHARACTER_TYPE, charId),
       });
       if (!existing) {
-        return res.status(404).json({ message: "Character not found (system characters cannot be deleted)" });
+        return res
+          .status(404)
+          .json({ message: "Character not found (system characters cannot be deleted)" });
       }
       await deleteMediaItem({ userId, type: CHARACTER_TYPE, key: charId });
       return res.json({ deleted: true, id: charId });
