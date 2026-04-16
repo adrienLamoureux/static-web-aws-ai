@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import SolarisMasonry from "../components/SolarisMasonry";
 import GalleryCard from "../components/shared/GalleryCard";
 import { useConfig } from "../contexts/ConfigContext";
@@ -20,6 +21,8 @@ const FEED_TABS = [
 export default function HomePage() {
   const { apiBaseUrl } = useConfig();
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const [quickPrompt, setQuickPrompt] = useState("");
   // Hero
   const [masonryApiImages, setMasonryApiImages] = useState([]);
 
@@ -104,6 +107,12 @@ export default function HomePage() {
     setPlayingVideoKey((prev) => (prev === video.key ? "" : video.key));
   };
 
+  const handleQuickGenerate = useCallback(() => {
+    const q = quickPrompt.trim();
+    if (q) navigate(`/atelier?prompt=${encodeURIComponent(q)}`);
+    else navigate("/atelier");
+  }, [quickPrompt, navigate]);
+
   return (
     <div>
       {/* Masonry hero */}
@@ -112,6 +121,25 @@ export default function HomePage() {
         title="Whisk Studio"
         subtitle="Anime-first creative workspace — generate, direct, tell stories."
       />
+
+      {/* Quick prompt bar */}
+      <div className="skr-prompt-bar">
+        <input
+          className="skr-prompt-bar-input"
+          type="text"
+          placeholder="Describe what you want to create…"
+          value={quickPrompt}
+          onChange={(e) => setQuickPrompt(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleQuickGenerate()}
+        />
+        <button
+          type="button"
+          className="skr-btn-primary skr-prompt-bar-btn"
+          onClick={handleQuickGenerate}
+        >
+          ✦ Generate
+        </button>
+      </div>
 
       {/* Shared Images */}
       <div style={{ marginTop: 8 }}>

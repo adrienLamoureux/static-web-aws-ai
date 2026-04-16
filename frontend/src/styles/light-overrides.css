@@ -129,6 +129,22 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
+/* Music widget on light mode — more visible */
+[data-brightness="light"] .skr-music-widget {
+  background: rgba(255, 255, 255, 0.97);
+  border-color: rgba(124, 58, 237, 0.15);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(124, 58, 237, 0.08);
+}
+[data-brightness="light"] .skr-music-widget.is-playing {
+  background: linear-gradient(145deg, #fff 30%, rgba(255, 107, 157, 0.05) 100%);
+  border-color: rgba(255, 107, 157, 0.25);
+}
+[data-brightness="light"] .skr-music-note { color: var(--skr-cta); opacity: 0.7; }
+[data-brightness="light"] .skr-music-btn { color: var(--skr-text-secondary); }
+[data-brightness="light"] .skr-music-btn:hover { color: var(--skr-cta); }
+[data-brightness="light"] .skr-music-panel { background: #fff; border-top-color: rgba(124, 58, 237, 0.1); }
+[data-brightness="light"] .skr-music-panel-track.is-active { color: var(--skr-cta); }
+
 /* Toolbox cards */
 [data-brightness="light"] .skr-tool-card {
   background: #ffffff;
@@ -138,6 +154,10 @@
   box-shadow: 0 6px 20px rgba(124, 58, 237, 0.12);
   border-color: rgba(124, 58, 237, 0.2);
 }
+
+/* Prompt bar */
+[data-brightness="light"] .skr-prompt-bar-input { background: #ffffff; border-color: rgba(124, 58, 237, 0.15); }
+[data-brightness="light"] .skr-prompt-bar-input:focus { border-color: var(--skr-cta); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1); }
 
 /* Stats */
 [data-brightness="light"] .skr-stat-value {

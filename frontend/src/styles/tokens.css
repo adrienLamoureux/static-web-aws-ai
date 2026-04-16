@@ -41,6 +41,10 @@
   --skr-hud-height: 64px;
   --skr-topbar-height: 56px;
 
+  /* Sidebar */
+  --skr-sidebar-width: 220px;
+  --skr-sidebar-width-collapsed: 64px;
+
   /* Companion panel */
   --skr-companion-width: 240px;
   --skr-companion-height: 280px;
