@@ -44,4 +44,32 @@
   /* Companion panel */
   --skr-companion-width: 240px;
   --skr-companion-height: 280px;
+
+  /* Companion component tokens — dark defaults */
+  --skr-comp-bg: rgba(26, 23, 38, 0.97);
+  --skr-comp-bg-panel: rgba(22, 19, 33, 0.97);
+  --skr-comp-border: rgba(192, 132, 252, 0.3);
+  --skr-comp-border-faint: rgba(192, 132, 252, 0.12);
+  --skr-comp-bubble-ai-bg: rgba(30, 24, 48, 0.8);
+  --skr-comp-bubble-ai-border: rgba(192, 132, 252, 0.2);
+  --skr-comp-bubble-user-bg: rgba(255, 107, 157, 0.15);
+  --skr-comp-bubble-user-border: rgba(255, 107, 157, 0.25);
+  --skr-comp-fab-bg: rgba(26, 23, 38, 0.92);
+  --skr-comp-fab-border: rgba(192, 132, 252, 0.35);
+  --skr-comp-input-bg: rgba(13, 11, 20, 0.6);
+  --skr-comp-input-border: rgba(192, 132, 252, 0.25);
+  --skr-comp-send-bg: rgba(255, 107, 157, 0.2);
+  --skr-comp-send-border: rgba(255, 107, 157, 0.35);
+  --skr-comp-shadow: 0 4px 28px rgba(0, 0, 0, 0.6);
+
+  /* Accent tints */
+  --skr-accent-subtle: rgba(255, 107, 157, 0.1);
+  --skr-accent-muted: rgba(255, 107, 157, 0.08);
+
+  /* Base (deepest bg, used for full-bleed surfaces) */
+  --skr-base: #0D0B14;
+
+  /* CTA — dark mode inherits accent */
+  --skr-cta: var(--skr-accent);
+  --skr-cta-hover: var(--skr-accent-hover);
 }

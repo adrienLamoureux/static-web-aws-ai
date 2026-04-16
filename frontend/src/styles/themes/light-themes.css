@@ -1,5 +1,36 @@
 /* ─── Light mode — per-theme bg/surface/text overrides ─── */
 
+/* ─── Shared light-mode tokens (all themes) ─── */
+[data-brightness="light"] {
+  /* CTA — purple pill buttons in light mode */
+  --skr-cta: #7C3AED;
+  --skr-cta-hover: #6D28D9;
+
+  /* Base surface */
+  --skr-base: #FFFFFF;
+
+  /* Accent tints */
+  --skr-accent-subtle: rgba(255, 107, 157, 0.08);
+  --skr-accent-muted: rgba(255, 107, 157, 0.06);
+
+  /* Companion component overrides for light mode */
+  --skr-comp-bg: rgba(255, 255, 255, 0.96);
+  --skr-comp-bg-panel: rgba(250, 249, 255, 0.97);
+  --skr-comp-border: rgba(124, 58, 237, 0.15);
+  --skr-comp-border-faint: rgba(124, 58, 237, 0.08);
+  --skr-comp-bubble-ai-bg: rgba(124, 58, 237, 0.05);
+  --skr-comp-bubble-ai-border: rgba(124, 58, 237, 0.12);
+  --skr-comp-bubble-user-bg: rgba(255, 107, 157, 0.08);
+  --skr-comp-bubble-user-border: rgba(255, 107, 157, 0.18);
+  --skr-comp-fab-bg: rgba(255, 255, 255, 0.95);
+  --skr-comp-fab-border: rgba(124, 58, 237, 0.2);
+  --skr-comp-input-bg: #ffffff;
+  --skr-comp-input-border: rgba(124, 58, 237, 0.18);
+  --skr-comp-send-bg: rgba(255, 107, 157, 0.1);
+  --skr-comp-send-border: rgba(255, 107, 157, 0.25);
+  --skr-comp-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
 /* Sakura light — soft rose-white */
 [data-brightness="light"],
 [data-brightness="light"][data-theme="sakura"] {
