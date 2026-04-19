@@ -14,7 +14,7 @@
 
 ## Open Risks
 - Backend test coverage is still low relative to the route surface area.
-- `Whisk.js` (698 lines) and `Story.js` (658 lines) exceed the 500-line limit — pre-existing, need splitting.
+- `Whisk.js` (488 lines) and `Story.js` (441 lines) are near the 500-line soft limit — watch for further growth before splitting.
 
 ## Next Actions
 - Land all backend, frontend, and CDK changes on `main`.
@@ -41,3 +41,20 @@
 - 2026-04-11T20:14:12.724Z | event=synth | stage=dev
 - 2026-04-11T20:25:50.123Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=d4cfb99 / sanity=passed / ui_smoke=passed
 - 2026-04-11T21:58:51.967Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=ca86522 / sanity=passed / ui_smoke=passed
+- 2026-04-13T21:31:08.313Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=d4202e4 / sanity=passed / ui_smoke=passed
+- 2026-04-14T08:50:52.544Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=d4202e4 / sanity=passed / ui_smoke=passed
+- 2026-04-14T08:54:38.542Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=d4202e4 / sanity=passed / ui_smoke=passed
+- 2026-04-14T08:59:12.360Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=d4202e4 / sanity=passed / ui_smoke=passed
+- 2026-04-14T09:03:13.825Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=d4202e4 / sanity=passed / ui_smoke=passed
+- 2026-04-14T20:07:56.601Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=d4202e4 / sanity=passed / ui_smoke=passed
+- 2026-04-14T20:18:35.110Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=d4202e4 / sanity=passed / ui_smoke=passed
+- 2026-04-14T20:22:19.702Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=d4202e4 / sanity=passed / ui_smoke=passed
+- 2026-04-15T08:18:42.534Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=d4202e4 / sanity=passed / ui_smoke=passed
+- 2026-04-15T08:25:51.168Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=d4202e4 / sanity=passed / ui_smoke=passed
+- 2026-04-15T10:03:12.537Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=d4202e4 / sanity=passed / ui_smoke=passed
+- 2026-04-15T10:08:33.258Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=d4202e4 / sanity=passed / ui_smoke=passed
+- 2026-04-15T12:39:39.899Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=d4202e4 / sanity=passed / ui_smoke=passed
+- 2026-04-15T21:04:35.576Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=c21fff8 / sanity=passed / ui_smoke=passed
+- 2026-04-16T20:04:53.938Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=85277ac / sanity=passed / ui_smoke=passed
+- 2026-04-16T20:29:00.268Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=9448a24 / sanity=passed / ui_smoke=passed
+- 2026-04-16T20:43:47.182Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=70b692f / sanity=passed / ui_smoke=passed

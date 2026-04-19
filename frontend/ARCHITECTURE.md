@@ -24,12 +24,13 @@ App
   │                                         ├── /               → HomePage
   │                                         ├── /atelier        → Forge (image/video generation)
   │                                         ├── /chronicle      → Story (story sessions + scenes)
-  │                                         ├── /gallery        → SharedLibrary
+  │                                         ├── /gallery        → redirect to /
   │                                         ├── /sanctum        → Director (admin panel)
-  │                                         ├── /music-library  → StoryMusicLibrary
-  │                                         ├── /lora           → LoraManagement
+  │                                         ├── /sanctum/sounds → StoryMusicLibrary
+  │                                         ├── /sanctum/lora   → LoraManagement
   │                                         ├── /auth/callback  → AuthCallback
   │                                         └── /about          → AboutPage
+  │                                         (legacy paths /lora, /music-library, etc. redirect to the above)
 ```
 
 Protected routes render a `LoginModal` (inline, not redirect) when the user is unauthenticated.

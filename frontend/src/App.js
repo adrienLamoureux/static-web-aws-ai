@@ -27,7 +27,6 @@ import { getAuthToken } from "./utils/authTokens";
 
 // Pages
 import HomePage from "./pages/HomePage";
-import SharedLibrary from "./pages/SharedLibrary";
 import Forge from "./pages/Forge";
 import LoraManagement from "./pages/LoraManagement";
 import Director from "./pages/Director";

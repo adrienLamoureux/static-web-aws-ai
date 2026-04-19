@@ -33,7 +33,7 @@ test('example', () => {
 ```
 
 ### Known pre-existing failures
-3 tests in `lora-routes.test.js` fail due to a mock-app limitation (multi-middleware handlers are not captured). These are pre-existing and should not be regressed further.
+None — all 178 tests currently pass. (Three `lora-routes.test.js` failures from the mock-app multi-middleware limitation were fixed via the `createMockApp` rest-params patch.)
 
 ### Coverage
 Add `--experimental-test-coverage` to collect line/function coverage:
@@ -123,7 +123,7 @@ JSON results are written to `e2e/results.json` after each run.
 | Gate | Command | Target |
 |------|---------|--------|
 | Backend lint | `npm --prefix backend run lint` | 0 errors |
-| Backend tests | `npm --prefix backend test` | 175/178 pass (3 pre-existing failures) |
+| Backend tests | `npm --prefix backend test` | 178/178 pass |
 | Backend coverage | `node --experimental-test-coverage ...` | ≥ 40% lines |
 | Frontend lint | `npm --prefix frontend run lint` | 0 errors |
 | Frontend tests | `npm --prefix frontend run test:ci` | all pass |

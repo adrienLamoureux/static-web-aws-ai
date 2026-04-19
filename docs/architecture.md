@@ -18,15 +18,7 @@ See [`docs/api-spec.md`](./api-spec.md) for the complete endpoint inventory with
 
 ## 2. Branch Topology
 
-`main` is the single development branch. Backend, frontend (Sakura Bloom), and CDK all live here together.
-
-Other design variant branches remain available for UI-only overlay deployments:
-- `codex/design-fusion/code` — Solaris-style frontend overlay
-- `codex/design-pixnovel/code` — Pixnovel-style frontend overlay
-
-These overlays deploy using `UiOnlyStack` and point their `config.json` at the `dev` backend. They are not under active development.
-
-For new feature work, branch from `main` using the worktree conventions in `AGENTS.md`.
+`main` is the single development branch (backend, frontend, CDK). For new feature work, branch from `main` using the worktree conventions in `AGENTS.md`.
 
 ## 3. Request And Runtime Flow
 1. CloudFront serves the built frontend and a generated `config.json`.
@@ -198,13 +190,8 @@ Both variants share the `dev` Cognito user pool (`us-east-1_KGfmw3Ykn`) via dedi
   - optional `cdk-outputs.json`
 
 ## 9. Validation And Completion Rules
-- Backend touched:
-`node -e "require('./backend/index')"`
-- Frontend touched:
-`npm --prefix frontend run build`
-- CDK touched:
-`npm --prefix cdk run build`
-- Backend/CDK changes are only complete after deploy + sanity + UI smoke.
+
+See `CONTRIBUTING.md` for the full PR checklist and `docs/testing.md` for all quality gates. Backend/CDK changes are only complete after deploy + sanity + UI smoke.
 
 ## 10. Current Risks
 - Backend test coverage is still ~40% — expand test coverage for new routes.

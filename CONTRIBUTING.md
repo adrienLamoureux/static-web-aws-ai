@@ -6,14 +6,9 @@
 
 ## Branch Model
 
-`main` is the single development branch. Backend, frontend, and CDK all live here together.
+`main` is the single development branch. See `AGENTS.md` for the full branch topology, worktree conventions, and parallel workflow policy.
 
-To work on a feature or fix:
-1. Branch from `main`: `git checkout -b codex/<idea-id>-<slice> main`
-2. Implement your changes
-3. Open a PR back to `main`
-
-Other design variant branches (`codex/design-fusion/code`, `codex/design-pixnovel/code`) are UI-only overlays pointing at the `dev` backend — do not use them for new development.
+To work on a feature or fix: branch from `main`, implement, open a PR back to `main`.
 
 ---
 
@@ -78,35 +73,17 @@ Before opening a pull request, verify all of the following pass:
 
 ## Quality Gates Table
 
-| Gate | Script | Pass Condition |
-|------|--------|----------------|
-| Backend lint | `npm --prefix backend run lint` | 0 errors |
-| Backend import gate | `node -e "require('./backend/index')"` | no throw |
-| Backend tests | `npm --prefix backend test` | all pass |
-| Frontend lint | `npm --prefix frontend run lint` | 0 errors |
-| Frontend build | `npm --prefix frontend run build` | exits 0 |
-| Frontend tests | `npm --prefix frontend run test:ci` | all pass |
-| File length | `bash scripts/check-file-length.sh` | exits 0 |
-| CDK build | `npm --prefix cdk run build` | exits 0 (if CDK touched) |
-| E2E sanity | `E2E_BASE_URL=<url> npx playwright test --config e2e/playwright.config.js` | all pass (post-deploy) |
+See `docs/testing.md` for the full gate table with pass conditions, coverage targets, and E2E details.
 
 ---
 
 ## Deployment Notes
 
-Full-stack deploy (backend + Sakura frontend together from `main`):
-```sh
-npm --prefix cdk run idea:deploy -- --stage=dev
-```
+See `docs/architecture.md` (§4) for full deployment modes, commands, and the Live2D asset sync step.
 
-UI-only design variant deploy (for fusion, pixnovel, etc.):
-```sh
-npm --prefix cdk run idea:deploy -- --stage=<design-id> --backend-stage=dev
-```
-
-Always pass `--backend-stage=dev` for design variants. Omitting it deploys a full stack unintentionally.
-
-Post-deploy, run E2E sanity tests and verify in the browser before closing the deploy ticket.
+Quick reference:
+- Full stack: `npm --prefix cdk run idea:deploy -- --stage=dev`
+- UI-only variant: `npm --prefix cdk run idea:deploy -- --stage=<design-id> --backend-stage=dev` (always pass `--backend-stage=dev`)
 
 ---
 

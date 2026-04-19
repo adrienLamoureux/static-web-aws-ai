@@ -1,6 +1,6 @@
 # Whisk Studio API Specification
 
-> Last updated: 2026-04-06
+> Last updated: 2026-04-19
 
 ## Two Domains — One API, One CDN
 

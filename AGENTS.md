@@ -32,14 +32,7 @@ Other design variant branches (`codex/design-fusion/code`, `codex/design-pixnove
 
 ## Live Idea Stacks
 
-| Idea ID | Status | CloudFront | API |
-|---------|--------|------------|-----|
-| `dev` | LIVE — Sakura UI on main | `d2l9b1xmucsb19.cloudfront.net` | `k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/` |
-| `design-fusion` | LIVE — UI-only overlay | `d3ei9r5awjyzzr.cloudfront.net` | (points to `dev` API) |
-| `design-pixnovel` | LIVE — UI-only overlay | `d21j30h6jj4n2k.cloudfront.net` | (points to `dev` API) |
-| `design-atelier` | LIVE — UI-only overlay | `d3mv9zsmbqsn48.cloudfront.net` | (points to `dev` API) |
-| `design-kinetic` | LIVE — UI-only overlay | `d1ulh0ke4fvnqg.cloudfront.net` | (points to `dev` API) |
-| `design-solaris` | LIVE — UI-only overlay | `d17qd3rx45vcxl.cloudfront.net` | (points to `dev` API) |
+See `IDEAS.md` for the authoritative auto-maintained registry of all deployed stacks (CloudFront URLs, API endpoints, statuses).
 
 Shared test credentials for the live stacks: `test@test.com` / `Test1234567@`
 
@@ -133,19 +126,12 @@ Shared test credentials for the live stacks: `test@test.com` / `Test1234567@`
 - Report regressions and behavior risks first, then summary.
 
 ## Quality Gates
-Run from repo root:
 
-- Backend touched:
-`node -e "require('./backend/index')"`
-
-- Frontend touched:
-`npm --prefix frontend run build`
-
-- CDK touched:
-`npm --prefix cdk run build`
-
-- Cross-layer changes:
-run all applicable commands above before finalizing
+See `CONTRIBUTING.md` for the full quality-gate table and PR checklist. Quick reference:
+- Backend touched: `node -e "require('./backend/index')"`
+- Frontend touched: `npm --prefix frontend run build`
+- CDK touched: `npm --prefix cdk run build`
+- All tests: `npm --prefix backend test` and `npm --prefix frontend run test:ci`
 
 ## Slice Templates For This Repo
 - `backend-api`: `backend/routes/**`, `backend/lib/**`, optional `backend/config/**`

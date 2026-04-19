@@ -10,7 +10,7 @@ Use this file as the top-level overview for all parallel full-stack idea environ
 - idea=design-pixnovel | stack=StaticWebAWSAIStack-design-pixnovel | status=LIVE | last_action=2026-03-15T17:40:17.006Z | cloudfront=https://d21j30h6jj4n2k.cloudfront.net | api=https://5qoo5y28cd.execute-api.us-east-1.amazonaws.com/prod/ | folder=ideas/design-pixnovel | note=Deployed 19337c2 (prepush-rebase-ui-validate-resume)
 - idea=design-sakura | stack=StaticWebAWSAIStack-design-sakura | status=DESTROYED | last_action=2026-04-11T20:32:14.662Z | cloudfront=- | api=- | folder=ideas/design-sakura | note=Destroyed d4cfb99
 - idea=design-solaris | stack=StaticWebAWSAIStack-design-solaris | status=LIVE | last_action=2026-03-16T15:30:18.031Z | cloudfront=https://d17qd3rx45vcxl.cloudfront.net | api=https://u3a3qlhk2h.execute-api.us-east-1.amazonaws.com/prod/ | folder=ideas/design-solaris | note=Deployed 628b7c7 (initial-scaffold)
-- idea=dev | stack=StaticWebAWSAIStack-dev | status=LIVE | last_action=2026-04-11T21:58:51.960Z | cloudfront=https://d2l9b1xmucsb19.cloudfront.net | api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ | folder=ideas/dev | note=Deployed ca86522
+- idea=dev | stack=StaticWebAWSAIStack-dev | status=LIVE | last_action=2026-04-16T20:43:47.174Z | cloudfront=https://d2l9b1xmucsb19.cloudfront.net | api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ | folder=ideas/dev | note=Deployed 70b692f
 <!-- IDEA_REGISTRY_END -->
 
 ## Operating Rules
