@@ -35,9 +35,9 @@
 [data-brightness="light"],
 [data-brightness="light"][data-theme="sakura"] {
   color-scheme: light;
-  --skr-bg: #FEF0F6;
+  --skr-bg: #FEF6FA;
   --skr-surface: #FFFFFF;
-  --skr-elevated: #FCE4EF;
+  --skr-elevated: #FAEDF4;
   --skr-card: #FFFFFF;
   --skr-text: #1A0812;
   --skr-text-primary: #1A0812;
