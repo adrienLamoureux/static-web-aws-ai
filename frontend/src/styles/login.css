@@ -63,16 +63,17 @@
 }
 
 .skr-loading-emblem {
-  font-size: 40px;
+  font-size: 48px;
   color: var(--skr-accent);
-  animation: skr-pulse 1.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 16px rgba(255, 107, 157, 0.5)) drop-shadow(0 0 32px rgba(192, 132, 252, 0.25));
+  animation: skr-pulse 1.8s var(--skr-ease-in-out) infinite;
 }
 
-.skr-loading-text { font-size: 14px; color: var(--skr-text-secondary); }
+.skr-loading-text { font-size: 14px; color: var(--skr-text-secondary); animation: skr-fade-in var(--skr-duration-slow) var(--skr-ease-out) both; }
 
 @keyframes skr-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.95); }
+  0%, 100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 16px rgba(255, 107, 157, 0.5)) drop-shadow(0 0 32px rgba(192, 132, 252, 0.25)); }
+  50% { opacity: 0.6; transform: scale(0.92); filter: drop-shadow(0 0 8px rgba(255, 107, 157, 0.3)); }
 }
 
 /* ─── Auth callback ─── */
@@ -95,7 +96,7 @@
 
 .skr-modal-card {
   position: relative;
-  background: var(--skr-surface, #1a1a2e);
+  background: var(--skr-gradient-surface, #1a1a2e);
   border: 1px solid var(--skr-border, rgba(255, 255, 255, 0.1));
   border-radius: 16px;
   padding: 40px 32px 32px;
@@ -105,8 +106,8 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
-  animation: skr-modal-in 0.2s ease-out;
+  box-shadow: var(--skr-shadow-lg, 0 24px 64px rgba(0, 0, 0, 0.5));
+  animation: skr-scale-in var(--skr-duration-normal, 240ms) var(--skr-ease-out, cubic-bezier(0.22, 1, 0.36, 1)) both;
 }
 
 @keyframes skr-modal-in {

@@ -1,14 +1,15 @@
 /* ─── Cards ─── */
 .skr-card {
-  background: var(--skr-card);
+  background: var(--skr-gradient-surface);
   border: 1px solid var(--skr-border);
   border-radius: 16px;
   padding: 16px;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--skr-duration-fast) var(--skr-ease-out), box-shadow var(--skr-duration-fast) var(--skr-ease-out), transform var(--skr-duration-fast) var(--skr-ease-out);
 }
 .skr-card:hover {
   border-color: var(--skr-border-strong);
-  box-shadow: var(--skr-glow);
+  box-shadow: var(--skr-shadow-md);
+  transform: translateY(-2px);
 }
 
 .skr-glass-card {
@@ -27,7 +28,7 @@
   justify-content: center;
   gap: 8px;
   padding: 10px 20px;
-  background: linear-gradient(135deg, var(--skr-accent), var(--skr-accent-secondary));
+  background: var(--skr-gradient-accent);
   color: #fff;
   border: none;
   border-radius: 12px;
@@ -36,7 +37,7 @@
   font-weight: 700;
   cursor: pointer;
   box-shadow: var(--skr-glow);
-  transition: box-shadow 0.15s, transform 0.1s;
+  transition: box-shadow var(--skr-duration-fast) var(--skr-ease-out), transform var(--skr-duration-fast) var(--skr-ease-spring);
 }
 .skr-btn-primary:hover { box-shadow: var(--skr-glow-strong); transform: translateY(-1px); }
 .skr-btn-primary:active { transform: translateY(0); }
@@ -107,11 +108,12 @@
   border-radius: 10px;
   color: var(--skr-text);
   font-size: 14px;
+  transition: border-color var(--skr-duration-fast) var(--skr-ease-out), box-shadow var(--skr-duration-fast) var(--skr-ease-out);
 }
 .skr-input:focus {
   outline: none;
   border-color: var(--skr-accent);
-  box-shadow: 0 0 0 2px rgba(255, 107, 157, 0.15);
+  box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.12), var(--skr-shadow-sm);
 }
 .skr-input::placeholder { color: var(--skr-text-muted); }
 
@@ -271,8 +273,9 @@
   z-index: 210;
   display: flex; align-items: center; justify-content: center;
   cursor: zoom-out;
+  animation: skr-fade-in var(--skr-duration-fast) var(--skr-ease-out);
 }
-.skr-lightbox img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 12px; }
+.skr-lightbox img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 12px; animation: skr-lightbox-in var(--skr-duration-normal) var(--skr-ease-out); }
 .skr-lightbox-close {
   position: absolute; top: 16px; right: 16px;
   background: var(--skr-surface); border: 1px solid var(--skr-border);

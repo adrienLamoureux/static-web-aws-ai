@@ -1,10 +1,4 @@
 /* ─── Companion animations ─── */
-/* skr-blink (opacity) — defined first; overridden below by character walker scaleY version */
-@keyframes skr-blink {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0; }
-}
-
 /* Thinking dots — stagger via animation-delay on each dot */
 @keyframes skr-thinking-dot {
   0%, 60%, 100% { opacity: 0.2; transform: scale(0.65); }
@@ -61,6 +55,36 @@
 @keyframes skr-breathe {
   from { transform: translateY(0); }
   to   { transform: translateY(-1px); }
+}
+
+/* ─── UI animations ─── */
+/* Skeleton shimmer — use background-size: 200% on the element */
+@keyframes skr-shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position: 200% 0; }
+}
+
+@keyframes skr-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Dropdown / menu enter */
+@keyframes skr-scale-in {
+  from { opacity: 0; transform: scale(0.94) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Lightbox enter — fade + subtle zoom */
+@keyframes skr-lightbox-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Page-level enter (route transitions) */
+@keyframes skr-page-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ── Character Walker ────────────────────────────────────── */
@@ -137,4 +161,12 @@
 /* ─── prefers-reduced-motion ─── */
 @media (prefers-reduced-motion: reduce) {
   .skr-masonry-column { animation: none; }
+  .skr-character-walker svg,
+  .skr-char-leg-l, .skr-char-leg-r,
+  .skr-char-arm-l, .skr-char-arm-r { animation: none; }
+  .skr-char-eye-l, .skr-char-eye-r { animation-duration: 8s; }
+  .skr-placeholder { animation: none !important; background-image: none !important; }
+  .skr-lightbox { animation: none; }
+  .skr-theme-menu { animation: none; }
+  .skr-modal-card { animation: none; opacity: 1; transform: none; }
 }

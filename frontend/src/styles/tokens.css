@@ -76,4 +76,23 @@
   /* CTA — dark mode inherits accent */
   --skr-cta: var(--skr-accent);
   --skr-cta-hover: var(--skr-accent-hover);
+
+  /* Motion */
+  --skr-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --skr-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --skr-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --skr-duration-fast: 150ms;
+  --skr-duration-normal: 240ms;
+  --skr-duration-slow: 400ms;
+
+  /* Elevation shadows */
+  --skr-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --skr-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3), 0 0 8px color-mix(in srgb, var(--skr-accent) 12%, transparent);
+  --skr-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 16px color-mix(in srgb, var(--skr-accent) 18%, transparent);
+
+  /* Gradient tokens — derive from theme color tokens, auto-adapt across all 10 themes */
+  --skr-gradient-surface: linear-gradient(160deg, var(--skr-card), var(--skr-elevated));
+  --skr-gradient-accent: linear-gradient(135deg, var(--skr-accent), var(--skr-accent-secondary));
+  --skr-gradient-hero: linear-gradient(135deg, rgba(255, 107, 157, 0.08) 0%, rgba(192, 132, 252, 0.05) 50%, rgba(56, 189, 248, 0.04) 100%);
+  --skr-gradient-nav-active: linear-gradient(90deg, color-mix(in srgb, var(--skr-accent) 15%, transparent), color-mix(in srgb, var(--skr-accent) 4%, transparent));
 }

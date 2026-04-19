@@ -202,9 +202,18 @@
   font-size: 16px;
 }
 
+/* ─── Skeleton shimmer ─── */
+.skr-placeholder {
+  background: linear-gradient(90deg, var(--skr-card) 25%, var(--skr-elevated) 50%, var(--skr-card) 75%);
+  background-size: 200% 100%;
+  animation: skr-shimmer 1.8s ease-in-out infinite;
+  border: 1px solid var(--skr-border) !important;
+  pointer-events: none;
+}
+
 /* ─── Quick Prompt Bar (Home Page) ─── */
 .skr-prompt-bar { display: flex; gap: 10px; align-items: center; margin: 20px 0 28px; }
 .skr-prompt-bar-input { flex: 1; padding: 13px 18px; background: var(--skr-surface); border: 1px solid var(--skr-border); border-radius: 999px; color: var(--skr-text); font-size: 14px; font-family: var(--skr-font-body); outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
 .skr-prompt-bar-input::placeholder { color: var(--skr-text-muted); }
-.skr-prompt-bar-input:focus { border-color: rgba(124,58,237,0.35); box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
+.skr-prompt-bar-input:focus { border-color: var(--skr-accent); box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.1), var(--skr-shadow-sm); }
 .skr-prompt-bar-btn { padding: 13px 28px; border-radius: 999px; white-space: nowrap; font-size: 14px; flex-shrink: 0; }
