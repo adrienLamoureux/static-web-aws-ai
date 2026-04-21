@@ -1,0 +1,52 @@
+/* ─── Polish v2 micro-interactions ─── */
+/* Overrides live between base components and theme overrides (import after components.css). */
+
+/* Hero gradient drift — slow ambient hue shift behind the masonry hero */
+.skr-masonry-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--skr-gradient-hero);
+  background-size: 200% 200%;
+  background-position: 0% 50%;
+  animation: skr-gradient-drift 24s var(--skr-ease-in-out) infinite alternate;
+  opacity: 0.9;
+}
+
+/* Ensure masonry columns + overlay render above the drift layer */
+.skr-masonry-hero > .skr-masonry-grid,
+.skr-masonry-hero > .skr-masonry-overlay {
+  position: relative;
+  z-index: 1;
+}
+
+/* Loading emblem — rotating accent ring layered around the pulsing glyph */
+.skr-loading-emblem {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+}
+
+.skr-loading-emblem::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    color-mix(in srgb, var(--skr-accent) 60%, transparent) 90deg,
+    transparent 180deg,
+    color-mix(in srgb, var(--skr-accent-secondary) 50%, transparent) 270deg,
+    transparent 360deg
+  );
+  mask: radial-gradient(circle, transparent 44%, #000 46%);
+  -webkit-mask: radial-gradient(circle, transparent 44%, #000 46%);
+  animation: skr-ring-spin 4s linear infinite;
+  pointer-events: none;
+}

@@ -58,7 +58,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    animation: "skr-fade-in 0.18s ease",
+    animation: "skr-fade-in var(--skr-duration-fast) var(--skr-ease-out)",
   },
   container: {
     position: "relative",
@@ -85,7 +85,7 @@ const styles = {
     padding: "3px 9px",
     lineHeight: 1,
     backdropFilter: "blur(4px)",
-    transition: "background 0.15s",
+    transition: "background var(--skr-duration-fast) var(--skr-ease-out)",
   },
   canvasSide: {
     flexShrink: 0,

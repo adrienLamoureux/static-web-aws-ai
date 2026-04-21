@@ -93,6 +93,6 @@
   /* Gradient tokens — derive from theme color tokens, auto-adapt across all 10 themes */
   --skr-gradient-surface: linear-gradient(160deg, var(--skr-card), var(--skr-elevated));
   --skr-gradient-accent: linear-gradient(135deg, var(--skr-accent), var(--skr-accent-secondary));
-  --skr-gradient-hero: linear-gradient(135deg, rgba(255, 107, 157, 0.08) 0%, rgba(192, 132, 252, 0.05) 50%, rgba(56, 189, 248, 0.04) 100%);
+  --skr-gradient-hero: linear-gradient(135deg, color-mix(in srgb, var(--skr-accent) 10%, transparent) 0%, color-mix(in srgb, var(--skr-accent-secondary) 7%, transparent) 50%, color-mix(in srgb, var(--skr-accent-info) 5%, transparent) 100%);
   --skr-gradient-nav-active: linear-gradient(90deg, color-mix(in srgb, var(--skr-accent) 15%, transparent), color-mix(in srgb, var(--skr-accent) 4%, transparent));
 }

@@ -209,7 +209,7 @@ const styles = {
     fontSize: 11,
     fontWeight: 600,
     padding: "4px 14px",
-    transition: "background 0.15s",
+    transition: "background var(--skr-duration-fast) var(--skr-ease-out)",
   },
   progress: {
     display: "flex",

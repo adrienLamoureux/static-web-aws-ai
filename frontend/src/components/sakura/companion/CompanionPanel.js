@@ -317,7 +317,7 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     gap: 7,
-    animation: "skr-bubble-in-side 0.22s ease",
+    animation: "skr-bubble-in-side var(--skr-duration-normal) var(--skr-ease-out)",
   },
   bubbleText: {
     margin: 0,
@@ -362,7 +362,7 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     gap: 6,
-    animation: "skr-bubble-in 0.2s ease",
+    animation: "skr-bubble-in var(--skr-duration-normal) var(--skr-ease-out)",
   },
   replyBtn: {
     alignSelf: "flex-start",

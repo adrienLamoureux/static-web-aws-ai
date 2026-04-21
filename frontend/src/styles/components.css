@@ -55,7 +55,7 @@
   border-radius: 12px;
   font-size: 13px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background var(--skr-duration-fast) var(--skr-ease-out);
 }
 .skr-btn-secondary:hover { background: rgba(255, 107, 157, 0.08); }
 .skr-btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -87,7 +87,7 @@
   color: var(--skr-text-secondary);
   cursor: pointer;
   font-size: 16px;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background var(--skr-duration-fast) var(--skr-ease-out), color var(--skr-duration-fast) var(--skr-ease-out), border-color var(--skr-duration-fast) var(--skr-ease-out);
 }
 .skr-icon-btn:hover { background: var(--skr-elevated); color: var(--skr-accent); border-color: var(--skr-accent); }
 
@@ -149,7 +149,7 @@
   border-radius: 10px;
   color: var(--skr-text-muted);
   cursor: pointer;
-  transition: color 0.15s, background 0.15s;
+  transition: color var(--skr-duration-fast) var(--skr-ease-out), background var(--skr-duration-fast) var(--skr-ease-out);
 }
 .skr-tab:hover { color: var(--skr-text); }
 .skr-tab.is-active {
@@ -197,7 +197,7 @@
 .skr-masonry-overlay {
   position: absolute; inset: 0;
   background: linear-gradient(transparent 40%, rgba(255, 107, 157, 0.2));
-  opacity: 0; transition: opacity 0.2s; border-radius: 12px;
+  opacity: 0; transition: opacity var(--skr-duration-normal) var(--skr-ease-out); border-radius: 12px;
 }
 .skr-masonry-card:hover .skr-masonry-overlay { opacity: 1; }
 .skr-masonry-title { font-family: var(--skr-font-display); font-size: 16px; font-weight: 700; color: var(--skr-accent); margin: 0; }
@@ -213,11 +213,11 @@
 .skr-image-tile-backdrop {
   position: absolute; inset: 0;
   background: linear-gradient(transparent 50%, rgba(255, 107, 157, 0.15));
-  opacity: 0; transition: opacity 0.2s; border-radius: 12px;
+  opacity: 0; transition: opacity var(--skr-duration-normal) var(--skr-ease-out); border-radius: 12px;
 }
 .skr-image-tile:hover .skr-image-tile-backdrop { opacity: 1; }
 .skr-image-tile-main { display: block; width: 100%; }
-.skr-image-tile-overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 10px; opacity: 0; transition: opacity 0.2s; }
+.skr-image-tile-overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 10px; opacity: 0; transition: opacity var(--skr-duration-normal) var(--skr-ease-out); }
 .skr-image-tile:hover .skr-image-tile-overlay { opacity: 1; }
 .skr-image-tile-caption { font-size: 12px; color: var(--skr-accent); }
 .skr-image-tile-actions { display: flex; gap: 4px; margin-top: 4px; }
@@ -318,7 +318,7 @@
   display: flex; flex-direction: column; gap: 8px;
   padding: 12px; background: var(--skr-elevated);
   border-radius: 10px; border: 1px solid var(--skr-border);
-  cursor: pointer; transition: border-color 0.15s;
+  cursor: pointer; transition: border-color var(--skr-duration-fast) var(--skr-ease-out);
 }
 .skr-track-item:hover { border-color: var(--skr-accent); }
 .skr-track-item--selected { border-color: var(--skr-accent); background: rgba(255, 107, 157, 0.08); }
@@ -350,7 +350,7 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
   max-width: 280px;
   overflow: visible;
-  transition: box-shadow 0.22s ease, border-color 0.22s ease, background 0.4s ease;
+  transition: box-shadow var(--skr-duration-normal) var(--skr-ease-out), border-color var(--skr-duration-normal) var(--skr-ease-out), background var(--skr-duration-slow) var(--skr-ease-out);
 }
 .skr-music-pill.is-playing { background: linear-gradient(135deg, var(--skr-glass), rgba(255, 107, 157, 0.06) 60%, var(--skr-glass)); }
 .skr-music-pill.is-peak { box-shadow: var(--skr-glow-strong), 0 4px 20px rgba(0, 0, 0, 0.35); border-color: var(--skr-border-strong); }
@@ -364,7 +364,7 @@
   border-radius: 1px;
   height: calc(2px + var(--skr-bar-h, 0.12) * 14px);
   opacity: 0.55;
-  transition: height 0.05s linear, opacity 0.2s ease;
+  transition: height 0.05s linear, opacity var(--skr-duration-normal) var(--skr-ease-out);
 }
 .skr-music-eq.is-playing span { opacity: 1; }
 .skr-music-note { font-size: 13px; opacity: 0.5; line-height: 1; animation: skr-note-breathe 2.4s ease-in-out infinite; }
@@ -392,12 +392,12 @@
   font-size: 11px;
   line-height: 1;
   flex-shrink: 0;
-  transition: color 0.15s;
+  transition: color var(--skr-duration-fast) var(--skr-ease-out);
 }
 .skr-music-pill-btn:hover { color: var(--skr-accent); }
 .skr-music-pill-close { opacity: 0.55; }
 .skr-music-pill-close:hover { opacity: 1; color: var(--skr-text); }
-.skr-music-pill-expand { opacity: 0.55; transition: opacity 0.15s, transform 0.2s; }
+.skr-music-pill-expand { opacity: 0.55; transition: opacity var(--skr-duration-fast) var(--skr-ease-out), transform var(--skr-duration-normal) var(--skr-ease-out); }
 .skr-music-pill-expand:hover { opacity: 1; }
 .skr-music-pill-expand.is-open { transform: rotate(180deg); opacity: 1; color: var(--skr-accent); }
 
@@ -455,7 +455,7 @@
   padding: 7px 10px;
   border-radius: 9px;
   cursor: pointer;
-  transition: background 0.12s;
+  transition: background var(--skr-duration-fast) var(--skr-ease-out);
 }
 .skr-music-pill-track:hover { background: var(--skr-elevated); }
 .skr-music-pill-track.is-active { background: rgba(255, 107, 157, 0.1); }

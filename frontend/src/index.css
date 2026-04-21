@@ -4,6 +4,7 @@
 @import "./styles/reset.css";
 @import "./styles/layout.css";
 @import "./styles/components.css";
+@import "./styles/interactions.css";
 @import "./styles/gallery.css";
 @import "./styles/generator.css";
 @import "./styles/music.css";

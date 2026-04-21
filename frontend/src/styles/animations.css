@@ -87,6 +87,18 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Hero gradient drift — slow ambient background-position shift */
+@keyframes skr-gradient-drift {
+  from { background-position: 0% 50%; }
+  to   { background-position: 100% 50%; }
+}
+
+/* Rotating accent ring (loading emblem) */
+@keyframes skr-ring-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
 /* ── Character Walker ────────────────────────────────────── */
 .skr-character-walker {
   position: fixed;

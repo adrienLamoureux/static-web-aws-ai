@@ -13,7 +13,7 @@ export const styles = {
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
-    animation: "skr-bubble-in-side 0.22s ease",
+    animation: "skr-bubble-in-side var(--skr-duration-normal) var(--skr-ease-out)",
   },
   panelFull: {
     flex: 1,
@@ -122,7 +122,7 @@ export const styles = {
     fontSize: 15,
     fontWeight: 700,
     padding: "2px 10px",
-    transition: "background 0.15s",
+    transition: "background var(--skr-duration-fast) var(--skr-ease-out)",
     lineHeight: 1,
   },
   // Two-triangle bordered tail pointing RIGHT toward the character

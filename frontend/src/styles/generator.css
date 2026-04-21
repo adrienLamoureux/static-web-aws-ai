@@ -30,8 +30,8 @@
   font-family: var(--skr-font-body);
   resize: none;
   transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
+    border-color var(--skr-duration-normal) var(--skr-ease-out),
+    box-shadow var(--skr-duration-normal) var(--skr-ease-out);
   line-height: 1.5;
 }
 .skr-gen-prompt-input:focus {
@@ -112,9 +112,9 @@
   color: var(--skr-text-muted);
   cursor: pointer;
   transition:
-    background 0.15s,
-    color 0.15s,
-    border-color 0.15s;
+    background var(--skr-duration-fast) var(--skr-ease-out),
+    color var(--skr-duration-fast) var(--skr-ease-out),
+    border-color var(--skr-duration-fast) var(--skr-ease-out);
 }
 .skr-gen-source-tab:hover {
   color: var(--skr-text);
@@ -143,8 +143,8 @@
   border: 2px solid transparent;
   cursor: pointer;
   transition:
-    border-color 0.15s,
-    background 0.15s;
+    border-color var(--skr-duration-fast) var(--skr-ease-out),
+    background var(--skr-duration-fast) var(--skr-ease-out);
 }
 .skr-model-thumb:hover {
   background: var(--skr-surface);
@@ -184,7 +184,7 @@
   border: 2px solid transparent;
   color: var(--skr-text-muted);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all var(--skr-duration-fast) var(--skr-ease-out);
 }
 .skr-gen-count-tab:hover {
   color: var(--skr-text);
@@ -222,8 +222,8 @@
   cursor: pointer;
   width: 100%;
   transition:
-    background 0.15s,
-    color 0.15s;
+    background var(--skr-duration-fast) var(--skr-ease-out),
+    color var(--skr-duration-fast) var(--skr-ease-out);
 }
 .skr-gen-sidebar-reset-btn:hover {
   background: var(--skr-elevated);
@@ -282,8 +282,8 @@
   line-height: 1;
   border-radius: 6px;
   transition:
-    color 0.15s,
-    background 0.15s;
+    color var(--skr-duration-fast) var(--skr-ease-out),
+    background var(--skr-duration-fast) var(--skr-ease-out);
 }
 .skr-gen-drawer-close:hover {
   color: var(--skr-text);
@@ -333,8 +333,8 @@
   border: 2px solid transparent;
   cursor: pointer;
   transition:
-    border-color 0.15s,
-    background 0.15s;
+    border-color var(--skr-duration-fast) var(--skr-ease-out),
+    background var(--skr-duration-fast) var(--skr-ease-out);
   min-width: 48px;
 }
 .skr-ratio-btn:hover {
@@ -379,8 +379,8 @@
   border: 2px solid transparent;
   cursor: pointer;
   transition:
-    border-color 0.15s,
-    background 0.15s;
+    border-color var(--skr-duration-fast) var(--skr-ease-out),
+    background var(--skr-duration-fast) var(--skr-ease-out);
 }
 .skr-style-preset-btn:hover {
   background: var(--skr-surface);

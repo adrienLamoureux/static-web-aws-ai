@@ -14,7 +14,7 @@
   border-radius: 10px;
   border: 1px solid var(--skr-border);
   cursor: pointer;
-  transition: border-color 0.15s;
+  transition: border-color var(--skr-duration-fast) var(--skr-ease-out);
 }
 .skr-track-item:hover {
   border-color: var(--skr-accent);
@@ -119,7 +119,7 @@
   padding: 2px 4px;
   border-radius: 6px;
   background: rgba(255, 107, 157, 0.06);
-  transition: background 0.3s ease;
+  transition: background var(--skr-duration-slow) var(--skr-ease-out);
 }
 
 .skr-music-widget.is-playing .skr-music-eq {
@@ -373,7 +373,7 @@
   padding: 7px 10px;
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.12s;
+  transition: background var(--skr-duration-fast) var(--skr-ease-out);
 }
 
 .skr-music-panel-track:hover {

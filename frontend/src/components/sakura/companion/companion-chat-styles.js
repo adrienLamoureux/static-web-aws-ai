@@ -178,6 +178,6 @@ export const styles = {
     fontSize: 12,
     fontWeight: 600,
     padding: "4px 12px",
-    transition: "background 0.15s",
+    transition: "background var(--skr-duration-fast) var(--skr-ease-out)",
   },
 };
