@@ -93,6 +93,23 @@
   to   { transform: rotate(360deg); }
 }
 
+/* Music orb — disc rotation while playing */
+@keyframes skr-orb-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Music orb — idle pulse when no track is loaded */
+@keyframes skr-orb-idle-pulse {
+  0%, 100% { opacity: 0.7; }
+  50%      { opacity: 1; }
+}
+
+/* Music pill + library chip + panel — slide-in entry */
+@keyframes skr-pill-slide-in {
+  from { opacity: 0; transform: scale(0.88) translateX(10px); }
+  to   { opacity: 1; transform: scale(1) translateX(0); }
+}
+
 /* ── Character Walker ────────────────────────────────────── */
 .skr-character-walker {
   position: fixed;
@@ -179,7 +196,10 @@
   .skr-masonry-hero::before { animation: none; }
   .skr-loading-emblem::before { animation: none; }
   .skr-loading-emblem { animation: none; }
-  .skr-music-note { animation: none !important; }
+  .skr-music-orb-disc { animation: none !important; }
+  .skr-music-pill,
+  .skr-music-lib,
+  .skr-music-panel { animation: none !important; }
   .skr-music-live-dot { animation: none !important; }
   .skr-notification { animation: none !important; }
 }

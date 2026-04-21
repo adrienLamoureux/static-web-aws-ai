@@ -10,7 +10,7 @@ export default function SakuraMusicBar() {
   const [duration, setDuration] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const lastRequestId = useRef(0);
-  const panelRef = useRef(null);
+  const rootRef = useRef(null);
 
   const { bars, isPeak } = useAudioBars({
     audioRef,
@@ -19,7 +19,8 @@ export default function SakuraMusicBar() {
     trackKey: currentTrack?.key,
   });
 
-  const visibleBars = useMemo(() => bars.filter((_, i) => i % 2 === 0).slice(2, 12), [bars]);
+  // 5 evenly-spaced bars for the compact pill waveform
+  const pillBars = useMemo(() => bars.filter((_, i) => i % 4 === 0).slice(1, 6), [bars]);
 
   useEffect(() => {
     if (currentTrack?.url && audioRef.current) {
@@ -48,7 +49,7 @@ export default function SakuraMusicBar() {
   useEffect(() => {
     if (!expanded) return;
     const handler = (e) => {
-      if (panelRef.current && !panelRef.current.contains(e.target)) setExpanded(false);
+      if (rootRef.current && !rootRef.current.contains(e.target)) setExpanded(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -66,6 +67,11 @@ export default function SakuraMusicBar() {
         .catch(() => {});
     }
   }, [playing, currentTrack?.url]);
+
+  const handleOrbClick = useCallback(() => {
+    if (currentTrack) togglePlay();
+    else setExpanded((v) => !v);
+  }, [currentTrack, togglePlay]);
 
   const handleSeek = useCallback(
     (e) => {
@@ -98,8 +104,8 @@ export default function SakuraMusicBar() {
 
   const progress = duration ? (currentTime / duration) * 100 : 0;
 
-  const widgetClass = [
-    "skr-music-widget",
+  const rootClass = [
+    "skr-music",
     currentTrack ? "has-track" : "",
     playing ? "is-playing" : "",
     isPeak ? "is-peak" : "",
@@ -107,8 +113,17 @@ export default function SakuraMusicBar() {
     .filter(Boolean)
     .join(" ");
 
+  const orbIcon = currentTrack ? (playing ? "⏸" : "▶") : "♪";
+  const orbLabel = currentTrack
+    ? playing
+      ? "Pause"
+      : "Play"
+    : expanded
+      ? "Close music library"
+      : "Open music library";
+
   return (
-    <div className={widgetClass} ref={panelRef}>
+    <div className={rootClass} ref={rootRef}>
       <audio
         ref={audioRef}
         crossOrigin="anonymous"
@@ -117,66 +132,71 @@ export default function SakuraMusicBar() {
         loop
       />
 
-      <div className="skr-music-inner">
-        {/* EQ visualizer or idle icon */}
-        <div className={`skr-music-eq${playing ? " is-playing" : ""}`} aria-hidden="true">
-          {currentTrack ? (
-            visibleBars.map((h, i) => <span key={i} style={{ "--skr-bar-h": h }} />)
-          ) : (
-            <span className="skr-music-note">♫</span>
-          )}
-        </div>
-
-        {/* Track info — only when a track is loaded */}
-        {currentTrack && (
-          <div className="skr-music-info">
+      {/* Track info pill — only visible when a track is loaded */}
+      {currentTrack && (
+        <div className="skr-music-pill">
+          <div className="skr-music-pill-head">
             <span className="skr-music-title">
               {playing && <span className="skr-music-live-dot" aria-hidden="true" />}
               {currentTrack.title || "Untitled"}
             </span>
             {currentTrack.mood && <span className="skr-music-mood">{currentTrack.mood}</span>}
           </div>
-        )}
 
-        {/* Controls */}
-        <div className="skr-music-controls">
-          {currentTrack && (
-            <button
-              type="button"
-              className="skr-music-btn skr-music-btn-play"
-              onClick={togglePlay}
-              aria-label={playing ? "Pause" : "Play"}
-            >
-              {playing ? "⏸" : "▶"}
-            </button>
-          )}
-          {currentTrack && (
-            <button
-              type="button"
-              className="skr-music-btn skr-music-btn-stop"
-              onClick={handleStop}
-              aria-label="Stop"
-            >
-              ✕
-            </button>
-          )}
+          <div className="skr-music-wave" aria-hidden="true">
+            {pillBars.map((h, i) => (
+              <span key={i} style={{ "--skr-bar-h": h }} />
+            ))}
+          </div>
+
           <button
             type="button"
-            className={`skr-music-btn skr-music-btn-list${expanded ? " is-open" : ""}`}
-            onClick={() => setExpanded((v) => !v)}
-            aria-label="Toggle track list"
+            className="skr-music-chip"
+            onClick={handleStop}
+            aria-label="Stop"
+            title="Stop"
           >
-            ♬
+            ✕
           </button>
-        </div>
-      </div>
 
-      {/* Seekable progress bar */}
-      {currentTrack && (
-        <div className="skr-music-progress" onClick={handleSeek} role="progressbar">
-          <div className="skr-music-progress-fill" style={{ width: `${progress}%` }} />
+          <div
+            className="skr-music-scrub"
+            onClick={handleSeek}
+            role="progressbar"
+            aria-valuenow={Math.round(progress)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
+            <div className="skr-music-scrub-fill" style={{ width: `${progress}%` }} />
+          </div>
         </div>
       )}
+
+      {/* Library trigger — visible beside the pill when a track is loaded */}
+      {currentTrack && (
+        <button
+          type="button"
+          className={`skr-music-lib${expanded ? " is-open" : ""}`}
+          onClick={() => setExpanded((v) => !v)}
+          aria-label="Toggle music library"
+          title="Music library"
+        >
+          ♬
+        </button>
+      )}
+
+      {/* Orb — always visible, primary click target */}
+      <button
+        type="button"
+        className="skr-music-orb"
+        onClick={handleOrbClick}
+        aria-label={orbLabel}
+        style={{ "--skr-music-progress": `${progress * 3.6}deg` }}
+      >
+        <span className="skr-music-orb-ring" aria-hidden="true" />
+        <span className="skr-music-orb-disc" aria-hidden="true" />
+        <span className="skr-music-orb-icon">{orbIcon}</span>
+      </button>
 
       {/* Track picker panel */}
       {expanded && (

@@ -6,5 +6,6 @@
   .skr-hud-item { padding: 6px 10px; }
   .skr-hud-label { display: none; }
   .skr-split { grid-template-columns: 1fr; }
-  .skr-music-pill-title { max-width: 80px; }
+  .skr-music-pill-head { max-width: 110px; }
+  .skr-music-wave { display: none; }
 }
