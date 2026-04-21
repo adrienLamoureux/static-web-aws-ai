@@ -110,11 +110,6 @@
   animation: skr-scale-in var(--skr-duration-normal, 240ms) var(--skr-ease-out, cubic-bezier(0.22, 1, 0.36, 1)) both;
 }
 
-@keyframes skr-modal-in {
-  from { opacity: 0; transform: scale(0.95) translateY(8px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
-}
-
 .skr-modal-close {
   position: absolute;
   top: 12px;

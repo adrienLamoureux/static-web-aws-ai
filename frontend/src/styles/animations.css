@@ -81,12 +81,6 @@
   to   { opacity: 1; transform: scale(1); }
 }
 
-/* Page-level enter (route transitions) */
-@keyframes skr-page-enter {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
 /* Hero gradient drift — slow ambient background-position shift */
 @keyframes skr-gradient-drift {
   from { background-position: 0% 50%; }
@@ -181,4 +175,11 @@
   .skr-lightbox { animation: none; }
   .skr-theme-menu { animation: none; }
   .skr-modal-card { animation: none; opacity: 1; transform: none; }
+  /* Polish v2 — hero drift, loading ring, music widget, sanctum notifications */
+  .skr-masonry-hero::before { animation: none; }
+  .skr-loading-emblem::before { animation: none; }
+  .skr-loading-emblem { animation: none; }
+  .skr-music-note { animation: none !important; }
+  .skr-music-live-dot { animation: none !important; }
+  .skr-notification { animation: none !important; }
 }
