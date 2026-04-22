@@ -149,9 +149,14 @@
   border-radius: 10px;
   color: var(--skr-text-muted);
   cursor: pointer;
-  transition: color var(--skr-duration-fast) var(--skr-ease-out), background var(--skr-duration-fast) var(--skr-ease-out);
+  transition:
+    color var(--skr-duration-fast) var(--skr-ease-out),
+    background var(--skr-duration-normal) var(--skr-ease-spring),
+    box-shadow var(--skr-duration-normal) var(--skr-ease-spring),
+    transform var(--skr-duration-fast) var(--skr-ease-out);
 }
 .skr-tab:hover { color: var(--skr-text); }
+.skr-tab:active { transform: scale(0.97); }
 .skr-tab.is-active {
   color: var(--skr-text);
   background: var(--skr-elevated);
@@ -162,11 +167,24 @@
 .skr-chip {
   display: inline-flex;
   padding: 3px 10px;
-  background: rgba(255, 107, 157, 0.12);
+  background: color-mix(in srgb, var(--skr-accent) 12%, transparent);
   color: var(--skr-accent);
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
+  transition:
+    transform var(--skr-duration-fast) var(--skr-ease-out),
+    background-color var(--skr-duration-fast) var(--skr-ease-out),
+    color var(--skr-duration-fast) var(--skr-ease-out);
+}
+.skr-chip:hover {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--skr-accent) 22%, transparent);
+  color: var(--skr-accent-hover, var(--skr-accent));
+}
+.skr-chip:active {
+  transform: translateY(0);
+  background: color-mix(in srgb, var(--skr-accent) 28%, transparent);
 }
 
 /* ─── Grid / Layout ─── */

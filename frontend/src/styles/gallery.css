@@ -116,14 +116,17 @@
   padding: 2px 4px;
   border-radius: 6px;
   transition:
-    color 0.15s,
-    transform 0.1s;
+    color var(--skr-duration-fast) var(--skr-ease-out),
+    transform var(--skr-duration-fast) var(--skr-ease-out);
   line-height: 1;
 }
 .skr-gallery-card-fav:hover,
 .skr-gallery-card-fav.is-active {
   color: var(--skr-accent);
   transform: scale(1.15);
+}
+.skr-gallery-card-fav.is-active {
+  animation: skr-fav-pop 340ms var(--skr-ease-spring);
 }
 
 /* ─── Gallery Feed grid ─── */
@@ -162,15 +165,19 @@
   border: 1px solid var(--skr-border);
   cursor: pointer;
   transition:
-    background 0.15s,
-    color 0.15s,
-    border-color 0.15s;
+    background var(--skr-duration-normal) var(--skr-ease-spring),
+    color var(--skr-duration-fast) var(--skr-ease-out),
+    border-color var(--skr-duration-fast) var(--skr-ease-out),
+    box-shadow var(--skr-duration-normal) var(--skr-ease-spring),
+    transform var(--skr-duration-fast) var(--skr-ease-out);
   white-space: nowrap;
 }
 .skr-feed-tab:hover {
   color: var(--skr-text);
   background: var(--skr-elevated);
+  transform: translateY(-1px);
 }
+.skr-feed-tab:active { transform: translateY(0); }
 .skr-feed-tab.is-active {
   background: var(--skr-cta, var(--skr-accent));
   color: #fff;
@@ -206,7 +213,9 @@
 .skr-placeholder {
   background: linear-gradient(90deg, var(--skr-card) 25%, var(--skr-elevated) 50%, var(--skr-card) 75%);
   background-size: 200% 100%;
-  animation: skr-shimmer 1.8s ease-in-out infinite;
+  animation:
+    skr-shimmer 1.8s ease-in-out infinite,
+    skr-placeholder-pulse 2.4s ease-in-out infinite alternate;
   border: 1px solid var(--skr-border) !important;
   pointer-events: none;
 }
