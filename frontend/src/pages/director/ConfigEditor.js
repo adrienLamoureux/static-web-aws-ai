@@ -77,7 +77,10 @@ export default function ConfigEditor({ apiBaseUrl, config, options, isLoading, o
 
       {/* Generation */}
       <details className="skr-disclosure">
-        <summary className="skr-disclosure-header">Generation</summary>
+        <summary className="skr-disclosure-header">
+          <span>Generation</span>
+          <span className="skr-disclosure-chevron" aria-hidden="true">▾</span>
+        </summary>
         <div className="skr-disclosure-body">
           <div>
             <label className="skr-field-label">Image Model</label>
@@ -153,7 +156,10 @@ export default function ConfigEditor({ apiBaseUrl, config, options, isLoading, o
 
       {/* Video */}
       <details className="skr-disclosure">
-        <summary className="skr-disclosure-header">Video</summary>
+        <summary className="skr-disclosure-header">
+          <span>Video</span>
+          <span className="skr-disclosure-chevron" aria-hidden="true">▾</span>
+        </summary>
         <div className="skr-disclosure-body">
           <div>
             <label className="skr-field-label">Video Model</label>
@@ -184,7 +190,10 @@ export default function ConfigEditor({ apiBaseUrl, config, options, isLoading, o
 
       {/* Sound */}
       <details className="skr-disclosure">
-        <summary className="skr-disclosure-header">Sound</summary>
+        <summary className="skr-disclosure-header">
+          <span>Sound</span>
+          <span className="skr-disclosure-chevron" aria-hidden="true">▾</span>
+        </summary>
         <div className="skr-disclosure-body">
           <div>
             <label className="skr-field-label">Default Mood</label>

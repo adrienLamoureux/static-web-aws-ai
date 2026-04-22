@@ -9,3 +9,9 @@
   .skr-music-pill-head { max-width: 110px; }
   .skr-music-wave { display: none; }
 }
+
+/* Tooltips only on hover-capable pointers (hide on touch) */
+@media (hover: none) {
+  .skr-tooltip[data-tooltip]::after,
+  .skr-tooltip[data-tooltip]::before { display: none; }
+}

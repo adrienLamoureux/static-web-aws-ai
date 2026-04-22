@@ -124,6 +124,18 @@
   100% { transform: scale(1.15); }
 }
 
+/* Gallery/list entry — cascading fade+rise for staggered reveal */
+@keyframes skr-fade-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Notification / toast exit — mirror of skr-slide-in */
+@keyframes skr-slide-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(20px); }
+}
+
 /* ── Character Walker ────────────────────────────────────── */
 .skr-character-walker {
   position: fixed;
@@ -216,6 +228,10 @@
   .skr-music-panel { animation: none !important; }
   .skr-music-live-dot { animation: none !important; }
   .skr-notification { animation: none !important; }
-  /* Polish v3 — skeleton pulse, favorite pop */
+  /* Polish v3 — skeleton pulse, favorite pop, stagger, notification exit */
   .skr-gallery-card-fav.is-active { animation: none !important; }
+  .skr-gallery-card { animation: none !important; opacity: 1 !important; }
+  .skr-notification.is-leaving { animation: none !important; opacity: 0 !important; }
+  .skr-tooltip::after,
+  .skr-tooltip::before { transition: none !important; }
 }

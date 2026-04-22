@@ -22,9 +22,9 @@ export default function ThemeSwitcher() {
     <div className="skr-theme-controls">
       <button
         type="button"
-        className="skr-brightness-toggle"
+        className="skr-brightness-toggle skr-tooltip"
         onClick={() => setBrightness(isLight ? "dark" : "light")}
-        title={isLight ? "Switch to dark mode" : "Switch to light mode"}
+        data-tooltip={isLight ? "Switch to dark mode" : "Switch to light mode"}
         aria-label={isLight ? "Switch to dark mode" : "Switch to light mode"}
         aria-pressed={isLight}
       >

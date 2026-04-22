@@ -20,34 +20,112 @@
 /* Empty state row */
 .skr-empty-row { padding: 24px 20px; text-align: center; color: var(--skr-text-tertiary); font-size: 13px; }
 
-/* Sanctum sub-nav tabs */
+/* Sanctum sub-nav tabs — animated scaleX underline on active */
 .skr-sanctum-tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid var(--skr-border); padding-bottom: 0; }
-.skr-sanctum-tab { padding: 8px 16px; font-size: 13px; font-weight: 500; color: var(--skr-text-secondary); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: color 0.15s, border-color 0.15s; margin-bottom: -1px; }
+.skr-sanctum-tab {
+  position: relative;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--skr-text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color var(--skr-duration-fast) var(--skr-ease-out);
+  margin-bottom: -1px;
+}
+.skr-sanctum-tab::after {
+  content: "";
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: -1px;
+  height: 2px;
+  background: var(--skr-accent);
+  border-radius: 2px 2px 0 0;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform var(--skr-duration-normal) var(--skr-ease-spring);
+}
 .skr-sanctum-tab:hover { color: var(--skr-text-primary); }
-.skr-sanctum-tab.is-active { color: var(--skr-accent); border-bottom-color: var(--skr-accent); font-weight: 600; }
+.skr-sanctum-tab.is-active { color: var(--skr-accent); font-weight: 600; }
+.skr-sanctum-tab.is-active::after { transform: scaleX(1); }
 
-/* Notification stack */
+/* Notification stack — slide-in entry, slide-out exit via .is-leaving */
 .skr-notification-stack { position: fixed; bottom: 72px; right: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 9999; pointer-events: none; }
-.skr-notification { padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; pointer-events: all; animation: skr-slide-in 0.2s ease; max-width: 320px; }
+.skr-notification {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  pointer-events: all;
+  animation: skr-slide-in var(--skr-duration-normal) var(--skr-ease-out);
+  max-width: 320px;
+}
+.skr-notification.is-leaving {
+  animation: skr-slide-out var(--skr-duration-normal) var(--skr-ease-out) forwards;
+}
 .skr-notification.success { background: var(--skr-accent-subtle, rgba(217,119,6,0.12)); color: var(--skr-accent); border: 1px solid var(--skr-accent); }
 .skr-notification.error { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid #ef4444; }
 @keyframes skr-slide-in { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 
-/* Feature flag toggles */
+/* Feature flag toggles — sliding indicator dot */
 .skr-flag-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--skr-border); gap: 12px; }
 .skr-flag-row:last-child { border-bottom: none; }
-.skr-flag-toggle { width: 36px; height: 20px; border-radius: 10px; border: none; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+.skr-flag-toggle {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: background var(--skr-duration-normal) var(--skr-ease-out);
+  flex-shrink: 0;
+  padding: 0;
+}
+.skr-flag-toggle::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform var(--skr-duration-normal) var(--skr-ease-spring);
+}
 .skr-flag-toggle.on { background: var(--skr-accent); }
+.skr-flag-toggle.on::before { transform: translateX(16px); }
 .skr-flag-toggle.off { background: var(--skr-border); }
 
-/* Usage bars */
+/* Usage bars — gradient ramps toward warn tint as fill grows */
 .skr-usage-bar-row { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 6px; }
 .skr-usage-bar-label { width: 140px; color: var(--skr-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .skr-usage-bar-track { flex: 1; height: 6px; background: var(--skr-elevated); border-radius: 3px; overflow: hidden; }
-.skr-usage-bar-fill { height: 100%; background: var(--skr-accent); border-radius: 3px; }
+.skr-usage-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: color-mix(
+    in srgb,
+    var(--skr-accent-warning, #FBBF24) calc(var(--skr-usage-pct, 0) * 1%),
+    var(--skr-accent)
+  );
+  transition: width var(--skr-duration-slow) var(--skr-ease-out),
+              background-color var(--skr-duration-slow) var(--skr-ease-out);
+}
 .skr-usage-bar-value { width: 60px; text-align: right; color: var(--skr-text-tertiary); }
 
-/* Config editor disclosures */
+/* Config editor disclosures — chevron rotates when open */
 .skr-disclosure { border: 1px solid var(--skr-border); border-radius: 8px; overflow: hidden; margin-bottom: 10px; }
-.skr-disclosure-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; cursor: pointer; background: var(--skr-elevated); font-size: 13px; font-weight: 600; color: var(--skr-text-primary); }
+.skr-disclosure-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; cursor: pointer; background: var(--skr-elevated); font-size: 13px; font-weight: 600; color: var(--skr-text-primary); list-style: none; }
+.skr-disclosure-header::-webkit-details-marker { display: none; }
+.skr-disclosure-chevron {
+  display: inline-block;
+  font-size: 10px;
+  color: var(--skr-text-tertiary);
+  margin-left: 8px;
+  transition: transform var(--skr-duration-normal) var(--skr-ease-out);
+}
+.skr-disclosure[open] .skr-disclosure-chevron { transform: rotate(180deg); }
 .skr-disclosure-body { padding: 14px; display: flex; flex-direction: column; gap: 10px; }

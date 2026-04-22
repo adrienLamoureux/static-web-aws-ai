@@ -186,6 +186,7 @@ export default function HomePage() {
               <GalleryCard
                 key={image.key || i}
                 image={image}
+                index={i}
                 onOpenLightbox={setLightboxImage}
                 onToggleFavorite={isAuthenticated ? handleFavorite : null}
               />

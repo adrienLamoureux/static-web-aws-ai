@@ -50,3 +50,70 @@
   animation: skr-ring-spin 4s linear infinite;
   pointer-events: none;
 }
+
+/* ─── Tooltip primitive ───
+   Attach by adding `className="skr-tooltip" data-tooltip="Label"` to any
+   element. Renders on :hover / :focus-visible after a 250ms dwell delay
+   so accidental grazing doesn't flash it. Suppressed on touch devices
+   via @media (hover: none) in responsive.css. */
+.skr-tooltip[data-tooltip] {
+  position: relative;
+}
+.skr-tooltip[data-tooltip]::after,
+.skr-tooltip[data-tooltip]::before {
+  position: absolute;
+  left: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--skr-duration-fast) var(--skr-ease-out),
+              transform var(--skr-duration-fast) var(--skr-ease-out);
+  transition-delay: 0s;
+}
+.skr-tooltip[data-tooltip]::after {
+  content: attr(data-tooltip);
+  top: calc(100% + 10px);
+  transform: translate(-50%, 4px);
+  padding: 5px 10px;
+  background: var(--skr-glass);
+  border: 1px solid var(--skr-border);
+  color: var(--skr-text);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--skr-shadow-sm);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+}
+.skr-tooltip[data-tooltip]::before {
+  content: "";
+  top: calc(100% + 4px);
+  transform: translate(-50%, 4px) rotate(45deg);
+  width: 6px;
+  height: 6px;
+  background: var(--skr-glass);
+  border-left: 1px solid var(--skr-border);
+  border-top: 1px solid var(--skr-border);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+}
+.skr-tooltip[data-tooltip]:hover::after,
+.skr-tooltip[data-tooltip]:hover::before,
+.skr-tooltip[data-tooltip]:focus-visible::after,
+.skr-tooltip[data-tooltip]:focus-visible::before {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition-delay: 250ms;
+}
+.skr-tooltip[data-tooltip]:hover::before,
+.skr-tooltip[data-tooltip]:focus-visible::before {
+  transform: translate(-50%, 0) rotate(45deg);
+}
+
+/* ─── List stagger — cascading entry for gallery/feed cards ───
+   React sets --skr-i on each card; items past index 9 snap in without
+   delay so late scroll chunks stay snappy. */
+.skr-gallery-card {
+  animation: skr-fade-rise var(--skr-duration-slow) var(--skr-ease-out) both;
+  animation-delay: calc(min(var(--skr-i, 0), 9) * 40ms);
+}

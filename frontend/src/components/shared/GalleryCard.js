@@ -4,7 +4,7 @@ import React, { useState } from "react";
  * Enhanced gallery card — PixAI-inspired design with metadata overlay.
  * Used on the home feed for images and videos.
  */
-export default function GalleryCard({ image, onOpenLightbox, onToggleFavorite, isVideo = false }) {
+export default function GalleryCard({ image, onOpenLightbox, onToggleFavorite, isVideo = false, index = 0 }) {
   const [hovered, setHovered] = useState(false);
   const prompt = image?.prompt || "";
   const tags = prompt
@@ -16,6 +16,7 @@ export default function GalleryCard({ image, onOpenLightbox, onToggleFavorite, i
   return (
     <article
       className="skr-gallery-card"
+      style={{ "--skr-i": index }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
