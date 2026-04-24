@@ -12,7 +12,7 @@
   background-size: 200% 200%;
   background-position: 0% 50%;
   animation: skr-gradient-drift 24s var(--skr-ease-in-out) infinite alternate;
-  opacity: 0.35;
+  opacity: 0.08;
 }
 
 /* Ensure masonry columns + overlay render above the drift layer */
