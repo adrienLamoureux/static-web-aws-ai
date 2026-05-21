@@ -65,6 +65,43 @@ const createMockDeps = (overrides = {}) => {
     getMemoryStatus: async () => ({ hasMemory: false }),
   };
 
+  const agentMemory = {
+    SUMMARY_THRESHOLD: 30,
+    loadMemory: async () => null,
+    saveMessages: async () => {},
+    updateSummary: async () => {},
+    compactMemory: async () => {},
+    clearMemory: async () => {},
+    getMemoryStatus: async () => ({ hasMemory: false }),
+  };
+
+  const agentState = {
+    load: async () => null,
+    patch: async () => {},
+    clear: async () => {},
+  };
+
+  const agentRateLimit = {
+    check: async () => ({ allowed: true, remaining: null, retryAfterMs: 0 }),
+  };
+
+  const agentCost = {
+    record: async () => {},
+    load: async () => null,
+    scanAll: async () => ({ items: [], scannedCount: 0, truncated: false }),
+    checkDailyCap: async () => ({ allowed: true, remaining: null, retryAfterMs: 0 }),
+    checkDailyImageCap: async () => ({ allowed: true, remaining: null, retryAfterMs: 0 }),
+    recordImage: async () => {},
+  };
+
+  const agentSessions = {
+    list: async () => [],
+    create: async () => null,
+    rename: async () => null,
+    touch: async () => {},
+    remove: async () => false,
+  };
+
   // ── AI stubs ───────────────────────────────────────────────────────────────
   const aiCraftSceneContext = async () => ({
     positivePrompt: "mock positive",
@@ -272,6 +309,11 @@ const createMockDeps = (overrides = {}) => {
 
     // Stores
     companionMemory,
+    agentMemory,
+    agentState,
+    agentRateLimit,
+    agentCost,
+    agentSessions,
     putMediaItem: mediaStore.putMediaItem,
     deleteMediaItem: mediaStore.deleteMediaItem,
     queryMediaItems: mediaStore.queryMediaItems,

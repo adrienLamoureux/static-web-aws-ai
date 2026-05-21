@@ -274,3 +274,81 @@ test("requireAdminMiddleware passes OPTIONS requests through", () => {
   requireAdminMiddleware(req, res, next);
   assert.equal(next.wasCalled(), true);
 });
+
+// ── isAdmin field on req.user (fixes the silent "admin" cohort lockout) ───
+
+test("getUserFromRequest sets isAdmin=true when REQUEST authorizer groups include admin", () => {
+  const req = {
+    apiGateway: {
+      event: {
+        requestContext: {
+          authorizer: {
+            sub: "admin-1",
+            email: "boss@example.com",
+            groups: "admin,user",
+            anonymous: "false",
+          },
+        },
+      },
+    },
+  };
+  const user = getUserFromRequest(req);
+  assert.equal(user?.isAdmin, true);
+  assert.deepEqual(user?.groups, ["admin", "user"]);
+});
+
+test("getUserFromRequest sets isAdmin=false for non-admin REQUEST authorizer", () => {
+  const req = {
+    apiGateway: {
+      event: {
+        requestContext: {
+          authorizer: { sub: "u1", groups: "user", anonymous: "false" },
+        },
+      },
+    },
+  };
+  const user = getUserFromRequest(req);
+  assert.equal(user?.isAdmin, false);
+});
+
+test("getUserFromRequest sets isAdmin from legacy claims authorizer", () => {
+  const req = {
+    apiGateway: {
+      event: {
+        requestContext: {
+          authorizer: { claims: { sub: "u1", "cognito:groups": ["admin"] } },
+        },
+      },
+    },
+  };
+  const user = getUserFromRequest(req);
+  assert.equal(user?.isAdmin, true);
+});
+
+test("getUserFromRequest sets isAdmin=false for legacy claims with no groups", () => {
+  const req = {
+    apiGateway: {
+      event: { requestContext: { authorizer: { claims: { sub: "u1" } } } },
+    },
+  };
+  const user = getUserFromRequest(req);
+  assert.equal(user?.isAdmin, false);
+});
+
+test("unsigned JWT fallback also sets isAdmin from cognito:groups", () => {
+  withEnv(
+    { ALLOW_UNSIGNED_JWT_FALLBACK: "true", NODE_ENV: "development" },
+    () => {
+      const req = {
+        headers: {
+          authorization: `Bearer ${toUnsignedToken({
+            sub: "dev-admin",
+            "cognito:groups": ["admin"],
+          })}`,
+        },
+      };
+      const user = getUserFromRequest(req);
+      assert.equal(user?.isAdmin, true);
+    }
+  );
+});

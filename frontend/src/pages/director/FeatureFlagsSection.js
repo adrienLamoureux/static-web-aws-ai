@@ -19,11 +19,41 @@ const FLAG_LABELS = {
     label: "Companion Initiative",
     description: "Companion proactively starts conversations",
   },
+  agentMode: {
+    label: "Agent Mode",
+    description: "Route-scoped agent UI on /atelier. Cohort-scopable.",
+    cohort: true,
+  },
+};
+
+// Cohort options for cohort-scoped flags. Values match backend
+// VALID_COHORTS + the boolean alternatives.
+const COHORT_OPTIONS = [
+  { value: "false", label: "Off" },
+  { value: "admin", label: "Admins only" },
+  { value: "beta", label: "Beta cohort" },
+  { value: "all", label: "Everyone" },
+];
+
+// Map a stored flag value (boolean | cohort string) to the dropdown's value.
+const valueToOption = (raw) => {
+  if (raw === false) return "false";
+  if (raw === true || raw === "all") return "all";
+  if (typeof raw === "string" && ["admin", "beta"].includes(raw)) return raw;
+  return "all";
+};
+
+// Map a dropdown value back to what we send to the backend.
+const optionToValue = (opt) => {
+  if (opt === "false") return false;
+  if (opt === "all") return true; // legacy boolean — saveFlags supports both
+  return opt; // "admin" | "beta"
 };
 
 /**
- * FeatureFlagsSection — toggle feature flags.
- * Props: { apiBaseUrl }
+ * FeatureFlagsSection — toggle feature flags. Boolean flags render as a
+ * pill toggle; flags marked `cohort: true` render as a 4-option dropdown
+ * for gradual rollout (off / admin / beta / everyone).
  */
 export default function FeatureFlagsSection({ apiBaseUrl }) {
   const notify = useNotify();
@@ -42,19 +72,38 @@ export default function FeatureFlagsSection({ apiBaseUrl }) {
       .finally(() => setIsLoading(false));
   }, [apiBaseUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleToggle = async (key) => {
-    const updatedFlags = { ...flags, [key]: !flags[key] };
-    setFlags(updatedFlags);
+  const persist = async (next) => {
+    const prev = flags;
+    setFlags(next);
     try {
-      await saveFeatureFlags(apiBaseUrl, { flags: updatedFlags });
+      await saveFeatureFlags(apiBaseUrl, { flags: next });
+    } catch (e) {
+      setFlags(prev);
+      notify(e?.message || "Failed to save feature flags.", "error");
+      throw e;
+    }
+  };
+
+  const handleToggle = async (key) => {
+    const updated = { ...flags, [key]: !flags[key] };
+    try {
+      await persist(updated);
       notify(
-        `${FLAG_LABELS[key]?.label || key} ${updatedFlags[key] ? "enabled" : "disabled"}.`,
+        `${FLAG_LABELS[key]?.label || key} ${updated[key] ? "enabled" : "disabled"}.`,
         "success"
       );
-    } catch (e) {
-      // Revert on failure
-      setFlags(flags);
-      notify(e?.message || "Failed to save feature flags.", "error");
+    } catch {
+      // already reverted in persist
+    }
+  };
+
+  const handleCohortChange = async (key, opt) => {
+    const updated = { ...flags, [key]: optionToValue(opt) };
+    try {
+      await persist(updated);
+      notify(`${FLAG_LABELS[key]?.label || key} scope → ${opt}.`, "success");
+    } catch {
+      // already reverted
     }
   };
 
@@ -63,23 +112,38 @@ export default function FeatureFlagsSection({ apiBaseUrl }) {
   return (
     <div className="skr-card" style={{ padding: 20, marginBottom: 16 }}>
       <p className="skr-module-title">Feature Flags</p>
-      {Object.entries(FLAG_LABELS).map(([key, { label, description }]) => (
+      {Object.entries(FLAG_LABELS).map(([key, meta]) => (
         <div key={key} className="skr-flag-row">
           <div>
             <p
               style={{ fontSize: 13, fontWeight: 600, color: "var(--skr-text-primary)", margin: 0 }}
             >
-              {label}
+              {meta.label}
             </p>
             <p style={{ fontSize: 11, color: "var(--skr-text-tertiary)", margin: "2px 0 0" }}>
-              {description}
+              {meta.description}
             </p>
           </div>
-          <button
-            className={`skr-flag-toggle ${flags[key] ? "on" : "off"}`}
-            onClick={() => handleToggle(key)}
-            aria-label={`Toggle ${label}`}
-          />
+          {meta.cohort ? (
+            <select
+              className="skr-flag-cohort"
+              value={valueToOption(flags[key])}
+              onChange={(e) => handleCohortChange(key, e.target.value)}
+              aria-label={`Scope ${meta.label}`}
+            >
+              {COHORT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <button
+              className={`skr-flag-toggle ${flags[key] ? "on" : "off"}`}
+              onClick={() => handleToggle(key)}
+              aria-label={`Toggle ${meta.label}`}
+            />
+          )}
         </div>
       ))}
     </div>

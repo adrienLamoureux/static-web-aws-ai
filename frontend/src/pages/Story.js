@@ -18,6 +18,7 @@ import StoryComposer from "./story/StoryComposer";
 import StoryLoraSwitcher from "./story/StoryLoraSwitcher";
 import StoryPresetPicker from "./story/StoryPresetPicker";
 import StoryChatMessages from "./story/StoryChatMessages";
+import AgentIntentBanner from "../components/sakura/agent/AgentIntentBanner";
 
 export default function Story() {
   const { apiBaseUrl } = useConfig();
@@ -363,6 +364,7 @@ export default function Story() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 112px)" }}>
+      <AgentIntentBanner />
       {/* Header with session selector */}
       <div className="skr-page-header" style={{ marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>

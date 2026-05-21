@@ -23,6 +23,10 @@ const registerLoraCatalogRoutes = require("./lora/catalog-routes");
 const registerLoraProfileRoutes = require("./lora/profile-routes");
 const registerCharacterRoutes = require("./character-routes");
 const registerCompanionRoute = require("./companion-route");
+const registerAgentRoute = require("./agent-route");
+const registerAgentSuggestRoute = require("./agent-suggest-route");
+const registerAgentAdminRoute = require("./agent-admin-route");
+const registerAgentSessionsRoute = require("./agent-sessions-route");
 
 const registerRoutes = (app, deps) => {
   registerCorePromptRoutes(app, deps);
@@ -50,6 +54,10 @@ const registerRoutes = (app, deps) => {
   app.use("/", registerLoraProfileRoutes(deps));
   registerCharacterRoutes(app, deps);
   registerCompanionRoute(app, deps);
+  registerAgentRoute(app, deps);
+  registerAgentSuggestRoute(app, deps);
+  registerAgentAdminRoute(app, deps);
+  registerAgentSessionsRoute(app, deps);
 };
 
 module.exports = {

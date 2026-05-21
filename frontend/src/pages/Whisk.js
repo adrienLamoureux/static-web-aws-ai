@@ -4,6 +4,9 @@ import { useWhiskImages } from "./whisk/hooks/useWhiskImages";
 import { useImageStudio } from "./whisk/hooks/useImageStudio";
 import { useVideoGeneration } from "./whisk/hooks/useVideoGeneration";
 import { useWhiskInit } from "./whisk/useWhiskInit";
+import { usePrefilledFromAgent } from "./whisk/hooks/usePrefilledFromAgent";
+import SummonAgentButton from "../components/sakura/agent/SummonAgentButton";
+import HiyoriSuggestButton from "../components/sakura/agent/HiyoriSuggestButton";
 import { useConfig } from "../contexts/ConfigContext";
 import { shareImage } from "../services/s3";
 import { selectGeneratedImage } from "../services/images";
@@ -16,7 +19,7 @@ const IMAGE_CACHE_KEY = "whisk_images_cache";
 const VIDEO_CACHE_KEY = "whisk_videos_cache";
 const CACHE_MAX_AGE_MS = 5 * 60 * 1000;
 
-export default function Whisk({ prefilledPrompt = "" }) {
+export default function Whisk(props) {
   const { apiBaseUrl } = useConfig();
   const { dispatch } = useCompanion();
 
@@ -144,15 +147,8 @@ export default function Whisk({ prefilledPrompt = "" }) {
     prevGeneratingRef.current = isGeneratingImage;
   }, [isGeneratingImage, dispatch]);
 
-  // ─── Pre-fill prompt from query param ──────────────────────────────────────
-  const { onImagePromptChange } = imageGenerationProps;
-  const prefilledAppliedRef = useRef(false);
-  useEffect(() => {
-    if (prefilledPrompt && !prefilledAppliedRef.current && onImagePromptChange) {
-      onImagePromptChange(prefilledPrompt);
-      prefilledAppliedRef.current = true;
-    }
-  }, [prefilledPrompt, onImagePromptChange]);
+  // ─── Pre-fill prompt + size from agent Tweak URL params ─────────────────
+  const { tweakNotice } = usePrefilledFromAgent({ ...props, ...imageGenerationProps });
 
   // ─── Handlers ───────────────────────────────────────────────────────────────
   const handleShare = useCallback(
@@ -198,6 +194,7 @@ export default function Whisk({ prefilledPrompt = "" }) {
     imageModelOptions,
     onSelectModel,
     imagePrompt,
+    onImagePromptChange,
     imageNegativePrompt,
     onImageNegativePromptChange,
     imageSize,
@@ -218,6 +215,12 @@ export default function Whisk({ prefilledPrompt = "" }) {
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="skr-gen-layout">
+      {tweakNotice ? (
+        <div className="skr-tweak-notice" role="status">
+          <span aria-hidden="true">✦</span>
+          <span>{tweakNotice}</span>
+        </div>
+      ) : null}
       {/* Prompt bar — full width above canvas */}
       <div className="skr-gen-prompt-area">
         <textarea
@@ -238,6 +241,9 @@ export default function Whisk({ prefilledPrompt = "" }) {
           >
             {isGeneratingImage ? "⏳ Generating…" : "✦ Generate"}
           </button>
+          <SummonAgentButton prompt={imagePrompt} />
+          <HiyoriSuggestButton field="prompt" currentPrompt={imagePrompt} onValue={onImagePromptChange} label="prompt" />
+          <HiyoriSuggestButton field="negativePrompt" currentPrompt={imagePrompt} onValue={onImageNegativePromptChange} label="negative" />
           {error && <span style={{ fontSize: 12, color: "#ef4444" }}>{error}</span>}
         </div>
       </div>

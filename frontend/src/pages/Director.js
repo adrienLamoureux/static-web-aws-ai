@@ -17,6 +17,8 @@ import ThemeSection from "./director/ThemeSection";
 import SoundModuleCard from "./director/SoundModuleCard";
 import ModerationSection from "./director/ModerationSection";
 import FeatureFlagsSection from "./director/FeatureFlagsSection";
+import AgentCostSection from "./director/AgentCostSection";
+import AgentModelSection from "./director/AgentModelSection";
 
 export default function Director() {
   const { apiBaseUrl } = useConfig();
@@ -145,6 +147,8 @@ export default function Director() {
           onRefresh={loadOverview}
         />
         <FeatureFlagsSection apiBaseUrl={apiBaseUrl} />
+        <AgentModelSection apiBaseUrl={apiBaseUrl} />
+        <AgentCostSection apiBaseUrl={apiBaseUrl} />
       </div>
 
       {/* Story Sessions browser */}

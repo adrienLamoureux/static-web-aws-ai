@@ -67,6 +67,20 @@ Admin routes redirect to `/` when the user lacks the `admin` group.
 - Action types: `GENERATE_IMAGE`, `NAVIGATE`, `START_STORY`, `GENERATE_MUSIC`.
 - Exposes: `CompanionActions`, `useCompanion()` hook, `dispatch(action)`.
 
+### ModeProvider (`src/lib/mode/ModeContext.js`)
+- Toggles between `"dashboard"` and `"agent"` UI modes. Persisted to `localStorage["skr-mode"]`.
+- Triggers the `.skr-mode-transition` ink-wash overlay on `<html>` whenever the mode flips (600ms keyframe).
+- Mode is route-scoped: only `/atelier` honors `agent`; other routes render the same Dashboard regardless.
+- Exposes: `useMode()` → `{ mode, setMode, toggleMode }`.
+
+### AgentProvider (`src/lib/agent/AgentContext.js`)
+- Owns the manga-panel turn stream for Agent mode. Mounted globally inside `ModeProvider`.
+- Maintains a serial submit queue so users can type-ahead while a prior turn is in flight.
+- Drives staged "thinking…" labels client-side (`THINKING_STAGES`) so latency feels eventful.
+- Renders a canned greeting (`greet()`) on mount with no LLM round-trip.
+- Auto-flips back to Dashboard mode when the backend 404s (feature flag off).
+- Exposes: `useAgent()` → `{ turns, submitting, queueLength, submit, reroll, tweak, reset, greet }`.
+
 ---
 
 ## 3. Hook Dependency Graph
@@ -108,7 +122,8 @@ src/styles/
   reset.css          → minimal CSS reset
   layout.css         → page shell, topbar, bottom HUD, grid helpers
   components.css     → .skr-card, .skr-btn, .skr-input, .skr-badge, etc.
-  animations.css     → keyframes and transition utilities
+  agent.css          → Agent mode primitives (manga panel, composer, mode toggle, memory badge)
+  animations.css     → keyframes and transition utilities (incl. ink-wash, speed-lines)
   theme-switcher.css → ThemeSwitcher component-specific styles
   login.css          → LoginModal styles
   responsive.css     → media queries

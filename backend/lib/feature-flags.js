@@ -24,6 +24,7 @@ const KNOWN_FLAGS = [
   "enableCivitaiSync",
   "enableNovaReelVideos",
   "enableCompanionInitiative",
+  "agentMode",
 ];
 
 // Module-level cache: { data: FlagMap, expiresAt: number } | null
@@ -36,9 +37,20 @@ let _cache = null;
 const buildDefaultFlags = () => Object.fromEntries(KNOWN_FLAGS.map((k) => [k, true]));
 
 /**
+ * Cohort identifiers a flag value can take instead of a boolean. Lets a flag
+ * gradually roll out to subsets of users without touching every endpoint.
+ *   - "all"   → behaves like `true`
+ *   - "admin" → only users whose JWT claims include admin
+ *   - "beta"  → users in the "beta" Cognito group (req.user.roles)
+ * Any other string falls back to `true` (fail open — never accidentally lock
+ * out users with malformed flag values).
+ */
+const VALID_COHORTS = ["all", "admin", "beta"];
+
+/**
  * Merge stored flags with defaults so new flags always have a value.
- * Non-boolean values are coerced to true.
- * Unknown stored keys are ignored.
+ * Preserves cohort strings as-is. Strict `false` becomes `false`. Anything
+ * else coerces to `true` so legacy boolean-true flags keep working.
  *
  * @param {object} stored
  * @returns {object}
@@ -47,11 +59,38 @@ const mergeFlags = (stored = {}) => {
   const defaults = buildDefaultFlags();
   const result = { ...defaults };
   for (const key of KNOWN_FLAGS) {
-    if (Object.prototype.hasOwnProperty.call(stored, key)) {
-      result[key] = stored[key] !== false; // coerce to bool, strict false = disabled
+    if (!Object.prototype.hasOwnProperty.call(stored, key)) continue;
+    const raw = stored[key];
+    if (raw === false) {
+      result[key] = false;
+    } else if (typeof raw === "string" && VALID_COHORTS.includes(raw)) {
+      result[key] = raw; // preserve cohort scoping
+    } else {
+      result[key] = true;
     }
   }
   return result;
+};
+
+/**
+ * Evaluate a (possibly cohort-scoped) flag against a user.
+ *
+ * @param {object} flags  - the merged flag map
+ * @param {string} key    - flag key
+ * @param {object} user   - typically req.user; may have { isAdmin, roles?:string[] }
+ * @returns {boolean}
+ */
+const evaluateFlag = (flags = {}, key = "", user = null) => {
+  const value = flags[key];
+  if (value === false) return false;
+  if (value === true || value === "all") return true;
+  if (value === "admin") return Boolean(user?.isAdmin);
+  if (value === "beta") {
+    const roles = user?.roles || user?.groups || [];
+    return Array.isArray(roles) && roles.includes("beta");
+  }
+  // Unknown string → fail open
+  return true;
 };
 
 /** Invalidate the in-memory cache (called after a PUT). */
@@ -143,7 +182,9 @@ module.exports = {
   KNOWN_FLAGS,
   FEATURES_PK,
   FEATURES_SK,
+  VALID_COHORTS,
   getFlags,
   saveFlags,
   invalidateFlagsCache,
+  evaluateFlag,
 };

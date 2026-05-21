@@ -460,6 +460,235 @@ Response: `{ success: boolean }`
 
 ---
 
+### Agent Mode (v1)
+
+Agent mode is gated by the `agentMode` feature flag (Sanctum → Feature Flags). When the flag is `false`, all `/api/agent/*` endpoints return 404 so the frontend can fall back gracefully.
+
+#### Tool fleet (v1.2)
+| Tool | Type | Effect |
+|------|------|--------|
+| `generate_image` | server-dispatch | Kicks off a Replicate prediction. Synchronous fast-path when `Prefer: wait=5` returns `succeeded`. |
+| `set_theme` | client-action | AgentContext applies via ThemeContext; persisted to `agentState.theme`. |
+| `continue_story` | intent (requiresConfirm) | Frontend confirms → calls existing `POST /story/sessions/:id/message`, then navigates to `/chronicle?session=…`. |
+| `illustrate_scene` | intent (requiresConfirm) | Frontend confirms → calls existing `POST /story/sessions/:id/illustrations`, then navigates to Chronicle. |
+| `recall_favorites` | server-dispatch | Reads the user's recent `IMG` items, signs top-N URLs, returns prompts + thumbnails. Agent's closing turn comments on patterns. |
+| `generate_music` | intent (requiresConfirm) | Story-scoped; falls back to most-recent session + last scene. Frontend confirms → calls existing `POST /story/sessions/:id/scenes/:sceneId/music`. Returns `no_active_scene` if the user has no story yet. |
+| `browse_gallery` | server-dispatch | Lists recent public `shared/images/` keys via S3 `ListObjectsV2`, signs top-N URLs. Agent's closing turn comments on community trends. |
+
+Intent tools are **executed on confirm via existing story endpoints** — no new backend route required. The frontend's `useAgent().confirmIntent` posts directly with the user's auth token; the panel surfaces `executing → executed → opening Chronicle` states inline. A small `AgentIntentBanner` on the Chronicle page reads `localStorage["skr-agent-intent"]` on mount to acknowledge "Hiyori added this" on landing.
+
+After any successful server-dispatch tool the backend runs a **second Bedrock turn** with the `toolResult` content block, capped at 120 tokens, to produce a closing sentence ("turned out softer than I expected — want more contrast?"). Skipped for `requiresConfirm` intents (nothing to react to yet) and for fully-failed tool calls.
+
+The backend reads cross-session prefs from `AGENT#STATE` and injects them into the system prompt as `<prefs>lastStyle=…, lastAspect=…</prefs>` so the model biases tool defaults toward what the user has chosen before.
+
+#### POST /api/agent/turn
+Auth: User
+Request:
+```json
+{
+  "messages": [{ "role": "user|assistant", "content": "..." }],
+  "context": { "page": "atelier" },
+  "modelId": "default"
+}
+```
+Response (text-only turn):
+```json
+{ "text": "Picking anime at 3:4 — ikuyo!", "emotion": "happy", "hasMemory": true }
+```
+Response (tool-use turn):
+```json
+{
+  "text": "Picking anime at 3:4 — ikuyo!",
+  "emotion": "happy",
+  "hasMemory": true,
+  "toolCalls": [{
+    "name": "generate_image",
+    "args": { "prompt": "...", "style": "anime", "aspect": "3:4" },
+    "result": {
+      "provider": "replicate",
+      "predictionId": "...",
+      "batchId": "...",
+      "imageName": "...",
+      "status": "starting|succeeded",
+      "imageUrl": "https://...",  // present only on synchronous fast-path succeed
+      "prompt": "...",
+      "style": "anime", "aspect": "3:4", "seed": 12345,
+      "width": 768, "height": 1024
+    },
+    "error": null
+  }]
+}
+```
+
+The dispatcher uses a fast-path: when Replicate returns `succeeded` inside the `Prefer: wait=5` window, the backend writes the IMG row + signed URL synchronously and the frontend skips polling. Otherwise the frontend polls `/replicate/image/status` with the returned `predictionId/imageName/batchId/prompt`.
+
+Errors surface as `toolCalls[].error` strings (`replicate_token_missing`, `replicate_create_failed`, `replicate_no_prediction`, `prompt_required`, `unauthorized`, `unknown_tool:<name>`). The frontend maps these to user-facing copy via `errorMessages.js`.
+
+#### POST /api/agent/suggest (v1.3, expanded v1.4)
+Auth: User. Returns a single suggested value for a Dashboard form field — powers the per-field "Let Hiyori choose" buttons.
+Request:
+```json
+{ "field": "prompt|style|aspect|negativePrompt", "context": { "currentPrompt": "..." } }
+```
+Response:
+```json
+{ "field": "style", "value": "anime" }
+```
+Server-side normalisation:
+- `style` → coerced to one of `[anime, manga, photoreal, chibi]` (defaults to `anime`).
+- `aspect` → coerced to one of `[1:1, 3:4, 16:9]` (defaults to `3:4`).
+- `prompt` / `negativePrompt` → strips wrapping quotes and any trailing `[EMOTION: …]` tags; capped at 200 chars.
+Returns `502 empty_suggestion` if Bedrock returns nothing usable, `400 invalid_field` on unknown fields.
+
+#### Rate limiting (v1.3)
+Both `POST /api/agent/turn` and `POST /api/agent/suggest` are guarded by a per-user token bucket stored at `(USER#{userId}, AGENT#RATE)`. Defaults:
+- `/api/agent/turn` — capacity 30, refill 1 token / 2s (sustains ~30 req/min, bursts to 30).
+- `/api/agent/suggest` — capacity 60, refill 1 token / 1s (lighter call, more generous).
+
+On allow: emits `X-RateLimit-Remaining` header. On deny: 429 + `Retry-After` (seconds) + `{ error: "rate_limited", retryAfterMs }` body. The limiter fails open on DynamoDB errors — never blocks traffic on infra hiccups.
+
+#### Cohort scoping for `agentMode` (v1.4)
+The `agentMode` flag value can now be one of:
+- `true` / `"all"` — enabled for every user
+- `false` — disabled
+- `"admin"` — enabled only when `req.user.isAdmin === true`
+- `"beta"` — enabled only when `req.user.roles` (or `groups`) includes `"beta"`
+- Any other string — coerced to `true` (fail open — never accidentally lock users out)
+
+Cohort gating is evaluated by `evaluateFlag(flags, "agentMode", req.user)` and applied identically at both `/api/agent/turn` and `/api/agent/suggest`. Future rollout strategy: ship a flag as `"admin"` first, expand to `"beta"`, then `"all"`.
+
+#### Cost telemetry (v1.4)
+Both `/api/agent/turn` and `/api/agent/suggest` capture Bedrock `usage` tokens (input + output) and atomically increment the per-user record at `(USER#{userId}, AGENT#COST)` via `UpdateExpression: ADD inputTokens :i, outputTokens :o, turnCount :one`. Token counts are also surfaced on the per-turn structured log line so CloudWatch Insights can compute totals on the fly.
+
+DynamoDB shape:
+```json
+{ "pk": "USER#u1", "sk": "AGENT#COST", "inputTokens": 12450, "outputTokens": 980, "turnCount": 38, "lastUpdatedAt": 1715464800000 }
+```
+
+#### Latency logging (v1.3, expanded v1.4)
+`POST /api/agent/turn` emits a single JSON log line on every terminal path:
+```json
+{ "event": "agent.turn", "latencyMs": 1842, "status": 200, "outcome": "ok", "toolCount": 1, "tools": "generate_image", "closingTurn": true, "stopReason": "tool_use", "hasMemory": true }
+```
+CloudWatch Insights query example:
+```
+filter event = "agent.turn"
+| stats avg(latencyMs), pct(latencyMs, 50), pct(latencyMs, 95) by outcome
+```
+
+#### Agent sessions (v1.7)
+Multiple parallel conversation threads per user. The session id IS the memory namespace — the frontend mints a uuid and uses it directly as `sessionId` on `/api/agent/turn`, which routes to the existing `AGENT#{sessionId}#MSG#{ts}` memory layout. The implicit `"default"` session is always available without a metadata record.
+
+Sessions are gated by the `agentMode` flag + cohort scoping (same as `/turn`).
+
+DynamoDB shape:
+```json
+{ "pk": "USER#u1", "sk": "AGENT#SESSION#myproj", "name": "My Project", "createdAt": 1715464800000, "lastUsedAt": 1715465100000 }
+```
+
+##### GET /api/agent/sessions
+Auth: User. Lists the user's sessions sorted by `lastUsedAt` desc.
+Response: `{ items: [{ sessionId, name, createdAt, lastUsedAt }] }`
+
+##### POST /api/agent/sessions
+Auth: User. Creates a session with the client-minted id.
+Request: `{ sessionId: string, name: string }`
+Response: `{ session: { sessionId, name, createdAt, lastUsedAt } }`. Session ids must match `[a-zA-Z0-9_-]+` (lowercased server-side); duplicates return the existing record without overwriting. The reserved `"default"` id is rejected.
+
+##### PATCH /api/agent/sessions/:id
+Auth: User. Renames an existing session.
+Request: `{ name: string }`
+Response: `{ session: { sessionId, name } }` or `404 session_not_found`.
+
+##### DELETE /api/agent/sessions/:id
+Auth: User. Removes the metadata record AND wipes the conversation memory at `AGENT#{id}#MSG#...`. The reserved `"default"` id is rejected (delete `/api/agent/memory?sessionId=default` to wipe its history instead).
+Response: `{ ok: true }`
+
+##### POST /api/agent/turn — sessionId support
+`/turn` now reads `body.sessionId` (falls back to legacy `body.modelId`) as the memory namespace key. Bumps the session's `lastUsedAt` after a successful turn so the picker sorts by recency. `/api/agent/memory/status` and `DELETE /api/agent/memory` also accept `sessionId` as a query param.
+
+#### GET /api/admin/agent/model (v1.6)
+Auth: Public (read). Returns the currently active Bedrock model id and the env-backed default.
+Response: `{ modelId: "us.anthropic.claude-haiku-4-5-...", default: "us.anthropic.claude-haiku-4-5-..." }`
+
+#### PUT /api/admin/agent/model (v1.6)
+Auth: User + Admin. Persists the agent's Bedrock model id at `(CONFIG#AGENT, CONFIG#AGENT)`. Empty / whitespace-only input resets to the env default and returns `reset: true`. 60s cache TTL on the read path.
+Request: `{ modelId: string }`
+Response: `{ modelId: string, reset: boolean }`
+
+#### Daily token cap (v1.6)
+`POST /api/agent/turn` enforces a per-user daily cap (default 200k tokens/day, ~$0.20 at Haiku 4.5 prices) on top of the v1.3 request bucket. The check runs after rate-limit but before Bedrock, using `agentCost.checkDailyCap`. Counter resets at UTC midnight via `dayStartedAt` rollover. Fails open on DB errors.
+
+On deny: `429 daily_cap_reached` + `Retry-After` header (ms until UTC midnight) + body `{ tokensToday, capacity, retryAfterMs }`. Frontend `errorMessages.js` maps to "You've used up your daily token budget. Resets at midnight UTC."
+
+#### GET /api/admin/agent/cost (v1.5)
+Auth: User + Admin. Scans every `AGENT#COST` record in the table and returns per-user totals sorted by `inputTokens + outputTokens` descending.
+Query: `?limit=<1-200>` (default 50; over-fetched at 2× internally so sorting picks the right top-N).
+Response:
+```json
+{
+  "items": [
+    { "userId": "...", "inputTokens": 12450, "outputTokens": 980, "turnCount": 38, "totalTokens": 13430, "lastUpdatedAt": 1715464800000 }
+  ],
+  "scannedCount": 124,
+  "truncated": false
+}
+```
+Backed by a `ScanCommand` with `FilterExpression: sk = "AGENT#COST"` (no GSI). Pagination capped at 10 internal pages so a misuse can't burn capacity. The frontend `AgentCostSection` in Sanctum renders this as a sortable table with a rough USD-cost estimate (Claude Haiku pricing constants client-side; "good enough to spot outliers", not billing).
+
+#### GET /api/agent/memory/status
+Auth: Optional User
+Query: `?modelId=<id>` (default `"default"`)
+Response: `{ hasMemory: boolean; turnCount?: number }`
+
+#### DELETE /api/agent/memory
+Auth: User
+Query: `?modelId=<id>` (default `"default"`)
+Response: `{ ok: boolean }`
+
+DynamoDB shape (single-table, separate from `COMPANION#`):
+- `pk = USER#{userId}`, `sk = AGENT#{modelId}` → state record `{ summary, turnCount, updatedAt }`
+- `pk = USER#{userId}`, `sk = AGENT#{modelId}#MSG#{ts13}` → turn message `{ role, content, toolCalls?, createdAt }`
+- `pk = USER#{userId}`, `sk = AGENT#STATE` → cross-session prefs `{ lastStyle, lastAspect, lastLora, theme, updatedAt }` (single record per user, not per model — written via best-effort `agentState.patch` after successful tool dispatch)
+
+`turnCount` increments atomically via `UpdateExpression: ADD turnCount :n` (eliminates the read-modify-write race between concurrent saves). Rolling summary compaction kicks in at `turnCount > 30`. `toolCalls` is persisted on assistant messages so the agent can reference past results in summary generation. Compaction summariser tokens are billed to `AGENT#COST` (so they count against the user's daily token cap).
+
+#### Daily caps and rate limits
+
+- **Per-request rate limit**: token bucket per user, capacity 30, refill 1/2s on `/turn`; capacity 60, refill 1/s on `/suggest`. Returns 429 with `Retry-After` header. Module: `backend/lib/agent-rate-limit.js`.
+- **Daily token cap**: 200,000 tokens/day (UTC-midnight rollover) on `/turn` Bedrock spend (initial + closing Converse + compaction summariser). Returns 429 with `error: "daily_cap_reached"` and `Retry-After`.
+- **Daily image cap**: 50 image generations/day (UTC-midnight rollover) on `generate_image` tool calls. Bounds Replicate spend, the dominant cost driver (~90% of total). Returns `{ok: false, error: "image_daily_cap_reached", capacity, imagesToday, retryAfterMs}` in the tool result. Module: `backend/lib/agent-cost.js`.
+
+#### Sessionid sanitisation
+
+The `sessionId` query/body param is normalised through `sanitiseSessionId` (`[a-zA-Z0-9_-]+`, lowercased, ≤80 chars). Values outside this set fall back to `"default"`. This blocks injection of `#MSG#`-style fragments into the SK namespace.
+
+#### Pref value validation
+
+`AGENT#STATE` writes are gated by `validatePrefValue` (`backend/lib/agent-state.js`). Each known key has an enum:
+- `lastStyle` ∈ {anime, manga, photoreal, chibi}
+- `lastAspect` ∈ {1:1, 3:4, 16:9}
+- `theme` ∈ the 10 Sakura Bloom themes
+- `lastLora` matches `^[a-zA-Z0-9_\-:./]{1,120}$`
+
+Unknown keys and values that fail validation are silently dropped on both write AND read (older records pre-validator are filtered at read time). The field flows into the next turn's system prompt, so an unchecked value would enable self-targeted prompt injection.
+
+#### Slash commands (composer power-user shortcuts, v1.6)
+
+Implemented in `frontend/src/lib/agent/slashCommands.js`. Parsed locally — most commands execute without a server round-trip.
+
+| Command | Behaviour | Server call? |
+|---|---|---|
+| `/help` | Renders the command list inline as a canned agent panel. | No |
+| `/clear`, `/reset` | Wipes the local turn stream. | No |
+| `/theme <name>` | Switches theme directly. Validates against the 10 theme enum. | No |
+| `/recall [n]` | Rewrites to "Show me my recent {n} generations" and submits as a normal turn (1–12, default 8). | Yes — triggers `recall_favorites` tool. |
+| `/reroll` | Re-submits the last user prompt verbatim. | Yes — normal `/turn` call. |
+
+Unknown commands fall through to a normal user turn (no special handling).
+
+---
+
 ### Operations & Admin
 
 #### GET /ops/director/masonry/images

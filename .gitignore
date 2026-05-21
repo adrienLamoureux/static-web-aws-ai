@@ -143,3 +143,6 @@ ai/data/
 
 .DS_Store
 .cdk-idea-lock
+
+# Claude Code local tooling (worktrees, session state)
+.claude/

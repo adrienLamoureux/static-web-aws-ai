@@ -153,3 +153,18 @@ export const saveFeatureFlags = async (apiBaseUrl, { flags }) => {
   const url = buildApiUrl(apiBaseUrl, "/ops/director/features");
   return putJson(url, { flags }, "Failed to save feature flags.");
 };
+
+export const fetchAgentCost = async (apiBaseUrl, { limit = 50 } = {}) => {
+  const url = buildApiUrl(apiBaseUrl, `/api/admin/agent/cost?limit=${encodeURIComponent(limit)}`);
+  return fetchJson(url, {}, "Failed to load agent cost telemetry.");
+};
+
+export const fetchAgentModel = async (apiBaseUrl) => {
+  const url = buildApiUrl(apiBaseUrl, "/api/admin/agent/model");
+  return fetchJson(url, {}, "Failed to load agent model.");
+};
+
+export const saveAgentModel = async (apiBaseUrl, modelId) => {
+  const url = buildApiUrl(apiBaseUrl, "/api/admin/agent/model");
+  return putJson(url, { modelId }, "Failed to save agent model.");
+};

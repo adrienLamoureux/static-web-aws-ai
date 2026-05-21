@@ -129,3 +129,50 @@
 }
 .skr-disclosure[open] .skr-disclosure-chevron { transform: rotate(180deg); }
 .skr-disclosure-body { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+
+/* ── Agent cost telemetry table (Sanctum) ────────────────────────────── */
+.skr-agent-cost-summary {
+  display: flex; gap: 14px; flex-wrap: wrap;
+  padding: 8px 12px; margin: 10px 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--skr-accent-secondary) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--skr-accent-secondary) 28%, transparent);
+  color: var(--skr-text-secondary); font-size: 12px;
+}
+.skr-agent-cost-summary strong { color: var(--skr-text-primary); }
+.skr-agent-cost-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.skr-agent-cost-table th, .skr-agent-cost-table td { padding: 6px 8px; text-align: left; border-bottom: 1px solid color-mix(in srgb, var(--skr-text-primary) 8%, transparent); }
+.skr-agent-cost-table th { font-weight: 700; color: var(--skr-text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+.skr-agent-cost-table td { color: var(--skr-text-primary); }
+.skr-agent-cost-table td:nth-child(1) { font-family: var(--skr-font-mono, monospace); color: var(--skr-text-secondary); }
+.skr-agent-cost-table td:nth-child(n+2), .skr-agent-cost-table th:nth-child(n+2) { text-align: right; }
+.skr-agent-cost-table tr:hover td { background: color-mix(in srgb, var(--skr-accent) 6%, transparent); }
+
+/* ── Cohort-aware flag row (FeatureFlagsSection + AgentModelSection) ────
+   Class is applied to <select> AND <input type="text"> in AgentModelSection,
+   and may appear outside `.skr-flag-row` (e.g. in the model picker preset).
+   Keep the selector class-only so every consumer renders consistently. */
+.skr-flag-cohort {
+  background: var(--skr-glass);
+  border: 1px solid color-mix(in srgb, var(--skr-accent) 30%, transparent);
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: var(--skr-text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+select.skr-flag-cohort {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%23FF6B9D'%3E%3Cpath d='M7 9L2 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 26px;
+}
+input.skr-flag-cohort { cursor: text; }
+.skr-flag-cohort:focus {
+  outline: none;
+  border-color: var(--skr-accent);
+  box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.12);
+}

@@ -10,6 +10,7 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as cr from "aws-cdk-lib/custom-resources";
+import * as logs from "aws-cdk-lib/aws-logs";
 import * as path from "path";
 import { resolveStageName } from "./stage";
 
@@ -328,13 +329,18 @@ export class StaticWebAWSAIStack extends cdk.Stack {
       });
     }
 
-    // Lambda Function for API
+    // Lambda Function for API.
+    // `logRetention` caps the CloudWatch log group at 30 days — the agent
+    // route emits a structured JSON line per /turn for Insights queries, so
+    // logs would otherwise accumulate forever (cost concern as agent usage
+    // grows).
     const apiLambda = new lambda.Function(this, "ApiLambda", {
       runtime: lambda.Runtime.NODEJS_22_X,
       handler: "lambda.handler",
       code: lambda.Code.fromAsset(path.join(__dirname, "../../backend")),
       memorySize: 512,
       timeout: cdk.Duration.seconds(120),
+      logRetention: logs.RetentionDays.ONE_MONTH,
     });
 
     const mediaBucket = new s3.Bucket(this, "MediaBucket", {
@@ -363,6 +369,20 @@ export class StaticWebAWSAIStack extends cdk.Stack {
     apiLambda.addEnvironment(
       "BEDROCK_STORY_MODEL_ID",
       process.env.BEDROCK_STORY_MODEL_ID ||
+        "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    );
+    // Agent mode default model. `build-deps.js` resolves `promptHelperModelId`
+    // (the agent's per-turn Bedrock model) via the env chain:
+    //   BEDROCK_PROMPT_HELPER_INFERENCE_PROFILE_ARN →
+    //   BEDROCK_PROMPT_HELPER_MODEL_ID →
+    //   BEDROCK_CLAUDE_MODEL_ID →
+    //   hardcoded Haiku fallback
+    // Setting `BEDROCK_CLAUDE_MODEL_ID` here makes the fallback explicit and
+    // gives operators a single env var to retune the agent default without
+    // touching code. Distinct from `BEDROCK_STORY_MODEL_ID` (story engine).
+    apiLambda.addEnvironment(
+      "BEDROCK_CLAUDE_MODEL_ID",
+      process.env.BEDROCK_CLAUDE_MODEL_ID ||
         "us.anthropic.claude-haiku-4-5-20251001-v1:0"
     );
     apiLambda.addEnvironment(

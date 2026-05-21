@@ -3,6 +3,7 @@ const {
   InvokeModelCommand,
   StartAsyncInvokeCommand,
   GetAsyncInvokeCommand,
+  ConverseCommand,
 } = require("@aws-sdk/client-bedrock-runtime");
 const {
   S3Client,
@@ -80,8 +81,16 @@ const {
   buildCompanionMemorySk,
   buildCompanionMsgSk,
   companionMsgPrefix,
+  buildAgentStateSk,
+  buildAgentMsgSk,
+  agentMsgPrefix,
 } = require("./keys");
 const { createCompanionMemory } = require("./companion-memory");
+const { createAgentMemory } = require("./agent-memory");
+const { createAgentState } = require("./agent-state");
+const { createAgentRateLimit } = require("./agent-rate-limit");
+const { createAgentCost } = require("./agent-cost");
+const { createAgentSessions } = require("./agent-sessions");
 const { createMediaStore } = require("./media-store");
 const { createStorySeedStore } = require("./story-seed-store");
 const { getGradioSpaceClient } = require("./gradio-client");
@@ -166,6 +175,27 @@ const createDeps = () => {
     promptHelperModelId,
   });
 
+  // agentCost must be constructed first so agentMemory can bill compaction
+  // summariser tokens against the user's daily cap (every ~30 turns).
+  const agentCost = createAgentCost({ dynamoClient, mediaTable });
+  const agentMemory = createAgentMemory({
+    dynamoClient,
+    mediaTable,
+    queryBySkPrefix: mediaStore.queryBySkPrefix,
+    bedrockClient,
+    InvokeModelCommand,
+    promptHelperModelId,
+    agentCost,
+  });
+
+  const agentState = createAgentState({ dynamoClient, mediaTable });
+  const agentRateLimit = createAgentRateLimit({ dynamoClient, mediaTable });
+  const agentSessions = createAgentSessions({
+    dynamoClient,
+    mediaTable,
+    queryBySkPrefix: mediaStore.queryBySkPrefix,
+  });
+
   const aiCraftSceneContext = createAiCraftSceneContext({
     bedrockClient,
     promptHelperModelId,
@@ -216,6 +246,7 @@ const createDeps = () => {
     InvokeModelCommand,
     StartAsyncInvokeCommand,
     GetAsyncInvokeCommand,
+    ConverseCommand,
     PutObjectCommand,
     GetObjectCommand,
     HeadObjectCommand,
@@ -273,7 +304,15 @@ const createDeps = () => {
     buildCompanionMemorySk,
     buildCompanionMsgSk,
     companionMsgPrefix,
+    buildAgentStateSk,
+    buildAgentMsgSk,
+    agentMsgPrefix,
     companionMemory,
+    agentMemory,
+    agentState,
+    agentRateLimit,
+    agentCost,
+    agentSessions,
     putMediaItem: mediaStore.putMediaItem,
     deleteMediaItem: mediaStore.deleteMediaItem,
     queryMediaItems: mediaStore.queryMediaItems,

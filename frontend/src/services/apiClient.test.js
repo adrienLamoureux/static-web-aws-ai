@@ -69,6 +69,27 @@ describe("fetchJson", () => {
     );
   });
 
+  it("attaches status, errorCode, and body to the thrown error", async () => {
+    jest.spyOn(global, "fetch").mockReturnValue(
+      makeFetchResponse({
+        status: 404,
+        ok: false,
+        body: { error: "agent_mode_disabled" },
+      })
+    );
+
+    let captured = null;
+    try {
+      await fetchJson("https://example.com/api/agent/turn");
+    } catch (err) {
+      captured = err;
+    }
+    expect(captured).not.toBeNull();
+    expect(captured.status).toBe(404);
+    expect(captured.errorCode).toBe("agent_mode_disabled");
+    expect(captured.body).toEqual({ error: "agent_mode_disabled" });
+  });
+
   it("includes Authorization header when auth token is present", async () => {
     getAuthToken.mockReturnValue("my-token");
     const data = { ok: true };

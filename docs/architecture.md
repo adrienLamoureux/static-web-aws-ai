@@ -128,6 +128,10 @@ backend/index.js
 | `lora/profile-routes.js` | LoRA profiles | `/` |
 | `character-routes.js` | character CRUD | `/` |
 | `companion-route.js` | companion AI chat + memory | `/` |
+| `agent-route.js` | **Agent mode (v1.7)** — Bedrock Converse + tool-use turn endpoint | `/` |
+| `agent-suggest-route.js` | Bedrock single-field suggestion helper (used by Whisk "Let Hiyori choose" buttons) | `/` |
+| `agent-admin-route.js` | Sanctum admin endpoints — GET/PUT `/api/admin/agent/model`, GET `/api/admin/agent/cost` | `/` |
+| `agent-sessions-route.js` | GET/POST/PATCH/DELETE `/api/agent/sessions` — named conversation sessions (v1.7) | `/` |
 
 ### 5.3 Frontend (Sakura Bloom)
 The Sakura Bloom frontend is the primary UI, living in `frontend/src/` on `main`:
@@ -135,7 +139,8 @@ The Sakura Bloom frontend is the primary UI, living in `frontend/src/` on `main`
 - Bottom HUD navigation (Realm / Atelier / Chronicle / Sanctum)
 - 10 themes (sakura, moonrise, bamboo, ember, void, glacier, dusk, aurora, crimson, storm) with dark/light brightness variants
 - Companion memory via DynamoDB, proactive companion via AI-generated messages
-- `skr-` CSS class prefix system with custom properties in `src/styles/tokens.css`
+- **Agent mode (v1.7)** route-scoped to `/atelier`. `ModeContext` (localStorage `skr-mode`) toggles between dashboard form-UI and the manga-panel `AgentStage`. `AgentContext` owns the turn stream, serial submit queue, intent confirm/abort chain, slash command dispatcher, voice input, and the active session id (localStorage `skr-agent-session`). 7-tool fleet: `generate_image`, `set_theme`, `continue_story`, `illustrate_scene`, `recall_favorites`, `generate_music`, `browse_gallery`. See ADR-007 and `docs/proposals/agent-mode-v0.md`.
+- `skr-` CSS class prefix system with custom properties in `src/styles/tokens.css`. Agent-mode CSS lives in its own `src/styles/agent.css` module.
 
 See [`frontend/ARCHITECTURE.md`](../frontend/ARCHITECTURE.md) for component tree, hook graph, and CSS design system details.
 
@@ -156,6 +161,39 @@ See [`frontend/ARCHITECTURE.md`](../frontend/ARCHITECTURE.md) for component tree
 - Story preset namespace: `PRESET#STORY`
 - Story character namespace: `PRESET#CHARACTER`
 - Prompt helper namespace: `PRESET#PROMPT_HELPER`
+- Companion memory: `COMPANION#<modelId>`, `COMPANION#<modelId>#MSG#<ts13>`
+- **Agent memory**: `AGENT#<modelId>`, `AGENT#<modelId>#MSG#<ts13>` — separate
+  namespace from `COMPANION#` because agent task context (short-lived, tool-call
+  heavy) shouldn't pollute the long-lived companion identity memory.
+  - `turnCount` is incremented atomically via `UpdateExpression: ADD turnCount :n` (eliminates the read-modify-write race between concurrent saves).
+  - Rolling summary compaction kicks in at `turnCount > 30`. See `backend/lib/agent-memory.js`.
+- **Agent cross-session prefs (v1)**: `AGENT#STATE` — single record per user,
+  not per model. Stores `{ lastStyle, lastAspect, lastLora, theme }`. Read on
+  every agent turn and injected into the system prompt as `<prefs>…</prefs>`
+  so the model biases tool defaults toward what the user has chosen before.
+  Values are enum-validated (`validatePrefValue`) on both write AND read — the
+  field flows into the system prompt, so an unchecked value would enable a
+  self-targeted prompt-injection. See `backend/lib/agent-state.js`.
+- **Agent rate-limit bucket**: `AGENT#RATE` — token-bucket counter per user
+  (capacity 30, refill 1/2s on `/turn`; capacity 60, refill 1/s on `/suggest`).
+  Module: `backend/lib/agent-rate-limit.js`.
+- **Agent cost telemetry**: `AGENT#COST` — per-user running totals
+  `{ inputTokens, outputTokens, turnCount, tokensToday, dayStartedAt }`.
+  Atomic `ADD` increments. Powers the daily token cap (200k/day, UTC midnight
+  rollover) and the Sanctum cost dashboard. Compaction summariser tokens
+  (every ~30 turns) also bill here. See `backend/lib/agent-cost.js`.
+- **Agent image cap counter**: `AGENT#IMG_COUNT` — separate daily counter
+  capping image generations (default 50/day) to bound Replicate spend, the
+  dominant cost driver. Lives apart from `AGENT#COST` so the image cap rolls
+  over independently of the token cap.
+- **Agent sessions (v1.7)**: `AGENT#SESSION#{sessionId}` — named conversation
+  sessions `{ name, createdAt, lastUsedAt }`. The session id doubles as the
+  memory namespace (replaces the legacy "modelId" segment in `AGENT#{id}` and
+  `AGENT#{id}#MSG#…`), so per-session conversation history works without a
+  schema change. Sanitised via `sanitiseSessionId` on both write and read.
+- **Agent model config**: `CONFIG#AGENT` — admin override of the Bedrock model
+  id used by `/turn` and `/suggest`. 60s in-memory cache. Configurable via the
+  Sanctum AgentModel section. See `backend/lib/agent-config.js`.
 
 ### 6.2 S3
 - User-owned media prefix: `users/<sub>/`

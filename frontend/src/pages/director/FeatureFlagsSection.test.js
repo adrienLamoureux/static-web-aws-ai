@@ -86,4 +86,53 @@ describe("FeatureFlagsSection", () => {
     renderSection();
     expect(await screen.findByText(/Allow syncing LoRA models/i)).toBeInTheDocument();
   });
+
+  it("renders agentMode as a cohort dropdown, not a boolean toggle", async () => {
+    fetchFeatureFlags.mockResolvedValue({
+      flags: { ...ALL_TRUE_FLAGS, agentMode: "admin" },
+    });
+    renderSection();
+    const select = await screen.findByLabelText("Scope Agent Mode");
+    expect(select).toBeInTheDocument();
+    expect(select.value).toBe("admin");
+  });
+
+  it("saves cohort selection as a string value (not boolean)", async () => {
+    fetchFeatureFlags.mockResolvedValue({
+      flags: { ...ALL_TRUE_FLAGS, agentMode: false },
+    });
+    renderSection();
+    const select = await screen.findByLabelText("Scope Agent Mode");
+    fireEvent.change(select, { target: { value: "beta" } });
+
+    await waitFor(() => expect(saveFeatureFlags).toHaveBeenCalled());
+    const sentFlags = saveFeatureFlags.mock.calls[0][1].flags;
+    expect(sentFlags.agentMode).toBe("beta");
+  });
+
+  it("converts 'all' dropdown option back to boolean true for storage", async () => {
+    fetchFeatureFlags.mockResolvedValue({
+      flags: { ...ALL_TRUE_FLAGS, agentMode: "admin" },
+    });
+    renderSection();
+    const select = await screen.findByLabelText("Scope Agent Mode");
+    fireEvent.change(select, { target: { value: "all" } });
+
+    await waitFor(() => expect(saveFeatureFlags).toHaveBeenCalled());
+    const sentFlags = saveFeatureFlags.mock.calls[0][1].flags;
+    expect(sentFlags.agentMode).toBe(true);
+  });
+
+  it("converts 'false' dropdown option back to boolean false for storage", async () => {
+    fetchFeatureFlags.mockResolvedValue({
+      flags: { ...ALL_TRUE_FLAGS, agentMode: "admin" },
+    });
+    renderSection();
+    const select = await screen.findByLabelText("Scope Agent Mode");
+    fireEvent.change(select, { target: { value: "false" } });
+
+    await waitFor(() => expect(saveFeatureFlags).toHaveBeenCalled());
+    const sentFlags = saveFeatureFlags.mock.calls[0][1].flags;
+    expect(sentFlags.agentMode).toBe(false);
+  });
 });

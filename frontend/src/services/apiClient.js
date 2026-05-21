@@ -41,7 +41,14 @@ export const fetchJson = async (url, options = {}, errorMessage) => {
     window.dispatchEvent(new CustomEvent("whisk:auth:expired"));
   }
   if (!response.ok) {
-    throw new Error(data?.message || errorMessage || "Request failed.");
+    // Attach status + structured error code so callers can branch on them
+    // (e.g. distinguishing "feature disabled" 404 from a transient network
+    // failure that surfaces as the same generic "Request failed." message).
+    const err = new Error(data?.message || errorMessage || "Request failed.");
+    err.status = response.status;
+    if (data?.error) err.errorCode = data.error;
+    if (data) err.body = data;
+    throw err;
   }
   return data;
 };

@@ -1,0 +1,402 @@
+/* ─── Agent mode — manga panel, composer, mode toggle, badges ─── */
+
+/* ── Mode toggle (consistent fixed top-right slot in both modes) ── */
+.skr-forge-mode-slot { position: absolute; top: 8px; right: 8px; z-index: 10; }
+.skr-forge-agent-shell { position: relative; min-height: calc(100vh - 120px); }
+.skr-forge-dashboard-shell { position: relative; }
+
+.skr-mode-toggle {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border-radius: 999px;
+  background: var(--skr-glass); border: 1px solid color-mix(in srgb, var(--skr-accent) 30%, transparent);
+  color: var(--skr-text-primary); font-weight: 600; font-size: 13px;
+  cursor: pointer; transition: all 0.2s var(--skr-ease-spring);
+  backdrop-filter: blur(8px);
+}
+.skr-mode-toggle:hover { transform: translateY(-1px); border-color: var(--skr-accent); }
+.skr-mode-toggle.is-agent { background: var(--skr-gradient-accent); border-color: transparent; color: #fff; box-shadow: var(--skr-shadow-md); }
+.skr-mode-toggle-icon { font-size: 14px; }
+
+/* ── Stage shell ── */
+.skr-agent-stage { position: relative; display: flex; flex-direction: column; min-height: calc(100vh - 180px); border-radius: 18px; overflow: hidden; }
+.skr-agent-stage-backdrop {
+  position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background: var(--skr-gradient-hero); background-size: 200% 200%;
+  animation: skr-gradient-drift 22s ease-in-out infinite alternate; opacity: 0.85;
+}
+.skr-agent-stage-meta {
+  position: absolute; top: 12px; left: 16px; z-index: 3;
+  display: flex; align-items: center; gap: 8px;
+}
+.skr-layout-toggle {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  background: var(--skr-glass); border: 1px solid color-mix(in srgb, var(--skr-accent-info) 30%, transparent);
+  color: var(--skr-accent-info); backdrop-filter: blur(8px);
+  cursor: pointer; transition: all 0.18s ease;
+}
+.skr-layout-toggle:hover { background: color-mix(in srgb, var(--skr-accent-info) 12%, transparent); border-color: var(--skr-accent-info); }
+
+/* ── Session picker (v1.7) ── */
+.skr-session-picker { position: relative; }
+.skr-session-picker-trigger {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  background: var(--skr-glass); border: 1px solid color-mix(in srgb, var(--skr-accent) 30%, transparent);
+  color: var(--skr-text-primary); backdrop-filter: blur(8px);
+  cursor: pointer; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: all 0.18s ease;
+}
+.skr-session-picker-trigger:hover { background: color-mix(in srgb, var(--skr-accent) 12%, transparent); border-color: var(--skr-accent); }
+.skr-session-picker-menu {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 4;
+  min-width: 240px; max-width: 320px;
+  background: var(--skr-glass); backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in srgb, var(--skr-accent) 30%, transparent);
+  border-radius: 10px; padding: 4px; box-shadow: var(--skr-shadow-lg);
+  animation: skr-scale-in 0.15s var(--skr-ease-spring) both;
+}
+.skr-session-row {
+  display: flex; align-items: center; gap: 4px;
+  border-radius: 6px; padding: 2px 4px;
+}
+.skr-session-row.is-active { background: color-mix(in srgb, var(--skr-accent) 14%, transparent); }
+.skr-session-row-name {
+  flex: 1; padding: 6px 8px; text-align: left; font-size: 12px;
+  background: none; border: 0; color: var(--skr-text-primary); cursor: pointer;
+  border-radius: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.skr-session-row-name:hover { background: color-mix(in srgb, var(--skr-accent) 8%, transparent); }
+.skr-session-row-actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s ease; }
+.skr-session-row:hover .skr-session-row-actions { opacity: 1; }
+.skr-session-row-btn {
+  width: 22px; height: 22px; border-radius: 4px; padding: 0; font-size: 11px;
+  background: none; border: 0; color: var(--skr-text-secondary); cursor: pointer;
+}
+.skr-session-row-btn:hover { background: color-mix(in srgb, var(--skr-accent) 12%, transparent); color: var(--skr-text-primary); }
+.skr-session-row-btn--danger:hover { background: color-mix(in srgb, var(--skr-accent-warning) 15%, transparent); color: var(--skr-accent-warning); }
+.skr-session-picker-new {
+  display: block; width: 100%; padding: 8px 10px; margin-top: 4px;
+  background: none; border: 1px dashed color-mix(in srgb, var(--skr-accent-secondary) 40%, transparent);
+  border-radius: 6px; color: var(--skr-accent-secondary);
+  font-size: 12px; font-weight: 600; cursor: pointer; text-align: left;
+}
+.skr-session-picker-new:hover:not(:disabled) { background: color-mix(in srgb, var(--skr-accent-secondary) 10%, transparent); }
+.skr-session-picker-new:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Bento layout: CSS columns pack tool-result panels into 2-3 tracks ── */
+.skr-agent-stage[data-layout="bento"] .skr-agent-stage-stream {
+  display: block;
+  column-count: 2;
+  column-gap: 16px;
+  max-width: 1080px;
+}
+.skr-agent-stage[data-layout="bento"] .skr-agent-stage-stream > * {
+  display: block;
+  margin: 0 0 16px;
+  break-inside: avoid;
+  width: 100%;
+}
+/* Text panels (user / agent / thinking / confirm-all) span full width in
+   bento so they read like chapter markers between visual results */
+.skr-agent-stage[data-layout="bento"] .skr-manga-panel--user,
+.skr-agent-stage[data-layout="bento"] .skr-manga-panel--agent,
+.skr-agent-stage[data-layout="bento"] .skr-manga-panel--thinking {
+  column-span: all;
+  margin-bottom: 16px;
+}
+@media (min-width: 1100px) {
+  .skr-agent-stage[data-layout="bento"] .skr-agent-stage-stream { column-count: 3; }
+}
+.skr-agent-stage-scroll { position: relative; z-index: 1; flex: 1; overflow-y: auto; padding: 56px 24px 24px; }
+.skr-agent-stage-stream { display: flex; flex-direction: column; gap: 16px; max-width: 720px; margin: 0 auto; }
+
+/* ── Manga panels ── */
+.skr-manga-panel {
+  position: relative; padding: 14px 18px; border-radius: 14px;
+  border: 1.5px solid color-mix(in srgb, var(--skr-accent) 25%, transparent);
+  background: var(--skr-glass); backdrop-filter: blur(8px);
+  animation: skr-bubble-in 0.32s var(--skr-ease-spring) both;
+  max-width: 92%;
+}
+.skr-manga-panel--user { align-self: flex-end; background: color-mix(in srgb, var(--skr-accent-info) 15%, var(--skr-glass)); border-color: color-mix(in srgb, var(--skr-accent-info) 35%, transparent); }
+.skr-manga-panel--agent { align-self: flex-start; border-color: color-mix(in srgb, var(--skr-accent) 45%, transparent); border-width: 2px; }
+.skr-manga-panel--agent.is-error { border-color: color-mix(in srgb, var(--skr-accent-warning) 50%, transparent); }
+.skr-manga-panel--agent.is-canned { animation: skr-bubble-in 0.6s var(--skr-ease-spring) both; }
+.skr-manga-panel--thinking { align-self: flex-start; padding: 18px 24px; overflow: hidden; min-height: 56px; display: flex; align-items: center; gap: 10px; }
+.skr-manga-panel--tool { align-self: stretch; max-width: 100%; padding: 16px; }
+.skr-manga-panel-text { margin: 0; color: var(--skr-text-primary); font-size: 15px; line-height: 1.5; white-space: pre-wrap; }
+.skr-manga-panel-tail {
+  position: absolute; left: -10px; top: 18px; width: 14px; height: 14px;
+  background: var(--skr-glass); border-left: 2px solid color-mix(in srgb, var(--skr-accent) 45%, transparent); border-bottom: 2px solid color-mix(in srgb, var(--skr-accent) 45%, transparent);
+  transform: rotate(45deg); border-radius: 0 0 0 4px;
+}
+.skr-manga-panel-thinking-label { color: var(--skr-text-secondary); font-style: italic; font-size: 13px; position: relative; z-index: 1; transition: opacity 0.3s ease; }
+.skr-manga-panel-actions { margin-top: 10px; display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+/* ── Tool result ── */
+.skr-tool-result { display: flex; flex-direction: column; gap: 8px; }
+.skr-tool-result-image-wrap { width: 100%; border-radius: 10px; overflow: hidden; background: rgba(0,0,0,0.25); }
+.skr-tool-result-image-wrap img { display: block; width: 100%; height: auto; }
+.skr-tool-result-skeleton { width: 100%; aspect-ratio: 3/4; border-radius: 10px; background: linear-gradient(110deg, rgba(255,255,255,0.04) 25%, color-mix(in srgb, var(--skr-accent) 18%, transparent) 45%, rgba(255,255,255,0.04) 65%); background-size: 200% 100%; animation: skr-shimmer 1.6s linear infinite; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.skr-tool-result[data-aspect="16:9"] .skr-tool-result-skeleton { aspect-ratio: 16/9; }
+.skr-tool-result[data-aspect="1:1"] .skr-tool-result-skeleton { aspect-ratio: 1/1; }
+.skr-tool-result-prompt { color: var(--skr-text-primary); font-size: 13px; margin: 0; opacity: 0.85; }
+.skr-tool-result-prompt.is-clickable {
+  background: none; border: 0; padding: 4px 0; text-align: left; cursor: pointer;
+  font: inherit; color: var(--skr-text-primary); width: 100%;
+  border-radius: 6px; transition: background 0.15s ease, opacity 0.15s ease;
+}
+.skr-tool-result-prompt.is-clickable:hover { opacity: 1; background: color-mix(in srgb, var(--skr-accent) 8%, transparent); padding: 4px 8px; }
+.skr-tool-result-status { color: var(--skr-text-secondary); font-size: 12px; margin: 0; text-transform: capitalize; }
+.skr-tool-result.is-error .skr-tool-result-status { color: var(--skr-accent-warning); }
+
+/* ── Tweak chips + reroll + tweak-in-dashboard ── */
+.skr-tweak-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.skr-tweak-chip {
+  display: inline-flex; align-items: center; padding: 4px 10px;
+  border-radius: 999px; background: transparent;
+  border: 1px solid color-mix(in srgb, var(--skr-accent-secondary) 35%, transparent);
+  color: var(--skr-accent-secondary); font-size: 11px; font-weight: 600;
+  cursor: pointer; transition: all 0.18s ease;
+}
+.skr-tweak-chip:hover:not(:disabled) { background: color-mix(in srgb, var(--skr-accent-secondary) 14%, transparent); border-color: var(--skr-accent-secondary); transform: translateY(-1px); }
+.skr-tweak-chip:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.skr-btn-tweak, .skr-btn-reroll {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+  border-radius: 999px; background: transparent;
+  border: 1px solid color-mix(in srgb, var(--skr-accent) 40%, transparent);
+  color: var(--skr-accent); font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s ease;
+}
+.skr-btn-tweak:hover:not(:disabled), .skr-btn-reroll:hover:not(:disabled) { background: color-mix(in srgb, var(--skr-accent) 12%, transparent); }
+.skr-btn-reroll:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ── Composer ── */
+.skr-agent-stage-composer-wrap { position: relative; z-index: 2; padding: 12px 24px 20px; border-top: 1px solid color-mix(in srgb, var(--skr-accent) 18%, transparent); background: color-mix(in srgb, var(--skr-glass) 90%, black); }
+.skr-agent-composer { display: flex; flex-direction: column; gap: 4px; max-width: 720px; margin: 0 auto; }
+.skr-agent-composer-row { display: flex; gap: 10px; align-items: flex-end; }
+.skr-agent-composer-input { flex: 1; background: rgba(0,0,0,0.25); border: 1.5px solid color-mix(in srgb, var(--skr-accent) 25%, transparent); border-radius: 12px; padding: 12px 14px; color: var(--skr-text-primary); font-family: inherit; font-size: 15px; resize: vertical; min-height: 44px; max-height: 160px; }
+.skr-agent-composer-input:focus { outline: none; border-color: var(--skr-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--skr-accent) 22%, transparent); }
+.skr-agent-composer-send { white-space: nowrap; }
+.skr-agent-composer-mic {
+  background: transparent; border: 1.5px solid color-mix(in srgb, var(--skr-accent) 25%, transparent);
+  border-radius: 10px; width: 40px; padding: 0;
+  color: var(--skr-text-primary); font-size: 16px; cursor: pointer;
+  transition: all 0.2s ease;
+}
+.skr-agent-composer-mic:hover { border-color: var(--skr-accent); }
+.skr-agent-composer-mic.is-listening {
+  background: color-mix(in srgb, var(--skr-accent) 18%, transparent);
+  border-color: var(--skr-accent); color: var(--skr-accent);
+  animation: skr-fade-in 0.3s ease, skr-pulse-glow 1.4s ease-in-out infinite alternate;
+}
+@keyframes skr-pulse-glow {
+  from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--skr-accent) 40%, transparent); }
+  to   { box-shadow: 0 0 0 6px color-mix(in srgb, var(--skr-accent) 0%, transparent); }
+}
+.skr-agent-composer-hint { font-size: 11px; color: var(--skr-text-secondary); padding-left: 4px; opacity: 0.75; min-height: 14px; }
+
+.skr-thinking { display: inline-flex; align-items: center; }
+
+/* ── Memory badge ── */
+.skr-memory-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  background: var(--skr-glass); border: 1px solid color-mix(in srgb, var(--skr-accent-secondary) 30%, transparent);
+  color: var(--skr-accent-secondary); backdrop-filter: blur(8px);
+}
+.skr-memory-badge.is-active { color: var(--skr-accent-success); border-color: color-mix(in srgb, var(--skr-accent-success) 35%, transparent); }
+.skr-memory-badge.is-empty { opacity: 0.65; }
+.skr-memory-badge-text { letter-spacing: 0.02em; }
+
+/* ── Intent panel (continue_story / illustrate_scene confirm UI) ── */
+.skr-intent-panel {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 10px 12px; border-radius: 10px;
+  background: color-mix(in srgb, var(--skr-accent-secondary) 12%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--skr-accent-secondary) 50%, transparent);
+}
+.skr-intent-panel-head { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.skr-intent-panel-title { font-weight: 700; font-size: 13px; color: var(--skr-text-primary); }
+.skr-intent-panel-desc { font-size: 12px; color: var(--skr-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 460px; }
+.skr-intent-confirm { padding: 6px 12px !important; font-size: 12px !important; }
+.skr-intent-panel-done { font-size: 12px; font-weight: 600; color: var(--skr-accent-success); }
+.skr-intent-panel-error { font-size: 12px; font-weight: 600; color: var(--skr-accent-warning); max-width: 260px; }
+
+/* ── Confirm-all panel (multi-step plan affordance) ── */
+.skr-confirm-all {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 10px 12px; border-radius: 10px;
+  background: color-mix(in srgb, var(--skr-accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--skr-accent) 50%, transparent);
+}
+.skr-confirm-all-head { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.skr-confirm-all-title { font-weight: 700; font-size: 13px; color: var(--skr-text-primary); }
+.skr-confirm-all-summary { font-size: 12px; color: var(--skr-text-secondary); }
+.skr-confirm-all-btn { padding: 6px 14px !important; font-size: 12px !important; }
+
+/* ── Theme-applied chip (set_theme result) ── */
+.skr-manga-panel--theme-applied {
+  align-self: flex-start; padding: 6px 12px !important; font-size: 12px !important;
+  background: color-mix(in srgb, var(--skr-accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--skr-accent) 50%, transparent);
+}
+
+/* ── Clickable past panels (selection-to-edit) ── */
+.skr-manga-panel--user,
+.skr-manga-panel--agent:not(.is-error):not(.is-canned) {
+  text-align: left; cursor: pointer; font: inherit; color: inherit;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.skr-manga-panel--user:hover,
+.skr-manga-panel--agent:not(.is-error):not(.is-canned):hover {
+  transform: translateY(-1px);
+  box-shadow: var(--skr-shadow-md);
+}
+/* Buttons rendered as panels need to keep their normal width/wrap behavior */
+button.skr-manga-panel { display: block; width: auto; }
+
+/* ── Recall favorites panel ── */
+.skr-recall-panel { display: flex; flex-direction: column; gap: 8px; }
+.skr-recall-head { font-size: 12px; color: var(--skr-text-secondary); }
+.skr-recall-head strong { color: var(--skr-accent); }
+.skr-recall-strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
+.skr-recall-tile {
+  position: relative; flex: 0 0 96px; width: 96px; height: 128px;
+  border-radius: 10px; overflow: hidden; background: rgba(0,0,0,0.25);
+  border: 1px solid color-mix(in srgb, var(--skr-accent) 22%, transparent);
+  cursor: pointer; padding: 0; transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.skr-recall-tile:hover { transform: translateY(-2px); border-color: var(--skr-accent); }
+.skr-recall-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.skr-recall-tile-fallback { position: absolute; inset: 0; display: grid; place-items: center; color: var(--skr-text-secondary); font-size: 22px; }
+.skr-recall-tile-prompt {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 4px 6px;
+  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+  color: #fff; font-size: 10px; line-height: 1.2; text-align: left;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; opacity: 0; transition: opacity 0.18s ease;
+}
+.skr-recall-tile:hover .skr-recall-tile-prompt,
+.skr-recall-tile:focus .skr-recall-tile-prompt { opacity: 1; }
+.skr-recall-empty { font-size: 12px; color: var(--skr-text-secondary); font-style: italic; }
+
+/* ── Gallery zoom (browse_gallery full-size preview) ── */
+.skr-gallery-zoom {
+  position: fixed; inset: 0; z-index: 1200;
+  background: rgba(0,0,0,0.85); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  cursor: zoom-out; animation: skr-fade-in 0.2s ease both;
+}
+.skr-gallery-zoom img { max-width: 92vw; max-height: 92vh; border-radius: 12px; box-shadow: var(--skr-shadow-lg); }
+.skr-gallery-zoom-close {
+  position: absolute; top: 16px; right: 16px;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.15);
+  color: #fff; font-size: 16px; cursor: pointer;
+}
+.skr-gallery-zoom-close:hover { background: rgba(0,0,0,0.75); }
+
+/* ── Agent intent banner (shown on Chronicle landing) ── */
+.skr-agent-intent-banner {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-bottom: 12px; padding: 6px 10px 6px 12px; border-radius: 999px;
+  background: color-mix(in srgb, var(--skr-accent-secondary) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--skr-accent-secondary) 35%, transparent);
+  color: var(--skr-text-primary); font-size: 12px; font-weight: 600;
+  animation: skr-fade-rise 0.4s var(--skr-ease-spring) both;
+}
+.skr-agent-intent-banner-text { max-width: 540px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.skr-agent-intent-banner-close { background: none; border: 0; color: var(--skr-text-secondary); cursor: pointer; font-size: 12px; padding: 2px 4px; }
+.skr-agent-intent-banner-close:hover { color: var(--skr-text-primary); }
+
+/* ── Summon Agent button (Dashboard Forge → Agent mode) ── */
+.skr-btn-summon {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: 999px;
+  background: transparent;
+  border: 1px dashed color-mix(in srgb, var(--skr-accent) 50%, transparent);
+  color: var(--skr-accent); font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s ease;
+}
+.skr-btn-summon:hover {
+  background: color-mix(in srgb, var(--skr-accent) 10%, transparent);
+  border-style: solid;
+  transform: translateY(-1px);
+}
+
+/* ── Hiyori suggest button (per-field Dashboard helper) ── */
+.skr-btn-hiyori-suggest {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 6px 10px; border-radius: 999px;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--skr-accent-secondary) 35%, transparent);
+  color: var(--skr-accent-secondary); font-size: 11px; font-weight: 600;
+  cursor: pointer; transition: all 0.18s ease;
+}
+.skr-btn-hiyori-suggest:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--skr-accent-secondary) 12%, transparent);
+  border-color: var(--skr-accent-secondary);
+}
+.skr-btn-hiyori-suggest:disabled { opacity: 0.5; cursor: progress; }
+
+/* ── Tweak notice (rendered in Whisk after a tweak round-trip) ── */
+.skr-tweak-notice {
+  display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px;
+  padding: 6px 12px; border-radius: 999px;
+  background: color-mix(in srgb, var(--skr-accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--skr-accent) 30%, transparent);
+  color: var(--skr-accent); font-size: 12px; font-weight: 600;
+  animation: skr-fade-rise 0.35s var(--skr-ease-spring) both;
+}
+
+/* ─── Mobile polish (≤640px) ──────────────────────────────────────────────
+ * The vertical manga column is already the correct shape for phones — this
+ * mostly fixes padding, hit-targets, and pins the composer to the viewport
+ * bottom so the bottom HUD doesn't crowd it out.
+ */
+@media (max-width: 640px) {
+  /* Bento collapses to single column on phones — multi-column tracks are
+     unreadable below ~720px and break-inside doesn't always behave */
+  .skr-agent-stage[data-layout="bento"] .skr-agent-stage-stream {
+    column-count: 1 !important;
+  }
+  .skr-agent-stage { min-height: calc(100vh - 140px); border-radius: 12px; }
+  .skr-agent-stage-scroll { padding: 56px 12px 16px; }
+  .skr-agent-stage-stream { gap: 12px; }
+  .skr-agent-stage-meta { top: 8px; left: 10px; }
+
+  .skr-manga-panel { padding: 12px 14px; max-width: 100%; }
+  .skr-manga-panel-text { font-size: 14px; }
+
+  /* Pin the composer to the viewport bottom on small screens — Safari iOS
+     keyboard handling relies on this. The bottom HUD has its own z-stack. */
+  .skr-agent-stage-composer-wrap {
+    position: sticky; bottom: 0;
+    padding: 10px 12px max(12px, env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--skr-glass) 95%, black);
+  }
+  .skr-agent-composer-input { font-size: 16px; /* avoid iOS zoom-on-focus */ min-height: 40px; }
+  .skr-agent-composer-send { padding: 10px 14px; font-size: 13px; }
+
+  /* Larger tap targets for tweak chips + result actions */
+  .skr-tweak-chip { padding: 6px 12px; font-size: 12px; }
+  .skr-btn-tweak, .skr-btn-reroll, .skr-btn-summon { padding: 8px 14px; font-size: 13px; }
+  .skr-mode-toggle { padding: 10px 16px; }
+
+  /* Recall + gallery tiles bigger to ease thumb taps */
+  .skr-recall-tile { flex-basis: 112px; width: 112px; height: 144px; }
+  .skr-recall-tile-prompt { opacity: 1; font-size: 11px; }
+
+  /* Forge mode-slot needs to stay clear of the page header */
+  .skr-forge-mode-slot { top: 4px; right: 4px; }
+}
+
+/* Even tighter padding for very small phones */
+@media (max-width: 380px) {
+  .skr-agent-stage-scroll { padding: 52px 8px 12px; }
+  .skr-agent-stage-composer-wrap { padding: 8px 8px max(10px, env(safe-area-inset-bottom)); }
+  .skr-manga-panel { padding: 10px 12px; }
+}

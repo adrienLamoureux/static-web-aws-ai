@@ -22,6 +22,8 @@ import {
   useCompanion,
   CompanionActions,
 } from "./lib/companion/CompanionContext";
+import { ModeProvider } from "./lib/mode/ModeContext";
+import { AgentProvider } from "./lib/agent/AgentContext";
 import { NotificationProvider } from "./components/sakura/NotificationStack";
 import { getAuthToken } from "./utils/authTokens";
 
@@ -303,11 +305,15 @@ function ConfiguredApp() {
       <AuthProvider cognito={cognito}>
         <MusicProvider>
           <CompanionProvider>
-            <NotificationProvider>
-              <Router>
-                <AppRoutes />
-              </Router>
-            </NotificationProvider>
+            <ModeProvider>
+              <AgentProvider>
+                <NotificationProvider>
+                  <Router>
+                    <AppRoutes />
+                  </Router>
+                </NotificationProvider>
+              </AgentProvider>
+            </ModeProvider>
           </CompanionProvider>
         </MusicProvider>
       </AuthProvider>

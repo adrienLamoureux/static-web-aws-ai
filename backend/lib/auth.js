@@ -38,6 +38,7 @@ const getUserFromRequest = (req) => {
       sub: authorizer.sub,
       email: authorizer.email || "",
       groups,
+      isAdmin: groups.includes("admin"),
       anonymous: authorizer.anonymous === "true",
     };
   }
@@ -55,6 +56,7 @@ const getUserFromRequest = (req) => {
       sub: claims.sub,
       email: claims.email || "",
       groups,
+      isAdmin: groups.includes("admin"),
       anonymous: false,
     };
   }
@@ -67,10 +69,12 @@ const getUserFromRequest = (req) => {
   const payload = decodeJwtPayload(token);
   if (payload?.sub) {
     const rawGroups = payload["cognito:groups"];
+    const groups = Array.isArray(rawGroups) ? rawGroups : [];
     return {
       sub: payload.sub,
       email: payload.email || "",
-      groups: Array.isArray(rawGroups) ? rawGroups : [],
+      groups,
+      isAdmin: groups.includes("admin"),
       anonymous: false,
     };
   }

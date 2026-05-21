@@ -100,33 +100,55 @@
   margin-bottom: 4px;
 }
 
-.skr-input {
+/* Shared base box for every form field — keeps `.skr-input`, `.skr-field-select`,
+   and `.skr-field-textarea` visually consistent. The modifier rules below add
+   only what's unique (dropdown arrow, resize handle, etc.). Without this
+   shared base, selects and textareas fall through to the UA stylesheet and
+   render with the stark black native border. */
+.skr-input,
+.skr-field-select,
+.skr-field-textarea {
   width: 100%;
   padding: 8px 12px;
-  background: var(--skr-surface);
+  background-color: var(--skr-surface);
   border: 1px solid var(--skr-border);
   border-radius: 10px;
   color: var(--skr-text);
   font-size: 14px;
   transition: border-color var(--skr-duration-fast) var(--skr-ease-out), box-shadow var(--skr-duration-fast) var(--skr-ease-out);
 }
-.skr-input:focus {
+.skr-input:focus,
+.skr-field-select:focus,
+.skr-field-textarea:focus {
   outline: none;
   border-color: var(--skr-accent);
   box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.12), var(--skr-shadow-sm);
 }
-.skr-input::placeholder { color: var(--skr-text-muted); }
+.skr-input::placeholder,
+.skr-field-textarea::placeholder { color: var(--skr-text-muted); }
 
 .skr-field-select {
   appearance: none;
+  -webkit-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%23FF6B9D'%3E%3Cpath d='M7 9L2 4h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
   padding-right: 32px;
   cursor: pointer;
 }
+/* `disabled` selects also need the soft styling — without this they revert
+   to the native look on the Character picker while characters load. */
+.skr-field-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
-.skr-field-textarea { resize: vertical; min-height: 60px; }
+.skr-field-textarea {
+  resize: vertical;
+  min-height: 60px;
+  font-family: inherit;
+  line-height: 1.4;
+}
 .skr-strength-slider { width: 100%; accent-color: var(--skr-accent); }
 
 /* ─── Tabs ─── */
@@ -348,4 +370,6 @@
 .skr-track-tag { display: inline-flex; padding: 1px 6px; border-radius: 999px; font-size: 10px; background: rgba(255, 107, 157, 0.1); color: var(--skr-accent); }
 .skr-track-audio { width: 100%; }
 .skr-track-loop-note { font-size: 11px; color: var(--skr-text-muted); font-style: italic; }
+
+/* Agent-mode styles live in styles/agent.css */
 
