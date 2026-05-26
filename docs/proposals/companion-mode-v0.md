@@ -1,8 +1,16 @@
 # Companion Mode — v0 Ship Plan
 
-> **Status:** Planned, not started.
+> **Status:** v0 skeleton shipped 2026-05-19 (frame + mode switch + 2 tools + TTS). Remaining 6 new tools (open_story_session, read_scene, share/unshare/delete_image, change_brightness, sign_out) deferred to follow-ups.
 > **Scope:** v0, ship in ~1 week. Builds on shipped Agent Mode (v1.7) infrastructure.
 > **Audience:** the next agent (or human) picking this up.
+>
+> v0 deltas vs. the original plan:
+> - **TTS landed first** as a cross-cutting precursor (works in agent mode too, not just companion). Toggle button next to mic in Composer. Auto-speaks every agent reply when enabled. Cancel-on-interrupt when user submits. Persisted to `localStorage["skr-tts-enabled"]`.
+> - **CompanionStage** reuses MangaPanel + Composer instead of building a new "wide chat panel" — Composer already has mic + 🔊 toggles, no duplication.
+> - **App.js branch** picks `<CompanionStage />` vs `<SakuraShell>` based on `useMode()` — no shell-suppression CSS gymnastics, just don't render the shell at all when in companion mode.
+> - **Two new tools** (`view_my_creations`, `what_can_you_do`) registered in agent-tools.js. The other 6 from the original plan are parked.
+> - **System prompt addendum** (`COMPANION_MODE_ADDENDUM`) appended to the existing SYSTEM_PROMPT when `ctx.mode === "companion"`. Encourages narrative tone, on-screen affordance mentions, voice-confirm pattern, and the canned admin refusal.
+> - Backend test count: 358 (+8 for companion-tools). Frontend: 129 (+13 for useSpeech).
 
 ## Context
 

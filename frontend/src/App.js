@@ -22,8 +22,9 @@ import {
   useCompanion,
   CompanionActions,
 } from "./lib/companion/CompanionContext";
-import { ModeProvider } from "./lib/mode/ModeContext";
+import { ModeProvider, useMode } from "./lib/mode/ModeContext";
 import { AgentProvider } from "./lib/agent/AgentContext";
+import CompanionStage from "./components/sakura/companion-mode/CompanionStage";
 import { NotificationProvider } from "./components/sakura/NotificationStack";
 import { getAuthToken } from "./utils/authTokens";
 
@@ -214,6 +215,14 @@ function SakuraShell({ children }) {
 /* ─── Routes ─── */
 
 function AppRoutes() {
+  const { mode } = useMode();
+  // Companion mode is a full-viewport takeover — no shell, no HUD, no
+  // sidebar. CompanionStage owns everything visible to the user. Routes
+  // aren't rendered because there's no place to put them; programmatic
+  // nav still works (Router is mounted upstream), so the URL stays in
+  // sync for refresh-to-resume and tool dispatches that need a session
+  // id from the URL.
+  if (mode === "companion") return <CompanionStage />;
   return (
     <SakuraShell>
       <Routes>

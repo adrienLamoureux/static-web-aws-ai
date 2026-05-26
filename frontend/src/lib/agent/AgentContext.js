@@ -38,6 +38,7 @@ import { useCompanion, CompanionActions } from "../companion/CompanionContext";
 import { useMode } from "../mode/ModeContext";
 import { friendlyAgentError, isAgentDisabledError } from "./errorMessages";
 import { parseSlashCommand, dispatchSlashCommand } from "./slashCommands";
+import useSpeech from "./useSpeech";
 
 const HISTORY_CAP = 12;
 export const THINKING_STAGES = [
@@ -89,7 +90,7 @@ const readStoredSessionId = () => {
 export function AgentProvider({ children }) {
   const { apiBaseUrl } = useConfig();
   const { dispatch } = useCompanion();
-  const { setMode } = useMode();
+  const { mode, setMode } = useMode();
   const { setTheme, setBrightness } = useTheme();
   const [turns, setTurns] = useState([]);
   const [submitting, setSubmitting] = useState(false);
@@ -102,6 +103,17 @@ export function AgentProvider({ children }) {
   const historyRef = useRef([]);
   const submittingRef = useRef(false);
   const greetedRef = useRef(false);
+
+  // Text-to-speech — Hiyori speaks her replies when the user has the 🔊
+  // toggle on. State persists to localStorage so the preference survives
+  // refreshes. Auto-cancels on a fresh user submit (cancel-on-interrupt).
+  const speech = useSpeech();
+  const maybeSpeak = useCallback(
+    (text) => {
+      if (speech.enabled && speech.supported) speech.speak(text);
+    },
+    [speech]
+  );
 
   useEffect(() => {
     setActiveSessionIdState(readStoredSessionId());
@@ -163,7 +175,8 @@ export function AgentProvider({ children }) {
     if (greetedRef.current) return;
     greetedRef.current = true;
     append({ kind: "agent", payload: CANNED_GREETING });
-  }, [append]);
+    maybeSpeak(CANNED_GREETING.text);
+  }, [append, maybeSpeak]);
 
   /**
    * Switch to a different (or new) named session. Persists the choice to
@@ -226,7 +239,10 @@ export function AgentProvider({ children }) {
         const data = await postJson(url, {
           messages: historyRef.current,
           sessionId: activeSessionId,
-          context: { page: "atelier" },
+          context: {
+            page: mode === "companion" ? "companion" : "atelier",
+            mode,
+          },
         });
 
         // Drop thinking placeholder + cancel stage timers
@@ -239,6 +255,7 @@ export function AgentProvider({ children }) {
 
         if (agentText && agentText !== "(thinking…)") {
           append({ kind: "agent", payload: { text: agentText, emotion } });
+          maybeSpeak(agentText);
           historyRef.current = [
             ...historyRef.current,
             { role: "assistant", content: agentText },
@@ -302,29 +319,25 @@ export function AgentProvider({ children }) {
 
         if (isAgentDisabledError(err)) {
           // Auto-flip back to dashboard so the user isn't stranded
+          const text = friendlyAgentError("agent_mode_disabled");
           append({
             kind: "agent",
-            payload: {
-              text: friendlyAgentError("agent_mode_disabled"),
-              emotion: "sad",
-              error: true,
-            },
+            payload: { text, emotion: "sad", error: true },
           });
+          maybeSpeak(text);
           window.setTimeout(() => setMode("dashboard"), 1200);
         } else {
+          const text = friendlyAgentError(err?.message, "tool_dispatch_failed");
           append({
             kind: "agent",
-            payload: {
-              text: friendlyAgentError(err?.message, "tool_dispatch_failed"),
-              emotion: "sad",
-              error: true,
-            },
+            payload: { text, emotion: "sad", error: true },
           });
+          maybeSpeak(text);
         }
         dispatch(CompanionActions.GENERATION_ERROR, { type: "image", error: err?.message });
       }
     },
-    [apiBaseUrl, activeSessionId, append, applyClientAction, dispatch, replaceTurn, setMode]
+    [apiBaseUrl, activeSessionId, append, applyClientAction, dispatch, mode, maybeSpeak, replaceTurn, setMode]
   );
 
   // Drain the queue serially. submittingRef avoids a state-stale race when
@@ -351,6 +364,9 @@ export function AgentProvider({ children }) {
     async (rawText) => {
       const text = String(rawText || "").trim();
       if (!text) return;
+      // Cancel any in-flight speech — a fresh user submit should interrupt
+      // Hiyori mid-sentence (cancel-on-interrupt feels native).
+      speech.stop();
       // Intercept slash commands before they hit the agent.
       const parsed = parseSlashCommand(text);
       if (parsed) {
@@ -362,7 +378,7 @@ export function AgentProvider({ children }) {
       }
       setQueue((prev) => [...prev, text]);
     },
-    [append, reset, applyClientAction, lastUserPrompt]
+    [append, reset, applyClientAction, lastUserPrompt, speech]
   );
 
   const reroll = useCallback(
@@ -438,40 +454,34 @@ export function AgentProvider({ children }) {
     [confirmIntentVerbose]
   );
 
+  // TTS surface for the Composer toggle + future CompanionStage. Exposes
+  // only the bits a consumer needs (no `speak`, since auto-speak is wired
+  // here in the provider — consumers just toggle on/off).
+  const tts = {
+    supported: speech.supported,
+    enabled: speech.enabled,
+    speaking: speech.speaking,
+    setEnabled: speech.setEnabled,
+    stop: speech.stop,
+  };
+
   const value = useMemo(
     () => ({
-      turns,
-      submitting,
-      queueLength: queue.length,
-      pendingText,
-      activeSessionId,
-      setActiveSession,
-      submit,
-      reroll,
-      tweak,
-      reset,
-      greet,
-      setPendingText,
-      clearPendingText,
-      confirmIntent,
-      confirmAllIntents,
+      turns, submitting, queueLength: queue.length, pendingText,
+      activeSessionId, setActiveSession,
+      submit, reroll, tweak, reset, greet,
+      setPendingText, clearPendingText,
+      confirmIntent, confirmAllIntents,
+      tts,
     }),
     [
-      turns,
-      submitting,
-      queue.length,
-      pendingText,
-      activeSessionId,
-      setActiveSession,
-      submit,
-      reroll,
-      tweak,
-      reset,
-      greet,
-      setPendingText,
-      clearPendingText,
-      confirmIntent,
-      confirmAllIntents,
+      turns, submitting, queue.length, pendingText,
+      activeSessionId, setActiveSession,
+      submit, reroll, tweak, reset, greet,
+      setPendingText, clearPendingText,
+      confirmIntent, confirmAllIntents,
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      tts.enabled, tts.supported, tts.speaking,
     ]
   );
 

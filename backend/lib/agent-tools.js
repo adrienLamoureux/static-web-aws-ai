@@ -31,6 +31,10 @@ const {
   dispatchGenerateMusic,
   dispatchBrowseGallery,
 } = require("./agent-tools/dispatchers");
+const {
+  dispatchViewMyCreations,
+  dispatchWhatCanYouDo,
+} = require("./agent-tools/companion-tools");
 
 // ─── generate_image tool spec ──────────────────────────────────────────────
 const generateImageToolSpec = {
@@ -199,6 +203,42 @@ const generateMusicToolSpec = {
   },
 };
 
+// ─── view_my_creations tool spec ──────────────────────────────────────────
+// Browse-focused counterpart to recall_favorites — same backing data but
+// the agent narrates it as "your library" rather than "pattern-spotting".
+const viewMyCreationsToolSpec = {
+  toolSpec: {
+    name: "view_my_creations",
+    description:
+      "Surface the user's own recent image generations as a thumbnail grid. Use when " +
+      "the user wants to BROWSE their library (\"show me what I made yesterday\", " +
+      "\"what was that fox image I did last week?\"). Distinct from recall_favorites " +
+      "(which is for pattern-spotting their taste). Returns prompts + thumbnails — " +
+      "narrate what you see and offer to make a variation or open one in detail.",
+    inputSchema: {
+      json: {
+        type: "object",
+        properties: {
+          limit: { type: "number", description: "Max items to surface (1–12, default 8)." },
+        },
+      },
+    },
+  },
+};
+
+// ─── what_can_you_do tool spec ────────────────────────────────────────────
+const whatCanYouDoToolSpec = {
+  toolSpec: {
+    name: "what_can_you_do",
+    description:
+      "Show the user a menu of what you can help with. Call this when the user is new, " +
+      "lost, or explicitly asks 'what can you do?' / 'help' / 'what are my options?'. " +
+      "Returns a structured capability list — narrate it briefly + invite the user to " +
+      "pick something.",
+    inputSchema: { json: { type: "object", properties: {} } },
+  },
+};
+
 // ─── browse_gallery tool spec ──────────────────────────────────────────────
 const browseGalleryToolSpec = {
   toolSpec: {
@@ -227,6 +267,8 @@ const ALL_TOOL_SPECS = [
   recallFavoritesToolSpec,
   generateMusicToolSpec,
   browseGalleryToolSpec,
+  viewMyCreationsToolSpec,
+  whatCanYouDoToolSpec,
 ];
 
 // ─── Top-level router ──────────────────────────────────────────────────────
@@ -238,6 +280,8 @@ const dispatchTool = async ({ name, args = {}, deps, userId }) => {
   if (name === "recall_favorites") return dispatchRecallFavorites({ args, deps, userId });
   if (name === "generate_music") return dispatchGenerateMusic({ args, deps, userId });
   if (name === "browse_gallery") return dispatchBrowseGallery({ args, deps, userId });
+  if (name === "view_my_creations") return dispatchViewMyCreations({ args, deps, userId });
+  if (name === "what_can_you_do") return dispatchWhatCanYouDo({ args, deps, userId });
   return { ok: false, error: `unknown_tool:${name}` };
 };
 

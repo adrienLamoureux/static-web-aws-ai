@@ -1,8 +1,13 @@
 /**
- * ModeContext — global UI mode toggle (dashboard | agent).
+ * ModeContext — global UI mode toggle (dashboard | agent | companion).
  *
- * Persisted to localStorage under `skr-mode`. Only the /atelier route is
- * expected to honor `agent` mode; all other routes ignore it.
+ * Persisted to localStorage under `skr-mode`. Mode semantics:
+ *   - "dashboard" — traditional form-driven UI (default)
+ *   - "agent"     — route-scoped to /atelier, manga-panel scroll, dominant
+ *                   tool use. Other routes ignore the flag.
+ *   - "companion" — global takeover. App shell (TopBar, BottomHUD,
+ *                   CompanionPanel) is suppressed; CompanionStage takes
+ *                   the whole viewport. Conversation IS the interface.
  *
  * Usage:
  *   const { mode, setMode, toggleMode } = useMode();
@@ -11,7 +16,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 const STORAGE_KEY = "skr-mode";
-const VALID_MODES = ["dashboard", "agent"];
+const VALID_MODES = ["dashboard", "agent", "companion"];
 const DEFAULT_MODE = "dashboard";
 
 const ModeContext = createContext({

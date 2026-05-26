@@ -12,6 +12,7 @@ import { useAuth } from "../../../contexts/AuthContext";
 import { useConfig } from "../../../contexts/ConfigContext";
 import { buildApiUrl } from "../../../services/apiClient";
 import { useCompanionEvent } from "../../../lib/companion/CompanionContext";
+import { useMode } from "../../../lib/mode/ModeContext";
 import { REACTIONS } from "../../../lib/companion/reaction-map";
 import useProactiveCompanion from "../../../lib/companion/useProactiveCompanion";
 import { getDefaultModel, getModelById } from "../../../lib/live2d/model-registry";
@@ -40,6 +41,7 @@ export default function CompanionPanel() {
   const [chatOpen, setChatOpen] = useState(() => localStorage.getItem(CHAT_OPEN_KEY) !== "false");
   const [fullscreen, setFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  const { setMode } = useMode();
 
   const { proactiveText, proactiveEmotion, dismissProactive } = useProactiveCompanion();
 
@@ -218,6 +220,15 @@ export default function CompanionPanel() {
             title="Full screen"
           >
             ⤢
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("companion")}
+            style={styles.minBtn}
+            aria-label="Enter companion mode"
+            title="Hands-free mode (Hiyori drives)"
+          >
+            ✨
           </button>
           <button
             type="button"

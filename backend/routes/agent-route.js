@@ -31,6 +31,19 @@ const resolveSessionId = (body) => {
   return sanitiseSessionId(raw) || "default";
 };
 
+// Additive system prompt fragment appended when the user is in companion
+// mode (viewport-takeover, no app shell). Hiyori is the ONLY interface — so
+// she narrates more, mentions on-screen affordances, and politely refuses
+// admin operations with an offer to drop into the dashboard.
+const COMPANION_MODE_ADDENDUM = `
+
+## Companion mode (the user has handed you the entire screen)
+- Be a touch more narrative: "let me see…", "okay, pulling that up now…", "the grid below shows your last 8 — the cooler-toned one is gorgeous."
+- Mention what is appearing on screen so the user can react to it ("scroll down to see them").
+- Confirm via natural language, not buttons — if a destructive or story-shaping action is required, ask once ("delete that one? say yes if you mean it") and only proceed after explicit assent in the next turn.
+- ADMIN OPERATIONS ARE OUT OF REACH. If the user asks for anything Sanctum/admin-only (LoRA catalog edits, feature flags, model picker, cost dashboard, user management), respond with: "That one's behind the Director's desk — I can't help from here. Want me to drop you into the dashboard?" Do NOT call any tool for these asks.
+- Stick to one tool per turn here. Multi-step plans can feel disorienting without the visual scaffolding of agent-mode panels.`;
+
 const SYSTEM_PROMPT = `You are Hiyori, the resident creative agent inside Whisk Studio's Atelier (the image studio). The user has switched to Agent mode and is trusting you to drive the creative process.
 
 ## Voice
@@ -275,6 +288,7 @@ module.exports = (app, deps) => {
 
     // ── Build system + history ───────────────────────────────────────────
     let system = SYSTEM_PROMPT;
+    if (ctx.mode === "companion") system += COMPANION_MODE_ADDENDUM;
     if (ctx.page) system += `\n\nContext: The user is on the ${ctx.page} page.`;
     if (memory?.summary) system += `\n\n<memory>${memory.summary}</memory>`;
     if (prefs) {

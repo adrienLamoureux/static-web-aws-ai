@@ -13,7 +13,7 @@ import { useAgent } from "../../../lib/agent/AgentContext";
 import useVoiceInput from "../../../lib/agent/useVoiceInput";
 
 export default function Composer() {
-  const { submit, submitting, queueLength, pendingText, clearPendingText } = useAgent();
+  const { submit, submitting, queueLength, pendingText, clearPendingText, tts } = useAgent();
   const [text, setText] = useState("");
   const taRef = useRef(null);
   // Capture the text the user had before they hit the mic, so live transcript
@@ -121,6 +121,18 @@ export default function Composer() {
             title={voice.listening ? "Stop dictation" : "Dictate"}
           >
             {voice.listening ? "■" : "🎙"}
+          </button>
+        ) : null}
+        {tts?.supported ? (
+          <button
+            type="button"
+            className={`skr-agent-composer-mic${tts.enabled ? " is-listening" : ""}`}
+            onClick={() => tts.setEnabled(!tts.enabled)}
+            aria-pressed={tts.enabled}
+            aria-label={tts.enabled ? "Mute Hiyori's voice" : "Let Hiyori speak"}
+            title={tts.enabled ? "Mute voice" : "Speak"}
+          >
+            {tts.enabled ? "🔊" : "🔇"}
           </button>
         ) : null}
         <button

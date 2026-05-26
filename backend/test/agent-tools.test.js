@@ -25,7 +25,7 @@ test("generateImageToolSpec exposes Bedrock Converse format", () => {
   assert.deepEqual(schema.properties.aspect.enum, ["1:1", "3:4", "16:9"]);
 });
 
-test("ALL_TOOL_SPECS includes the v1.2 tool fleet", () => {
+test("ALL_TOOL_SPECS includes the full tool fleet (v1.2 + companion v0)", () => {
   const names = ALL_TOOL_SPECS.map((t) => t.toolSpec.name).sort();
   assert.deepEqual(names, [
     "browse_gallery",
@@ -35,6 +35,8 @@ test("ALL_TOOL_SPECS includes the v1.2 tool fleet", () => {
     "illustrate_scene",
     "recall_favorites",
     "set_theme",
+    "view_my_creations",
+    "what_can_you_do",
   ]);
 });
 
