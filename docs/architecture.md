@@ -1,8 +1,10 @@
 # Architecture Overview
 
-> Last updated: 2026-04-11
+> Last updated: 2026-06-27 (Companion Mode v0 + TTS)
 
 This file is the current source of truth for the repo architecture, deployment modes, and branch model.
+For an interview-oriented summary (system at a glance, cost model, roadmap, the "why" behind each
+decision), see [`state-of-the-art.md`](./state-of-the-art.md).
 
 ## 1. System Layers
 
@@ -78,7 +80,7 @@ aws s3 sync frontend/build/live2d s3://<bucket>/live2d
 ### 5.2 Route Registration
 - Route registration hub: `backend/routes/index.js`
 - All route modules use the **Express Router** pattern — each module exports a function that returns a `Router`, which `index.js` mounts via `app.use()`.
-- Registered route modules: 25
+- Registered route modules: 29
 - Total endpoints: 73+
 
 #### Dependency flow
@@ -139,7 +141,7 @@ The Sakura Bloom frontend is the primary UI, living in `frontend/src/` on `main`
 - Bottom HUD navigation (Realm / Atelier / Chronicle / Sanctum)
 - 10 themes (sakura, moonrise, bamboo, ember, void, glacier, dusk, aurora, crimson, storm) with dark/light brightness variants
 - Companion memory via DynamoDB, proactive companion via AI-generated messages
-- **Agent mode (v1.7)** route-scoped to `/atelier`. `ModeContext` (localStorage `skr-mode`) toggles between dashboard form-UI and the manga-panel `AgentStage`. `AgentContext` owns the turn stream, serial submit queue, intent confirm/abort chain, slash command dispatcher, voice input, and the active session id (localStorage `skr-agent-session`). 7-tool fleet: `generate_image`, `set_theme`, `continue_story`, `illustrate_scene`, `recall_favorites`, `generate_music`, `browse_gallery`. See ADR-007 and `docs/proposals/agent-mode-v0.md`.
+- **Modes (v0 companion + v1.7 agent)** — `ModeContext` (localStorage `skr-mode`) switches the whole shell between three surfaces: `dashboard` (form-UI), `agent` (route-scoped to `/atelier`, the manga-panel `AgentStage`), and `companion` (full-viewport character takeover that refuses admin operations). `AgentContext` owns the turn stream, serial submit queue, intent confirm/abort chain, slash command dispatcher, voice input, TTS, and the active session id (localStorage `skr-agent-session`). **9-tool fleet**: `generate_image`, `set_theme`, `continue_story`, `illustrate_scene`, `recall_favorites`, `generate_music`, `browse_gallery`, plus companion v0's `view_my_creations` and `what_can_you_do`. See ADR-007, `docs/proposals/agent-mode-v0.md`, and `docs/proposals/companion-mode-v0.md`.
 - `skr-` CSS class prefix system with custom properties in `src/styles/tokens.css`. Agent-mode CSS lives in its own `src/styles/agent.css` module.
 
 See [`frontend/ARCHITECTURE.md`](../frontend/ARCHITECTURE.md) for component tree, hook graph, and CSS design system details.
