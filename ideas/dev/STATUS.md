@@ -66,3 +66,5 @@
 - 2026-05-18T20:44:48.256Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=4a4447b / sanity=passed / ui_smoke=passed
 - 2026-05-20T21:40:14.064Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=4a4447b / sanity=passed / ui_smoke=passed
 - 2026-05-26T22:13:37.177Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=73e55f9 / sanity=passed / ui_smoke=passed
+- 2026-06-27T09:28:45.864Z | event=diff | stage=dev
+- 2026-06-27T09:32:03.381Z | event=deploy | stack=StaticWebAWSAIStack-dev / cloudfront=https://d2l9b1xmucsb19.cloudfront.net / api=https://k002t5i8r9.execute-api.us-east-1.amazonaws.com/prod/ / commit=fcf9fc2 / sanity=passed / ui_smoke=passed
