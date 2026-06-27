@@ -33,8 +33,7 @@ const stashIntent = (action, payload) => {
   }
 };
 
-const chronicleUrl = (sessionId) =>
-  `/chronicle?session=${encodeURIComponent(sessionId)}`;
+const chronicleUrl = (sessionId) => `/chronicle?session=${encodeURIComponent(sessionId)}`;
 
 const fail = (updatePanel, error) => {
   updatePanel({ executing: false, executeError: error });
@@ -70,9 +69,8 @@ export async function executeIntent({ payload, apiBaseUrl, updatePanel }) {
 
     if (payload.clientAction === "generate_music") {
       const prompt =
-        [payload.mood && `${payload.mood} mood`, payload.description]
-          .filter(Boolean)
-          .join(": ") || payload.mood;
+        [payload.mood && `${payload.mood} mood`, payload.description].filter(Boolean).join(": ") ||
+        payload.mood;
       await startStorySceneMusic(apiBaseUrl, payload.sessionId, payload.sceneId, { prompt });
       stashIntent("generate_music", payload);
       return succeed(updatePanel, chronicleUrl(payload.sessionId));

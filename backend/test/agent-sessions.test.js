@@ -95,7 +95,10 @@ test("list strips AGENT#SESSION# prefix from sk and sorts by lastUsedAt desc", a
     ],
   });
   const items = await s.list("u1");
-  assert.deepEqual(items.map((i) => i.sessionId), ["newest", "newer", "old"]);
+  assert.deepEqual(
+    items.map((i) => i.sessionId),
+    ["newest", "newer", "old"]
+  );
   assert.equal(items[0].name, "Newest");
 });
 

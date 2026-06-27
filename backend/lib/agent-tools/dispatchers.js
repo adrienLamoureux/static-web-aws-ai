@@ -178,7 +178,9 @@ const dispatchGenerateMusic = async ({ args, deps, userId }) => {
   if (!userId) return { ok: false, error: "unauthorized" };
   const mood = String(args.mood || "").trim();
   if (!mood) return { ok: false, error: "mood_required" };
-  const description = String(args.description || "").trim().slice(0, 200);
+  const description = String(args.description || "")
+    .trim()
+    .slice(0, 200);
 
   let sessionId = String(args.sessionId || "").trim();
   let sceneId = String(args.sceneId || "").trim();
@@ -209,9 +211,7 @@ const dispatchGenerateMusic = async ({ args, deps, userId }) => {
         const sceneItems = (sessions || []).filter((s) =>
           s.sk?.startsWith(`SESSION#${sessionId}#SCENE#`)
         );
-        const latestScene = sceneItems.sort(
-          (a, b) => (b.createdAt || 0) - (a.createdAt || 0)
-        )[0];
+        const latestScene = sceneItems.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
         if (latestScene) {
           sceneId = latestScene.sceneId || latestScene.sk.split("#SCENE#")[1] || "";
         }

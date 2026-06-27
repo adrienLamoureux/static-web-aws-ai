@@ -112,7 +112,10 @@ export function dispatchSlashCommand(parsed, ctx) {
     if (!lastUserPrompt) {
       append({
         kind: "agent",
-        payload: { text: "Nothing to re-roll yet — let's make something first.", emotion: "thinking" },
+        payload: {
+          text: "Nothing to re-roll yet — let's make something first.",
+          emotion: "thinking",
+        },
       });
       return { handled: true };
     }

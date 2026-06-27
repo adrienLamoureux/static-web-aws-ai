@@ -12,10 +12,7 @@ function UsageBar({ label, value, maxValue }) {
         {label}
       </span>
       <div className="skr-usage-bar-track">
-        <div
-          className="skr-usage-bar-fill"
-          style={{ width: `${pct}%`, "--skr-usage-pct": pct }}
-        />
+        <div className="skr-usage-bar-fill" style={{ width: `${pct}%`, "--skr-usage-pct": pct }} />
       </div>
       <span className="skr-usage-bar-value">{value}</span>
     </div>

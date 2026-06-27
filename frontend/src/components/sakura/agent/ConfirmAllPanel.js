@@ -29,9 +29,7 @@ export default function ConfirmAllPanel({ payload }) {
   if (intents.length === 0) return null;
 
   const allDone = intents.every((i) => i.executed);
-  const summary = intents
-    .map((i) => INTENT_LABELS[i.clientAction] || i.clientAction)
-    .join(" + ");
+  const summary = intents.map((i) => INTENT_LABELS[i.clientAction] || i.clientAction).join(" + ");
 
   const handleClick = async () => {
     if (pending || allDone) return;

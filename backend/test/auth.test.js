@@ -336,19 +336,16 @@ test("getUserFromRequest sets isAdmin=false for legacy claims with no groups", (
 });
 
 test("unsigned JWT fallback also sets isAdmin from cognito:groups", () => {
-  withEnv(
-    { ALLOW_UNSIGNED_JWT_FALLBACK: "true", NODE_ENV: "development" },
-    () => {
-      const req = {
-        headers: {
-          authorization: `Bearer ${toUnsignedToken({
-            sub: "dev-admin",
-            "cognito:groups": ["admin"],
-          })}`,
-        },
-      };
-      const user = getUserFromRequest(req);
-      assert.equal(user?.isAdmin, true);
-    }
-  );
+  withEnv({ ALLOW_UNSIGNED_JWT_FALLBACK: "true", NODE_ENV: "development" }, () => {
+    const req = {
+      headers: {
+        authorization: `Bearer ${toUnsignedToken({
+          sub: "dev-admin",
+          "cognito:groups": ["admin"],
+        })}`,
+      },
+    };
+    const user = getUserFromRequest(req);
+    assert.equal(user?.isAdmin, true);
+  });
 });

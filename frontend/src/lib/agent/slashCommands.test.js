@@ -1,8 +1,4 @@
-import {
-  parseSlashCommand,
-  dispatchSlashCommand,
-  SLASH_HELP_TEXT,
-} from "./slashCommands";
+import { parseSlashCommand, dispatchSlashCommand, SLASH_HELP_TEXT } from "./slashCommands";
 
 const makeCtx = () => {
   const calls = { append: [], reset: 0, applyClientAction: [] };
@@ -79,9 +75,7 @@ describe("dispatchSlashCommand", () => {
     const { ctx, calls } = makeCtx();
     const result = dispatchSlashCommand({ name: "theme", args: ["aurora"] }, ctx);
     expect(result).toEqual({ handled: true });
-    expect(calls.applyClientAction).toEqual([
-      { clientAction: "set_theme", theme: "aurora" },
-    ]);
+    expect(calls.applyClientAction).toEqual([{ clientAction: "set_theme", theme: "aurora" }]);
     expect(calls.append).toHaveLength(1);
     expect(calls.append[0].kind).toBe("tool-result");
     expect(calls.append[0].payload.theme).toBe("aurora");

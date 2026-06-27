@@ -15,8 +15,7 @@ const AUTO_DISMISS_MS = 6000;
 
 const ACTION_COPY = {
   continue_story: (p) => `Hiyori added: "${p?.payload?.content || ""}"`,
-  illustrate_scene: (p) =>
-    `Hiyori queued an illustration for scene ${p?.payload?.sceneId || ""}`,
+  illustrate_scene: (p) => `Hiyori queued an illustration for scene ${p?.payload?.sceneId || ""}`,
   generate_music: (p) =>
     `Hiyori queued ${p?.payload?.mood || ""} music${p?.payload?.description ? `: ${p.payload.description}` : ""}`,
 };

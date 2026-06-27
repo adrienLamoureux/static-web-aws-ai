@@ -18,12 +18,12 @@ const buildRouter = (depsOverrides = {}) => {
   return { router, deps };
 };
 
-const createReq = ({
-  body = {},
-  query = {},
-  user = { sub: "user-1" },
-  method = "POST",
-} = {}) => ({ body, query, user, method });
+const createReq = ({ body = {}, query = {}, user = { sub: "user-1" }, method = "POST" } = {}) => ({
+  body,
+  query,
+  user,
+  method,
+});
 
 const createRes = () => {
   const out = { statusCode: 200, payload: null, headers: {} };

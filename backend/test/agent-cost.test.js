@@ -101,7 +101,13 @@ test("scanAll strips USER# prefix from pk and returns normalised items", async (
       if (cmd?.constructor?.name === "ScanCommand") {
         return {
           Items: [
-            { pk: "USER#alice", sk: "AGENT#COST", inputTokens: 100, outputTokens: 50, turnCount: 3 },
+            {
+              pk: "USER#alice",
+              sk: "AGENT#COST",
+              inputTokens: 100,
+              outputTokens: 50,
+              turnCount: 3,
+            },
             {
               pk: "USER#bob",
               sk: "AGENT#COST",
@@ -142,7 +148,11 @@ test("scanAll respects maxItems cap and reports truncation", async () => {
   const c = createAgentCost({ dynamoClient: client, mediaTable: "t" });
   const result = await c.scanAll({ maxItems: 3 });
   assert.equal(result.items.length, 3);
-  assert.equal(result.truncated, true, "must flag truncation when items hit max and more pages exist");
+  assert.equal(
+    result.truncated,
+    true,
+    "must flag truncation when items hit max and more pages exist"
+  );
 });
 
 test("scanAll fails silently on DynamoDB errors, returning collected items", async () => {

@@ -63,10 +63,7 @@ export default function AgentSessionPicker() {
 
   // Compose the rendered list: the implicit "Default" session is always first
   // even though it has no metadata record, so users have a fallback.
-  const renderItems = [
-    DEFAULT_SESSION,
-    ...items.filter((s) => s.sessionId !== "default"),
-  ];
+  const renderItems = [DEFAULT_SESSION, ...items.filter((s) => s.sessionId !== "default")];
 
   const activeName =
     renderItems.find((s) => s.sessionId === activeSessionId)?.name || activeSessionId;

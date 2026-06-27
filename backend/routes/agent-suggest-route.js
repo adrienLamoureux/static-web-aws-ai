@@ -42,13 +42,8 @@ const VALID_STYLES = ["anime", "manga", "photoreal", "chibi"];
 const VALID_ASPECTS = ["1:1", "3:4", "16:9"];
 
 module.exports = (app, deps) => {
-  const {
-    bedrockClient,
-    promptHelperModelId,
-    agentRateLimit,
-    agentCost,
-    InvokeModelCommand,
-  } = deps;
+  const { bedrockClient, promptHelperModelId, agentRateLimit, agentCost, InvokeModelCommand } =
+    deps;
 
   app.post("/api/agent/suggest", requireUserMiddleware, async (req, res) => {
     const flags = await getFlags(deps).catch(() => ({}));
@@ -77,7 +72,9 @@ module.exports = (app, deps) => {
       return res.status(400).json({ error: "invalid_field", allowed: VALID_FIELDS });
     }
     const ctx = req.body?.context || {};
-    const currentPrompt = String(ctx.currentPrompt || "").trim().slice(0, 400);
+    const currentPrompt = String(ctx.currentPrompt || "")
+      .trim()
+      .slice(0, 400);
 
     const system = SUGGEST_SYSTEMS[field];
     const userText = currentPrompt

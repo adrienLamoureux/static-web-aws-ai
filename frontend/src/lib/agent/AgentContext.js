@@ -32,7 +32,7 @@ import React, {
 import { useConfig } from "../../contexts/ConfigContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import { buildApiUrl, postJson } from "../../services/apiClient";
-import { executeIntent } from "./intentExecutor";
+import useIntentConfirm from "./useIntentConfirm";
 import { AGENT_TURN } from "../../constants/api-routes";
 import { useCompanion, CompanionActions } from "../companion/CompanionContext";
 import { useMode } from "../mode/ModeContext";
@@ -337,7 +337,17 @@ export function AgentProvider({ children }) {
         dispatch(CompanionActions.GENERATION_ERROR, { type: "image", error: err?.message });
       }
     },
-    [apiBaseUrl, activeSessionId, append, applyClientAction, dispatch, mode, maybeSpeak, replaceTurn, setMode]
+    [
+      apiBaseUrl,
+      activeSessionId,
+      append,
+      applyClientAction,
+      dispatch,
+      mode,
+      maybeSpeak,
+      replaceTurn,
+      setMode,
+    ]
   );
 
   // Drain the queue serially. submittingRef avoids a state-stale race when
@@ -370,7 +380,12 @@ export function AgentProvider({ children }) {
       // Intercept slash commands before they hit the agent.
       const parsed = parseSlashCommand(text);
       if (parsed) {
-        const r = dispatchSlashCommand(parsed, { append, reset, applyClientAction, lastUserPrompt });
+        const r = dispatchSlashCommand(parsed, {
+          append,
+          reset,
+          applyClientAction,
+          lastUserPrompt,
+        });
         if (r.handled) {
           if (r.forward) setQueue((prev) => [...prev, r.forward]);
           return;
@@ -398,61 +413,10 @@ export function AgentProvider({ children }) {
     [submit]
   );
 
-  /**
-   * Confirm an intent panel by executing it server-side (see ./intentExecutor).
-   * Mirrors the panel through its executing → executed/error lifecycle so the
-   * UI can show progress without forcing the user out of agent mode.
-   *
-   * Returns the navigation URL on success, or `null` on failure. Callers that
-   * need to detect failure structurally should use `confirmIntentVerbose`
-   * (returns `{url, error}`).
-   */
-  const confirmIntentVerbose = useCallback(
-    async (payload) => {
-      const updatePanel = (patch) =>
-        setTurns((prev) =>
-          prev.map((t) =>
-            t.kind === "tool-result" && t.payload === payload
-              ? { ...t, payload: { ...t.payload, ...patch } }
-              : t
-          )
-        );
-      return executeIntent({ payload, apiBaseUrl, updatePanel });
-    },
-    [apiBaseUrl]
-  );
-
-  const confirmIntent = useCallback(
-    async (payload) => {
-      const { url } = await confirmIntentVerbose(payload);
-      return url;
-    },
-    [confirmIntentVerbose]
-  );
-
-  /**
-   * Run every intent in a multi-step plan sequentially. Returns the URL of
-   * the LAST intent (typically the visual one — illustration) so the caller
-   * can navigate there once everything has executed. Failure of any single
-   * intent aborts the chain. The error is read from the executor's return
-   * value (NOT from `intent.executeError`, which is on a stale closure-captured
-   * reference — `updatePanel` clones the payload, so mutating the original
-   * never propagates).
-   */
-  const confirmAllIntents = useCallback(
-    async (intents) => {
-      if (!Array.isArray(intents) || intents.length === 0) return null;
-      let lastPath = null;
-      for (const intent of intents) {
-        if (intent.executed) continue;
-        const { url, error } = await confirmIntentVerbose(intent);
-        if (url) lastPath = url;
-        if (error) break;
-      }
-      return lastPath;
-    },
-    [confirmIntentVerbose]
-  );
+  // Intent confirm/execute lifecycle lives in its own hook (keeps this file
+  // under the 500-line cap). confirmIntent → single panel; confirmAllIntents →
+  // multi-step plan, run sequentially.
+  const { confirmIntent, confirmAllIntents } = useIntentConfirm({ apiBaseUrl, setTurns });
 
   // TTS surface for the Composer toggle + future CompanionStage. Exposes
   // only the bits a consumer needs (no `speak`, since auto-speak is wired
@@ -467,21 +431,43 @@ export function AgentProvider({ children }) {
 
   const value = useMemo(
     () => ({
-      turns, submitting, queueLength: queue.length, pendingText,
-      activeSessionId, setActiveSession,
-      submit, reroll, tweak, reset, greet,
-      setPendingText, clearPendingText,
-      confirmIntent, confirmAllIntents,
+      turns,
+      submitting,
+      queueLength: queue.length,
+      pendingText,
+      activeSessionId,
+      setActiveSession,
+      submit,
+      reroll,
+      tweak,
+      reset,
+      greet,
+      setPendingText,
+      clearPendingText,
+      confirmIntent,
+      confirmAllIntents,
       tts,
     }),
     [
-      turns, submitting, queue.length, pendingText,
-      activeSessionId, setActiveSession,
-      submit, reroll, tweak, reset, greet,
-      setPendingText, clearPendingText,
-      confirmIntent, confirmAllIntents,
+      turns,
+      submitting,
+      queue.length,
+      pendingText,
+      activeSessionId,
+      setActiveSession,
+      submit,
+      reroll,
+      tweak,
+      reset,
+      greet,
+      setPendingText,
+      clearPendingText,
+      confirmIntent,
+      confirmAllIntents,
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      tts.enabled, tts.supported, tts.speaking,
+      tts.enabled,
+      tts.supported,
+      tts.speaking,
     ]
   );
 

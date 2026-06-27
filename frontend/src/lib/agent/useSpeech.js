@@ -30,10 +30,7 @@ const STORAGE_KEY = "skr-tts-enabled";
 const EMOTION_RE = /\[EMOTION:\s*\w+\]/gi;
 const stripForSpeech = (text) => {
   if (text == null) return "";
-  return String(text)
-    .replace(EMOTION_RE, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  return String(text).replace(EMOTION_RE, "").replace(/\s+/g, " ").trim();
 };
 
 const getSynth = () => {

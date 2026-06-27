@@ -35,18 +35,9 @@ test("evaluateFlag with cohort='admin' returns true only for admins", () => {
 });
 
 test("evaluateFlag with cohort='beta' checks user.roles or user.groups", () => {
-  assert.equal(
-    evaluateFlag({ agentMode: "beta" }, "agentMode", { roles: ["beta"] }),
-    true
-  );
-  assert.equal(
-    evaluateFlag({ agentMode: "beta" }, "agentMode", { groups: ["beta"] }),
-    true
-  );
-  assert.equal(
-    evaluateFlag({ agentMode: "beta" }, "agentMode", { roles: ["other"] }),
-    false
-  );
+  assert.equal(evaluateFlag({ agentMode: "beta" }, "agentMode", { roles: ["beta"] }), true);
+  assert.equal(evaluateFlag({ agentMode: "beta" }, "agentMode", { groups: ["beta"] }), true);
+  assert.equal(evaluateFlag({ agentMode: "beta" }, "agentMode", { roles: ["other"] }), false);
   assert.equal(evaluateFlag({ agentMode: "beta" }, "agentMode", null), false);
 });
 

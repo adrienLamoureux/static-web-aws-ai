@@ -132,9 +132,7 @@ const runClosingTurn = async ({
   const userToolResults = toolCalls.map((tc, i) => ({
     toolResult: {
       toolUseId: toolUses[i]?.toolUseId,
-      content: [
-        { json: tc.error ? { error: tc.error } : tc.result || { status: "ok" } },
-      ],
+      content: [{ json: tc.error ? { error: tc.error } : tc.result || { status: "ok" } }],
       ...(tc.error ? { status: "error" } : {}),
     },
   }));
@@ -259,9 +257,7 @@ module.exports = (app, deps) => {
     // runaway loops can't bankrupt a user. 200k tokens/day default
     // (~$0.20 at Haiku 4.5 prices). Fails open on DB errors.
     if (agentCost) {
-      const dailyVerdict = await agentCost
-        .checkDailyCap(userId)
-        .catch(() => ({ allowed: true }));
+      const dailyVerdict = await agentCost.checkDailyCap(userId).catch(() => ({ allowed: true }));
       if (!dailyVerdict.allowed) {
         const retrySec = Math.max(1, Math.ceil((dailyVerdict.retryAfterMs || 3600_000) / 1000));
         res.setHeader?.("Retry-After", String(retrySec));

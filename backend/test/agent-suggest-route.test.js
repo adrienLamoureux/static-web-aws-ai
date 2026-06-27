@@ -289,4 +289,3 @@ test("POST /api/agent/suggest 404s when agentMode flag is off", async () => {
   assert.equal(res.out.statusCode, 404);
   invalidateFlagsCache();
 });
-

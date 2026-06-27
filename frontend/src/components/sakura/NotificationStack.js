@@ -10,10 +10,7 @@ export function NotificationProvider({ children }) {
       {children}
       <div className="skr-notification-stack">
         {notifications.map((n) => (
-          <div
-            key={n.id}
-            className={`skr-notification ${n.type}${n.leaving ? " is-leaving" : ""}`}
-          >
+          <div key={n.id} className={`skr-notification ${n.type}${n.leaving ? " is-leaving" : ""}`}>
             {n.message}
           </div>
         ))}

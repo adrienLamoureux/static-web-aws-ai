@@ -26,9 +26,15 @@ import { useAgent } from "../../../lib/agent/AgentContext";
 
 const ThinkingDots = () => (
   <span className="skr-thinking" aria-label="Hiyori is thinking">
-    <span className="skr-thinking-dot" style={{ animationDelay: "0s" }}>●</span>
-    <span className="skr-thinking-dot" style={{ animationDelay: "0.15s" }}>●</span>
-    <span className="skr-thinking-dot" style={{ animationDelay: "0.3s" }}>●</span>
+    <span className="skr-thinking-dot" style={{ animationDelay: "0s" }}>
+      ●
+    </span>
+    <span className="skr-thinking-dot" style={{ animationDelay: "0.15s" }}>
+      ●
+    </span>
+    <span className="skr-thinking-dot" style={{ animationDelay: "0.3s" }}>
+      ●
+    </span>
   </span>
 );
 

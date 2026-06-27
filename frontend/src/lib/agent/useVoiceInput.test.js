@@ -118,10 +118,7 @@ describe("useVoiceInput", () => {
     const recognition = getInstance();
     act(() => {
       recognition.onresult({
-        results: [
-          [{ transcript: "kitten " }],
-          [{ transcript: "in a forest" }],
-        ],
+        results: [[{ transcript: "kitten " }], [{ transcript: "in a forest" }]],
       });
     });
     expect(results[results.length - 1]).toBe("kitten in a forest");

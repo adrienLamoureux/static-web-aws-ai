@@ -396,4 +396,3 @@ test("illustrate_scene defaults style from agentState.lastStyle when unspecified
   assert.equal(r.result.requiresConfirm, true);
   assert.equal(r.result.style, "manga");
 });
-

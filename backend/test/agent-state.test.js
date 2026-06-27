@@ -3,11 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const {
-  createAgentState,
-  ALLOWED_KEYS,
-  validatePrefValue,
-} = require("../lib/agent-state");
+const { createAgentState, ALLOWED_KEYS, validatePrefValue } = require("../lib/agent-state");
 
 const makeStubClient = ({ getItem = null } = {}) => {
   const sent = [];

@@ -31,10 +31,7 @@ const {
   dispatchGenerateMusic,
   dispatchBrowseGallery,
 } = require("./agent-tools/dispatchers");
-const {
-  dispatchViewMyCreations,
-  dispatchWhatCanYouDo,
-} = require("./agent-tools/companion-tools");
+const { dispatchViewMyCreations, dispatchWhatCanYouDo } = require("./agent-tools/companion-tools");
 
 // ─── generate_image tool spec ──────────────────────────────────────────────
 const generateImageToolSpec = {
@@ -188,7 +185,8 @@ const generateMusicToolSpec = {
         properties: {
           mood: {
             type: "string",
-            description: "Single-word mood (melancholic, epic, peaceful, playful, tense, romantic).",
+            description:
+              "Single-word mood (melancholic, epic, peaceful, playful, tense, romantic).",
           },
           description: {
             type: "string",
@@ -211,8 +209,8 @@ const viewMyCreationsToolSpec = {
     name: "view_my_creations",
     description:
       "Surface the user's own recent image generations as a thumbnail grid. Use when " +
-      "the user wants to BROWSE their library (\"show me what I made yesterday\", " +
-      "\"what was that fox image I did last week?\"). Distinct from recall_favorites " +
+      'the user wants to BROWSE their library ("show me what I made yesterday", ' +
+      '"what was that fox image I did last week?"). Distinct from recall_favorites ' +
       "(which is for pattern-spotting their taste). Returns prompts + thumbnails — " +
       "narrate what you see and offer to make a variation or open one in detail.",
     inputSchema: {

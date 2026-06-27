@@ -87,7 +87,11 @@ export default function IntentPanel({ payload }) {
           {meta.executingLabel}
         </span>
       ) : (
-        <button type="button" className="skr-btn-primary skr-intent-confirm" onClick={handleConfirm}>
+        <button
+          type="button"
+          className="skr-btn-primary skr-intent-confirm"
+          onClick={handleConfirm}
+        >
           {meta.confirm}
         </button>
       )}

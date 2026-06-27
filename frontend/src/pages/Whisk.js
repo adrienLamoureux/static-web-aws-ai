@@ -14,6 +14,7 @@ import { removeSessionCache } from "../utils/sessionCache";
 import { useCompanion, CompanionActions } from "../lib/companion/CompanionContext";
 import GeneratorSidebar from "./whisk/GeneratorSidebar";
 import GenerationModal from "./whisk/GenerationModal";
+import VideoGenerationModal from "./whisk/VideoGenerationModal";
 
 const IMAGE_CACHE_KEY = "whisk_images_cache";
 const VIDEO_CACHE_KEY = "whisk_videos_cache";
@@ -242,8 +243,18 @@ export default function Whisk(props) {
             {isGeneratingImage ? "⏳ Generating…" : "✦ Generate"}
           </button>
           <SummonAgentButton prompt={imagePrompt} />
-          <HiyoriSuggestButton field="prompt" currentPrompt={imagePrompt} onValue={onImagePromptChange} label="prompt" />
-          <HiyoriSuggestButton field="negativePrompt" currentPrompt={imagePrompt} onValue={onImageNegativePromptChange} label="negative" />
+          <HiyoriSuggestButton
+            field="prompt"
+            currentPrompt={imagePrompt}
+            onValue={onImagePromptChange}
+            label="prompt"
+          />
+          <HiyoriSuggestButton
+            field="negativePrompt"
+            currentPrompt={imagePrompt}
+            onValue={onImageNegativePromptChange}
+            label="negative"
+          />
           {error && <span style={{ fontSize: 12, color: "#ef4444" }}>{error}</span>}
         </div>
       </div>
@@ -380,114 +391,25 @@ export default function Whisk(props) {
 
       {/* Video generation modal */}
       {activeModal === "video" && (
-        <div className="skr-modal-backdrop" onClick={() => setActiveModal("")}>
-          <div
-            className="skr-modal"
-            style={{ width: 480, maxWidth: "95vw" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="skr-modal-header">
-              <span className="skr-modal-title">Generate Video</span>
-              <button className="skr-modal-close" onClick={() => setActiveModal("")}>
-                ✕
-              </button>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {selectedImageUrl && (
-                <img
-                  src={selectedImageUrl}
-                  alt="Source"
-                  style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 8 }}
-                />
-              )}
-              <div>
-                <label className="skr-field-label">Provider</label>
-                <div style={{ display: "flex", gap: 6 }}>
-                  {(videoProviderOptions || []).map((opt) => (
-                    <button
-                      key={opt.key}
-                      className={
-                        videoProvider === opt.key ? "skr-btn-primary" : "skr-btn-secondary"
-                      }
-                      style={{ fontSize: 12, padding: "4px 12px" }}
-                      onClick={() => setVideoProvider(opt.key)}
-                    >
-                      {opt.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="skr-field-label">Video model</label>
-                <select
-                  className="skr-field-select"
-                  value={videoModel}
-                  onChange={(e) => setVideoModel(e.target.value)}
-                >
-                  {(videoModelOptions || []).map((m) => (
-                    <option key={m.key} value={m.key}>
-                      {m.name || m.key}
-                      {m.description ? ` — ${m.description}` : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="skr-field-label">Motion prompt</label>
-                <textarea
-                  className="skr-input"
-                  rows={3}
-                  placeholder="Describe the motion or scene…"
-                  value={videoPrompt}
-                  onChange={(e) => setVideoPrompt(e.target.value)}
-                  style={{ resize: "vertical", width: "100%" }}
-                />
-              </div>
-              {isReplicateAudioOption && (
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <input
-                    type="checkbox"
-                    id="vid-audio"
-                    checked={videoGenerateAudio}
-                    onChange={(e) => setVideoGenerateAudio(e.target.checked)}
-                  />
-                  <label
-                    htmlFor="vid-audio"
-                    className="skr-field-label"
-                    style={{ margin: 0, cursor: "pointer" }}
-                  >
-                    Generate audio
-                  </label>
-                </div>
-              )}
-              {error && <p style={{ fontSize: 12, color: "#ef4444", margin: 0 }}>{error}</p>}
-              <div style={{ display: "flex", gap: 8 }}>
-                <button
-                  className="skr-btn-primary"
-                  style={{ flex: 1 }}
-                  onClick={handleGenerateVideo}
-                  disabled={isGeneratingVideo || isVideoInProgress}
-                >
-                  {isGeneratingVideo || isVideoInProgress ? "Generating…" : "Generate Video"}
-                </button>
-                <button
-                  className="skr-btn-secondary"
-                  onClick={() => setActiveModal("")}
-                  disabled={isGeneratingVideo || isVideoInProgress}
-                >
-                  Cancel
-                </button>
-              </div>
-              {(isGeneratingVideo || isVideoInProgress) && (
-                <p
-                  style={{ fontSize: 12, color: "var(--skr-text-secondary)", textAlign: "center" }}
-                >
-                  Video generation is running in the background. Check the Videos page when done.
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
+        <VideoGenerationModal
+          onClose={() => setActiveModal("")}
+          selectedImageUrl={selectedImageUrl}
+          videoProvider={videoProvider}
+          videoProviderOptions={videoProviderOptions}
+          setVideoProvider={setVideoProvider}
+          videoModel={videoModel}
+          videoModelOptions={videoModelOptions}
+          setVideoModel={setVideoModel}
+          videoPrompt={videoPrompt}
+          setVideoPrompt={setVideoPrompt}
+          isReplicateAudioOption={isReplicateAudioOption}
+          videoGenerateAudio={videoGenerateAudio}
+          setVideoGenerateAudio={setVideoGenerateAudio}
+          error={error}
+          handleGenerateVideo={handleGenerateVideo}
+          isGeneratingVideo={isGeneratingVideo}
+          isVideoInProgress={isVideoInProgress}
+        />
       )}
     </div>
   );

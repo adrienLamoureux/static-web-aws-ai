@@ -21,12 +21,7 @@
  * condensed into a short summary and deleted.
  */
 
-const {
-  buildMediaPk,
-  buildAgentStateSk,
-  buildAgentMsgSk,
-  agentMsgPrefix,
-} = require("./keys");
+const { buildMediaPk, buildAgentStateSk, buildAgentMsgSk, agentMsgPrefix } = require("./keys");
 
 const SUMMARY_THRESHOLD = 30;
 const MAX_HISTORY_LOAD = 16;
@@ -67,12 +62,7 @@ function createAgentMemory({
     };
   }
 
-  const {
-    PutCommand,
-    DeleteCommand,
-    GetCommand,
-    UpdateCommand,
-  } = require("@aws-sdk/lib-dynamodb");
+  const { PutCommand, DeleteCommand, GetCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
 
   /**
    * Load the state record + last MAX_HISTORY_LOAD messages.

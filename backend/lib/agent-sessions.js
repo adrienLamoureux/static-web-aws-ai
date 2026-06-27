@@ -25,7 +25,9 @@ const MAX_NAME_LEN = 60;
 const RESERVED_IDS = new Set(["default"]); // can be referenced but never deleted
 
 const sanitiseName = (raw) => {
-  const trimmed = String(raw || "").trim().slice(0, MAX_NAME_LEN);
+  const trimmed = String(raw || "")
+    .trim()
+    .slice(0, MAX_NAME_LEN);
   return trimmed || "Untitled session";
 };
 

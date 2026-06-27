@@ -98,10 +98,7 @@ test("POST /api/agent/sessions creates a session", async () => {
   const { router } = buildRouter({ agentSessions: sessions });
   const handler = getRouterHandler(router, "post", "/api/agent/sessions");
   const res = createRes();
-  await handler(
-    { user: { sub: "u1" }, body: { sessionId: "myproj", name: "My Project" } },
-    res
-  );
+  await handler({ user: { sub: "u1" }, body: { sessionId: "myproj", name: "My Project" } }, res);
   assert.equal(res.out.statusCode, 200);
   assert.equal(res.out.payload.session.sessionId, "myproj");
   assert.equal(res.out.payload.session.name, "My Project");
@@ -126,10 +123,7 @@ test("PATCH /api/agent/sessions/:id renames an existing session", async () => {
   const { router } = buildRouter({ agentSessions: sessions });
   const handler = getRouterHandler(router, "patch", "/api/agent/sessions/:id");
   const res = createRes();
-  await handler(
-    { user: { sub: "u1" }, params: { id: "alpha" }, body: { name: "Renamed" } },
-    res
-  );
+  await handler({ user: { sub: "u1" }, params: { id: "alpha" }, body: { name: "Renamed" } }, res);
   assert.equal(res.out.statusCode, 200);
   assert.equal(res.out.payload.session.name, "Renamed");
   invalidateFlagsCache();
@@ -140,10 +134,7 @@ test("PATCH /api/agent/sessions/:id 404s for unknown session", async () => {
   const { router } = buildRouter({ agentSessions: makeSessionsStub() });
   const handler = getRouterHandler(router, "patch", "/api/agent/sessions/:id");
   const res = createRes();
-  await handler(
-    { user: { sub: "u1" }, params: { id: "ghost" }, body: { name: "Whatever" } },
-    res
-  );
+  await handler({ user: { sub: "u1" }, params: { id: "ghost" }, body: { name: "Whatever" } }, res);
   assert.equal(res.out.statusCode, 404);
   invalidateFlagsCache();
 });

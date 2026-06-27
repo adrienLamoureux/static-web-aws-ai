@@ -160,7 +160,10 @@ test("PUT /api/admin/agent/model persists the new modelId", async () => {
     },
   });
   const handler = getRouterHandler(router, "put", "/api/admin/agent/model");
-  const req = { body: { modelId: "us.anthropic.claude-sonnet-4-6" }, user: { sub: "admin", isAdmin: true } };
+  const req = {
+    body: { modelId: "us.anthropic.claude-sonnet-4-6" },
+    user: { sub: "admin", isAdmin: true },
+  };
   const res = createRes();
   await handler(req, res);
   assert.equal(res.out.statusCode, 200);
@@ -210,4 +213,3 @@ test("PUT /api/admin/agent/model 500s when DynamoDB fails", async () => {
   assert.equal(res.out.statusCode, 500);
   assert.equal(res.out.payload.error, "model_save_failed");
 });
-

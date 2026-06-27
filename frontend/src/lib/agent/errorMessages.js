@@ -16,10 +16,8 @@ const FRIENDLY_AGENT_ERRORS = {
   timeout: "It's taking longer than usual — let me try again.",
   tool_failed: "That didn't work — try again?",
   rate_limited: "Slow down a moment — Hiyori is catching her breath.",
-  daily_cap_reached:
-    "You've used up your daily token budget. Resets at midnight UTC.",
-  image_daily_cap_reached:
-    "You've hit today's image budget. Resets at midnight UTC.",
+  daily_cap_reached: "You've used up your daily token budget. Resets at midnight UTC.",
+  image_daily_cap_reached: "You've hit today's image budget. Resets at midnight UTC.",
 };
 
 export const friendlyAgentError = (code, fallback) => {

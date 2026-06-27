@@ -41,8 +41,7 @@ const VALID_THEMES = new Set([
   "storm",
 ]);
 
-const isLoraIdShape = (v) =>
-  typeof v === "string" && /^[a-zA-Z0-9_\-:./]{1,120}$/.test(v.trim());
+const isLoraIdShape = (v) => typeof v === "string" && /^[a-zA-Z0-9_\-:./]{1,120}$/.test(v.trim());
 
 /**
  * Return the validated/coerced value for a prefs key, or `null` to reject.
