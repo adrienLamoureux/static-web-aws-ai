@@ -1,46 +1,60 @@
-flowchart LR
-  subgraph CLIENT["Client"]
-    USER["User Browser"]
-    SPA["React SPA (frontend/src)"]
-    CFG["Runtime config (/config.json)"]
+%% Whisk Studio — system & deployment diagram
+%% Source of truth for docs/architecture-current.svg|png (rendered via mermaid-cli).
+%% Render: see scripts/render-diagrams.sh
+flowchart TB
+  USER([User])
+
+  subgraph CLIENT["Browser — React SPA (Sakura Bloom)"]
+    direction TB
+    SHELL["Shell: 3 modes via ModeContext<br/>Dashboard · Agent · Companion"]
+    LIVE2D["Live2D companion (Hiyori, pixi.js@6)"]
+    CFGJS["Runtime config (/config.json)"]
   end
 
-  subgraph AWS_STACK["Per-Idea AWS Stack (StaticWebAWSAIStack-<idea-id>)"]
+  subgraph EDGE["AWS Edge + Auth"]
+    direction TB
     CF["CloudFront Distribution"]
-    WEB_S3["S3 Website Bucket"]
-    COG["Cognito User Pool + Hosted UI"]
-    API_GW["API Gateway (Cognito Authorizer)"]
-    LAMBDA["Lambda (backend/lambda.js -> Express app)"]
-    DATA_DDB[("DynamoDB (metadata)")]
-    MEDIA_S3[("S3 Media Bucket (assets)")]
+    WEBS3[("S3 Website Bucket<br/>+ Live2D assets")]
+    COG["Cognito User Pool<br/>Hosted UI (PKCE)"]
+  end
+
+  subgraph COMPUTE["Serverless Compute (no idle cost)"]
+    direction TB
+    APIGW["API Gateway<br/>(JWT authorizer)"]
+    LAMBDA["Lambda — Express app<br/>29 route modules, 73+ endpoints"]
+    AGENT["Agent turn loop<br/>Bedrock Converse + 9-tool fleet"]
+  end
+
+  subgraph DATA["State"]
+    direction TB
+    DDB[("DynamoDB single-table<br/>USER# · AGENT#* · COMPANION#* · SESSION#*")]
+    MEDIAS3[("S3 Media Bucket<br/>users/&lt;sub&gt;/ — signed URLs")]
   end
 
   subgraph AI["AI Providers"]
-    BEDROCK["Amazon Bedrock"]
-    REPLICATE["Replicate"]
+    direction TB
+    BEDROCK["Amazon Bedrock<br/>Claude Haiku 4.5 / Nova"]
+    REPLICATE["Replicate<br/>image/video — dominant cost"]
+    CIVITAI["CivitAI"]
     GRADIO["Gradio / HF Spaces"]
   end
 
-  subgraph REPO["Repo Controls"]
-    CDK["CDK Stack (cdk/lib/static-web-aws-ai-stack.ts)"]
-    IDEA_DOCS["Idea Context (ideas/<idea-id>/*.md)"]
-  end
+  CDK["AWS CDK<br/>full-stack + UI-only modes"]
 
   USER --> CF
-  CF --> WEB_S3
-  WEB_S3 --> SPA
-  SPA --> CFG
-
-  SPA -. OAuth2 PKCE .-> COG
-  SPA -- "Bearer JWT (Authorization)" --> API_GW
-  API_GW --> LAMBDA
-
-  LAMBDA --> DATA_DDB
-  LAMBDA --> MEDIA_S3
-
-  LAMBDA --> BEDROCK
+  CF --> WEBS3
+  WEBS3 --> SHELL
+  SHELL -. "OAuth2 PKCE" .-> COG
+  SHELL -- "Bearer JWT" --> APIGW
+  APIGW --> LAMBDA
+  LAMBDA --> AGENT
+  LAMBDA --> DDB
+  LAMBDA --> MEDIAS3
+  AGENT --> BEDROCK
   LAMBDA --> REPLICATE
+  LAMBDA --> CIVITAI
   LAMBDA --> GRADIO
 
-  CDK --> AWS_STACK
-  IDEA_DOCS --> CDK
+  CDK -. "deploys" .-> EDGE
+  CDK -. "deploys" .-> COMPUTE
+  CDK -. "deploys" .-> DATA

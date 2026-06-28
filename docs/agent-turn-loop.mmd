@@ -1,0 +1,28 @@
+%% Whisk Studio — Agent / Companion turn loop (Bedrock Converse tool-use)
+%% Source of truth for docs/agent-turn-loop.svg|png (rendered via mermaid-cli).
+%% Render: see scripts/render-diagrams.sh
+sequenceDiagram
+  autonumber
+  participant U as User (Agent/Companion)
+  participant FE as AgentContext (SPA)
+  participant API as POST /api/agent/turn
+  participant BR as Bedrock Converse
+  participant TD as Tool dispatcher
+  participant EXT as Replicate / DynamoDB / S3
+
+  U->>FE: prompt (typed or voice)
+  FE->>API: messages + sessionId + mode
+  Note over API: guardrails: token bucket,<br/>daily token + image caps
+  API->>API: load AGENT#STATE prefs → <prefs> in system prompt
+  API->>BR: Converse(system, tools = 9)
+  BR-->>API: tool_use (e.g. generate_image)
+  API->>TD: dispatch(name, args)
+  TD->>EXT: execute (image gen / query / sign URL)
+  EXT-->>TD: result
+  TD-->>API: tool result
+  Note over API,BR: server-dispatch tools only
+  API->>BR: closing turn (≤120 tok) — comment on result
+  BR-->>API: narrated reply + emotion
+  API->>API: bill tokens (AGENT#COST),<br/>save memory (AGENT#{sessionId}), compact > 30 turns
+  API-->>FE: { text, emotion, toolCalls }
+  FE-->>U: manga panel + optional TTS

@@ -1,6 +1,6 @@
 # Contributing to Whisk Studio
 
-> Last updated: 2026-04-11
+> Last updated: 2026-06-27
 
 ---
 
@@ -62,6 +62,8 @@ Before opening a pull request, verify all of the following pass:
 
 - [ ] `npm --prefix backend run lint` exits 0
 - [ ] `npm --prefix frontend run lint` exits 0
+- [ ] `npm --prefix backend run format:check` — clean (CI hard gate; fix with `npm run format`)
+- [ ] `npm --prefix frontend run format:check` — clean (CI hard gate; fix with `npm run format`)
 - [ ] `npm --prefix backend test` — all tests pass
 - [ ] `npm --prefix frontend run test:ci` — all tests pass
 - [ ] `bash scripts/check-file-length.sh` — no file over 500 lines

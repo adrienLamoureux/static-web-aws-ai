@@ -61,7 +61,7 @@
 - Current priority:
   - preserve backend and deployment correctness while improving documentation quality
 - Known blockers:
-  - `Whisk.js` (488 lines) and `Story.js` (441 lines) are near the 500-line limit — watch for further growth
+  - `Story.js` (~443 lines) is approaching the 500-line limit — watch for further growth
   - low automated test coverage on some route groups
 - Next smallest shippable increment:
   - keep shared docs and idea status files aligned with the deployed state before large new feature work begins

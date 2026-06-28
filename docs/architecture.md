@@ -4,7 +4,20 @@
 
 This file is the current source of truth for the repo architecture, deployment modes, and branch model.
 For an interview-oriented summary (system at a glance, cost model, roadmap, the "why" behind each
-decision), see [`state-of-the-art.md`](./state-of-the-art.md).
+decision), see [`state-of-the-art.md`](./state-of-the-art.md). For the dense agent-facing reference,
+see [`ai-context.md`](./ai-context.md).
+
+## 0. Diagrams
+
+System & deployment topology ([SVG — crisp at any zoom](./architecture-current.svg) · source [`architecture-current.mmd`](./architecture-current.mmd)):
+
+![System and deployment diagram](./architecture-current.png)
+
+Agent / Companion turn loop — the Bedrock Converse tool-use sequence ([SVG](./agent-turn-loop.svg) · source [`agent-turn-loop.mmd`](./agent-turn-loop.mmd)):
+
+![Agent turn loop sequence diagram](./agent-turn-loop.png)
+
+> Diagrams are generated from the `.mmd` sources — edit those and re-run `bash scripts/render-diagrams.sh` (never hand-edit the `.svg`/`.png`).
 
 ## 1. System Layers
 

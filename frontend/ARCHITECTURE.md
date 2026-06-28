@@ -1,6 +1,6 @@
 # Frontend Architecture — Sakura Bloom
 
-> Last updated: 2026-04-11
+> Last updated: 2026-06-27
 
 This document covers the component hierarchy, context providers, hook graph, CSS design system, and API communication layer for the Whisk Studio frontend (Sakura Bloom design system, living on `main`).
 
@@ -19,7 +19,8 @@ App
   │                                   ├── TopBar               (logo, ThemeSwitcher, auth button)
   │                                   ├── BottomHUD            (NAV_ITEMS: Realm / Atelier / Chronicle / Sanctum)
   │                                   ├── SakuraMusicBar       (now-playing dock, music controls)
-  │                                   ├── CompanionPanel       (Live2D Hiyori + chat overlay)
+  │                                   ├── CompanionPanel       (Live2D Hiyori + chat overlay; ⤢ fullscreen, ✨ companion mode)
+  │                                   ├── CompanionStage        (rendered instead of Routes when mode === "companion")
   │                                   └── Routes
   │                                         ├── /               → HomePage
   │                                         ├── /atelier        → Forge (image/video generation)
@@ -68,9 +69,10 @@ Admin routes redirect to `/` when the user lacks the `admin` group.
 - Exposes: `CompanionActions`, `useCompanion()` hook, `dispatch(action)`.
 
 ### ModeProvider (`src/lib/mode/ModeContext.js`)
-- Toggles between `"dashboard"` and `"agent"` UI modes. Persisted to `localStorage["skr-mode"]`.
+- Switches the shell between three UI modes: `"dashboard"` | `"agent"` | `"companion"`. Persisted to `localStorage["skr-mode"]`.
 - Triggers the `.skr-mode-transition` ink-wash overlay on `<html>` whenever the mode flips (600ms keyframe).
-- Mode is route-scoped: only `/atelier` honors `agent`; other routes render the same Dashboard regardless.
+- `agent` is route-scoped: only `/atelier` honors it; other routes render Dashboard. `companion` is a
+  full-viewport takeover (`CompanionStage`) that replaces all routing and refuses admin operations.
 - Exposes: `useMode()` → `{ mode, setMode, toggleMode }`.
 
 ### AgentProvider (`src/lib/agent/AgentContext.js`)

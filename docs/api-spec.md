@@ -1,6 +1,6 @@
 # Whisk Studio API Specification
 
-> Last updated: 2026-04-19
+> Last updated: 2026-06-27
 
 ## Two Domains — One API, One CDN
 
@@ -460,11 +460,14 @@ Response: `{ success: boolean }`
 
 ---
 
-### Agent Mode (v1)
+### Agent Mode (v1.7)
 
-Agent mode is gated by the `agentMode` feature flag (Sanctum → Feature Flags). When the flag is `false`, all `/api/agent/*` endpoints return 404 so the frontend can fall back gracefully.
+Agent mode is gated by the `agentMode` feature flag (Sanctum → Feature Flags), which is cohort-scoped
+(`true|false|"all"|"admin"|"beta"`). When disabled for the caller, all `/api/agent/*` endpoints return
+404 so the frontend can fall back gracefully. The same fleet also backs **companion mode** (full-viewport,
+admin-refusing); `context.mode` (`"atelier"`/`"companion"`) tunes the system prompt.
 
-#### Tool fleet (v1.2)
+#### Tool fleet (v1.7 — 9 tools)
 | Tool | Type | Effect |
 |------|------|--------|
 | `generate_image` | server-dispatch | Kicks off a Replicate prediction. Synchronous fast-path when `Prefer: wait=5` returns `succeeded`. |
@@ -474,12 +477,24 @@ Agent mode is gated by the `agentMode` feature flag (Sanctum → Feature Flags).
 | `recall_favorites` | server-dispatch | Reads the user's recent `IMG` items, signs top-N URLs, returns prompts + thumbnails. Agent's closing turn comments on patterns. |
 | `generate_music` | intent (requiresConfirm) | Story-scoped; falls back to most-recent session + last scene. Frontend confirms → calls existing `POST /story/sessions/:id/scenes/:sceneId/music`. Returns `no_active_scene` if the user has no story yet. |
 | `browse_gallery` | server-dispatch | Lists recent public `shared/images/` keys via S3 `ListObjectsV2`, signs top-N URLs. Agent's closing turn comments on community trends. |
+| `view_my_creations` | server-dispatch | Browse-framed view of the user's own recent `IMG` items (vs `recall_favorites`' pattern-spotting). |
+| `what_can_you_do` | static (no LLM) | Returns a canned capability menu `{ title, items[] }` for new/lost users. |
 
 Intent tools are **executed on confirm via existing story endpoints** — no new backend route required. The frontend's `useAgent().confirmIntent` posts directly with the user's auth token; the panel surfaces `executing → executed → opening Chronicle` states inline. A small `AgentIntentBanner` on the Chronicle page reads `localStorage["skr-agent-intent"]` on mount to acknowledge "Hiyori added this" on landing.
 
 After any successful server-dispatch tool the backend runs a **second Bedrock turn** with the `toolResult` content block, capped at 120 tokens, to produce a closing sentence ("turned out softer than I expected — want more contrast?"). Skipped for `requiresConfirm` intents (nothing to react to yet) and for fully-failed tool calls.
 
-The backend reads cross-session prefs from `AGENT#STATE` and injects them into the system prompt as `<prefs>lastStyle=…, lastAspect=…</prefs>` so the model biases tool defaults toward what the user has chosen before.
+The backend reads cross-session prefs from `AGENT#STATE` and injects them into the system prompt as `<prefs>lastStyle=…, lastAspect=…</prefs>` so the model biases tool defaults toward what the user has chosen before. Pref values are **enum-validated on read and write** (they re-enter the prompt — an unchecked value would be a self-injection vector).
+
+#### v1.7 additions (endpoints + guardrails)
+- **Named sessions** — `GET/POST/PATCH/DELETE /api/agent/sessions` (metadata at `AGENT#SESSION#{id}`).
+  The `sessionId` doubles as the memory namespace, so `/turn` takes `sessionId` (legacy fallback `modelId`).
+- **Admin model picker** — `GET/PUT /api/admin/agent/model` (override at `CONFIG#AGENT`, 60s cache;
+  default `us.anthropic.claude-haiku-4-5-20251001-v1:0`). Both `/turn` and `/suggest` read through it.
+- **Admin cost view** — `GET /api/admin/agent/cost` (scan of `AGENT#COST`, sorted by total tokens).
+- **Guardrails** — per-user token bucket (`AGENT#RATE`) + **daily token cap** 200k/day (`AGENT#COST`,
+  429 + `Retry-After`, `daily_cap_reached`) + **daily image cap** 50/day (`AGENT#IMG_COUNT`,
+  `image_daily_cap_reached`). Image + token caps roll over independently.
 
 #### POST /api/agent/turn
 Auth: User
@@ -487,8 +502,8 @@ Request:
 ```json
 {
   "messages": [{ "role": "user|assistant", "content": "..." }],
-  "context": { "page": "atelier" },
-  "modelId": "default"
+  "sessionId": "default",
+  "context": { "page": "atelier", "mode": "atelier" }
 }
 ```
 Response (text-only turn):

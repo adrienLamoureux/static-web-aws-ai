@@ -259,15 +259,17 @@ live USD estimate, and both spend vectors (tokens, images) have hard daily ceili
 
 ## 11. Documentation map
 
+Navigation hub: [`docs/README.md`](./README.md) — organises docs by audience (human / AI) × depth (brief / detailed).
+
 | Doc | Purpose |
 |-----|---------|
-| [`state-of-the-art.md`](./state-of-the-art.md) | this file — the interview overview |
-| [`architecture.md`](./architecture.md) | authoritative architecture + deploy + data model |
+| [`state-of-the-art.md`](./state-of-the-art.md) | this file — the interview overview (human deep dive) |
+| [`architecture.md`](./architecture.md) | authoritative architecture + diagrams + deploy + data model |
+| [`ai-context.md`](./ai-context.md) | dense agent reference — paths, DynamoDB namespaces, invariants |
 | [`api-spec.md`](./api-spec.md) | full endpoint inventory (public / user / admin) |
-| [`architecture-current.mmd/.png`](./architecture-current.mmd) | rendered system diagram |
+| [`architecture-current`](./architecture-current.svg) · [`agent-turn-loop`](./agent-turn-loop.svg) | rendered diagrams (`.svg`/`.png` from `.mmd`) |
 | [`adr/001`–`007`](./adr/) | the seven decisions behind the design |
-| [`proposals/agent-mode-v0.md`](./proposals/agent-mode-v0.md) | Agent Mode plan (v1 shipped) |
-| [`proposals/companion-mode-v0.md`](./proposals/companion-mode-v0.md) | Companion Mode plan (v0 shipped) |
+| [`proposals/`](./proposals/) | Agent Mode (v1 shipped) + Companion Mode (v0 shipped) plans |
 | [`testing.md`](./testing.md) | quality gates + how to run them |
 | `AGENTS.md` / `CONTRIBUTING.md` | collaboration rules + PR checklist |
 

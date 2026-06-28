@@ -4,11 +4,13 @@ Whisk Studio is an AWS-hosted AI creation platform with image, video, story, mus
 
 ## Product Capabilities
 - Authenticated creative workspace for images, videos, stories, soundtracks, and LoRA profiles
+- Three conversational modes (one backend): **Dashboard** (forms), **Agent** (chat that calls a
+  9-tool fleet via Bedrock Converse), **Companion** (full-viewport, character-driven, refuses admin ops)
 - Shared image/video library with favorites and sharing flows
 - Director operations for configuration, queue visibility, session pinning, and masonry asset management
 - Story sessions with scene illustrations, animation, and per-scene music
 - Multi-provider AI integrations through Bedrock, Replicate, CivitAI, and Gradio/HuggingFace
-- Live2D companion (Hiyori) with contextual AI chat, emotion reactions, and proactive prompts
+- Live2D companion (Hiyori) with contextual AI chat, emotion reactions, proactive prompts, and TTS
 
 ## Architecture At A Glance
 1. CloudFront serves the Sakura Bloom React bundle and a generated `/config.json`.
@@ -21,7 +23,7 @@ Whisk Studio is an AWS-hosted AI creation platform with image, video, story, mus
 See `docs/architecture.md` for the full route map, storage keys, and deployment modes.
 
 ## Repository Layout
-- `backend/`: Express API, 25 route modules, auth, data access helpers, provider integrations
+- `backend/`: Express API, 29 route modules, auth, data access helpers, provider integrations
 - `frontend/`: Sakura Bloom React app — Live2D companion, `skr-` CSS system, 10 themes, bottom HUD
 - `cdk/`: infrastructure stacks plus `idea:*` helper scripts
 - `ideas/`: per-idea context (`README`, `DECISIONS`, `RUNBOOK`, `STATUS`, `IMPROVEMENTS`, sometimes `cdk-outputs.json`)
@@ -32,8 +34,8 @@ See `docs/architecture.md` for the full route map, storage keys, and deployment 
 
 ## Backend Contract Summary
 - Route registration: `backend/routes/index.js`
-- 25 registered route modules exposing 73+ HTTP endpoints
-- Major domains: prompt helper, media management and sharing, image generation, video generation, story sessions/illustration/animation/music, LoRA catalog and profiles, characters, companion (Hiyori), director operations
+- 29 registered route modules exposing 73+ HTTP endpoints
+- Major domains: prompt helper, media management and sharing, image generation, video generation, story sessions/illustration/animation/music, LoRA catalog and profiles, characters, companion (Hiyori), **agent mode** (turn/suggest/sessions/admin), director operations
 - Critical invariant: `POST /story/sessions` and `GET /story/sessions/:id` both return `{ session, messages, scenes }` with `messages` and `scenes` at top level, not nested inside `session`
 
 ## Storage Model Summary
@@ -122,13 +124,16 @@ npm --prefix cdk run idea:destroy -- --stage=<idea-id>
 See `CONTRIBUTING.md` for the full quality gate table and PR checklist.
 
 ## Documentation Map
-- `AGENTS.md`: collaboration rules and repo reality
+Start at **[`docs/README.md`](docs/README.md)** — the index that organises everything by audience
+(human / AI) × depth (brief / detailed). Key entries:
+- `docs/architecture.md`: detailed human reference — system layers, **diagrams**, data model, deployment modes
+- `docs/state-of-the-art.md`: interview-framed deep dive — cost model, security, roadmap, the "why"
+- `docs/ai-context.md`: dense agent reference — paths, DynamoDB namespaces, invariants
+- `AGENTS.md`: collaboration rules and repo reality (AI brief)
 - `CONTRIBUTING.md`: code style, quality gates, PR checklist
-- `docs/architecture.md`: system layers, route map, deployment modes
-- `docs/api-spec.md`: full API contract (73 endpoints, request/response shapes)
+- `docs/api-spec.md`: full API contract (73+ endpoints, request/response shapes)
 - `docs/testing.md`: how to run and write all test layers
-- `docs/adr/`: architecture decision records (001–006)
-- `ideas/dev/README.md`: dev stack intent and architecture touchpoints
+- `docs/adr/`: architecture decision records (001–007)
 - `frontend/ARCHITECTURE.md`: component tree, hook graph, CSS system
 
 ## Common Configuration

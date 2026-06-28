@@ -1,6 +1,6 @@
 # Testing Guide
 
-> Last updated: 2026-04-11
+> Last updated: 2026-06-27
 
 ---
 
@@ -16,7 +16,7 @@ Backend tests use the **Node.js built-in test runner** (`node:test`) with `node:
 
 ### File convention
 Test files live in `backend/test/`, named `*.test.js`.
-Current: 178 tests across auth, companion, keys, lora-routes, lora-utils, sanctum-admin, scene-context, story-prompt.
+Current: **358 tests** across auth, agent (tools/state/cost/sessions/memory/rate-limit), companion, keys, lora, sanctum-admin, scene-context, story-prompt, feature-flags, and more.
 
 ### Mock-deps pattern
 Each test file imports the module under test and injects a hand-crafted `deps` object (dependency injection). No module-level mocking — this keeps tests deterministic and avoids `jest.mock` syntax.
@@ -33,7 +33,7 @@ test('example', () => {
 ```
 
 ### Known pre-existing failures
-None — all 178 tests currently pass. (Three `lora-routes.test.js` failures from the mock-app multi-middleware limitation were fixed via the `createMockApp` rest-params patch.)
+None — all 358 backend tests currently pass.
 
 ### Coverage
 Add `--experimental-test-coverage` to collect line/function coverage:
@@ -120,13 +120,19 @@ JSON results are written to `e2e/results.json` after each run.
 
 ## Quality Gate Summary
 
+The three CI jobs (`.github/workflows/ci.yml`) are **backend** (lint + format:check + tests),
+**frontend** (lint + format:check + tests), and **file-length**. `format:check` is a hard gate —
+a green `npm test` alone is NOT enough to pass CI. `lint` has no `--max-warnings`, so warnings pass.
+
 | Gate | Command | Target |
 |------|---------|--------|
 | Backend lint | `npm --prefix backend run lint` | 0 errors |
-| Backend tests | `npm --prefix backend test` | 178/178 pass |
+| Backend format | `npm --prefix backend run format:check` | clean (fix: `npm run format`) |
+| Backend tests | `npm --prefix backend test` | 358/358 pass |
 | Backend coverage | `node --experimental-test-coverage ...` | ≥ 40% lines |
 | Frontend lint | `npm --prefix frontend run lint` | 0 errors |
-| Frontend tests | `npm --prefix frontend run test:ci` | all pass |
+| Frontend format | `npm --prefix frontend run format:check` | clean (fix: `npm run format`) |
+| Frontend tests | `npm --prefix frontend run test:ci` | 129/129 pass |
 | Frontend coverage | `npm --prefix frontend run test:ci -- --coverage` | ≥ 30% stmts |
 | Frontend build | `npm --prefix frontend run build` | exits 0 |
 | E2E sanity | `E2E_BASE_URL=<url> npx playwright test --config e2e/playwright.config.js` | all pass |

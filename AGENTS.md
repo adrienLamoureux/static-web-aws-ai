@@ -1,6 +1,6 @@
 # Codex Collaboration Instructions
 
-> Last updated: 2026-04-11
+> Last updated: 2026-06-27
 
 ## Core Engineering Rules
 - Follow `SOLID`, `DRY`, and `KISS`.
@@ -17,12 +17,15 @@
 ## Stack Map
 - Backend API: Node.js + Express in `backend/`, Lambda adapter in `backend/lambda.js`.
 - Backend composition root: `backend/lib/build-deps.js` (manual DI, no framework).
-- Backend routes: `backend/routes/index.js` registers 25 route modules exposing 73+ HTTP endpoints.
-- Backend domain/helpers: `backend/lib/*.js` plus `backend/lib/story-state/`.
+- Backend routes: `backend/routes/index.js` registers 29 route modules exposing 73+ HTTP endpoints.
+- Backend domain/helpers: `backend/lib/*.js` plus `backend/lib/story-state/` and `backend/lib/agent-tools/`.
 - Backend config: `backend/config/models.js`, `backend/config/story-seed-data.js`, `backend/config/lora.js`.
 - Frontend: `frontend/src/` — full Sakura Bloom React app (Live2D companion, `skr-` CSS system, 10 themes, bottom HUD).
+- Three UI modes via `ModeContext` (localStorage `skr-mode`): `dashboard` | `agent` | `companion`.
+  Agent mode = Bedrock Converse + a 9-tool fleet (`backend/lib/agent-tools.js`); companion mode refuses admin ops.
 - Infra: AWS CDK 2.x in `cdk/`, with both full-stack and UI-only deployment modes.
 - AI scripts: Python notebooks/scripts in `ai/` only; they are not part of runtime execution paths.
+- For the dense agent reference (paths, DynamoDB SK namespaces, invariants), see `docs/ai-context.md`.
 
 ## Active Branch
 
@@ -37,9 +40,11 @@ See `IDEAS.md` for the authoritative auto-maintained registry of all deployed st
 Shared test credentials for the live stacks: `test@test.com` / `Test1234567@`
 
 ## Read Order For Agents
-1. `AGENTS.md`
-2. `docs/architecture.md`
+1. `AGENTS.md` (this file — rules + repo reality)
+2. `docs/ai-context.md` (dense map: paths, data model, invariants) → `docs/architecture.md` (detail + diagrams)
 3. Relevant `ideas/<idea-id>/*.md`
+
+Doc navigation hub: `docs/README.md` (audience × depth index).
 
 ## Cognito Ownership — CRITICAL
 
